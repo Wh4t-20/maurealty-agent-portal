@@ -1,7 +1,7 @@
-<script setup lang="ts"></script>
-
 <template>
-  <h1 class="text-3xl font-bold underline">HELLO</h1>
+  <h1 class="text-3xl font-bold underline bg-red-100">
+    Hello World!
+  </h1>
 </template>
 
-<style scoped></style>
+<script setup></script>
