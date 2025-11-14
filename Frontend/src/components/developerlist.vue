@@ -5,7 +5,7 @@
     <div class="pl-9 flex items-center w-full max-w-[1057px] h-[120px] bg-gradient-to-r from-[#A9D6FF70] to-[#FFFFFF] shadow-[0_10px_15px_rgba(0,0,0,0.3)] rounded-[10px]">
 
   
-      <h1 class="text-[clamp(1.25rem,2vw,2rem)] font-extrabold text-[#07407B]">
+      <h1 class="text-[clamp(1rem,2vw,2rem)] font-extrabold text-[#07407B]">
         DEVELOPERS
       </h1>
 
@@ -16,7 +16,7 @@
 
       <!-- Button -->
       <div class="flex items-center gap-4 pr-9 ml-4 ">
-        <button class="max-h-[40px]max-w-[193px] bg-[#07407B] text-white  rounded-[10px] hover:bg-blue-700 flex items-center gap-2 px-[clamp(0.5rem,2vw,2.5rem)] py-[clamp(0.25rem,0.70vw,1rem)] text-[clamp(0.5rem,2vw,1rem)]">
+        <button class="max-h-[43px] max-w-[200px] bg-[#07407B] text-white  rounded-[10px] hover:bg-blue-700 flex items-center gap-2 px-[clamp(0.5rem,2vw,2.5rem)] py-[clamp(0.25rem,0.70vw,1rem)] text-[clamp(0.5rem,2vw,1rem)]">
           <span class="text-lg">+</span> Add Developer
         </button>
 
@@ -31,7 +31,7 @@
     <div v-for="(developer, index) in developers" :key="index" class="bg-white p-6 rounded-[15px] shadow-lg  w-full max-w-[502px] hover:shadow-[0_10px_15px_rgba(2,5,5.1,0.3)] transition-shadow">
      
       <!-- Profile -->
-      <div class="flex items-center gap-4 mb-4">
+      <div class="flex items-center gap-4 mb-4 ">
         <img :src="developer.logo"  class="w-16 h-16 rounded-full object-cover"/>
         <div>
           <h2 class="font-bold text-lg">{{ developer.name }}</h2>
@@ -40,7 +40,7 @@
       </div>
 
       <!-- Contact info -->
-      <div class="grid break-all text-[clamp(1rem,1vw,1.5rem)] grid-cols-1 md:grid-cols-2 px-1 gap-2 mb-4 text-gray-700">
+      <div class="grid mt-10 break-all text-[clamp(1rem,1vw,1.5rem)] grid-cols-1 md:grid-cols-2 px-1 gap-2 mb-4 text-gray-700">
         <div class="flex items-center gap-2"> {{ developer.phone }}</div>
         <div class="flex items-center gap-2">{{ developer.email }}</div>
         <div class="flex items-center gap-2"> {{ developer.location }}</div>
