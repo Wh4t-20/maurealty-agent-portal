@@ -1,7 +1,6 @@
 <template>
-  <h1 class="text-3xl font-bold underline bg-red-100">
-    Hello World!
-  </h1>
+  <router-view />
 </template>
 
-<script setup></script>
+<script setup >
+</script>

@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.16",
+    "lucide-vue-next": "^0.553.0",
     "tailwind": "^2.3.1",
     "tailwindcss": "^4.1.16",
     "vue": "^3.5.22",
