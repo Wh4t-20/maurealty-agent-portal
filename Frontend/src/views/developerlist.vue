@@ -77,10 +77,11 @@
 
 <script setup lang="ts">
 import { reactive } from "vue";
+import profile from  "@/assets/images/profile.png"
 
 const developers = reactive([
   {
-    logo: "profile.png",
+    logo: profile,
     name: "Ayala Land Inc.",
     phone: "09325660619",
     email: "ahmanlangit@up.edu.ph",
@@ -89,7 +90,7 @@ const developers = reactive([
     projects: ["Ayala", "Ayala", "Ayala"],
   },
   {
-    logo: "profile.png",
+    logo:  profile,
     name: "Ayala Land Inc.",
     phone: "09325660619",
     email: "ahmanlangit@up.edu.ph",
@@ -98,7 +99,7 @@ const developers = reactive([
     projects: ["Ayala", "Ayala", "Ayala"],
   },
   {
-    logo: "profile.png",
+    logo:  profile,
     name: "Ayala Land Inc.",
     phone: "09325660619",
     email: "ahmanlangit@up.edu.ph",
@@ -107,7 +108,7 @@ const developers = reactive([
     projects: ["Ayala", "Ayala", "Ayala"],
   },
   {
-    logo: "profile.png",
+    logo:  profile,
     name: "Ayala Land Inc.",
     phone: "09325660619",
     email: "ahmanlangit@up.edu.ph",
@@ -116,7 +117,7 @@ const developers = reactive([
     projects: ["Ayala", "Ayala", "Ayala"],
   },
   {
-    logo: "profile.png",
+    logo:  profile,
     name: "Ayala Land Inc.",
     phone: "09325660619",
     email: "ahmanlangit@up.edu.ph",
@@ -124,7 +125,7 @@ const developers = reactive([
     hours: "Monday - Friday <br> 9:00 AM - 6:00 PM",
     projects: ["Ayala", "Ayala", "Ayala"],
   },{
-    logo: "profile.png",
+    logo:  profile,
     name: "Ayala Land Inc.",
     phone: "09325660619",
     email: "ahmanlangit@up.edu.ph",
