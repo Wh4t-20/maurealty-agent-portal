@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
-import Test from '@/components/developerlist.vue'
+import Test from '@/views/Listings.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
