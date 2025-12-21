@@ -1,32 +1,5 @@
 <template>
   <div class="listings-container">
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-      <div class="company-brand">
-        <img src="@/assets/images/maureal.png" alt="MauRealty Logo" class="logo" />
-        <img src="@/assets/images/profile.png" alt="Agent" class="profile-pic" />
-        <p class="agent-name">Kenji Bad Boyboy</p>
-        <p class="agent-rank">Emerald</p>
-      </div>
-
-      <nav class="sidebar-nav">
-        <router-link to="/dashboard" class="nav-item">Dashboard</router-link>
-        <router-link to="/listings" class="nav-item active">Listing</router-link>
-        <router-link to="/accounting" class="nav-item">Accounting</router-link>
-        <router-link to="/voucher" class="nav-item">Voucher</router-link>
-        <router-link to="/inbox" class="nav-item">Inbox</router-link>
-        <router-link to="/leaderboards" class="nav-item">Leaderboards</router-link>
-      </nav>
-
-      <div class="SidebarFooter">
-        <button class="signout-btn">
-          <img src="@/assets/images/signout-logo.png" />Sign out
-        </button>
-        <button class="settings-btn">
-          <img src="@/assets/images/settings-logo.png" />
-        </button>
-      </div>
-    </div>
 
     <!-- MAIN CONTENT -->
     <div class="main-content">
@@ -130,14 +103,6 @@ onMounted(() => loadProperties())
   font-family: 'Poppins', sans-serif;
 }
 
-.sidebar {
-  width: 280px;
-  background: linear-gradient(180deg, #0A3D62 0%, #0A3D62 100%);
-  color: white;
-  display: flex;
-  flex-direction: column;
-}
-
 .company-brand {
   display: flex;
   flex-direction: column;
@@ -155,107 +120,6 @@ onMounted(() => loadProperties())
   font-size: 1.4rem;
   margin: 0;
   margin-bottom: 1rem;
-}
-
-.logo {
-  margin-bottom: 40px;
-  margin-top: 20px;
-  width: 200px;    
-}
-
-.profile-pic {
-  width: 100px;           /* adjust size as needed */
-  height: 100px;
-  border-radius: 50%;    /* makes it circular */
-  object-fit: cover;
-  margin-bottom: 0.5rem;
-  margin-bottom: 0.5rem;
-  border: 1px solid #fff; /* adds a white border ring */
-}
-
-.agent-name {
-  font-size: 1rem;
-  color: white;
-}
-
-.agent-rank {
-  font-size: 1rem;
-  text-align: center;
-  color: white;
-}
-
-.sidebar-nav {
-  width: 280px;
-  display: flex;
-  flex-direction: column;
-  margin-top: 1rem;
-}
-
-.nav-item {
-  text-decoration: none;
-  color: white;
-  padding: 10px;
-  width: 100%;
-  border-radius: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  transition: 0.3s;
-}
-
-.nav-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.nav-item.active {
-  background: rgba(255, 255, 255, 0.23);
-}
-
-.SidebarFooter {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
-  margin-bottom: 10px;
-}
-
-.settings-btn {
-  display: flex;
-  background: transparent;
-  color: white;
-  padding: 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.3s;
-  margin-right: 10px;
-}
-
-.settings-btn img {
-  width: 24px;
-  height: 24px;
-}
-
-.signout-btn {
-  display: flex;
-  background: transparent;
-  color: white;
-  padding: 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.3s;
-  margin-left: 10px;
-  gap: 5px;
-}
-
-.signout-btn img {
-  display: flex;
-  width: 18px;
-  height: 18px;
-  margin-top: auto;
-  margin-bottom: 2.5px;
-}
-
-.settings-btn:hover,
-.signout-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
 }
 
 .main-content {

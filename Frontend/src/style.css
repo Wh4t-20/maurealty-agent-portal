@@ -1,5 +1,13 @@
 @import "tailwindcss";
+
 body {
     font-family: 'Poppins', sans-serif;
-  }
+}
   
+@theme {
+    --color-sidebar-back: #044677
+}
+
+@utility sidebar-choice {
+  @apply p-3.5 pl-6 w-full transition hover:bg-[#ffffff2A];
+}

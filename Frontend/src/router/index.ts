@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import Test from '@/views/developerlist.vue'
+import Listings from '@/views/Listings.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -8,6 +9,11 @@ const routes: Array<RouteRecordRaw> = [
     name: 'Landing',
     component: Test,
   },
+  {
+    path: '/listings',
+    name: 'Listing',
+    component: Listings
+  }
   
 ]
 
