@@ -11,7 +11,9 @@ class PropertyType(db.Model):
 
 class Listing(db.Model):
     __tablename__ = 'listings'
-    # will link up with agent_ID soon
+    agent_ID = db.Column(db.Integer, nullable = True) # temporary only, no foreign keys yet
+                                                      # will link up with agent table soon?
+    
     listing_ID = db.Column(db.Integer, primary_key = True)
     listing_title = db.Column(db.String(255), nullable = False)
     bedroom_count = db.Column(db.Integer, default = 0)
