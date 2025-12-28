@@ -26,6 +26,8 @@ def setup_database():
         except Exception as e:
             print(f"\n[ERROR]: Could not connect to database / create tables: {e}")
 
+# NOTE: WILL BE ADDING SEEDING FUNCTION SOON ONCE FINALIZED for PropertyType table and others 
+
 @app.route('/')
 def health_check():
     return {"status": "Backend is running and connected to PostgreSQL!"}, 200
