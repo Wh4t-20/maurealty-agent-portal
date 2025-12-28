@@ -7,7 +7,7 @@ load_dotenv()   # loads .env variables
 app = Flask(__name__)
 
 # configs SQLALCHEMY with ur .env ~ refer to ur .env for your local database
-app.config['SQLALCHEMY_DATABSE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # initialize app with models
@@ -31,7 +31,7 @@ def health_check():
     return {"status": "Backend is running and connected to PostgreSQL!"}, 200
 
 
-if __name__ == 'main':
+if __name__ == '__main__':
     # running database setup
     setup_database()
 
