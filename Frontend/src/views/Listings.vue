@@ -1,13 +1,10 @@
-<template>
-  <div class="listings-container">
 
-    <!-- MAIN CONTENT -->
+<!-- <template>
+  <div class="listings-container">
     <div class="main-content">
-      <!-- HEADER -->
       <header class="project-header">
         <h1 class="project-title">PROJECT LISTINGS</h1>
 
-        <!-- Filter Controls -->
         <div class="filter-bar">
           <input type="number" placeholder="Bedrooms" />
           <input type="number" placeholder="Bathrooms" />
@@ -37,7 +34,6 @@
         </div>
       </header>
 
-      <!-- PROPERTY LISTINGS -->
       <section class="city-section" v-for="(group, city) in groupedProperties" :key="city">
         <div class="city-header">
           <h2>{{ city.toUpperCase() }}</h2>
@@ -57,10 +53,122 @@
       </section>
     </div>
   </div>
+</template> -->
+
+
+<template>
+  <div class="w-full bg-[#ECF1F5]">
+    <header class="flex flex-col py-5 px-10 w-full bg-white text-maurealty-blue shadow-md sticky top-0 z-1">
+      <!-- Header and search -->
+      <div class="flex justify-between items-center w-full pb-3">
+        <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
+        <input id="search" type="text" name="search" placeholder="Search"
+          class="block min-w-0 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 rounded-sm focus:outline-none sm:text-sm/6" />
+      </div>
+
+      <!-- Filter -->
+       <div class="flex items-center gap-10">
+
+          <section class="listings-filter-section">
+            <label for="bedroom-input" class="text-base">Bedrooms</label>
+            <input id="bedroom-input" type="text" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+          </section>
+
+          <section class="listings-filter-section">
+            <label for="bathroom-input" class="text-base">Bathrooms</label>
+            <input id="bathroom-input" type="text" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+          </section>
+          
+          <!--
+          <Listbox as="div" v-model="selected" class="listings-filter-section">
+            <ListboxLabel class="text-base">Property Type</ListboxLabel>
+            <div class="relative">
+              <ListboxButton class="grid w-full cursor-default grid-cols-1 rounded-md bg-gray-800/50 py-1.5 pr-2 pl-3 text-left text-white outline-1 -outline-offset-1 outline-white/10 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-indigo-500 sm:text-sm/6">
+                <span class="col-start-1 row-start-1 flex items-center gap-3 pr-6">
+                  <span class="block truncate">{{  }}</span>
+                </span>
+                <ChevronUpDownIcon class="col-start-1 row-start-1 size-5 self-center justify-self-end text-gray-400 sm:size-4" aria-hidden="true" />
+              </ListboxButton>
+
+              <transition leave-active-class="transition ease-in duration-100" leave-from-class="" leave-to-class="opacity-0">
+                <ListboxOptions class="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-gray-800 py-1 text-base outline-1 -outline-offset-1 outline-white/10 sm:text-sm">
+                  <ListboxOption as="template" v-for="person in people" :key="person.id" :value="person" v-slot="{ active, selected }">
+                    <li :class="[active ? 'bg-indigo-500 text-white outline-hidden' : 'text-white', 'relative cursor-default py-2 pr-9 pl-3 select-none']">
+                      <div class="flex items-center">
+                        <img :src="person.avatar" alt="" class="size-5 shrink-0 rounded-full outline -outline-offset-1 outline-white/10" />
+                        <span :class="[selected ? 'font-semibold' : 'font-normal', 'ml-3 block truncate']">{{ person.name }}</span>
+                      </div>
+
+                      <span v-if="selected" :class="[active ? 'text-white' : 'text-indigo-400', 'absolute inset-y-0 right-0 flex items-center pr-4']">
+                        <CheckIcon class="size-5" aria-hidden="true" />
+                      </span>
+                    </li>
+                  </ListboxOption>
+                </ListboxOptions>
+              </transition>
+            </div>
+          </Listbox>
+          -->
+
+          <!--
+          Choices:
+          House
+          Condo
+          Ill give up for now
+          https://tailwindcss.com/plus/ui-blocks/application-ui/forms/select-menus
+          -->
+          
+          <section class="listings-filter-section">
+            <label for="amenities-input" class="text-base">Amenities</label>
+            <select id="amenities-input" class="border border-blue-950">
+              <option>Pool</option>
+              <option>Garage</option>
+            </select>
+          </section>
+          
+          <section class="listings-filter-section">
+            <label for="city-input" class="text-base">City</label>
+            <select id="city-input" class="border border-blue-950">
+              <option>Cebu City</option>
+              <option>Lapu-Lapu City</option>
+            </select>
+          </section>
+          
+          <section class="listings-filter-section">
+            <label for="price-range-input" class="text-base">Price Range</label>
+            <div class="flex gap-4">
+              <input type="number" placeholder="₱ Min" class="border border-blue-950" />
+              <span>-</span>
+              <input type="number" placeholder="₱ Max" class="border border-blue-950" />
+            </div>
+          </section>
+       </div>
+    </header>
+
+    <!-- Listings-->
+    <section class=" p-10 city-section" v-for="(group, city) in groupedProperties" :key="city">
+        <div class="city-header">
+          <h2>{{ city.toUpperCase() }}</h2>
+          <a href="#" class="view-all">View all</a>
+        </div>
+
+        <div class="property-grid">
+          <div v-for="property in group" :key="property.id" class="property-card">
+            <img src="@/assets/images/sample-house.jpg" alt="House" class="property-img" />
+            <div class="property-info">
+              <p class="property-desc">{{ property.description }}</p>
+              <p class="property-price">Php {{ property.price.toLocaleString() }}</p>
+              <p class="broker">Brokerage firm</p>
+            </div>
+          </div>
+        </div>
+      </section>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { Listbox, ListboxButton, ListboxLabel, ListboxOption, ListboxOptions } from '@headlessui/vue'
 
 interface Property {
   id: number

@@ -1,9 +1,7 @@
 <template>
   <div class="flex">
     <Sidebar />
-    <div>
-      <img src="@/assets/images/profile.png"></img>
-    </div>
+    <RouterView />
   </div>
   
 </template>

@@ -1,33 +1,5 @@
 <template>
   <div class="dashboard-container">
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <div class="company-brand">
-        <img src="@/assets/images/maureal.png" alt="MauRealty Logo" class="logo" />
-        <img src="@/assets/images/agent.jpg" alt="Agent" class="profile-pic" />
-        <p class="agent-name">Kenji Bad Boyboy</p>
-        <p class="agent-rank">Emerald</p>
-      </div>
-
-      <nav class="sidebar-nav">
-        <router-link to="/dashboard" class="nav-item active">Dashboard</router-link>
-        <router-link to="/listings" class="nav-item">Listing</router-link>
-        <router-link to="/accounting" class="nav-item">Accounting</router-link>
-        <router-link to="/voucher" class="nav-item">Voucher</router-link>
-        <router-link to="/inbox" class="nav-item">Inbox</router-link>
-        <router-link to="/leaderboards" class="nav-item">Leaderboards</router-link>
-      </nav>
-
-      <div class="SidebarFooter">
-        <button class="signout-btn">
-          <img src="@/assets/images/signout-logo.png" />Sign out
-        </button>
-        <button class="settings-btn">
-          <img src="@/assets/images/settings-logo.png" />
-        </button>
-      </div>
-    </div>
-
     <!-- Main Content -->
     <div class="main-content">
 

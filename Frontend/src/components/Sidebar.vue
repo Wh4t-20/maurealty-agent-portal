@@ -1,5 +1,5 @@
 <template>
-    <div class="z-10 inset-y-0 left-0 w-9/40 max-w-xs h-screen bg-sidebar-back flex flex-col text-white">
+    <div class="z-10 sticky inset-y-0 left-0 w-9/40 max-w-xs h-screen bg-maurealty-blue flex flex-col text-white">
       <!--Logo and Icons stuff-->
       <div class="flex flex-col items-center">
         <img src="@/assets/images/Maurealty.png" alt="MauRealty Logo" class="w-3/5 h-auto m-4" />
@@ -19,19 +19,16 @@
       </nav>
 
       <!--Footer for Settings and Logout-->
-      <div class="flex justify-between absolute bottom-3 w-9/40 max-w-xs px-3">
+      <div class="flex justify-between absolute bottom-3 w-full px-3">
         <button class="flex items-center">
           <img src="@/assets/images/signout-icon.png" class="size-5 m-2">
           Sign Out
         </button>
-        <button class="right-0">
+        <button>
           <img src="@/assets/images/settings-icon.png" class="size-5.5 m-2">
         </button>
       </div>
-    
-    
     </div>
-      
 </template>
 
 <script setup lang="ts">
