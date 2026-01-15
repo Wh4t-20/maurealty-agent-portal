@@ -52,3 +52,11 @@ Just write whatever might be helpful to know
 - make the proper filter dropdown
 - scrollable listings
 - property management tab
+
+## 01/15/2026 - Angelo (Frontend)
+### Changes:
+- added new ListingsFilter component for the filter dropdown
+- Fixed the price range UI
+
+### Need to do:
+- edit it when data comes
