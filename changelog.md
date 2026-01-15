@@ -37,3 +37,18 @@ Just write whatever might be helpful to know
 - design the dropdowns
 - change the layout of the listings
 - add the full detail version of the house when clicked
+
+## 12/31/2025 - Angelo (Frontend)
+### Changes:
+- made the property card components
+- added a [classes folder](https://github.com/Wh4t-20/maurealty-agent-portal/blob/6d62cabc9eafad387af8ea3bf5a2634b8b79d9e6/Frontend/src/assets/classes) with a *listings.ts* for any classes/interfaces that could be used by multiple files (shoutouts to Sir Rub)
+
+### Notes:
+- I wanna change the property interface so that the details are legit
+- Property Types: House (includes Lot), Lot, Condominium, Memorial, Clubshare, Golfshare
+- Merry new year
+
+### Need to do:
+- make the proper filter dropdown
+- scrollable listings
+- property management tab

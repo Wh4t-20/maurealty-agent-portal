@@ -146,21 +146,14 @@
     </header>
 
     <!-- Listings-->
-    <section class=" p-10 city-section" v-for="(group, city) in groupedProperties" :key="city">
+    <section class="p-10 city-section" v-for="(group, city) in groupedProperties" :key="city">
         <div class="city-header">
           <h2>{{ city.toUpperCase() }}</h2>
           <a href="#" class="view-all">View all</a>
         </div>
 
-        <div class="property-grid">
-          <div v-for="property in group" :key="property.id" class="property-card">
-            <img src="@/assets/images/sample-house.jpg" alt="House" class="property-img" />
-            <div class="property-info">
-              <p class="property-desc">{{ property.description }}</p>
-              <p class="property-price">Php {{ property.price.toLocaleString() }}</p>
-              <p class="broker">Brokerage firm</p>
-            </div>
-          </div>
+        <div class="grid grid-cols-3 gap-3">
+            <PropertyCard v-for="property in group" :key="property.id" :details="property" class="flex flex-col items-center"/>
         </div>
       </section>
   </div>
@@ -170,23 +163,20 @@
 import { ref, computed, onMounted } from 'vue'
 import { Listbox, ListboxButton, ListboxLabel, ListboxOption, ListboxOptions } from '@headlessui/vue'
 
-interface Property {
-  id: number
-  city: string
-  description: string
-  price: number
-}
+// Property instance
+import { type Property }  from '@/assets/classes/listings'
+import PropertyCard from '@/components/PropertyCard2.vue'
 
 const properties = ref<Property[]>([])
 
 // Simulate backend data
 const loadProperties = () => {
   properties.value = [
-    { id: 1, city: 'Cebu City', description: 'Concise house description', price: 123456 },
-    { id: 2, city: 'Cebu City', description: 'Concise house description', price: 123456 },
-    { id: 3, city: 'Cebu City', description: 'Concise house description', price: 123456 },
-    { id: 4, city: 'Lapu-Lapu City', description: 'Concise house description', price: 123456 },
-    { id: 5, city: 'Lapu-Lapu City', description: 'Concise house description', price: 123456 },
+    { id: 1, location: 'Cebu City', description: 'Concise house description', price: 123456, status: 'active' },
+    { id: 2, location: 'Cebu City', description: 'Ooga booga description', price: 123456, status: 'active' },
+    { id: 3, location: 'Cebu City', description: 'Concise house description', price: 123456, status: 'active' },
+    { id: 4, location: 'Lapu-Lapu City', description: 'Concise house description', price: 123456, status: 'active' },
+    { id: 5, location: 'Lapu-Lapu City', description: 'Concise house description', price: 123456, status: 'active' },
   ]
 }
 
@@ -194,7 +184,7 @@ const loadProperties = () => {
 const groupedProperties = computed(() => {
   const groups: Record<string, Property[]> = {}
   properties.value.forEach((prop) => {
-    const list = groups[prop.city] || (groups[prop.city] = [])
+    const list = groups[prop.location] || (groups[prop.location] = [])
     list.push(prop)
   })
   return groups
@@ -315,14 +305,6 @@ onMounted(() => loadProperties())
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
-}
-
-.property-card {
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease;
 }
 
 .property-card:hover {

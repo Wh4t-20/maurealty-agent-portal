@@ -24,14 +24,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-
-interface Property {
-  id: number
-  location: string
-  description: string
-  price: number
-  status: string[]
-}
+import { type Property }  from '@/assets/classes/listings'
 
 interface Props {
   property: Property
