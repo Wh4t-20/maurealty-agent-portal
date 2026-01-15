@@ -1,64 +1,6 @@
-
-<!-- <template>
-  <div class="listings-container">
-    <div class="main-content">
-      <header class="project-header">
-        <h1 class="project-title">PROJECT LISTINGS</h1>
-
-        <div class="filter-bar">
-          <input type="number" placeholder="Bedrooms" />
-          <input type="number" placeholder="Bathrooms" />
-          <select>
-            <option>Property Type</option>
-            <option>House</option>
-            <option>Condo</option>
-          </select>
-          <select>
-            <option>Amenities</option>
-            <option>Pool</option>
-            <option>Garage</option>
-          </select>
-          <select>
-            <option>City</option>
-            <option>Cebu City</option>
-            <option>Lapu-Lapu City</option>
-          </select>
-
-          <div class="price-range">
-            <input type="number" placeholder="₱ Min" />
-            <span>-</span>
-            <input type="number" placeholder="₱ Max" />
-          </div>
-
-          <input type="text" class="search-bar" placeholder="Search" />
-        </div>
-      </header>
-
-      <section class="city-section" v-for="(group, city) in groupedProperties" :key="city">
-        <div class="city-header">
-          <h2>{{ city.toUpperCase() }}</h2>
-          <a href="#" class="view-all">View all</a>
-        </div>
-
-        <div class="property-grid">
-          <div v-for="property in group" :key="property.id" class="property-card">
-            <img src="@/assets/images/sample-house.jpg" alt="House" class="property-img" />
-            <div class="property-info">
-              <p class="property-desc">{{ property.description }}</p>
-              <p class="property-price">Php {{ property.price.toLocaleString() }}</p>
-              <p class="broker">Brokerage firm</p>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-  </div>
-</template> -->
-
-
 <template>
   <div class="w-full bg-[#ECF1F5]">
-    <header class="flex flex-col py-5 px-10 w-full bg-white text-maurealty-blue shadow-md sticky top-0 z-1">
+    <header class="flex flex-col py-5 px-10 w-full bg-white text-maurealty-blue shadow-md sticky top-0 z-10">
       <!-- Header and search -->
       <div class="flex justify-between items-center w-full pb-3">
         <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
@@ -71,12 +13,12 @@
 
           <section class="listings-filter-section">
             <label for="bedroom-input" class="text-base">Bedrooms</label>
-            <input id="bedroom-input" type="text" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+            <input id="bedroom-input" type="number" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
           </section>
 
           <section class="listings-filter-section">
             <label for="bathroom-input" class="text-base">Bathrooms</label>
-            <input id="bathroom-input" type="text" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+            <input id="bathroom-input" type="number" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
           </section>
           
           <!--
@@ -120,10 +62,7 @@
           
           <section class="listings-filter-section">
             <label for="amenities-input" class="text-base">Amenities</label>
-            <select id="amenities-input" class="border border-blue-950">
-              <option>Pool</option>
-              <option>Garage</option>
-            </select>
+            <ListingsFilter :choices="Amenities" />
           </section>
           
           <section class="listings-filter-section">
@@ -136,10 +75,11 @@
           
           <section class="listings-filter-section">
             <label for="price-range-input" class="text-base">Price Range</label>
-            <div class="flex gap-4">
-              <input type="number" placeholder="₱ Min" class="border border-blue-950" />
-              <span>-</span>
-              <input type="number" placeholder="₱ Max" class="border border-blue-950" />
+            <div class="flex gap-4 items-center">
+              <input type="number" placeholder="₱ Min" class="text-sm w-30 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+              <span class="w-8 border-2 border-[#d7dde3] self-center -mx-4 -z-1"></span>
+              <input type="number" placeholder="₱ Max" class="text-sm w-30 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+            
             </div>
           </section>
        </div>
@@ -165,9 +105,13 @@ import { Listbox, ListboxButton, ListboxLabel, ListboxOption, ListboxOptions } f
 
 // Property instance
 import { type Property }  from '@/assets/classes/listings'
-import PropertyCard from '@/components/PropertyCard2.vue'
+import PropertyCard from '@/components/PropertyCard.vue'
+import ListingsFilter from '@/components/ListingsFilter.vue'
 
 const properties = ref<Property[]>([])
+
+const Amenities: string[] = ["Pool", "Garage"]
+const Cities: string[] = ["Cebu City", "Lapu-Lapu"]
 
 // Simulate backend data
 const loadProperties = () => {
@@ -194,6 +138,18 @@ onMounted(() => loadProperties())
 </script>
 
 <style scoped>
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 .listings-container {
   display: flex;
   min-height: 100vh;
