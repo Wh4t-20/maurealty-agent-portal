@@ -1,4 +1,5 @@
 # BACKEND SETUP GUIDE 
+## NOTE: You *MUST* setup POSTGRE on your local machine
 
 ## 1. Git pull the repository
 
