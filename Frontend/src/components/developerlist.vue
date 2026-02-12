@@ -28,7 +28,7 @@
 
     <!-- Developer Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2  mt-[50px] gap-6 p-4">
-    <div v-for="(developer, index) in developers" :key="index" class="bg-white p-6 rounded-[15px] shadow-lg  w-full max-w-[502px] hover:shadow-[0_10px_15px_rgba(2,5,5.1,0.3)] transition-shadow">
+    <div v-for="(developer, index) in developers" :key="index" class="bg-white p-6 rounded-[15px] shadow-lg  w-full max-w-[502px]  hover:shadow-[0_10px_15px_rgba(2,5,5.1,0.3)] transition-shadow">
      
       <!-- Profile -->
       <div class="flex items-center gap-4 mb-4 ">
