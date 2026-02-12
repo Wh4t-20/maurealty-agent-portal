@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard-container">
+  <div class="w-full dashboard-container">
     <!-- Main Content -->
     <div class="main-content">
 

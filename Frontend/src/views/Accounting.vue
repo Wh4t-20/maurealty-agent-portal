@@ -1,5 +1,5 @@
 <template>
-  <div class="accounting-container">
+  <div class=" w-full accounting-container">
     <!-- MAIN CONTENT AREA -->
     <div class="main-content">
       <h1 class="page-title">ACCOUNTING</h1>

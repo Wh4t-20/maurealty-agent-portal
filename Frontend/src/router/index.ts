@@ -9,12 +9,17 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     name: 'Landing',
-    component: DeveloperList,
+    component: Dashboard,
   },
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: Dashboard
+    component: Dashboard,
+  },
+  {
+    path: '/developerlist',
+    name: 'DeveloperList',
+    component: DeveloperList
   },
   {
     path: '/listings',

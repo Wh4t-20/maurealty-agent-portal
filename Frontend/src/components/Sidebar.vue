@@ -16,6 +16,7 @@
         <router-link to="/voucher" class="sidebar-choice">Voucher</router-link>
         <router-link to="/inbox" class="sidebar-choice">Inbox</router-link>
         <router-link to="/leaderboards" class="sidebar-choice">Leaderboards</router-link>
+        <router-link to="/developerlist" class="sidebar-choice">Developer List</router-link>
       </nav>
 
       <!--Footer for Settings and Logout-->

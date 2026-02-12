@@ -17,8 +17,11 @@
     "@headlessui/vue": "^1.7.23",
     "@tailwindcss/vite": "^4.1.18",
     "chart.js": "^4.5.1",
+    "lucide": "^0.563.0",
+    "lucide-vue-next": "^0.563.0",
+    "next": "^16.1.6",
     "tailwindcss": "^4.1.18",
-    "vue": "^3.5.22",
+    "vue": "^3.5.28",
     "vue-router": "^4.6.3"
   },
   "devDependencies": {
