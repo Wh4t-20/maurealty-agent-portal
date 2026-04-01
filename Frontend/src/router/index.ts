@@ -4,6 +4,7 @@ import DeveloperList from '@/views/developerlist.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import Listings from '@/views/Listings.vue'
 import Accounting from '@/views/Accounting.vue'
+import GenealogyLandingpage from '@/views/Genealogy-landingpage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -31,6 +32,13 @@ const routes: Array<RouteRecordRaw> = [
     name: 'Accounting',
     component: Accounting
   },
+  {
+    path: '/genealogy',
+    name: 'Genealogy',
+    component: GenealogyLandingpage
+  },
+  
+
 ]
 
 const router = createRouter({

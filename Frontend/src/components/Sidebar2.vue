@@ -69,7 +69,7 @@
     { id: 3, icon: Calculator, path: "/accounting", label: "Accounting" },
     { id: 4, icon: Ticket, path: "/voucher", label: "Voucher" },
     { id: 5, icon: Mail, path: "/inbox", label: "Inbox" },
-    { id: 6, icon: Trophy, path: "/leaderboards", label: "Leaderboards" },
+    { id: 6, icon: Trophy, path: "/genealogy", label: "Leaderboards" },
     { id: 7, icon: ContactRound, path: "/developerlist", label: "Developer List" }
 
     
