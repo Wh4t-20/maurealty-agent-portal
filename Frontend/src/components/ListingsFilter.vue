@@ -1,22 +1,54 @@
 <template>
     <div>
-        <button @click="isOpen = !isOpen" class="block size-8 text-sm  pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue">
-            <h1>{{ currentChoice }}</h1>
-        </button>
-        <div>
-            <a v-for="i in choices" @click="newChoice(i)">{{ i }}</a>
-        </div>
-    </div>
+    <Listbox v-model="currentChoice">
+      <div class="relative w-fit -mb-1.5">
+        <ListboxButton
+          class="text-sm w-fit min-w-25 py-0.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue"
+        >
+          <span class="block truncate">{{ currentChoice }}</span>
+        </ListboxButton>
+
+        <transition
+          leave-active-class="transition duration-100 ease-in"
+          leave-from-class="opacity-100"
+          leave-to-class="opacity-0"
+        >
+          <ListboxOptions
+            class="absolute mt-1 max-h-60 w-fit min-w-full overflow-auto rounded-xl bg-[#ECF1F5] py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none"
+          >
+            <ListboxOption
+              v-slot="{ active, selected }"
+              v-for="choice in props.choices"
+              :key="choice"
+              :value="choice"
+              as="template"
+            >
+              <li
+                :class="[
+                  active ? 'bg-[#3b6c96] text-white' : 'text-maurealty-blue',
+                  'relative cursor-default select-none py-2 pl-5 pr-4 transition-colors duration-175 whitespace-nowrap',
+                ]"
+              >
+                <span
+                  :class="[
+                    selected ? 'font-medium' : 'font-normal',
+                    'block truncate',
+                  ]"
+                  >{{ choice }}</span
+                >
+              </li>
+            </ListboxOption>
+          </ListboxOptions>
+        </transition>
+      </div>
+    </Listbox>
+  </div>
 </template>
 
 <script setup lang="ts">
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
+
 import { ref } from 'vue'
 const props = defineProps<{ choices: string[] }>()
-let currentChoice = ref(props.choices[0] || '')
-
-let isOpen: boolean
-
-function newChoice(chosen: string) {
-    currentChoice.value = chosen
-}
+let currentChoice = ref(props.choices[0] || "None")
 </script>

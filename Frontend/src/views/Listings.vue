@@ -21,45 +21,6 @@
             <input id="bathroom-input" type="number" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
           </section>
           
-          <!--
-          <Listbox as="div" v-model="selected" class="listings-filter-section">
-            <ListboxLabel class="text-base">Property Type</ListboxLabel>
-            <div class="relative">
-              <ListboxButton class="grid w-full cursor-default grid-cols-1 rounded-md bg-gray-800/50 py-1.5 pr-2 pl-3 text-left text-white outline-1 -outline-offset-1 outline-white/10 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-indigo-500 sm:text-sm/6">
-                <span class="col-start-1 row-start-1 flex items-center gap-3 pr-6">
-                  <span class="block truncate">{{  }}</span>
-                </span>
-                <ChevronUpDownIcon class="col-start-1 row-start-1 size-5 self-center justify-self-end text-gray-400 sm:size-4" aria-hidden="true" />
-              </ListboxButton>
-
-              <transition leave-active-class="transition ease-in duration-100" leave-from-class="" leave-to-class="opacity-0">
-                <ListboxOptions class="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-md bg-gray-800 py-1 text-base outline-1 -outline-offset-1 outline-white/10 sm:text-sm">
-                  <ListboxOption as="template" v-for="person in people" :key="person.id" :value="person" v-slot="{ active, selected }">
-                    <li :class="[active ? 'bg-indigo-500 text-white outline-hidden' : 'text-white', 'relative cursor-default py-2 pr-9 pl-3 select-none']">
-                      <div class="flex items-center">
-                        <img :src="person.avatar" alt="" class="size-5 shrink-0 rounded-full outline -outline-offset-1 outline-white/10" />
-                        <span :class="[selected ? 'font-semibold' : 'font-normal', 'ml-3 block truncate']">{{ person.name }}</span>
-                      </div>
-
-                      <span v-if="selected" :class="[active ? 'text-white' : 'text-indigo-400', 'absolute inset-y-0 right-0 flex items-center pr-4']">
-                        <CheckIcon class="size-5" aria-hidden="true" />
-                      </span>
-                    </li>
-                  </ListboxOption>
-                </ListboxOptions>
-              </transition>
-            </div>
-          </Listbox>
-          -->
-
-          <!--
-          Choices:
-          House
-          Condo
-          Ill give up for now
-          https://tailwindcss.com/plus/ui-blocks/application-ui/forms/select-menus
-          -->
-          
           <section class="listings-filter-section">
             <label for="amenities-input" class="text-base">Amenities</label>
             <ListingsFilter :choices="Amenities" />
@@ -67,10 +28,7 @@
           
           <section class="listings-filter-section">
             <label for="city-input" class="text-base">City</label>
-            <select id="city-input" class="border border-blue-950">
-              <option>Cebu City</option>
-              <option>Lapu-Lapu City</option>
-            </select>
+            <ListingsFilter :choices="Cities" />
           </section>
           
           <section class="listings-filter-section">
@@ -110,8 +68,8 @@ import ListingsFilter from '@/components/ListingsFilter.vue'
 
 const properties = ref<Property[]>([])
 
-const Amenities: string[] = ["Pool", "Garage"]
-const Cities: string[] = ["Cebu City", "Lapu-Lapu"]
+const Amenities: string[] = ["None", "Pool", "Garage"]
+const Cities: string[] = ["None", "Cebu City", "Lapu-Lapu"]
 
 // Simulate backend data
 const loadProperties = () => {
