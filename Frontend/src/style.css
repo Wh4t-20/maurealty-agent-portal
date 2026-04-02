@@ -15,3 +15,11 @@ body {
 @utility listings-filter-section {
   @apply flex flex-col items-center;
 }
+
+::-webkit-scrollbar {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-500 dark:bg-maurealty-blue;
+}
