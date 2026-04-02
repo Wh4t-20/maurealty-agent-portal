@@ -49,6 +49,7 @@
 </template>
 
 <script setup lang="ts">
+// https://headlessui.com/v1/vue/listbox
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 
 import { ref } from 'vue'
