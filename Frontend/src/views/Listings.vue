@@ -59,7 +59,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { Listbox, ListboxButton, ListboxLabel, ListboxOption, ListboxOptions } from '@headlessui/vue'
 
 // Property instance
 import { type Property }  from '@/assets/classes/listings'
