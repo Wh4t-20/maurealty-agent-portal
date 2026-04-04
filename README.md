@@ -40,3 +40,16 @@ npm run dev
 ```sh
 npm run build
 ```
+
+## Branch name conventions
+
+Your branch's name should follow this convention:
+```sh
+<feat/fix>/<frontend/backend>/<featureName>
+```
+
+### Example name for branch
+
+```sh
+feat/frontend/login
+```
