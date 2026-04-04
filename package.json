@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
+    "@supabase/supabase-js": "^2.101.1",
     "@tailwindcss/vite": "^4.1.18",
     "chart.js": "^4.5.1",
     "lucide": "^0.563.0",
