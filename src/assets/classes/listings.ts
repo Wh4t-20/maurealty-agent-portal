@@ -1,7 +1,6 @@
 // main property interface
 export interface Property {
     listing_id: number;
-    image_url: string;
     agent_id: number;
     property_type: string;
     price: number;
@@ -59,4 +58,10 @@ export interface Memorial extends Property {
     is_estate: boolean;
     is_family_estate: boolean;
     is_pet_memorial: boolean;
+}
+
+export interface Images {
+    image_url: string;
+    display_order: number;
+    created_at: number;
 }
