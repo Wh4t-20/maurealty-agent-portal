@@ -1,3 +1,4 @@
+// main property interface
 export interface Property {
     listing_id: number;
     image_url: string;
@@ -11,6 +12,7 @@ export interface Property {
     is_active: boolean;
 }
 
+// lot only interface
 export interface Lot extends Property {
     block_number: string;
     lot_number: number;
@@ -19,6 +21,7 @@ export interface Lot extends Property {
     class: string;
 }
 
+// house and lots interface
 export interface HouseAndLot extends Property {
     one_storey: boolean;
     with_loft: boolean;
@@ -34,6 +37,7 @@ export interface HouseAndLot extends Property {
     carpark_count: number;
 }
 
+// condominium interface
 export interface Condominium extends Property {
     class: string;
     unit_number: number;
@@ -47,6 +51,7 @@ export interface Condominium extends Property {
     bedroom_count: number;
 }
 
+// memorial interface
 export interface Memorial extends Property {
     is_urn: boolean;
     is_vault: boolean;
