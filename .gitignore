@@ -23,6 +23,9 @@ __pycache__
 *.njsproj
 *.sln
 *.sw?
+
+# Environmental variables
 .env
 .env.local
+.env.development
 
