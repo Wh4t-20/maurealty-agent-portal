@@ -1,5 +1,17 @@
 @import "tailwindcss";
+
 body {
     font-family: 'Poppins', sans-serif;
-  }
+}
   
+@theme {
+    --color-maurealty-blue: #044677
+}
+
+@utility sidebar-choice {
+    @apply p-3.5 pl-6 w-full transition hover:bg-[#ffffff2A];
+}
+
+@utility listings-filter-section {
+  @apply flex flex-col items-center;
+}

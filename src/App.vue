@@ -1,6 +1,12 @@
 <template>
-  <router-view />
+  <div class="flex">
+    <Sidebar />
+    <RouterView />
+  </div>
+  
 </template>
 
-<script setup >
+<script setup>
+import Sidebar from './components/Sidebar2.vue';
 </script>
+
