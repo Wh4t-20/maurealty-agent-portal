@@ -7,6 +7,7 @@
     <div class="z-1 -mt-10 w-9/10 p-3 px-10 rounded-2xl bg-white border border-gray-300 shadow-md/30 ">
       <p class="property-desc">{{ details.description }}</p>
       <p class="property-price">Php {{ details.price.toLocaleString() }}</p>
+      <p class="date">{{ details.created_at.toLocaleDateString() }}</p>
       <p class="broker">Brokerage firm</p>
     </div>
   </div>
