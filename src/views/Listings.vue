@@ -44,16 +44,16 @@
     </header>
 
     <!-- Listings-->
-    <section class="p-10 city-section" v-for="(group, city) in groupedProperties" :key="city">
-        <div class="city-header">
-          <h2>{{ city.toUpperCase() }}</h2>
-          <a href="#" class="view-all">View all</a>
-        </div>
-
-        <div class="grid grid-cols-3 gap-3">
-            <PropertyCard v-for="property in group" :key="property.id" :details="property" class="flex flex-col items-center"/>
-        </div>
-      </section>
+    <section class="p-10">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <PropertyCard 
+          v-for="property in properties" 
+          :key="property.listing_id" 
+          :details="property" 
+          class="flex flex-col items-center"
+        />
+      </div>
+    </section>
   </div>
 </template>
 
@@ -73,23 +73,24 @@ const Cities: string[] = ["None", "Cebu City", "Lapu-Lapu"]
 // Simulate backend data
 const loadProperties = () => {
   properties.value = [
-    { id: 1, location: 'Cebu City', description: 'Concise house description', price: 123456, status: 'active' },
-    { id: 2, location: 'Cebu City', description: 'Ooga booga description', price: 123456, status: 'active' },
-    { id: 3, location: 'Cebu City', description: 'Concise house description', price: 123456, status: 'active' },
-    { id: 4, location: 'Lapu-Lapu City', description: 'Concise house description', price: 123456, status: 'active' },
-    { id: 5, location: 'Lapu-Lapu City', description: 'Concise house description', price: 123456, status: 'active' },
+  /* 
+    listing_id: number;
+    agent_id: number;
+    property_type: string;
+    price: number;
+    commission: number;
+    location: string;
+    description: string;
+    created_at: Date;
+    is_active: boolean;
+  */  
+    { listing_id: 1, agent_id: 1, property_type: 'House And Lot', price: 10000, commission: 2000, location: 'Cebu City', description: 'Concise house description', created_at: new Date('2016-11-10T11:49:36'), is_active: true },
+    { listing_id: 2, agent_id: 1, property_type: 'Condominion', price: 100000, commission: 2000, location: 'Cebu City', description: 'This is a really cool house', created_at: new Date('2016-11-10T11:49:36'), is_active: true },
+    { listing_id: 3, agent_id: 2, property_type: 'Shawrty', price: 123456, commission: 2000, location: 'Cebu City', description: 'sdakjsdajldsjajsdlajdlkajdlksajdlkajlkdsajlkdjalkdjalkdsj', created_at: new Date('2016-11-10T11:49:36'), is_active: true },
+    { listing_id: 4, agent_id: 2, property_type: 'Memorial', price: 67697697, commission: 2000, location: 'Lapu-Lapu City', description: 'Concise house description', created_at: new Date('2016-11-10T11:49:36'), is_active: true },
+    { listing_id: 5, agent_id: 3, property_type: 'Lot', price: 10, commission: 2000, location: 'Lapu-Lapu City', description: 'I really like this house aw yeah', created_at: new Date('2016-11-10T11:49:36'), is_active: true },
   ]
 }
-
-// Group properties by city for display
-const groupedProperties = computed(() => {
-  const groups: Record<string, Property[]> = {}
-  properties.value.forEach((prop) => {
-    const list = groups[prop.location] || (groups[prop.location] = [])
-    list.push(prop)
-  })
-  return groups
-})
 
 onMounted(() => loadProperties())
 </script>

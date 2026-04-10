@@ -7,7 +7,7 @@ export interface Property {
     commission: number;
     location: string;
     description: string;
-    created_at: string;
+    created_at: Date;
     is_active: boolean;
 }
 
