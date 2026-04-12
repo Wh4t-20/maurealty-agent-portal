@@ -37,7 +37,6 @@
               <input type="number" placeholder="₱ Min" class="text-sm w-30 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
               <span class="w-8 border-2 border-[#d7dde3] self-center -mx-4 -z-1"></span>
               <input type="number" placeholder="₱ Max" class="text-sm w-30 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
-            
             </div>
           </section>
        </div>
@@ -51,7 +50,7 @@
       <!-- Listings-->
       <section class="h-full overflow-y-auto">
         <div class="p-10">
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <PropertyCard 
               v-for="property in properties" 
               :key="property.listing_id" 
