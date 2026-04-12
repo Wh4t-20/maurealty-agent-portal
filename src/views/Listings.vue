@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full bg-[#ECF1F5]">
-    <header class="flex flex-col py-5 px-10 w-full bg-white text-maurealty-blue shadow-md sticky top-0 z-10">
+  <div class="w-full h-screen bg-[#ECF1F5] flex flex-col overflow-hidden">
+    <header class="flex flex-col py-5 px-10 w-full bg-white text-maurealty-blue shadow-md sticky top-0 z-20">
       <!-- Header and search -->
       <div class="flex justify-between items-center w-full pb-3">
         <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
@@ -43,17 +43,27 @@
        </div>
     </header>
 
-    <!-- Listings-->
-    <section class="p-10">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <PropertyCard 
-          v-for="property in properties" 
-          :key="property.listing_id" 
-          :details="property" 
-          class="flex flex-col items-center"
-        />
+    
+
+    <main class="relative overflow-hidden">
+      <PropertyDetails v-if="false"/>
+
+      <!-- Listings-->
+      <section class="h-full overflow-y-auto">
+        <div class="p-10">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <PropertyCard 
+              v-for="property in properties" 
+              :key="property.listing_id" 
+              :details="property" 
+              class="flex flex-col items-center"
+            />
+          </div>
       </div>
-    </section>
+      </section>
+      
+    </main>
+    
   </div>
 </template>
 
@@ -64,6 +74,9 @@ import { ref, computed, onMounted } from 'vue'
 import { type Property }  from '@/assets/classes/listings'
 import PropertyCard from '@/components/PropertyCard.vue'
 import ListingsFilter from '@/components/ListingsFilter.vue'
+
+// remember to delete:
+import PropertyDetails from '@/components/PropertyDetails.vue'
 
 const properties = ref<Property[]>([])
 
