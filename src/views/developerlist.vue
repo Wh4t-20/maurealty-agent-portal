@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen w-full bg-[#F3F3F3] pt-8 px-4 flex flex-col items-center">
+  <div class="min-h-screen w-full bg-background-gray pt-8 px-4 flex flex-col items-center">
 
     <!--Header I think mas better if ma component ni sya-->
     <div class="pl-9 flex items-center w-full max-w-[1057px] h-[120px] bg-gradient-to-r from-[#A9D6FF70] to-[#FFFFFF] shadow-[0_10px_15px_rgba(0,0,0,0.3)] rounded-[10px]">
