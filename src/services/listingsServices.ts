@@ -1,60 +1,92 @@
-import { supabase } from '../supabaseClient'
+import { supabase } from '../supabaseClient';
+import { type Property } from '../assets/classes/listings';
 
 export const listingsService = {
-  // READ: Fetch all active listings
-  async getListings() {
+  // Fetch all active listings
+  async getListings(): Promise<Property[]> {
     const { data, error } = await supabase
       .from('main_listings')
-      .select('*')
-      .eq('is_active', true)
-      
-    if (error) throw error
-    return data
+      .select(`
+        listing_ID,
+        price,
+        commission,
+        location,
+        description,
+        created_at,
+        is_active,
+        agents (first_name, last_name),
+        property_type (property_type),
+        developers (name)
+      `)
+      .eq('is_active', true);
+
+    if (error) {
+      console.error('Error fetching listings:', error);
+      throw error;
+    }
+
+    return (data || []).map((item: any) => this.mapToProperty(item));
   },
 
-  // READ: Fetch a single listing by ID
+  // Map database payload to Property interface
+  mapToProperty(item: any): Property {
+    return {
+      listing_id: item.listing_ID,
+      agent_name: `${item.agents?.first_name || ''} ${item.agents?.last_name || ''}`.trim(),
+      property_type: item.property_type?.property_type || 'Unknown',
+      price: item.price,
+      commission: item.commission,
+      location: item.location,
+      description: item.description,
+      created_at: new Date(item.created_at),
+      is_active: item.is_active,
+      developer_name: item.developers?.name || 'None'
+    };
+  },
+
+  // Fetch a single listing by ID
   async getListingById(id: number) {
     const { data, error } = await supabase
       .from('main_listings')
       .select('*')
       .eq('listing_ID', id)
-      .single()
+      .single();
       
-    if (error) throw error
-    return data
+    if (error) throw error;
+    return data;
   },
 
-  // CREATE: Insert a new listing
+  // Insert a new listing
   async createListing(listingData: any) {
     const { data, error } = await supabase
       .from('main_listings')
       .insert([listingData])
-      .select()
+      .select();
       
-    if (error) throw error
-    return data
+    if (error) throw error;
+    return data;
   },
 
-  // UPDATE: Modify an existing listing
+  // Modify an existing listing
   async updateListing(id: number, updates: any) {
     const { data, error } = await supabase
       .from('main_listings')
       .update(updates)
       .eq('listing_ID', id)
-      .select()
+      .select();
       
-    if (error) throw error
-    return data
+    if (error) throw error;
+    return data;
   },
 
-  // DELETE: Remove a listing
+  // Remove a listing
   async deleteListing(id: number) {
     const { error } = await supabase
       .from('main_listings')
       .delete()
-      .eq('listing_ID', id)
+      .eq('listing_ID', id);
       
-    if (error) throw error
-    return true
+    if (error) throw error;
+    return true;
   }
-}
+};
