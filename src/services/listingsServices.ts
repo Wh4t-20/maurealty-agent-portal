@@ -16,7 +16,8 @@ export const listingsService = {
         is_active,
         agents (first_name, last_name),
         property_type (property_type),
-        developers (name)
+        developers (name),
+        listing_images (image_url, display_order)
       `)
       .eq('is_active', true);
 
@@ -30,6 +31,10 @@ export const listingsService = {
 
   // Map database payload to Property interface
   mapToProperty(item: any): Property {
+    // Sort images to find the lowest display_order for the thumbnail
+    const sortedImages = item.listing_images?.sort((a: any, b: any) => a.display_order - b.display_order) || [];
+    const thumbnailUrl = sortedImages.length > 0 ? sortedImages[0].image_url : undefined;
+
     return {
       listing_id: item.listing_ID,
       agent_name: `${item.agents?.first_name || ''} ${item.agents?.last_name || ''}`.trim(),
@@ -40,7 +45,8 @@ export const listingsService = {
       description: item.description,
       created_at: new Date(item.created_at),
       is_active: item.is_active,
-      developer_name: item.developers?.name || 'None'
+      developer_name: item.developers?.name || 'None',
+      image_url: thumbnailUrl // Attach the thumbnail
     };
   },
 
@@ -48,7 +54,10 @@ export const listingsService = {
   async getListingById(id: number) {
     const { data, error } = await supabase
       .from('main_listings')
-      .select('*')
+      .select(`
+        *,
+        listing_images (image_url, display_order)
+      `)
       .eq('listing_ID', id)
       .single();
       
