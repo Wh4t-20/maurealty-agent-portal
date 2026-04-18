@@ -42,9 +42,8 @@
        </div>
     </header>
 
-    
-
     <main class="relative overflow-hidden">
+      <!-- remember to delete: -->
       <PropertyDetails v-if="false" />
 
       <!-- Listings-->
@@ -67,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 
 // Property instance
 import { type Property }  from '@/assets/classes/listings'
@@ -77,35 +76,29 @@ import ListingsFilter from '@/components/ListingsFilter.vue'
 // remember to delete:
 import PropertyDetails from '@/components/PropertyDetails.vue'
 
+// Supabase service import
+import { listingsService } from '@/services/listingsServices'
+
 const properties = ref<Property[]>([])
 
 const Type: string[] = ["None", "House And Lot", "Lot Only", "Condominium", "Memorial", "Clubshare", "Golfshare"]
 const Cities: string[] = ["None", "Cebu City", "Lapu-Lapu"]
 
-// Simulate backend data
-const loadProperties = () => {
-  properties.value = [
-  /* 
-    listing_id: number;
-    agent_name: string;
-    property_type: string;
-    price: number;
-    commission: number;
-    location: string;
-    description: string;
-    created_at: Date;
-    is_active: boolean;
-    developer_name: string;
-  */  
-    { listing_id: 1, agent_name: 'Carl Santillan', property_type: 'House And Lot', price: 10000, commission: 2000, location: 'Cebu City', description: 'Concise house description', created_at: new Date('2016-11-10T11:49:36'), is_active: true, developer_name: 'Ayala' },
-    { listing_id: 2, agent_name: 'Russell Beduya', property_type: 'Condominion', price: 100000, commission: 2000, location: 'Cebu City', description: 'This is a really cool house', created_at: new Date('2016-11-10T11:49:36'), is_active: true, developer_name: 'Ayala' },
-    { listing_id: 3, agent_name: 'Russell Beduya', property_type: 'Shawrty', price: 123456, commission: 2000, location: 'Cebu City', description: 'sdakjsdajldsjajsdlajdlkajdlksajdlkajlkdsajlkdjalkdjalkdsj', created_at: new Date('2016-11-10T11:49:36'), is_active: true, developer_name: 'Manlangit Houses' },
-    { listing_id: 4, agent_name: 'Dexter Rico', property_type: 'Memorial', price: 67697697, commission: 2000, location: 'Lapu-Lapu City', description: 'Concise house description', created_at: new Date('2016-11-10T11:49:36'), is_active: true, developer_name: 'Ayala' },
-    { listing_id: 5, agent_name: 'Carl Santillan', property_type: 'Lot', price: 10, commission: 2000, location: 'Lapu-Lapu City', description: 'I really like this house aw yeah', created_at: new Date('2016-11-10T11:49:36'), is_active: true, developer_name: 'Ayala' },
-  ]
+// Connect to backend and fetch properties
+const loadProperties = async () => {
+  console.log('1. Attempting to fetch listings...');
+  try {
+    const data = await listingsService.getListings();
+    console.log('2. Successfully fetched data:', data);
+    properties.value = data;
+  } catch (error) {
+    console.error('2. Fetch failed:', error);
+  }
 }
 
-onMounted(() => loadProperties())
+onMounted(() => {
+  loadProperties();
+})
 </script>
 
 <style scoped>

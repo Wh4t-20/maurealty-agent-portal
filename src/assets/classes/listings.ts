@@ -10,6 +10,7 @@ export interface Property {
     created_at: Date;
     is_active: boolean;
     developer_name: string;
+    image_url?: string;
 }
 
 // lot only interface

@@ -21,16 +21,14 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue' // Don't forget to import this
 import { type Property }  from '@/assets/classes/listings'
-import house1 from '@/assets/images/sample-house.jpg'
-import house2 from '@/assets/images/house2.webp'
+import house1 from '@/assets/images/sample-house.jpg' // Kept as a fallback image
 
 const props = defineProps<{ details: Property }>()
 
-import { computed } from 'vue' // Don't forget to import this
-
-// This will automatically update whenever props.details.price changes
+// Returns the database image URL if it exists, otherwise uses the local fallback
 const houseimg = computed(() => {
-  return props.details.price > 100000 ? house1 : house2
+  return props.details.image_url ? props.details.image_url : house1
 })
 </script>
