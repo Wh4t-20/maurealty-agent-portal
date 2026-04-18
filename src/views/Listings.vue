@@ -45,7 +45,7 @@
     
 
     <main class="relative overflow-hidden">
-      <PropertyDetails v-if="false"/>
+      <PropertyDetails v-if="true" />
 
       <!-- Listings-->
       <section class="h-full overflow-y-auto">
@@ -95,12 +95,13 @@ const loadProperties = () => {
     description: string;
     created_at: Date;
     is_active: boolean;
+    developer_name: string;
   */  
-    { listing_id: 1, agent_id: 1, property_type: 'House And Lot', price: 10000, commission: 2000, location: 'Cebu City', description: 'Concise house description', created_at: new Date('2016-11-10T11:49:36'), is_active: true },
-    { listing_id: 2, agent_id: 1, property_type: 'Condominion', price: 100000, commission: 2000, location: 'Cebu City', description: 'This is a really cool house', created_at: new Date('2016-11-10T11:49:36'), is_active: true },
-    { listing_id: 3, agent_id: 2, property_type: 'Shawrty', price: 123456, commission: 2000, location: 'Cebu City', description: 'sdakjsdajldsjajsdlajdlkajdlksajdlkajlkdsajlkdjalkdjalkdsj', created_at: new Date('2016-11-10T11:49:36'), is_active: true },
-    { listing_id: 4, agent_id: 2, property_type: 'Memorial', price: 67697697, commission: 2000, location: 'Lapu-Lapu City', description: 'Concise house description', created_at: new Date('2016-11-10T11:49:36'), is_active: true },
-    { listing_id: 5, agent_id: 3, property_type: 'Lot', price: 10, commission: 2000, location: 'Lapu-Lapu City', description: 'I really like this house aw yeah', created_at: new Date('2016-11-10T11:49:36'), is_active: true },
+    { listing_id: 1, agent_id: 1, property_type: 'House And Lot', price: 10000, commission: 2000, location: 'Cebu City', description: 'Concise house description', created_at: new Date('2016-11-10T11:49:36'), is_active: true, developer_name: 'Ayala' },
+    { listing_id: 2, agent_id: 1, property_type: 'Condominion', price: 100000, commission: 2000, location: 'Cebu City', description: 'This is a really cool house', created_at: new Date('2016-11-10T11:49:36'), is_active: true, developer_name: 'Ayala' },
+    { listing_id: 3, agent_id: 2, property_type: 'Shawrty', price: 123456, commission: 2000, location: 'Cebu City', description: 'sdakjsdajldsjajsdlajdlkajdlksajdlkajlkdsajlkdjalkdjalkdsj', created_at: new Date('2016-11-10T11:49:36'), is_active: true, developer_name: 'Manlangit Houses' },
+    { listing_id: 4, agent_id: 2, property_type: 'Memorial', price: 67697697, commission: 2000, location: 'Lapu-Lapu City', description: 'Concise house description', created_at: new Date('2016-11-10T11:49:36'), is_active: true, developer_name: 'Ayala' },
+    { listing_id: 5, agent_id: 3, property_type: 'Lot', price: 10, commission: 2000, location: 'Lapu-Lapu City', description: 'I really like this house aw yeah', created_at: new Date('2016-11-10T11:49:36'), is_active: true, developer_name: 'Ayala' },
   ]
 }
 

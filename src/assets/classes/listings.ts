@@ -9,6 +9,7 @@ export interface Property {
     description: string;
     created_at: Date;
     is_active: boolean;
+    developer_name: string;
 }
 
 // lot only interface
