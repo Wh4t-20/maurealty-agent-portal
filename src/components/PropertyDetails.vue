@@ -1,13 +1,13 @@
 <template>
     <div v-if="details" class="absolute inset-0 z-10 flex items-center justify-center bg-black/10 backdrop-blur-sm">
-      <div class="bg-white w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 px-10 py-7">
-        <header class="relative flex items-center-safe mb-4">
-          <h1 class="text-3xl font-extrabold text-maurealty-blue">
+      <div class="custom-scrollbar bg-white w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 px-10 py-7 overflow-y-auto">
+        <header class="relative mb-4">
+          <h1 class="text-3xl max-w-19/20 font-extrabold text-maurealty-blue">
             {{ details.description }}
           </h1>
 
           <!-- Reminder: add functionality to close -->
-          <button class="absolute right-0">
+          <button class="absolute top-0 right-0">
             <img :src="exit_icon" class="fill-maurealty-blue" />
           </button>
         </header>
@@ -107,7 +107,7 @@ const loadProperties = () => {
     price: 150000, 
     commission: 5, 
     location: 'Cebu City', 
-    description: 'Modern House in the Heart of Cebu', 
+    description: 'Pre-selling Single Attached House and Lot in Talamban, Cebu / Metropolis Subdivision', 
     created_at: new Date('2005-09-18T11:49:36'), 
     is_active: true,
     developer_name: 'Ayala'
@@ -118,3 +118,24 @@ onMounted(() => {
   loadProperties()
 })
 </script>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background-color: transparent;
+  margin-block: 25px;
+}
+
+/* Style the draggable thumb */
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #1E3A8A; 
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #172b66; 
+}
+</style>
