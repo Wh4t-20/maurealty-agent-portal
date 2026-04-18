@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full h-screen bg-[#ECF1F5] flex flex-col overflow-hidden">
+  <div class="w-full h-screen bg-background-gray flex flex-col overflow-hidden">
     <header class="flex flex-col py-5 px-10 w-full bg-white text-maurealty-blue shadow-md sticky top-0 z-20">
       <!-- Header and search -->
       <div class="flex justify-between items-center w-full pb-3">
@@ -22,8 +22,8 @@
           </section>
           
           <section class="listings-filter-section">
-            <label for="amenities-input" class="text-base">Amenities</label>
-            <ListingsFilter :choices="Amenities" />
+            <label for="Type-input" class="text-base">Type</label>
+            <ListingsFilter :choices="Type" />
           </section>
           
           <section class="listings-filter-section">
@@ -81,7 +81,7 @@ import { listingsService } from '@/services/listingsServices'
 
 const properties = ref<Property[]>([])
 
-const Amenities: string[] = ["None", "Pool", "Garage"]
+const Type: string[] = ["None", "House And Lot", "Lot Only", "Condominium", "Memorial", "Clubshare", "Golfshare"]
 const Cities: string[] = ["None", "Cebu City", "Lapu-Lapu"]
 
 // Connect to backend and fetch properties

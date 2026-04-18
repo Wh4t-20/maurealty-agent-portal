@@ -3,8 +3,9 @@ import type { RouteRecordRaw } from 'vue-router'
 import DeveloperList from '@/views/developerlist.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import Listings from '@/views/Listings.vue'
+import PropertyManagement from '@/views/PropertyManagement.vue'
 import Accounting from '@/views/Accounting.vue'
-import GenealogyLandingpage from '@/views/src/views/Genealogy-landingpage.vue'
+import GenealogyLandingpage from '@/views/Genealogy-landingpage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -26,6 +27,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/listings',
     name: 'Listing',
     component: Listings
+  },
+  {
+    path: '/propertymanagement',
+    name: 'PropertyManagement',
+    component: PropertyManagement 
   },
   {
     path: '/accounting',

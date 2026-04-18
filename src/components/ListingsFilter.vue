@@ -3,7 +3,7 @@
     <Listbox v-model="currentChoice">
       <div class="relative w-fit -mb-1.25">
         <ListboxButton
-          class="text-sm w-fit min-w-25 py-0.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue"
+          class="text-sm w-fit min-w-25 py-0.5 px-5 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue"
         >
           <span class="block truncate">{{ currentChoice }}</span>
         </ListboxButton>

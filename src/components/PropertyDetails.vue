@@ -21,18 +21,18 @@
             <div class="relative flex gap-4 items-center">
               <div class="relative grow aspect-video rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
                 <img 
-                  :src="house1"
+                  :src="house2"
                   alt="Property Main View" 
                   class="absolute inset-0 w-full h-full object-contain"
                 />
               </div>
 
               <!-- Reminder: add functionality to move -->
-              <button class="absolute left-0 -ml-5 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60">
+              <button class="absolute left-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60">
                 &lt;
               </button>
 
-              <button class="absolute right-0 -mr-5 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60">
+              <button class="absolute right-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60">
                 &gt;
               </button>
             </div>
@@ -86,6 +86,8 @@ import { ref, computed, onMounted } from 'vue'
 import { type Property } from '@/assets/classes/listings'
 import house1 from '@/assets/images/sample-house.jpg'
 import house2 from '@/assets/images/house2.webp'
+
+import profile from '@/assets/images/profile.png'
 
 import exit_icon from '@/assets/images/exit-icon.svg'
 
