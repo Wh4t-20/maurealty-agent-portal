@@ -14,7 +14,7 @@ export interface Property {
 
 // lot only interface
 export interface Lot extends Property {
-    block_number: string;
+    block_number: number;
     lot_number: number;
     phase_number: number;
     area: number;

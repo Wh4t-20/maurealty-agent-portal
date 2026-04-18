@@ -79,7 +79,7 @@ import PropertyDetails from '@/components/PropertyDetails.vue'
 
 const properties = ref<Property[]>([])
 
-const Type: string[] = ["None", "House and Lot", "Lot", "Condominium", "Memorial"]
+const Type: string[] = ["None", "House And Lot", "Lot Only", "Condominium", "Memorial", "Clubshare", "Golfshare"]
 const Cities: string[] = ["None", "Cebu City", "Lapu-Lapu"]
 
 // Simulate backend data

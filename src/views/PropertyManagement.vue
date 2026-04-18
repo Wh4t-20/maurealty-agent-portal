@@ -158,6 +158,219 @@
                   </div>
                 </div>
               </template>
+
+
+              <template v-if="form.property_type === 'Lot Only'">
+                <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Block No.</label>
+                    <input type="number" v-model="form.block_number" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Lot No.</label>
+                    <input type="number" v-model="form.lot_number" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Phase No.</label>
+                    <input type="number" v-model="form.phase_number" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Area (sqm)</label>
+                    <input type="number" v-model="form.area" placeholder="sqm" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                  </div>
+                
+                  <div class="cols-2 md:col-span-4">
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Lot Class</label>
+                    
+                    <Listbox v-model="form.class">
+                      <div class="relative">
+
+                        <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
+                          <span class="block truncate text-gray-700">{{ form.class }}</span>
+                          <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                            <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                          </span>
+                        </ListboxButton>
+
+                        <transition
+                          leave-active-class="transition duration-100 ease-in"
+                          leave-from-class="opacity-100"
+                          leave-to-class="opacity-0"
+                        >
+                          <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
+                            <ListboxOption
+                              v-slot="{ active, selected }"
+                              v-for="lotclass in lotClasses"
+                              :key="lotclass"
+                              :value="lotclass"
+                              as="template"
+                            >
+                              <li
+                                :class="[
+                                  active ? 'bg-maurealty-blue/10 text-maurealty-blue' : 'text-gray-900',
+                                  'relative cursor-default select-none py-2 pl-4 pr-4 transition-colors',
+                                ]"
+                              >
+                                <span :class="[selected ? 'font-bold' : 'font-normal', 'block truncate']">
+                                  {{ lotclass }}
+                                </span>
+                              </li>
+                            </ListboxOption>
+                          </ListboxOptions>
+                        </transition>
+                        
+                      </div>
+                    </Listbox>
+
+                  </div>
+                
+                </div>
+              </template>
+
+
+              <template v-if="form.property_type === 'Condominium'">
+                <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Unit No.</label>
+                    <input type="number" v-model="form.unit_number" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Bedroom Count</label>
+                    <input type="number" v-model="form.bedroom_count" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Balcony Count</label>
+                    <input type="number" v-model="form.balcony_count" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Carpark Count</label>
+                    <input type="number" v-model="form.carpark_count" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                  </div>
+
+                  <div class="cols-2 md:col-span-4">
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Condominium Class</label>
+                    
+                    <Listbox v-model="form.class">
+                      <div class="relative">
+
+                        <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
+                          <span class="block truncate text-gray-700">{{ form.class }}</span>
+                          <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                            <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                              <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                          </span>
+                        </ListboxButton>
+
+                        <transition
+                          leave-active-class="transition duration-100 ease-in"
+                          leave-from-class="opacity-100"
+                          leave-to-class="opacity-0"
+                        >
+                          <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
+                            <ListboxOption
+                              v-slot="{ active, selected }"
+                              v-for="condoclass in condoClasses"
+                              :key="condoclass"
+                              :value="condoclass"
+                              as="template"
+                            >
+                              <li
+                                :class="[
+                                  active ? 'bg-maurealty-blue/10 text-maurealty-blue' : 'text-gray-900',
+                                  'relative cursor-default select-none py-2 pl-4 pr-4 transition-colors',
+                                ]"
+                              >
+                                <span :class="[selected ? 'font-bold' : 'font-normal', 'block truncate']">
+                                  {{ condoclass }}
+                                </span>
+                              </li>
+                            </ListboxOption>
+                          </ListboxOptions>
+                        </transition>
+                      
+                      </div>
+                    </Listbox>
+                  </div>
+
+                  <div class="cols-2 md:col-span-4 bg-white border border-gray-200 rounded-xl p-4 mt-2">
+                      <p class="text-xs font-bold text-maurealty-blue mb-3 uppercase opacity-70">Condominium Type</p>
+                      <div class="flex flex-wrap gap-x-6 gap-y-3">
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" v-model="form.is_studio_type" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Studio</span>
+                        </label>
+                        
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" v-model="form.is_BR_unit" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">BR Unit</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" v-model="form.is_villa" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Villa</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" v-model="form.is_garden_villa" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Garden Villa</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" v-model="form.is_penthouse" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Penthouse</span>
+                        </label>
+                      </div>
+                  </div>
+                </div>
+              </template>
+
+
+              <template v-if="form.property_type === 'Memorial'">
+                <div class="col-span-2 border-t border-maurealty-blue/10 pt-4 mt-2">
+                  <div class="cols-6 bg-white border border-gray-200 rounded-xl p-4 mt-2">
+                      <p class="text-xs font-bold text-maurealty-blue mb-3 uppercase opacity-70">Memorial Type</p>
+
+                      is_urn: boolean;
+    is_vault: boolean;
+    is_garden: boolean;
+    is_estate: boolean;
+    is_family_estate: boolean;
+    is_pet_memorial: boolean;
+                      <div class="flex flex-wrap gap-x-6 gap-y-3">
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" v-model="form.is_urn" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Urn</span>
+                        </label>
+                        
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" v-model="form.is_vault" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Vault</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" v-model="form.is_villa" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Villa</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" v-model="form.is_garden_villa" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Garden Villa</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" v-model="form.is_penthouse" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Penthouse</span>
+                        </label>
+                      </div>
+                  </div>
+                </div>
+
+                
+              </template>
+
             </div>
           </div>
           
@@ -178,19 +391,29 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
-import type { Property } from '@/assets/classes/listings';
+import type { HouseAndLot } from '@/assets/classes/listings';
 
-const form = ref<Partial<Property>>({
+const form = ref<Partial<HouseAndLot>>({
   property_type: 'House And Lot',
   price: 0,
   commission: 0,
   location: '',
   description: '',
+  // Modified: Using a single source of truth for the storey type
+  one_storey: true, 
+  two_storey: false,
+  with_loft: false,
+  townhome: false,
+  rowhouse: false,
+  // ... other fields (lot_area, floor_area, etc.)
   is_active: true
 });
 
-const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial']
-let currentType = ref(types[0])
+const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial', 'Clubshare', 'Golfshare']
+
+const lotClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Farm Lot']
+const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare']
+const condoTypes: string[] = ['Studio', 'BR Unit', 'Villa', 'Garden Villa', 'Penthouse']
 
 const saveProperty = () => {
   console.log("Saving property data:", form.value);
