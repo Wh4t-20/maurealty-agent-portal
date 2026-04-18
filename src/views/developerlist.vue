@@ -3,7 +3,6 @@
 
     <!--Header I think mas better if ma component ni sya-->
     <div class="pl-9 flex items-center w-full max-w-[1057px] h-[120px] bg-gradient-to-r from-[#A9D6FF70] to-[#FFFFFF] shadow-[0_10px_15px_rgba(0,0,0,0.3)] rounded-[10px]">
-
   
       <h1 class="text-[clamp(1rem,2vw,2rem)] font-extrabold text-[#07407B]">
         DEVELOPERS

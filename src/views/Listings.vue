@@ -22,8 +22,8 @@
           </section>
           
           <section class="listings-filter-section">
-            <label for="amenities-input" class="text-base">Amenities</label>
-            <ListingsFilter :choices="Amenities" />
+            <label for="Type-input" class="text-base">Type</label>
+            <ListingsFilter :choices="Type" />
           </section>
           
           <section class="listings-filter-section">
@@ -45,7 +45,7 @@
     
 
     <main class="relative overflow-hidden">
-      <PropertyDetails v-if="true" />
+      <PropertyDetails v-if="false" />
 
       <!-- Listings-->
       <section class="h-full overflow-y-auto">
@@ -79,7 +79,7 @@ import PropertyDetails from '@/components/PropertyDetails.vue'
 
 const properties = ref<Property[]>([])
 
-const Amenities: string[] = ["None", "Pool", "Garage"]
+const Type: string[] = ["None", "House and Lot", "Lot", "Condominium", "Memorial"]
 const Cities: string[] = ["None", "Cebu City", "Lapu-Lapu"]
 
 // Simulate backend data
@@ -87,7 +87,7 @@ const loadProperties = () => {
   properties.value = [
   /* 
     listing_id: number;
-    agent_id: number;
+    agent_name: string;
     property_type: string;
     price: number;
     commission: number;
