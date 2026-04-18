@@ -1,7 +1,7 @@
 // main property interface
 export interface Property {
     listing_id: number;
-    agent_id: number;
+    agent_name: string;
     property_type: string;
     price: number;
     commission: number;
