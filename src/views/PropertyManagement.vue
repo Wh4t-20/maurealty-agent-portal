@@ -36,16 +36,16 @@
     
               <div class="col-span-1">
                 <label class="block text-sm font-bold text-maurealty-blue mb-1">Price (₱)</label>
-                <input type="number" v-model="form.price" class="w-full border border-gray-300 rounded-lg p-3">
+                <input type="number" v-model="form.price" class="w-full border border-gray-300 bg-white rounded-lg p-3">
               </div>
               <div class="col-span-1">
                 <label class="block text-sm font-bold text-maurealty-blue mb-1">Commission (%)</label>
-                <input type="number" v-model="form.commission" class="w-full border border-gray-300 rounded-lg p-3">
+                <input type="number" v-model="form.commission" class="w-full border border-gray-300 bg-white rounded-lg p-3">
               </div>
 
               <div class="col-span-2">
                 <label class="block text-sm font-bold text-maurealty-blue mb-1">Location</label>
-                <input type="text" v-model="form.location" placeholder="Street, City, Province" class="w-full border border-gray-300 rounded-lg p-3">
+                <input type="text" v-model="form.location" placeholder="Street, City, Province" class="w-full border border-gray-300 bg-white rounded-lg p-3">
               </div>
 
               <!-- Dropdown -->
@@ -55,7 +55,7 @@
                 <Listbox v-model="form.property_type">
                   <div class="relative">
 
-                    <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
+                    <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 bg-white p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
                       <span class="block truncate text-gray-700">{{ form.property_type }}</span>
                       <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                         <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -100,31 +100,31 @@
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Lot Area</label>
-                    <input type="number" v-model="form.lot_area" placeholder="sqm" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.lot_area" placeholder="sqm" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Floor Area</label>
-                    <input type="number" v-model="form.floor_area" placeholder="sqm" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.floor_area" placeholder="sqm" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Rooms</label>
-                    <input type="number" v-model="form.room_count" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Toilets</label>
-                    <input type="number" v-model="form.toilet_count" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.toilet_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Helper Rms</label>
-                    <input type="number" v-model="form.helper_room_count" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.helper_room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Driver Rms</label>
-                    <input type="number" v-model="form.driver_room_count" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.driver_room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div class="col-span-2">
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Carpark Spaces</label>
-                    <input type="number" v-model="form.carpark_count" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.carpark_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                 </div>
 
@@ -164,19 +164,19 @@
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Block No.</label>
-                    <input type="number" v-model="form.block_number" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.block_number" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Lot No.</label>
-                    <input type="number" v-model="form.lot_number" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.lot_number" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Phase No.</label>
-                    <input type="number" v-model="form.phase_number" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.phase_number" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Area (sqm)</label>
-                    <input type="number" v-model="form.area" placeholder="sqm" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Area</label>
+                    <input type="number" v-model="form.area" placeholder="sqm" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                 
                   <div class="cols-2 md:col-span-4">
@@ -185,7 +185,7 @@
                     <Listbox v-model="form.class">
                       <div class="relative">
 
-                        <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
+                        <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 bg-white p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
                           <span class="block truncate text-gray-700">{{ form.class }}</span>
                           <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                             <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -234,19 +234,19 @@
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Unit No.</label>
-                    <input type="number" v-model="form.unit_number" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.unit_number" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Bedroom Count</label>
-                    <input type="number" v-model="form.bedroom_count" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.bedroom_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Balcony Count</label>
-                    <input type="number" v-model="form.balcony_count" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.balcony_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Carpark Count</label>
-                    <input type="number" v-model="form.carpark_count" placeholder="#" class="w-full border border-gray-300 rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.carpark_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
 
                   <div class="cols-2 md:col-span-4">
@@ -255,7 +255,7 @@
                     <Listbox v-model="form.class">
                       <div class="relative">
 
-                        <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
+                        <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 bg-white p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
                           <span class="block truncate text-gray-700">{{ form.class }}</span>
                           <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                             <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -333,12 +333,6 @@
                   <div class="cols-6 bg-white border border-gray-200 rounded-xl p-4 mt-2">
                       <p class="text-xs font-bold text-maurealty-blue mb-3 uppercase opacity-70">Memorial Type</p>
 
-                      is_urn: boolean;
-    is_vault: boolean;
-    is_garden: boolean;
-    is_estate: boolean;
-    is_family_estate: boolean;
-    is_pet_memorial: boolean;
                       <div class="flex flex-wrap gap-x-6 gap-y-3">
                         <label class="flex items-center gap-2 cursor-pointer group">
                           <input type="radio" v-model="form.is_urn" class="w-4 h-4 accent-maurealty-blue rounded">
@@ -351,18 +345,23 @@
                         </label>
 
                         <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_villa" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Villa</span>
+                          <input type="radio" v-model="form.is_garden" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Garden</span>
                         </label>
 
                         <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_garden_villa" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Garden Villa</span>
+                          <input type="radio" v-model="form.is_estate" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Estate</span>
                         </label>
 
                         <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_penthouse" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Penthouse</span>
+                          <input type="radio" v-model="form.is_family_estate" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Family Estate</span>
+                        </label>
+
+                        <label class="flex items-center gap-2 cursor-pointer group">
+                          <input type="radio" v-model="form.is_pet_memorial" class="w-4 h-4 accent-maurealty-blue rounded">
+                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Pet Memorial</span>
                         </label>
                       </div>
                   </div>
