@@ -1,14 +1,15 @@
 // main property interface
 export interface Property {
     listing_id: number;
-    agent_id: number;
+    agent_name: string;
     property_type: string;
     price: number;
     commission: number;
     location: string;
     description: string;
-    created_at: string;
+    created_at: Date;
     is_active: boolean;
+    developer_name: string;
 }
 
 // lot only interface

@@ -5,7 +5,8 @@ body {
 }
   
 @theme {
-    --color-maurealty-blue: #044677
+    --color-maurealty-blue: #044677;
+    --color-maurealty-green: #33b058;
 }
 
 @utility sidebar-choice {
