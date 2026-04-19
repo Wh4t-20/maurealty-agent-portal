@@ -8,7 +8,7 @@
 
           <!-- Reminder: add functionality to close -->
           <button class="absolute top-0 right-0">
-            <img :src="exit_icon" class="fill-maurealty-blue" />
+            <XIcon class="size-7.5" stroke-width="3"/>
           </button>
         </header>
 
@@ -54,17 +54,17 @@
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
-              <img :src="property_type_icon" class="size-6" />
+              <Building2Icon class="size-6" color="#000000" />
               {{ details.property_type }}
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
-              <img :src="location_icon" class="size-6" />
+              <MapPinIcon class="size-6" color="#000000" />
               {{ details.location }}
             </span>
 
             <span class="flex items-center gap-1.5">
-              <img :src="agent_icon" class="size-6" />
+              <UserStarIcon class="size-6" color="#000000" />
               <p>{{ details.agent_name }}</p>
               <p class="italic text-gray-700">- {{ details.commission }}% Commision</p>
             </span>
@@ -87,13 +87,7 @@ import { type Property } from '@/assets/classes/listings'
 import house1 from '@/assets/images/sample-house.jpg'
 import house2 from '@/assets/images/house2.webp'
 
-import profile from '@/assets/images/profile.png'
-
-import exit_icon from '@/assets/images/exit-icon.svg'
-
-import property_type_icon from '@/assets/images/property-type-icon.svg'
-import location_icon from '@/assets/images/location-icon.svg'
-import agent_icon from '@/assets/images/agent-icon.svg'
+import { XIcon, Building2Icon, MapPinIcon, UserStarIcon } from "lucide-vue-next";
 
 // 2. State definition: Start as null to represent the "not loaded" state
 const details = ref<Property | null>(null)
