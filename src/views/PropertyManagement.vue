@@ -297,30 +297,24 @@
 
                   <div class="cols-2 md:col-span-4 bg-white border border-gray-200 rounded-xl p-4 mt-2">
                       <p class="text-xs font-bold text-maurealty-blue mb-3 uppercase opacity-70">Condominium Type</p>
+                      
                       <div class="flex flex-wrap gap-x-6 gap-y-3">
-                        <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_studio_type" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Studio</span>
-                        </label>
-                        
-                        <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_BR_unit" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">BR Unit</span>
-                        </label>
-
-                        <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_villa" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Villa</span>
-                        </label>
-
-                        <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_garden_villa" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Garden Villa</span>
-                        </label>
-
-                        <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_penthouse" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Penthouse</span>
+                        <label v-for="cType in ([
+                          { label: 'Studio', field: 'is_studio_type' },
+                          { label: 'BR Unit', field: 'is_BR_unit' },
+                          { label: 'Villa', field: 'is_villa' },
+                          { label: 'Garden Villa', field: 'is_garden_villa' },
+                          { label: 'Penthouse', field: 'is_penthouse' }
+                        ] as const)" 
+                          :key="cType.field" 
+                          class="flex items-center gap-2 cursor-pointer group">
+                          <input 
+                            type="radio" 
+                            :checked="!!form[cType.field as keyof PropertyForm]" 
+                            @change="setExclusively(['is_studio_type', 'is_BR_unit', 'is_villa', 'is_garden_villa', 'is_penthouse'], cType.field as keyof PropertyForm)"
+                            class="w-4 h-4 accent-maurealty-blue"
+                          >
+                          <span class="text-sm text-gray-700">{{ cType.label }}</span>
                         </label>
                       </div>
                   </div>
@@ -334,36 +328,25 @@
                       <p class="text-xs font-bold text-maurealty-blue mb-3 uppercase opacity-70">Memorial Type</p>
 
                       <div class="flex flex-wrap gap-x-6 gap-y-3">
-                        <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_urn" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Urn</span>
+                        <label v-for="mType in ([
+                          { label: 'Urn', field: 'is_urn' },
+                          { label: 'Vault', field: 'is_vault' },
+                          { label: 'Garden', field: 'is_garden' },
+                          { label: 'Estate', field: 'is_estate' },
+                          { label: 'Family Estate', field: 'is_family_estate' },
+                          { label: 'Pet Memorial', field: 'is_pet_memorial' }
+                        ] as const)" 
+                          :key="mType.field" 
+                          class="flex items-center gap-2 cursor-pointer group">
+                          <input 
+                            type="radio" 
+                            :checked="!!form[mType.field as keyof PropertyForm]" 
+                            @change="setExclusively(['is_urn', 'is_vault', 'is_garden', 'is_estate', 'is_family_estate', 'is_pet_memorial'], mType.field as keyof PropertyForm)"
+                            class="w-4 h-4 accent-maurealty-blue"
+                          >
+                          <span class="text-sm text-gray-700">{{ mType.label }}</span>
                         </label>
-                        
-                        <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_vault" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Vault</span>
-                        </label>
-
-                        <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_garden" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Garden</span>
-                        </label>
-
-                        <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_estate" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Estate</span>
-                        </label>
-
-                        <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_family_estate" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Family Estate</span>
-                        </label>
-
-                        <label class="flex items-center gap-2 cursor-pointer group">
-                          <input type="radio" v-model="form.is_pet_memorial" class="w-4 h-4 accent-maurealty-blue rounded">
-                          <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Pet Memorial</span>
-                        </label>
-                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -388,31 +371,77 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
-import type { HouseAndLot } from '@/assets/classes/listings';
+import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
 
-const form = ref<Partial<HouseAndLot>>({
+// Combine all interfaces for the form state
+type PropertyForm = HouseAndLot & Lot & Condominium & Memorial;
+
+const form = ref<Partial<PropertyForm>>({
+  // Base Property Fields
   property_type: 'House And Lot',
   price: 0,
   commission: 0,
   location: '',
   description: '',
-  // Modified: Using a single source of truth for the storey type
-  one_storey: true, 
+  is_active: true,
+
+  // House and Lot Defaults
+  one_storey: true,
   two_storey: false,
   with_loft: false,
   townhome: false,
   rowhouse: false,
-  // ... other fields (lot_area, floor_area, etc.)
-  is_active: true
+  lot_area: 0,
+  floor_area: 0,
+  room_count: 0,
+  toilet_count: 0,
+  helper_room_count: 0,
+  driver_room_count: 0,
+  carpark_count: 0,
+
+  // Lot Only Defaults
+  block_number: 0,
+  lot_number: 0,
+  phase_number: 0,
+  area: 0,
+  class: 'Residential',
+
+  // Condominium Defaults
+  unit_number: 0,
+  bedroom_count: 0,
+  balcony_count: 0,
+  is_studio_type: true,
+  is_BR_unit: false,
+  is_villa: false,
+  is_garden_villa: false,
+  is_penthouse: false,
+
+  // Memorial Defaults
+  is_urn: true,
+  is_vault: false,
+  is_garden: false,
+  is_estate: false,
+  is_family_estate: false,
+  is_pet_memorial: false
 });
+
+const setExclusively = (group: (keyof PropertyForm)[], selectedField: keyof PropertyForm) => {
+  group.forEach(field => {
+    (form.value as any)[field] = (field === selectedField);
+  });
+};
 
 const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial', 'Clubshare', 'Golfshare']
 
 const lotClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Farm Lot']
 const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare']
-const condoTypes: string[] = ['Studio', 'BR Unit', 'Villa', 'Garden Villa', 'Penthouse']
+
+watch(() => form.value.property_type, (newType) => {
+  console.log(`Switching layout to: ${newType}`);
+  // Optional: Reset form.value here to match the specific interface
+});
 
 const saveProperty = () => {
   console.log("Saving property data:", form.value);
