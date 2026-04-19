@@ -44,7 +44,7 @@
 
     <main class="relative overflow-hidden">
       <!-- remember to delete: -->
-      <PropertyDetails v-if="true" />
+      <PropertyDetails v-if="false" />
 
       <!-- Listings-->
       <section class="h-full overflow-y-auto">
