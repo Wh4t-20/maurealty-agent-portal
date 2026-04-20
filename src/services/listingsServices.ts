@@ -69,11 +69,11 @@ export const listingsService = {
   async createListing(mainListingData: any, specificPropertyData: any, propertyTypeId: number) {
     try {
       const { data: mainListing, error: mainError } = await supabase
-      .from('main_listings')
+        .from('main_listings')
         .insert([mainListingData])
         .select('listing_ID')
         .single();
-      
+        
       if (mainError) throw mainError;
 
       const newListingId = mainListing.listing_ID;
