@@ -15,7 +15,7 @@
           <div class="space-y-6">
             <div>
               <label class="block text-sm font-bold text-maurealty-blue mb-1">Title</label>
-              <input type="text" placeholder="e.g. Luxurious Home" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none">
+<input type="text" v-model="form.listing_title" placeholder="e.g. Luxurious Home" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none">
             </div>
 
             <div class="border-2 border-dashed border-maurealty-blue/20 rounded-2xl p-6 bg-gray-50">
