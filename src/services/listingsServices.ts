@@ -84,4 +84,25 @@ export const listingsService = {
         };
 
         let subTableError = null;
+
+        switch (propertyTypeId) {
+          case 1:
+            const { error: hlError } = await supabase.from('house_and_lot').insert([subTablePayload]);
+            subTableError = hlError;
+            break;
+          case 2:
+            const { error: loError } = await supabase.from('lot_only').insert([subTablePayload]);
+            subTableError = loError;
+            break;
+          case 3:
+            const { error: condoError } = await supabase.from('condominium').insert([subTablePayload]);
+            subTableError = condoError;
+            break;
+          case 4:
+            const { error: memError } = await supabase.from('memorial').insert([subTablePayload]);
+            subTableError = memError;
+            break;
+          default:
+            console.warn(`No sub-table insertion defined for property type ID: ${propertyTypeId}`);
+        }
 };
