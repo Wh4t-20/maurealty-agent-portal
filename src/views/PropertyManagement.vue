@@ -463,6 +463,59 @@ const saveProperty = async () => {
       is_active: form.value.is_active
     };
 
+    // 3. Prepare Specific Sub-table Data (Translating frontend variables to exact Supabase column names)
+    let specificData = {};
+
+    if (propertyTypeId === 1) { // House and Lot
+      specificData = {
+        "1_storey": form.value.one_storey, 
+        with_loft: form.value.with_loft,
+        "2_storey": form.value.two_storey, 
+        townhomes: form.value.townhome,
+        rowhouse: form.value.rowhouse,
+        lot_area: form.value.lot_area,
+        floor_area: form.value.floor_area,
+        rooms_count: form.value.room_count, 
+        toilets_count: form.value.toilet_count, 
+        helper_rooms_count: form.value.helper_room_count,
+        driver_rooms_count: form.value.driver_room_count,
+        carpark_count: form.value.carpark_count
+      };
+    } else if (propertyTypeId === 2) { // Lot Only
+      // Map class string to class ID
+      const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
+      specificData = {
+        block_number: String(form.value.block_number), 
+        lot_number: String(form.value.lot_number),
+        phase_number: String(form.value.phase_number),
+        lot_area: form.value.area, 
+        lot_class_ID: lotClassMap[form.value.class || 'Residential'] || 1
+      };
+    } else if (propertyTypeId === 3) { // Condominium
+      const condoClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Condotel': 4, 'Timeshare': 5 };
+      specificData = {
+        condo_class_ID: condoClassMap[form.value.class || 'Residential'] || 1,
+        unit_number: form.value.unit_number,
+        carpark_count: form.value.carpark_count,
+        is_studio_type: form.value.is_studio_type,
+        is_BR_unit: form.value.is_BR_unit,
+        is_villa: form.value.is_villa,
+        is_garden_villa: form.value.is_garden_villa,
+        is_penthouse: form.value.is_penthouse,
+        balcony_count: form.value.balcony_count,
+        bedroom_count: form.value.bedroom_count
+      };
+    } else if (propertyTypeId === 4) { // Memorial
+      specificData = {
+        is_urn: form.value.is_urn,
+        is_vault: form.value.is_vault,
+        is_garden: form.value.is_garden,
+        is_estate: form.value.is_estate,
+        is_family_estate: form.value.is_family_estate,
+        is_pet_memorial: form.value.is_pet_memorial
+      };
+    }
+
 };
 </script>
 
