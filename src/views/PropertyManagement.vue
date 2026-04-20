@@ -516,6 +516,19 @@ const saveProperty = async () => {
       };
     }
 
+    // 4. Send to Supabase via our Service
+    console.log("Sending payload to Supabase...");
+    const response = await listingsService.createListing(mainData, specificData, propertyTypeId);
+    
+    if (response.success) {
+      alert('Property listing created successfully! (Check Supabase Dashboard)');
+      // Optional: Reset form here
+    }
+
+  } catch (error) {
+    console.error('Failed to save property:', error);
+    alert('Error saving property. Check the console for details.');
+  }
 };
 </script>
 
