@@ -380,6 +380,7 @@ type PropertyForm = HouseAndLot & Lot & Condominium & Memorial;
 
 const form = ref<Partial<PropertyForm>>({
   // Base Property Fields
+  listing_title: '', // <-- Added this to track the title!
   property_type: 'House And Lot',
   price: 0,
   commission: 0,
