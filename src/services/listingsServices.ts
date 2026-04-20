@@ -75,5 +75,13 @@ export const listingsService = {
         .single();
       
       if (mainError) throw mainError;
-  }
+
+      const newListingId = mainListing.listing_ID;
+      if (specificPropertyData && Object.keys(specificPropertyData).length > 0) {
+        const subTablePayload = { 
+          listing_ID: newListingId, 
+          ...specificPropertyData 
+        };
+
+        let subTableError = null;
 };
