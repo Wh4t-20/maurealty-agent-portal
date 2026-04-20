@@ -15,7 +15,7 @@
           <div class="space-y-6">
             <div>
               <label class="block text-sm font-bold text-maurealty-blue mb-1">Title</label>
-              <input type="text" placeholder="e.g. Luxurious Home" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none">
+<input type="text" v-model="form.listing_title" placeholder="e.g. Luxurious Home" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none">
             </div>
 
             <div class="border-2 border-dashed border-maurealty-blue/20 rounded-2xl p-6 bg-gray-50">
@@ -374,12 +374,14 @@
 import { ref, watch } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
+import { listingsService } from '@/services/listingsServices'; 
 
 // Combine all interfaces for the form state
-type PropertyForm = HouseAndLot & Lot & Condominium & Memorial;
+type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & { listing_title?: string };
 
 const form = ref<Partial<PropertyForm>>({
   // Base Property Fields
+  listing_title: '', // <-- Added this to track the title!
   property_type: 'House And Lot',
   price: 0,
   commission: 0,
@@ -434,18 +436,99 @@ const setExclusively = (group: (keyof PropertyForm)[], selectedField: keyof Prop
 };
 
 const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial', 'Clubshare', 'Golfshare']
-
 const lotClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Farm Lot']
 const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare']
 
 watch(() => form.value.property_type, (newType) => {
   console.log(`Switching layout to: ${newType}`);
-  // Optional: Reset form.value here to match the specific interface
 });
 
-const saveProperty = () => {
-  console.log("Saving property data:", form.value);
-  // Implementation for API call
+const saveProperty = async () => {
+  try {
+    // 1. Map Property Type String to DB ID
+    const typeMap: Record<string, number> = {
+      'House And Lot': 1, 'Lot Only': 2, 'Condominium': 3, 'Memorial': 4
+    };
+    const propertyTypeId = typeMap[form.value.property_type || 'House And Lot'] || 1;
+
+    // 2. Prepare Main Listing Data (Maps to main_listings table)
+    const mainData = {
+      agent_ID: 1, // WARNING: Hardcoded for now. Update this once user login/auth is built!
+      listing_title: form.value.listing_title,
+      property_type_ID: propertyTypeId,
+      price: form.value.price,
+      commission: form.value.commission,
+      location: form.value.location,
+      description: form.value.description || 'No description provided.',
+      is_active: form.value.is_active
+    };
+
+    // 3. Prepare Specific Sub-table Data (Translating frontend variables to exact Supabase column names)
+    let specificData = {};
+
+    if (propertyTypeId === 1) { // House and Lot
+      specificData = {
+        "1_storey": form.value.one_storey, 
+        with_loft: form.value.with_loft,
+        "2_storey": form.value.two_storey, 
+        townhomes: form.value.townhome,
+        rowhouse: form.value.rowhouse,
+        lot_area: form.value.lot_area,
+        floor_area: form.value.floor_area,
+        rooms_count: form.value.room_count, 
+        toilets_count: form.value.toilet_count, 
+        helper_rooms_count: form.value.helper_room_count,
+        driver_rooms_count: form.value.driver_room_count,
+        carpark_count: form.value.carpark_count
+      };
+    } else if (propertyTypeId === 2) { // Lot Only
+      // Map class string to class ID
+      const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
+      specificData = {
+        block_number: String(form.value.block_number), 
+        lot_number: String(form.value.lot_number),
+        phase_number: String(form.value.phase_number),
+        lot_area: form.value.area, 
+        lot_class_ID: lotClassMap[form.value.class || 'Residential'] || 1
+      };
+    } else if (propertyTypeId === 3) { // Condominium
+      const condoClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Condotel': 4, 'Timeshare': 5 };
+      specificData = {
+        condo_class_ID: condoClassMap[form.value.class || 'Residential'] || 1,
+        unit_number: form.value.unit_number,
+        carpark_count: form.value.carpark_count,
+        is_studio_type: form.value.is_studio_type,
+        is_BR_unit: form.value.is_BR_unit,
+        is_villa: form.value.is_villa,
+        is_garden_villa: form.value.is_garden_villa,
+        is_penthouse: form.value.is_penthouse,
+        balcony_count: form.value.balcony_count,
+        bedroom_count: form.value.bedroom_count
+      };
+    } else if (propertyTypeId === 4) { // Memorial
+      specificData = {
+        is_urn: form.value.is_urn,
+        is_vault: form.value.is_vault,
+        is_garden: form.value.is_garden,
+        is_estate: form.value.is_estate,
+        is_family_estate: form.value.is_family_estate,
+        is_pet_memorial: form.value.is_pet_memorial
+      };
+    }
+
+    // 4. Send to Supabase via our Service
+    console.log("Sending payload to Supabase...");
+    const response = await listingsService.createListing(mainData, specificData, propertyTypeId);
+    
+    if (response.success) {
+      alert('Property listing created successfully! (Check Supabase Dashboard)');
+      // Optional: Reset form here
+    }
+
+  } catch (error) {
+    console.error('Failed to save property:', error);
+    alert('Error saving property. Check the console for details.');
+  }
 };
 </script>
 
@@ -478,6 +561,7 @@ input::-webkit-inner-spin-button {
 
 /* Firefox */
 input[type=number] {
+  appearance: textfield;
   -moz-appearance: textfield;
 }
 </style>

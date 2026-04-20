@@ -65,37 +65,59 @@ export const listingsService = {
     return data;
   },
 
-  // Insert a new listing
-  async createListing(listingData: any) {
-    const { data, error } = await supabase
-      .from('main_listings')
-      .insert([listingData])
-      .select();
-      
-    if (error) throw error;
-    return data;
+  // insert new listing
+  async createListing(mainListingData: any, specificPropertyData: any, propertyTypeId: number) {
+    try {
+      const { data: mainListing, error: mainError } = await supabase
+        .from('main_listings')
+        .insert([mainListingData])
+        .select('listing_ID')
+        .single();
+        
+      if (mainError) throw mainError;
+
+      const newListingId = mainListing.listing_ID;
+      if (specificPropertyData && Object.keys(specificPropertyData).length > 0) {
+        const subTablePayload = { 
+          listing_ID: newListingId, 
+          ...specificPropertyData 
+        };
+
+        let subTableError = null;
+
+        switch (propertyTypeId) {
+          case 1:
+            const { error: hlError } = await supabase.from('house_and_lot').insert([subTablePayload]);
+            subTableError = hlError;
+            break;
+          case 2:
+            const { error: loError } = await supabase.from('lot_only').insert([subTablePayload]);
+            subTableError = loError;
+            break;
+          case 3:
+            const { error: condoError } = await supabase.from('condominium').insert([subTablePayload]);
+            subTableError = condoError;
+            break;
+          case 4:
+            const { error: memError } = await supabase.from('memorial').insert([subTablePayload]);
+            subTableError = memError;
+            break;
+          default:
+            console.warn(`No sub-table insertion defined for property type ID: ${propertyTypeId}`);
+        }
+
+        if (subTableError) {
+          console.error(`Sub-table insert failed for type ${propertyTypeId}:`, subTableError);
+          await supabase.from('main_listings').delete().eq('listing_ID', newListingId);
+          throw subTableError;
+        }
+      }
+
+      return { success: true, data: mainListing };
+    } catch (error) {
+      console.error('Error creating full listing:', error);
+      throw error; 
+    }
   },
 
-  // Modify an existing listing
-  async updateListing(id: number, updates: any) {
-    const { data, error } = await supabase
-      .from('main_listings')
-      .update(updates)
-      .eq('listing_ID', id)
-      .select();
-      
-    if (error) throw error;
-    return data;
-  },
-
-  // Remove a listing
-  async deleteListing(id: number) {
-    const { error } = await supabase
-      .from('main_listings')
-      .delete()
-      .eq('listing_ID', id);
-      
-    if (error) throw error;
-    return true;
-  }
 };
