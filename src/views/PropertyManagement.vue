@@ -436,12 +436,12 @@ const setExclusively = (group: (keyof PropertyForm)[], selectedField: keyof Prop
 };
 
 const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial', 'Clubshare', 'Golfshare']
-
 const lotClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Farm Lot']
 const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare']
 
 watch(() => form.value.property_type, (newType) => {
   console.log(`Switching layout to: ${newType}`);
+});
 
 const saveProperty = async () => {
   try {
@@ -561,6 +561,7 @@ input::-webkit-inner-spin-button {
 
 /* Firefox */
 input[type=number] {
+  appearance: textfield;
   -moz-appearance: textfield;
 }
 </style>
