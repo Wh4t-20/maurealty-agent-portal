@@ -374,10 +374,10 @@
 import { ref, watch } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
-import { listingsService } from '@/services/listingsServices'; // <-- Import your new service!
+import { listingsService } from '@/services/listingsServices'; 
 
 // Combine all interfaces for the form state
-type PropertyForm = HouseAndLot & Lot & Condominium & Memorial;
+type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & { listing_title?: string };
 
 const form = ref<Partial<PropertyForm>>({
   // Base Property Fields
