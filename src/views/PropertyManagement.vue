@@ -442,12 +442,27 @@ const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Cond
 
 watch(() => form.value.property_type, (newType) => {
   console.log(`Switching layout to: ${newType}`);
-  // Optional: Reset form.value here to match the specific interface
-});
 
-const saveProperty = () => {
-  console.log("Saving property data:", form.value);
-  // Implementation for API call
+const saveProperty = async () => {
+  try {
+    // 1. Map Property Type String to DB ID
+    const typeMap: Record<string, number> = {
+      'House And Lot': 1, 'Lot Only': 2, 'Condominium': 3, 'Memorial': 4
+    };
+    const propertyTypeId = typeMap[form.value.property_type || 'House And Lot'] || 1;
+
+    // 2. Prepare Main Listing Data (Maps to main_listings table)
+    const mainData = {
+      agent_ID: 1, // WARNING: Hardcoded for now. Update this once user login/auth is built!
+      listing_title: form.value.listing_title,
+      property_type_ID: propertyTypeId,
+      price: form.value.price,
+      commission: form.value.commission,
+      location: form.value.location,
+      description: form.value.description || 'No description provided.',
+      is_active: form.value.is_active
+    };
+
 };
 </script>
 
