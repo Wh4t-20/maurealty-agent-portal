@@ -65,37 +65,15 @@ export const listingsService = {
     return data;
   },
 
-  // Insert a new listing
-  async createListing(listingData: any) {
-    const { data, error } = await supabase
+  // insert new listing
+  async createListing(mainListingData: any, specificPropertyData: any, propertyTypeId: number) {
+    try {
+      const { data: mainListing, error: mainError } = await supabase
       .from('main_listings')
-      .insert([listingData])
-      .select();
+        .insert([mainListingData])
+        .select('listing_ID')
+        .single();
       
-    if (error) throw error;
-    return data;
-  },
-
-  // Modify an existing listing
-  async updateListing(id: number, updates: any) {
-    const { data, error } = await supabase
-      .from('main_listings')
-      .update(updates)
-      .eq('listing_ID', id)
-      .select();
-      
-    if (error) throw error;
-    return data;
-  },
-
-  // Remove a listing
-  async deleteListing(id: number) {
-    const { error } = await supabase
-      .from('main_listings')
-      .delete()
-      .eq('listing_ID', id);
-      
-    if (error) throw error;
-    return true;
+      if (mainError) throw mainError;
   }
 };
