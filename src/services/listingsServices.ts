@@ -105,4 +105,19 @@ export const listingsService = {
           default:
             console.warn(`No sub-table insertion defined for property type ID: ${propertyTypeId}`);
         }
+
+        if (subTableError) {
+          console.error(`Sub-table insert failed for type ${propertyTypeId}:`, subTableError);
+          await supabase.from('main_listings').delete().eq('listing_ID', newListingId);
+          throw subTableError;
+        }
+      }
+
+      return { success: true, data: mainListing };
+    } catch (error) {
+      console.error('Error creating full listing:', error);
+      throw error; 
+    }
+  },
+
 };
