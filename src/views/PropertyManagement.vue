@@ -15,7 +15,7 @@
           <div class="space-y-6">
             <div>
               <label class="block text-sm font-bold text-maurealty-blue mb-1">Title</label>
-<input type="text" v-model="form.listing_title" placeholder="e.g. Luxurious Home" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none">
+              <input type="text" v-model="form.listing_title" placeholder="e.g. Luxurious Home" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none">
             </div>
 
             <div class="border-2 border-dashed border-maurealty-blue/20 rounded-2xl p-6 bg-gray-50">
@@ -28,6 +28,11 @@
                   <span class="text-xs font-bold">Add Photo</span>
                 </button>
               </div>
+            </div>
+
+            <div>
+              <label class="block text-sm font-bold text-maurealty-blue mb-1">Description</label>
+              <textarea type="text" v-model="form.description" placeholder="e.g. This house has amazing features!" class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"/>
             </div>
           </div>
 
@@ -395,25 +400,11 @@ const form = ref<Partial<PropertyForm>>({
   with_loft: false,
   townhome: false,
   rowhouse: false,
-  lot_area: 0,
-  floor_area: 0,
-  room_count: 0,
-  toilet_count: 0,
-  helper_room_count: 0,
-  driver_room_count: 0,
-  carpark_count: 0,
 
   // Lot Only Defaults
-  block_number: 0,
-  lot_number: 0,
-  phase_number: 0,
-  area: 0,
   class: 'Residential',
 
   // Condominium Defaults
-  unit_number: 0,
-  bedroom_count: 0,
-  balcony_count: 0,
   is_studio_type: true,
   is_BR_unit: false,
   is_villa: false,

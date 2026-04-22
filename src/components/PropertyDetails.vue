@@ -3,7 +3,7 @@
       <div class="custom-scrollbar bg-white w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 px-10 py-7 overflow-y-auto">
         <header class="relative mb-4">
           <h1 class="text-3xl max-w-19/20 font-extrabold text-maurealty-blue">
-            {{ details.description }}
+            {{ details.listing_title }}
           </h1>
 
           <!-- Reminder: add functionality to close -->
@@ -97,7 +97,8 @@ const thumbnails = ref([house1, house2]);
 const loadProperties = () => {
   // 4. Correct Assignment: Assign a single object, not an array
   details.value = { 
-    listing_id: 1, 
+    listing_id: 1,
+    listing_title: 'Pre-selling Single Attached House and Lot in Talamban, Cebu / Metropolis Subdivision', 
     agent_name: 'Carl Santillan', 
     property_type: 'House And Lot', 
     price: 150000, 

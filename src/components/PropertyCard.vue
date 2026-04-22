@@ -5,7 +5,7 @@
     />
 
     <div class="z-1 -mt-10 w-9/10 p-3 px-10 rounded-2xl bg-white border border-gray-300 shadow-md/30 ">
-      <p class="text-xl text-maurealty-blue font-semibold tracking-tight truncate">{{ details.description }}</p>
+      <p class="text-xl text-maurealty-blue font-semibold tracking-tight truncate">{{ details.listing_title }}</p>
 
       <span class="inline-block bg-maurealty-green text-lg text-white px-3 rounded-full tracking-wider mr-2 mt-0.5">
         ₱ {{ details.price.toLocaleString() }}

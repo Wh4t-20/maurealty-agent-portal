@@ -8,6 +8,7 @@ export const listingsService = {
       .from('main_listings')
       .select(`
         listing_ID,
+        listing_title,
         price,
         commission,
         location,
@@ -37,6 +38,7 @@ export const listingsService = {
 
     return {
       listing_id: item.listing_ID,
+      listing_title: item.listing_title,
       agent_name: `${item.agents?.first_name || ''} ${item.agents?.last_name || ''}`.trim(),
       property_type: item.property_type?.property_type || 'Unknown',
       price: item.price,
