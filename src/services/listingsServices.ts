@@ -1,6 +1,14 @@
 import { supabase } from '../supabaseClient';
 import { type Property } from '../assets/classes/listings';
 
+//added a subtable
+const SUB_TABLE_MAP: Record<number, string> = {
+  1: 'house_and_lot',
+  2: 'lot_only',
+  3: 'condominium',
+  4: 'memorial'
+};
+
 export const listingsService = {
   // Fetch all active listings
   async getListings(): Promise<Property[]> {
@@ -51,20 +59,26 @@ export const listingsService = {
   },
 
   // Fetch a single listing by ID
-  async getListingById(id: number) {
+  async getListingById(id: number, propertyTypeId: number) {
+    const subTable = SUB_TABLE_MAP[propertyTypeId];
+ 
+    const selectQuery = subTable
+      ? `*, listing_images (image_url, display_order), ${subTable} (*)`
+      : `*, listing_images (image_url, display_order)`;
+ 
     const { data, error } = await supabase
       .from('main_listings')
-      .select(`
-        *,
-        listing_images (image_url, display_order)
-      `)
+      .select(selectQuery)
       .eq('listing_ID', id)
       .single();
-      
-    if (error) throw error;
+ 
+    if (error) {
+      console.error('Error fetching listing by ID:', error);
+      throw error;
+    }
+ 
     return data;
   },
-
   // insert new listing
   async createListing(mainListingData: any, specificPropertyData: any, propertyTypeId: number) {
     try {
@@ -120,4 +134,48 @@ export const listingsService = {
     }
   },
 
+  async updateListing(listingId: number, mainListingData: any, specificPropertyData: any, propertyTypeId: number) {
+    try {
+      const { error: mainError } = await supabase
+        .from('main_listings')
+        .update(mainListingData)
+        .eq('listing_ID', listingId);
+ 
+      if (mainError) throw mainError;
+ 
+      if (specificPropertyData && Object.keys(specificPropertyData).length > 0) {
+        const subTable = SUB_TABLE_MAP[propertyTypeId];
+ 
+        if (subTable) {
+          const { error: subError } = await supabase
+            .from(subTable)
+            .update(specificPropertyData)
+            .eq('listing_ID', listingId);
+ 
+          if (subError) throw subError;
+        }
+      }
+ 
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating listing:', error);
+      throw error;
+    }
+  },
+
+  //soft delete only, can change to hard delete once masabotan
+  async deleteListing(listingId: number) {
+    try {
+      const { error } = await supabase
+        .from('main_listings')
+        .update({ is_active: false })
+        .eq('listing_ID', listingId);
+ 
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting listing:', error);
+      throw error;
+    }
+  },
 };
