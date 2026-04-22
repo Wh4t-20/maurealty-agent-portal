@@ -2,27 +2,27 @@
   <div class="min-h-screen w-full bg-background-gray pt-8 px-4 flex flex-col items-center">
 
     <!--Header I think mas better if ma component ni sya-->
-    <div class="pl-9 flex items-center w-full max-w-[1057px] h-[120px] bg-gradient-to-r from-[#A9D6FF70] to-[#FFFFFF] shadow-[0_10px_15px_rgba(0,0,0,0.3)] rounded-[10px]">
+    <header class="pl-9 flex items-center w-full max-w-264.25 h-30 bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] shadow-[0_10px_15px_rgba(0,0,0,0.3)] rounded-lg">
   
       <h1 class="text-[clamp(1rem,2vw,2rem)] font-extrabold text-[#07407B]">
         DEVELOPERS
       </h1>
 
       <!-- Search -->
-      <div class=" flex-1 ml-4 md:ml-[250px]  max-w-[350px]">
+      <div class=" flex-1 ml-4 md:ml-62.5  max-w-87.5">
         <input type="text"placeholder="Search Developer" class=" text-[clamp(0.5rem,2vw,1rem)] w-full rounded-[10px] border border-[#1C1E76] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
       </div>
 
       <!-- Button -->
       <div class="flex items-center gap-4 pr-9 ml-4 ">
-        <button class="max-h-[43px] max-w-[200px] bg-[#07407B] text-white  rounded-[10px] hover:bg-blue-700 flex items-center gap-2 px-[clamp(0.5rem,2vw,2.5rem)] py-[clamp(0.25rem,0.70vw,1rem)] text-[clamp(0.5rem,2vw,1rem)]">
+        <button class="max-h-10.75  bg-[#07407B] text-white  rounded-[10px] hover:bg-blue-700 flex items-center gap-2 px-[clamp(0.5rem,2vw,2.5rem)] py-[clamp(0.25rem,0.70vw,1rem)] text-[clamp(0.5rem,2vw,1rem)]">
           <span class="text-lg">+</span> Add Developer
         </button>
 
         <!--
         <img src="/src/assets/profile.png" class="w-[71px] h-[71px] rounded-full object-cover"/> -->
       </div>
-    </div>
+    </header>
         
 
     <!-- Developer Cards -->

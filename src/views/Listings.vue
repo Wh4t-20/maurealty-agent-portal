@@ -1,8 +1,8 @@
 <template>
-  <div class="w-full h-screen bg-background-gray flex flex-col overflow-hidden">
-    <header class="flex flex-col py-5 px-10 w-full bg-white text-maurealty-blue shadow-md sticky top-0 z-20">
+  <div class="w-full h-screen bg-background-gray flex flex-col items-center overflow-hidden">
+    <header class="flex flex-col py-5 px-10 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky z-20">
       <!-- Header and search -->
-      <div class="flex justify-between items-center w-full pb-3">
+      <div class="flex justify-between items-center w-full pb-3 mb-3">
         <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
         <input id="search" type="text" name="search" placeholder="Search"
           class="block min-w-0 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 rounded-sm focus:outline-none sm:text-sm/6" />
@@ -13,12 +13,12 @@
 
           <section class="listings-filter-section">
             <label for="bedroom-input" class="text-base">Bedrooms</label>
-            <input id="bedroom-input" type="number" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+            <input id="bedroom-input" type="number" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
           </section>
 
           <section class="listings-filter-section">
             <label for="bathroom-input" class="text-base">Bathrooms</label>
-            <input id="bathroom-input" type="number" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+            <input id="bathroom-input" type="number" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
           </section>
           
           <section class="listings-filter-section">
@@ -34,9 +34,9 @@
           <section class="listings-filter-section">
             <label for="price-range-input" class="text-base">Price Range</label>
             <div class="flex gap-4 items-center">
-              <input type="number" placeholder="₱ Min" class="text-sm w-30 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+              <input type="number" placeholder="₱ Min" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
               <span class="w-8 border-2 border-[#d7dde3] self-center -mx-4 -z-1"></span>
-              <input type="number" placeholder="₱ Max" class="text-sm w-30 py-0.5 pl-3.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+              <input type="number" placeholder="₱ Max" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
             </div>
           </section>
        </div>
@@ -44,10 +44,10 @@
 
     <main class="relative overflow-hidden">
       <!-- remember to delete: -->
-      <PropertyDetails v-if="true" />
+      <PropertyDetails v-if="false" />
 
       <!-- Listings-->
-      <section class="h-full overflow-y-auto">
+      <section class="custom-scrollbar h-full overflow-y-auto">
         <div class="p-10">
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <PropertyCard 
