@@ -1,6 +1,6 @@
 <template>
   <div class="w-full h-screen bg-background-gray flex flex-col items-center overflow-hidden">
-    <header class="flex flex-col mt-8 py-5 px-10 w-full max-w-435 rounded-lg bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue border-white/25 border shadow-md sticky z-20">
+    <header class="flex flex-col py-5 px-10 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky z-20">
       <!-- Header and search -->
       <div class="flex justify-between items-center w-full pb-3 mb-3">
         <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>

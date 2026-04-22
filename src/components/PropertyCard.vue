@@ -11,7 +11,7 @@
         ₱ {{ details.price.toLocaleString() }}
       </span>
       <span class="inline-block bg-[#336db0] text-white px-3 rounded-full tracking-wider mt-0.5">
-        {{ details.property_type  }}
+        {{ formattedPropertyType(details.property_type)  }}
       </span>
       
       <p class="text-sm text-gray-500 mt-2">Created at: {{ details.created_at.toLocaleDateString() }}</p>
@@ -26,6 +26,23 @@ import { type Property }  from '@/assets/classes/listings'
 import house1 from '@/assets/images/sample-house.jpg' // Kept as a fallback image
 
 const props = defineProps<{ details: Property }>()
+
+function formattedPropertyType (type: string) {
+  if (type === 'house_and_lot')
+    return 'House and Lot'
+  else if (type === 'lot_only')
+    return 'Lot Only'
+  else if (type === 'condominium')
+    return 'Condominium'
+  else if (type === 'memorial')
+    return 'Memorial'
+  else if (type === 'clubshare')
+    return 'Clubshare'
+  else if (type === 'golfshare')
+    return 'Golfshare'
+  else
+    return 'N/A'
+}
 
 // Returns the database image URL if it exists, otherwise uses the local fallback
 const houseimg = computed(() => {
