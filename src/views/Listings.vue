@@ -1,6 +1,6 @@
 <template>
   <div class="w-full h-screen bg-background-gray flex flex-col items-center overflow-hidden">
-    <header class="flex flex-col py-5 px-10 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky z-20">
+    <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky z-20">
       <!-- Header and search -->
       <div class="flex justify-between items-center w-full pb-3 mb-3">
         <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
@@ -9,37 +9,49 @@
       </div>
 
       <!-- Filter -->
-       <div class="flex items-center gap-10">
+      
+      <Transition name="expand">
+        <div v-if="isFilterVisible" class="flex items-center gap-10 pb-5">
 
-          <section class="listings-filter-section">
-            <label for="bedroom-input" class="text-base">Bedrooms</label>
-            <input id="bedroom-input" type="number" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
-          </section>
+            <section class="listings-filter-section">
+              <label for="bedroom-input" class="text-base">Bedrooms</label>
+              <input id="bedroom-input" type="number" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+            </section>
 
-          <section class="listings-filter-section">
-            <label for="bathroom-input" class="text-base">Bathrooms</label>
-            <input id="bathroom-input" type="number" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
-          </section>
-          
-          <section class="listings-filter-section">
-            <label for="Type-input" class="text-base">Type</label>
-            <ListingsFilter :choices="Type" />
-          </section>
-          
-          <section class="listings-filter-section">
-            <label for="city-input" class="text-base">City</label>
-            <ListingsFilter :choices="Cities" />
-          </section>
-          
-          <section class="listings-filter-section">
-            <label for="price-range-input" class="text-base">Price Range</label>
-            <div class="flex gap-4 items-center">
-              <input type="number" placeholder="₱ Min" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
-              <span class="w-8 border-2 border-[#d7dde3] self-center -mx-4 -z-1"></span>
-              <input type="number" placeholder="₱ Max" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
-            </div>
-          </section>
-       </div>
+            <section class="listings-filter-section">
+              <label for="bathroom-input" class="text-base">Bathrooms</label>
+              <input id="bathroom-input" type="number" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+            </section>
+            
+            <section class="listings-filter-section">
+              <label for="Type-input" class="text-base">Type</label>
+              <ListingsFilter :choices="Type" />
+            </section>
+            
+            <section class="listings-filter-section">
+              <label for="city-input" class="text-base">City</label>
+              <ListingsFilter :choices="Cities" />
+            </section>
+            
+            <section class="listings-filter-section">
+              <label for="price-range-input" class="text-base">Price Range</label>
+              <div class="flex gap-4 items-center">
+                <input type="number" placeholder="₱ Min" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+                <span class="w-8 border-2 border-[#d7dde3] self-center -mx-4 -z-1"></span>
+                <input type="number" placeholder="₱ Max" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+              </div>
+            </section>
+        </div>
+      </Transition>
+      
+      <!-- Button that collpases the Filterbar -->
+      <button 
+        @click="toggleFilter"
+        class="absolute -bottom-7.5 right-20 px-5 pb-1.5 pt-0 w-fit text-sm font-medium bg-white hover:bg-maurealty-blue hover:text-white rounded-b-full transition-colors"
+      >
+        <ChevronDown :class="{'rotate-180': isFilterVisible}" class="size-6 transition-transform duration-300" />
+      </button>
+      
     </header>
 
     <main class="relative overflow-hidden">
@@ -79,6 +91,8 @@ import PropertyDetails from '@/components/PropertyDetails.vue'
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
 
+import { ChevronDown } from 'lucide-vue-next'
+
 const properties = ref<Property[]>([])
 
 const Type: string[] = ["None", "House And Lot", "Lot Only", "Condominium", "Memorial", "Clubshare", "Golfshare"]
@@ -99,6 +113,13 @@ const loadProperties = async () => {
 onMounted(() => {
   loadProperties();
 })
+
+// for the collapisble filter bar
+const isFilterVisible = ref(true)
+
+const toggleFilter = () => {
+  isFilterVisible.value = !isFilterVisible.value
+}
 </script>
 
 <style scoped>
@@ -112,5 +133,19 @@ input::-webkit-inner-spin-button {
 /* Firefox */
 input[type=number] {
   -moz-appearance: textfield;
+}
+
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 100px; /* Adjust based on your filter height */
+  opacity: 1;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>
