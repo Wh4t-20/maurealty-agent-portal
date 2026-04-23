@@ -177,6 +177,11 @@
                 </main>
               </fieldset>
             </template>
+
+            <!-- Description -->
+            <section class="mt-2 text-base">
+              {{ details.description }}
+            </section>
           </div>
         </main>
       </div>
@@ -203,7 +208,7 @@ const loadProperties = () => {
     listing_id: 1,
     listing_title: 'Pre-selling Single Attached House and Lot in Talamban, Cebu / Metropolis Subdivision', 
     agent_name: 'Carl Santillan', 
-    property_type: 'memorial', 
+    property_type: 'house_and_lot', 
     price: 150000, 
     commission: 5, 
     location: 'Cebu City', 
