@@ -28,12 +28,12 @@
               </div>
 
               <!-- Reminder: add functionality to move -->
-              <button class="absolute left-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60">
-                &lt;
+              <button class="absolute left-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue">
+                <ChevronLeft stroke-width=2.75 />
               </button>
 
-              <button class="absolute right-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60">
-                &gt;
+              <button class="absolute right-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue">
+                <ChevronRight stroke-width=2.75 />
               </button>
             </div>
 
@@ -71,11 +71,14 @@
             
             <p class="text-sm text-gray-500">Created on: {{ details.created_at.toLocaleDateString() }}</p>
 
-            <span class="flex flex-col items-left mt-2">
-              <p class="font-semibold text-xl">Developed by:</p>
-              <p class="ml-4">{{ details.developer_name }}</p>
+            <span class="flex items-center-safe mt-2 text-xl">
+              <p class="font-semibold">Developed by:</p>
+              <p class="ml-2.5">{{ details.developer_name }}</p>
             </span>
           </div>
+
+          <!-- Property details -->
+            
         </main>
       </div>
   </div>
@@ -84,10 +87,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { type Property } from '@/assets/classes/listings'
+
 import house1 from '@/assets/images/sample-house.jpg'
 import house2 from '@/assets/images/house2.webp'
 
-import { XIcon, Building2Icon, MapPinIcon, UserStarIcon } from "lucide-vue-next";
+import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight } from "lucide-vue-next";
 
 // 2. State definition: Start as null to represent the "not loaded" state
 const details = ref<Property | null>(null)
