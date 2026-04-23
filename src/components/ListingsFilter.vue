@@ -1,11 +1,12 @@
 <template>
     <div>
     <Listbox v-model="currentChoice">
-      <div class="relative w-fit -mb-1.5">
+      <div class="relative w-fit">
         <ListboxButton
-          class="text-sm w-fit min-w-25 py-0.5 pr-1 rounded-xl bg-[#ECF1F5] shadow-md/30 focus:outline-2 focus:outline-maurealty-blue"
+          class="text-sm w-fit flex items-center-safe gap-4 min-w-25 py-0.5 pl-5 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue"
         >
           <span class="block truncate">{{ currentChoice }}</span>
+          <ChevronDown class="size-4" />
         </ListboxButton>
 
         <transition
@@ -17,7 +18,7 @@
             leave-to-class="transform scale-95 opacity-0"
         >
           <ListboxOptions
-            class="absolute mt-1 max-h-60 w-fit min-w-full overflow-auto rounded-xl bg-[#ECF1F5] py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none"
+            class="absolute mt-1 max-h-80 w-fit min-w-full overflow-auto rounded-xl bg-background-gray py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none"
           >
             <ListboxOption
               v-slot="{ active, selected }"
@@ -51,6 +52,7 @@
 <script setup lang="ts">
 // https://headlessui.com/v1/vue/listbox
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
+import { ChevronDown } from 'lucide-vue-next';
 
 import { ref } from 'vue'
 const props = defineProps<{ choices: string[] }>()

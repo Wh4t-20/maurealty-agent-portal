@@ -9,10 +9,7 @@
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router';
-import Sidebar from './components/Sidebar2.vue';
-
-const route = useRoute();
+import Sidebar from './components/Sidebar.vue';
 </script>
 
 <style>

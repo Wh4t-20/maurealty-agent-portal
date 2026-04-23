@@ -1,19 +1,22 @@
 // main property interface
 export interface Property {
     listing_id: number;
-    agent_id: number;
+    listing_title: string;
+    agent_name: string;
     property_type: string;
     price: number;
     commission: number;
     location: string;
     description: string;
-    created_at: string;
+    created_at: Date;
     is_active: boolean;
+    developer_name: string;
+    image_url?: string;
 }
 
 // lot only interface
 export interface Lot extends Property {
-    block_number: string;
+    block_number: number;
     lot_number: number;
     phase_number: number;
     area: number;
