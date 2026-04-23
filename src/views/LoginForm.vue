@@ -1,30 +1,42 @@
 <template>
-  <div class="login-container">
-    <div class="login-header">
-      <img src="@/assets/images/maureal.png"></img>
-    </div>
-
-    <div class="login-form">
-      <h3>LOGIN PORTAL</h3>
-      
-      <div class="input-group">
-        <input type="text" v-model="username" placeholder="Username">
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-header">
+        <img src="@/assets/images/Maurealty.png" alt="Maurealty Logo" class="logo" />
       </div>
 
-      <div class="input-group">
-        <input type="password" v-model="password" placeholder="Password">
-      </div>
+      <form class="login-form" @submit.prevent="handleLogin">
+        <h1>LOGIN PORTAL</h1>
 
-      <button class="signin-btn" @click="handleLogin">Sign In</button>
+        <div class="input-group">
+          <input
+            type="text"
+            v-model="username"
+            placeholder="Username"
+            autocomplete="username"
+          />
+        </div>
 
-      <div class="remember-me">
-        <input type="checkbox" v-model="rememberMe">
-        <label>Remember username</label>
-      </div>
+        <div class="input-group">
+          <input
+            type="password"
+            v-model="password"
+            placeholder="Password"
+            autocomplete="current-password"
+          />
+        </div>
 
-      <div class="privacy-notice">
-        <a href="#">Data Privacy Act</a>
-      </div>
+        <button type="submit" class="signin-btn">Sign In</button>
+
+        <div class="remember-me">
+          <input id="rememberMe" type="checkbox" v-model="rememberMe" />
+          <label for="rememberMe">Remember username</label>
+        </div>
+
+        <div class="privacy-notice">
+          <a href="#">Data Privacy Act</a>
+        </div>
+      </form>
     </div>
   </div>
 </template>
@@ -34,112 +46,143 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+
 const username = ref('')
 const password = ref('')
 const rememberMe = ref(false)
 
 const handleLogin = () => {
-  // Login logic here
   router.push('/dashboard')
 }
 </script>
 
 <style scoped>
-.login-container {
+.login-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  width: 100vw;
+  margin: 0;
+  padding: 24px;
+  box-sizing: border-box;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
-  color: white;
-  font-family: 'Arial', sans-serif;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f172a 0%, #16213e 50%, #1e3a5f 100%);
+  font-family: Arial, sans-serif;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px 28px;
+  box-sizing: border-box;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
 }
 
 .login-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.logo {
+  width: 180px;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.login-form h1 {
   text-align: center;
-  height: 300px;
-  width: 300px;
-  margin-bottom: -200px;
-}
-
-.subtitle {
-  font-size: 0.9rem;
-  opacity: 0.8;
-}
-
-.login-form {
-  background: white;/*rgba(255, 255, 255, 0.1);*/
-  padding: 2.5rem;
-  border-radius: 5px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  width: 300px;
-  height: 350px;
-  max-width: 90%;
-}
-
-.login-form h3 {
-  text-align: center;
-  margin-top: -20px;
-  margin-bottom: 10px;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: black;
+  margin: 0 0 24px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #111827;
 }
 
 .input-group {
-  margin-bottom: 1rem;
-  color: gray;
-  border: solid, gray;
-  border-radius: 10px;
-  width: 250px;
-  display: flex;
-  margin-left: -16px;
+  margin-bottom: 16px;
 }
 
 .input-group input {
   width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
+  padding: 13px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  box-sizing: border-box;
   font-size: 1rem;
+  color: #111827;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.input-group input:focus {
+  border-color: #27ae60;
+  box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.15);
+}
+
+.signin-btn {
+  width: 100%;
+  padding: 13px;
+  margin-top: 4px;
+  border: none;
+  border-radius: 10px;
+  background: #27ae60;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.signin-btn:hover {
+  background: #219150;
+  transform: translateY(-1px);
 }
 
 .remember-me {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-  color: gray;
-  padding: 20px;
-  margin-left: -25px;
-}
-
-.signin-btn {
-  padding: 12px;
-  background: #27ae60;
-  color: white;
-  border: solid, gray;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 1;
-  cursor: pointer;
-  transition: transform 0.2s;
-  width: 250px;
-  margin-left: -16px;
-}
-
-.signin-btn:hover {
-  transform: translateY(-2px);
+  gap: 8px;
+  margin-top: 16px;
+  color: #4b5563;
+  font-size: 0.95rem;
 }
 
 .privacy-notice {
   text-align: center;
-  margin-top: -40px;
+  margin-top: 18px;
   font-size: 0.9rem;
-  opacity: 0.7;
-  color: gray;
+}
+
+.privacy-notice a {
+  color: #27ae60;
+  text-decoration: none;
+}
+
+.privacy-notice a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 16px;
+  }
+
+  .login-card {
+    padding: 24px 18px;
+    border-radius: 12px;
+  }
+
+  .logo {
+    width: 150px;
+  }
+
+  .login-form h1 {
+    font-size: 1.35rem;
+  }
 }
 </style>
