@@ -55,7 +55,7 @@
 
             <span class="flex items-center gap-1.5 font-semibold">
               <Building2Icon class="size-6" color="#000000" />
-              {{ details.property_type }}
+              {{ formattedPropertyType(details.property_type) }}
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
@@ -85,21 +85,21 @@
                   <div class="grid grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ details.lot_area }} sqm</span>
                     <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ details.floor_area }} sqm</span>
-                    <span class="flex items-center-safe gap-1"><Sofa /> {{ details.room_count }} room{{ details.room_count > 1 ? 's' : '' }}</span>
-                    <span class="flex items-center-safe gap-1"><Toilet /> {{ details.toilet_count }} toilet{{ details.toilet_count > 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1"><Sofa /> {{ details.room_count }} room{{ details.room_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1"><Toilet /> {{ details.toilet_count }} toilet{{ details.toilet_count != 1 ? 's' : '' }}</span>
                   </div>
                   
                   <span class="flex items-center-safe justify-around pr-2 mt-3">
                     <p class="flex items-center-safe gap-1" v-if="details.helper_room_count > 0">
-                      <BrushCleaning class="size-4" /> {{ details.helper_room_count }} helper room{{ details.helper_room_count > 1 ? 's' : '' }}
+                      <BrushCleaning class="size-4" /> {{ details.helper_room_count }} helper room{{ details.helper_room_count != 1 ? 's' : '' }}
                     </p>
                     <p v-if="details.driver_room_count > 0 || details.carpark_count > 0">|</p>
                     <p class="flex items-center-safe gap-1" v-if="details.driver_room_count > 0">
-                      <LifeBuoy class="size-3" /> {{ details.driver_room_count }} driver room{{ details.driver_room_count > 1 ? 's' : '' }}
+                      <LifeBuoy class="size-3" /> {{ details.driver_room_count }} driver room{{ details.driver_room_count != 1 ? 's' : '' }}
                     </p>
                     <p v-if="details.carpark_count > 0">|</p>
                     <p class="flex items-center-safe gap-1" v-if="details.carpark_count > 0">
-                      <Car class="size-4" /> {{ details.carpark_count }} carpark{{ details.carpark_count > 1 ? 's' : '' }}
+                      <Car class="size-4" /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}
                     </p>
                   </span>
 
@@ -140,7 +140,43 @@
               </fieldset>
             </template>
 
-            
+            <!-- Condominium -->
+            <template v-if="details.property_type === 'condominium'">
+              <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
+                <legend class="px-2 font-semibold text-maurealty-blue">Condominium Features</legend>
+                <main class="text-sm px-2 flex flex-col">
+                  <div class="grid grid-cols-2">
+                    <span class="flex items-center-safe gap-1"><Hash /> Unit No. <b>{{ details.unit_number }}</b></span>
+                    <span class="flex items-center-safe gap-1"><BedDouble /> {{ details.bedroom_count }} bedroom{{ details.carpark_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1"><BookImage /> {{ details.balcony_count }} balcon{{ details.carpark_count != 1 ? 'ies' : 'y' }}</span>
+                    <span class="flex items-center-safe gap-1"><Car /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}</span>
+                  </div>
+                  
+                  <div class="mt-2 flex gap-2">
+                    <p class="font-bold text-xl text-maurealty-blue">Class:</p>
+                    <p class="text-xl">{{ details.class }}</p>
+                  </div>
+
+                  <div class="pb-2 flex gap-2">
+                    <p class="font-bold text-xl text-maurealty-blue">Type:</p>
+                    <p class="text-xl">{{ getCondoType() }}</p>
+                  </div>
+                </main>
+              </fieldset>
+            </template>
+
+            <!-- Memorial -->
+            <template v-if="details.property_type === 'memorial'">
+              <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
+                <legend class="px-2 font-semibold text-maurealty-blue">Memorial Features</legend>
+                <main class="text-sm px-2 flex flex-col">
+                  <div class="pb-2 flex gap-2">
+                    <p class="font-bold text-xl text-maurealty-blue">Type:</p>
+                    <p class="text-xl">{{ getMemorialType() }}</p>
+                  </div>
+                </main>
+              </fieldset>
+            </template>
           </div>
         </main>
       </div>
@@ -149,12 +185,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { type Property } from '@/assets/classes/listings'
+import { type Property, formattedPropertyType } from '@/assets/classes/listings'
 
 import house1 from '@/assets/images/sample-house.jpg'
 import house2 from '@/assets/images/house2.webp'
 
-import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall } from "lucide-vue-next";
+import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash } from "lucide-vue-next";
 
 // 2. State definition: Start as null to represent the "not loaded" state
 const details = ref<Property | null>(null)
@@ -167,7 +203,7 @@ const loadProperties = () => {
     listing_id: 1,
     listing_title: 'Pre-selling Single Attached House and Lot in Talamban, Cebu / Metropolis Subdivision', 
     agent_name: 'Carl Santillan', 
-    property_type: 'lot_only', 
+    property_type: 'memorial', 
     price: 150000, 
     commission: 5, 
     location: 'Cebu City', 
@@ -176,6 +212,39 @@ const loadProperties = () => {
     is_active: true,
     developer_name: 'Ayala'
   }
+}
+
+// I swear there's a better way to do these two functions below using maps and stuff, sayang I aint smart enough for that (yet)
+function getCondoType () {
+  if (details.is_studio_type)
+    return 'Studio'
+  else if (details.is_BR_unit)
+    return 'BR Unit'
+  else if (details.is_villa)
+    return 'Villa'
+  else if (details.is_garden_villa)
+    return 'Garden Villa'
+  else if (details.is_penthouse)
+    return 'Penthouse'
+  else
+    return 'N/A'
+}
+
+function getMemorialType () {
+  if (details.is_urn)
+    return 'Urn'
+  else if (details.is_vault)
+    return 'Vault'
+  else if (details.is_garden)
+    return 'Garden'
+  else if (details.is_estate)
+    return 'Estate'
+  else if (details.is_family_estate)
+    return 'Family Estate'
+  else if (details.is_pet_memorial)
+    return 'Pet Memorial'
+  else
+    return 'N/A'
 }
 
 onMounted(() => {
