@@ -3,7 +3,7 @@
       class=" top-0 left-0 h-screen bg-maurealty-blue 
              flex flex-col py-6 shadow-lg
              transition-all duration-300
-             w-20 hover:w-90 group overflow-hidden sticky"
+             w-20 hover:w-80 group overflow-hidden sticky"
     >
     <div class="flex flex-col items-center ">
         <img src="@/assets/images/Maurealty.png" alt="MauRealty Logo" class="w-3/5 h-auto " />
@@ -41,7 +41,7 @@
           <component :is="logoutItem.icon" class="w-7 h-7 shrink-0" :stroke-width="1"/>
   
           <span
-            class="ml-4 whitespace-nowrap opacity-0 text-[clamp(0.5rem,2vw,1rem) font-light
+            class="ml-4 whitespace-nowrap opacity-0 text-[clamp(0.5rem,2vw,1rem)] font-light
                    group-hover:opacity-100 transition"
           >
             Logout
