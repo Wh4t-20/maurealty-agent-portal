@@ -75,10 +75,73 @@
               <p class="font-semibold">Developed by:</p>
               <p class="ml-2.5">{{ details.developer_name }}</p>
             </span>
-          </div>
-
-          <!-- Property details -->
             
+            <!-- Property details -->
+            <!-- House and Lot -->
+            <template v-if="details.property_type === 'house_and_lot'">
+              <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
+                <legend class="px-2 font-semibold text-maurealty-blue">House and Lot Features</legend>
+                <main class="text-sm px-2 flex flex-col">
+                  <div class="grid grid-cols-2 gap-y-0.5">
+                    <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ details.lot_area }} sqm</span>
+                    <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ details.floor_area }} sqm</span>
+                    <span class="flex items-center-safe gap-1"><Sofa /> {{ details.room_count }} room{{ details.room_count > 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1"><Toilet /> {{ details.toilet_count }} toilet{{ details.toilet_count > 1 ? 's' : '' }}</span>
+                  </div>
+                  
+                  <span class="flex items-center-safe justify-around pr-2 mt-3">
+                    <p class="flex items-center-safe gap-1" v-if="details.helper_room_count > 0">
+                      <BrushCleaning class="size-4" /> {{ details.helper_room_count }} helper room{{ details.helper_room_count > 1 ? 's' : '' }}
+                    </p>
+                    <p v-if="details.driver_room_count > 0 || details.carpark_count > 0">|</p>
+                    <p class="flex items-center-safe gap-1" v-if="details.driver_room_count > 0">
+                      <LifeBuoy class="size-3" /> {{ details.driver_room_count }} driver room{{ details.driver_room_count > 1 ? 's' : '' }}
+                    </p>
+                    <p v-if="details.carpark_count > 0">|</p>
+                    <p class="flex items-center-safe gap-1" v-if="details.carpark_count > 0">
+                      <Car class="size-4" /> {{ details.carpark_count }} carpark{{ details.carpark_count > 1 ? 's' : '' }}
+                    </p>
+                  </span>
+
+                  <div class="mt-3">
+                    <ul class="grid grid-cols-3">
+                      <li v-if="details.one_storey" class="flex items-center-safe gap-1"><Check class="size-5" /> One Storey</li>
+                      <li v-if="details.two_storey" class="flex items-center-safe gap-1"><Check class="size-5" /> Two Storey</li>
+                      <li v-if="details.with_loft" class="flex items-center-safe gap-1"><Check class="size-5" /> With Loft</li>
+                      <li v-if="details.townhome" class="flex items-center-safe gap-1"><Check class="size-5" /> Townhome</li>
+                      <li v-if="details.rowhouse" class="flex items-center-safe gap-1"><Check class="size-5" /> Rowhouse</li>
+                    </ul>
+                  </div>
+                </main>
+              </fieldset>
+            </template>
+
+            <!-- Lot only -->
+            <template v-if="details.property_type === 'lot_only'">
+              <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
+                <legend class="px-2 font-semibold text-maurealty-blue">Lot Features</legend>
+                <main class="text-sm px-2 flex flex-col">
+                  <div class="grid grid-cols-2">
+                    <div>
+                      <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Block No. <b>{{ details.block_number }}</b></span>
+                      <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Lot No. <b>{{ details.lot_number }}</b></span>
+                      <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Phase No. <b>{{ details.phase_number }}</b></span>  
+                    </div>
+                    <div>
+                      <span class="flex items-center-safe gap-1"><SquareDashed /> {{ details.area }} sqm</span>
+                    </div>
+                  </div>
+                  
+                  <div class="mt-2 pb-2 flex gap-2">
+                    <p class="font-bold text-xl text-maurealty-blue">Class:</p>
+                    <p class="text-xl">{{ details.class }}</p>
+                  </div>
+                </main>
+              </fieldset>
+            </template>
+
+            
+          </div>
         </main>
       </div>
   </div>
@@ -91,7 +154,7 @@ import { type Property } from '@/assets/classes/listings'
 import house1 from '@/assets/images/sample-house.jpg'
 import house2 from '@/assets/images/house2.webp'
 
-import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight } from "lucide-vue-next";
+import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall } from "lucide-vue-next";
 
 // 2. State definition: Start as null to represent the "not loaded" state
 const details = ref<Property | null>(null)
@@ -104,7 +167,7 @@ const loadProperties = () => {
     listing_id: 1,
     listing_title: 'Pre-selling Single Attached House and Lot in Talamban, Cebu / Metropolis Subdivision', 
     agent_name: 'Carl Santillan', 
-    property_type: 'House And Lot', 
+    property_type: 'lot_only', 
     price: 150000, 
     commission: 5, 
     location: 'Cebu City', 
