@@ -5,13 +5,16 @@ import Dashboard from '@/views/Dashboard.vue'
 import Listings from '@/views/Listings.vue'
 import PropertyManagement from '@/views/PropertyManagement.vue'
 import Accounting from '@/views/Accounting.vue'
+import Login from '@/views/LoginForm.vue'
 import GenealogyLandingpage from '@/views/Genealogy-landingpage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
     name: 'Landing',
-    component: Dashboard,
+    component: Login,
+    // This flag tells App.vue NOT to show the sidebar here
+    meta: { hideSidebar: true } 
   },
   {
     path: '/dashboard',
