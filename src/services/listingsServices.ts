@@ -11,7 +11,7 @@ const SUB_TABLE_MAP: Record<number, string> = {
 
 export const listingsService = {
   // Fetch all active listings
-  async getListings(): Promise<Property[]> {
+  async getListings(limit: number = 20): Promise<Property[]> {
     const { data, error } = await supabase
       .from('main_listings')
       .select(`
@@ -28,7 +28,8 @@ export const listingsService = {
         developers (name),
         listing_images (image_url, display_order)
       `)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .limit(limit); // Adjust the limit as needed
 
     if (error) {
       console.error('Error fetching listings:', error);
@@ -41,7 +42,7 @@ export const listingsService = {
   // Map database payload to Property interface
   mapToProperty(item: any): Property {
     // Sort images to find the lowest display_order for the thumbnail
-    const sortedImages = item.listing_images?.sort((a: any, b: any) => a.display_order - b.display_order) || [];
+    const sortedImages = [...(item.listing_images || [])].sort((a: any, b: any) => a.display_order - b.display_order);
     const thumbnailUrl = sortedImages.length > 0 ? sortedImages[0].image_url : undefined;
 
     return {
