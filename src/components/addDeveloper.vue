@@ -6,12 +6,12 @@
             <input id="name" v-model="newDev.name" />
         </div>
         <div>
-            <label for="phone">Phone Number:</label>
-            <input id="phone" v-model="newDev.phone" />
+            <label for="contact_phone">Phone Number:</label>
+            <input id="contact_phone" v-model="newDev.contact_number" />
         </div>
         <div>
-            <label for="email">Email:</label>
-            <input id="email" v-model="newDev.email" />
+            <label for="contact_email">Email:</label>
+            <input id="contact_email" v-model="newDev.contact_email" />
         </div>
         <div>
             <label for="location">Location:</label>
@@ -37,15 +37,17 @@ const props = defineProps<{
 
 const newDev = reactive<Developer>({ // Recieves data if edit mode, otherwise its set to default empty values
   dev_ID: null,
-  image_url: '',
+  profile_url: '',
   name: '',
-  phone: '',
-  email: '',
+  contact_number: '',
+  contact_email: '',
   location: '',
-  hours: 'Not specified'
+  available_days: '',
+  open_hours: '',
+  close_hours: ''
 });
 
-watch(
+watch( // watch for changes in developerdata prop
     () => props.developerData,
     (newData: Developer | undefined) => {
         if (newData) {

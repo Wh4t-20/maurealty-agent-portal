@@ -32,7 +32,7 @@
       <!-- Profile -->
       <div class="flex items-center gap-4 mb-4 ">
        
-        <img :src="developer.image_url" class="w-16 h-16 rounded-full object-cover"/>
+        <img :src="developer.profile_url" class="w-16 h-16 rounded-full object-cover"/>
         <div>
           <h2 class="font-bold text-lg">{{ developer.name }}</h2>
           <span class="bg-[#41BE0126] text-[#41BE01] text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -41,12 +41,11 @@
 
       <!-- Contact info -->
       <div class="grid mt-10 break-all text-[clamp(1rem,1vw,1.5rem)] grid-cols-1 md:grid-cols-2 px-1 gap-2 mb-4 text-gray-700">
-        <div class="flex items-center gap-2"> {{ developer.phone }}</div>
-        <div class="flex items-center gap-2">{{ developer.email }}</div>
+        <div class="flex items-center gap-2"> {{ developer.contact_number }}</div>
+        <div class="flex items-center gap-2">{{ developer.contact_email }}</div>
         <div class="flex items-center gap-2"> {{ developer.location }}</div>
         <div class="flex items-start gap-2">
-          <div v-html="developer.hours" class="leading-tight">
-          </div>
+          {{ developer.available_days }} {{ formatToAMPM(developer.open_hours) }} - {{ formatToAMPM(developer.close_hours) }}
         </div>
       </div>
 
@@ -61,7 +60,7 @@
 
       <!-- buttons -->
       <div class="flex gap-2 items-end justify-end">
-        <button @click = "isModalOpen = true; handleEdit(developer)" class="text-[clamp(0.75rem,2vw,1rem)] md:h-[36px] md:w-[108px] h-max-[36px] w-max-[108px]  border border-[#B4AFAF] rounded-[5px] px-4 py-2 hover:bg-gray-100 flex items-center gap-2 justify-center" >
+        <button @click = "editDev = developer; isModalOpen = true" class="text-[clamp(0.75rem,2vw,1rem)] md:h-[36px] md:w-[108px] h-max-[36px] w-max-[108px]  border border-[#B4AFAF] rounded-[5px] px-4 py-2 hover:bg-gray-100 flex items-center gap-2 justify-center" >
           Edit
         </button>
         <button class="text-[clamp(0.75rem,2vw,1rem)] w-max-[121px] md:h-[36px] md:w-[121px] bg-[#07407B] text-white rounded-[5px] px-4 py-2 hover:bg-blue-700 flex items-center gap-2 justify-center">
@@ -103,18 +102,24 @@ onMounted(() => {
   loadDevelopers();
 
 });
+const formatToAMPM = (timeStr: any): string => { // Helper function to format time from supabase default to AM/PM format
+  if (!timeStr) return '';
+  
+  const [hoursStr, minutes, useless] = timeStr.split(':');
+  let hours = parseInt(hoursStr);
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  
+  hours = hours > 12 ? hours % 12 : hours; 
+  return `${hours}:${minutes} ${ampm}`;
+}; 
 const isModalOpen = ref(false);
-const handleModalSave = (developer: Developer) => {
-  if(editDev){
-    return
+const handleModalSave = async (developer: Developer) => {
+  if(developer.dev_ID){
+    await developerService.updateDeveloper(developer);
   }
   else{
-    return
+    await developerService.addDeveloper(developer);
   }
-};
-const handleEdit = (developer: Developer) => {
-  editDev.value = developer;
-  console.log("Editing developer:", developer);
 };
 
 </script>
