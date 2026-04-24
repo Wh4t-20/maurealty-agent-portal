@@ -35,25 +35,6 @@ import house1 from '@/assets/images/sample-house.jpg' // Kept as a fallback imag
 import { MapPin } from 'lucide-vue-next'
 const props = defineProps<{ details: Property }>()
 
-<<<<<<< fix/frontend/PropertyFeatureDetails
-=======
-function formattedPropertyType (type: string) {
-  if (type === 'house_and_lot')
-    return 'House and Lot'
-  else if (type === 'lot_only')
-    return 'Lot Only'
-  else if (type === 'condominium')
-    return 'Condominium'
-  else if (type === 'memorial')
-    return 'Memorial'
-  else if (type === 'clubshare')
-    return 'Clubshare'
-  else if (type === 'golfshare')
-    return 'Golfshare'
-  else
-    return 'N/A'
-}
-
 function propertyTypeColor(type: string) {
   switch (type) {
     case 'house_and_lot':
@@ -73,7 +54,6 @@ function propertyTypeColor(type: string) {
   }
 }
 
->>>>>>> mainer
 // Returns the database image URL if it exists, otherwise uses the local fallback
 const houseimg = computed(() => {
   return props.details.image_url ? props.details.image_url : house1
