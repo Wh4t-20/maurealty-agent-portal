@@ -184,6 +184,18 @@
             </section>
           </div>
         </main>
+
+        <!-- EDIT and DELETE button -->
+         <!-- Note: if you wanna put it in the right side just put justify-end in section class -->
+        <section class="w-full flex mt-4 px-3 gap-4">
+          <button class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition">
+            <span class="flex items-center-safe gap-1"><SquarePen class="size-4" /> EDIT</span>
+          </button>
+
+          <button class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-red-600 text-red-600 font-bold hover:bg-red-600 hover:text-white hover:shadow-md hover:-translate-y-0.75 transition">
+            <span class="flex items-center-safe gap-1"><Trash2 class="size-4" /> DELETE</span>
+          </button>
+        </section>
       </div>
   </div>
 </template>
@@ -195,7 +207,7 @@ import { type Property, formattedPropertyType } from '@/assets/classes/listings'
 import house1 from '@/assets/images/sample-house.jpg'
 import house2 from '@/assets/images/house2.webp'
 
-import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash } from "lucide-vue-next";
+import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen } from "lucide-vue-next";
 
 // 2. State definition: Start as null to represent the "not loaded" state
 const details = ref<Property | null>(null)
