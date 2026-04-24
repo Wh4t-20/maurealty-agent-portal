@@ -30,27 +30,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue' // Don't forget to import this
-import { type Property }  from '@/assets/classes/listings'
+import { type Property, formattedPropertyType }  from '@/assets/classes/listings'
 import house1 from '@/assets/images/sample-house.jpg' // Kept as a fallback image
 import { MapPin } from 'lucide-vue-next'
 const props = defineProps<{ details: Property }>()
-
-function formattedPropertyType (type: string) {
-  if (type === 'house_and_lot')
-    return 'House and Lot'
-  else if (type === 'lot_only')
-    return 'Lot Only'
-  else if (type === 'condominium')
-    return 'Condominium'
-  else if (type === 'memorial')
-    return 'Memorial'
-  else if (type === 'clubshare')
-    return 'Clubshare'
-  else if (type === 'golfshare')
-    return 'Golfshare'
-  else
-    return 'N/A'
-}
 
 function propertyTypeColor(type: string) {
   switch (type) {
