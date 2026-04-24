@@ -12,25 +12,15 @@
       
       <Transition name="expand">
         <div v-if="isFilterVisible" class="flex items-center gap-10 pb-5">
-
-            <section class="listings-filter-section">
-              <label for="bedroom-input" class="text-base">Bedrooms</label>
-              <input id="bedroom-input" type="number" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
-            </section>
-
-            <section class="listings-filter-section">
-              <label for="bathroom-input" class="text-base">Bathrooms</label>
-              <input id="bathroom-input" type="number" placeholder="0" class="text-sm w-25 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
-            </section>
             
             <section class="listings-filter-section">
               <label for="Type-input" class="text-base">Type</label>
-              <ListingsFilter :choices="Type" />
+              <ListingsFilter :choices="Type" v-model="selectedType" />
             </section>
             
             <section class="listings-filter-section">
               <label for="city-input" class="text-base">City</label>
-              <ListingsFilter :choices="Cities" />
+              <ListingsFilter :choices="Cities" v-model="selectedCity" />
             </section>
             
             <section class="listings-filter-section">
@@ -40,6 +30,46 @@
                 <span class="w-8 border-2 border-[#d7dde3] self-center -mx-4 -z-1"></span>
                 <input type="number" placeholder="₱ Max" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
               </div>
+            </section>
+
+            <section class="listings-filter-section">
+              <label for="developer-input" class="text-base">Developer</label>
+              <input id="developer-input" type="text" class="text-sm w-40 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+            </section>
+
+            <section class="listings-filter-section" v-if="selectedType === 'House And Lot'">
+              <label for="room-input" class="text-base">Rooms</label>
+              <input id="room-input" type="number" placeholder="0" class="text-sm w-15 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+            </section>
+
+            <section class="listings-filter-section" v-if="selectedType === 'Condominium'">
+              <label for="bedroom-input" class="text-base">Bedrooms</label>
+              <input id="bedroom-input" type="number" placeholder="0" class="text-sm w-15 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+            </section>
+
+            <section class="listings-filter-section" v-if="selectedType === 'House And Lot' || selectedType === 'Condominium'">
+              <label for="bathroom-input" class="text-base">Bathrooms</label>
+              <input id="bathroom-input" type="number" placeholder="0" class="text-sm w-15 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+            </section>
+
+            <section class="listings-filter-section" v-if="selectedType === 'House And Lot' || selectedType === 'Lot Only'">
+              <label for="area-input" class="text-base">Lot Area</label>
+              <input id="area-input" type="number" placeholder="sqm" class="text-sm w-15 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+            </section>
+
+            <section class="listings-filter-section" v-if="selectedType === 'Condominium'">
+              <label for="condo-class-input" class="text-base">Class</label>
+              <ListingsFilter :choices="condoClasses" v-model="selectedCondoClass" />
+            </section>
+
+            <section class="listings-filter-section" v-if="selectedType === 'Lot Only'">
+              <label for="lot-class-input" class="text-base">Class</label>
+              <ListingsFilter :choices="lotClasses" v-model="selectedLotClass" />
+            </section>
+
+            <section class="listings-filter-section" v-if="selectedType === 'Memorial'">
+              <label for="memorial-type-input" class="text-base">Type</label>
+              <ListingsFilter :choices="memorialTypes" v-model="selectedMemorialType" />
             </section>
         </div>
       </Transition>
@@ -94,9 +124,21 @@ import { listingsService } from '@/services/listingsServices'
 import { ChevronDown } from 'lucide-vue-next'
 
 const properties = ref<Property[]>([])
+ 
+// for filter Type and City
+const selectedType = ref("None")
+const selectedCity = ref("None")
+
+// for Condo and Lot classes + Memorial Types
+const selectedCondoClass = ref("None")
+const selectedLotClass = ref("None")
+const selectedMemorialType = ref("None")
 
 const Type: string[] = ["None", "House And Lot", "Lot Only", "Condominium", "Memorial", "Clubshare", "Golfshare"]
 const Cities: string[] = ["None", "Cebu City", "Lapu-Lapu"]
+const lotClasses: string[] = ['None', 'Residential', 'Commercial', 'Industrial', 'Farm Lot']
+const condoClasses: string[] = ['None', 'Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare']
+const memorialTypes: string[] = ['None', 'Urn', 'Vault', 'Garden', 'Estate', 'Family Estate', 'Pet Memorial']
 
 // Connect to backend and fetch properties
 const loadProperties = async () => {
