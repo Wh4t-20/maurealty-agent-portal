@@ -4,9 +4,14 @@
       <!-- Header and search -->
       <div class="flex justify-between items-center w-full pb-3 mb-3">
         <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
-        <input id="search" type="text" name="search" placeholder="Search"
-          class="block min-w-0 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 rounded-sm focus:outline-none sm:text-sm/6" />
-      </div>
+        <div class="flex gap-5 h-full">
+          <button class="flex items-center gap-1 bg-maurealty-blue text-md text-white h-full px-4 rounded-full cursor-pointer" @click="addListing">
+            <Plus class="size-4" /> Add Listing
+          </button>
+          <input id="search" type="text" name="search" placeholder="Search"
+            class="block min-w-0 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 rounded-sm focus:outline-none sm:text-sm/6" />
+        </div>
+              </div>
 
       <!-- Filter -->
       
@@ -121,7 +126,7 @@ import PropertyDetails from '@/components/PropertyDetails.vue'
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
 
-import { ChevronDown } from 'lucide-vue-next'
+import { ChevronDown, Plus } from 'lucide-vue-next'
 
 const properties = ref<Property[]>([])
  
@@ -161,6 +166,14 @@ const isFilterVisible = ref(true)
 
 const toggleFilter = () => {
   isFilterVisible.value = !isFilterVisible.value
+}
+
+// for the Add Listing button (goes to property management)
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const addListing = () => {
+  router.push('/propertymanagement')
 }
 </script>
 
