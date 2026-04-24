@@ -113,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, shallowRef, onMounted } from 'vue'
 
 // Property instance
 import { type Property }  from '@/assets/classes/listings'
@@ -128,7 +128,7 @@ import { listingsService } from '@/services/listingsServices'
 
 import { ChevronDown, Plus } from 'lucide-vue-next'
 
-const properties = ref<Property[]>([])
+const properties = shallowRef<Property[]>([])
  
 // for filter Type and City
 const selectedType = ref("None")
