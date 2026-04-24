@@ -12,7 +12,7 @@
         <p class="group-hover:text-xl  text-0 opacity-0 group-hover:opacity-100  transition  whitespace-nowrap text-white mb-3">Emerald</p>
       </div>
       <!-- TOP NAV -->
-      <div class="flex flex-col  space-y-2 px-3">
+      <div class="flex flex-col overflow-y-auto space-y-2 px-3">
         <router-link
           v-for="item in topItems"
           :key="item.id"
