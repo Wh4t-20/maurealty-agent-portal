@@ -21,9 +21,9 @@
           <div class="mb-4">
             <input
               type="text"
-              v-model="username"
+              v-model="email"
               placeholder="Email"
-              autocomplete="username"
+              autocomplete="email"
               class="w-full p-[13px_14px] border border-[#d1d5db] rounded-[10px] box-border text-[1rem] text-[#111827] bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-[#27ae60] focus:shadow-[0_0_0_3px_rgba(39,174,96,0.15)]"
             />
           </div>
@@ -65,7 +65,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const username = ref('')
+const email = ref('')
 const password = ref('')
 const rememberMe = ref(false)
 
