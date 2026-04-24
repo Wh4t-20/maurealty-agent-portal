@@ -61,7 +61,8 @@
     Trophy,
     ContactRound, 
     LogOut,
-    SquareChartGantt
+    SquareChartGantt,
+    Network
   } from "lucide-vue-next";
   
   const topItems = [
@@ -72,7 +73,8 @@
     { id: 5, icon: Mail, path: "/inbox", label: "Inbox" },
     { id: 6, icon: Trophy, path: "/leaderboards", label: "Leaderboards" },
     { id: 7, icon: ContactRound, path: "/developerlist", label: "Developer List" },
-    { id: 8, icon: SquareChartGantt, path: "/propertymanagement", label: "Property Management"}
+    { id: 8, icon: SquareChartGantt, path: "/propertymanagement", label: "Property Management"},
+    { id: 9, icon: Network, path: "/genealogy", label: "Genealogy" }
 
     
   ];
