@@ -31,7 +31,8 @@
      
       <!-- Profile -->
       <div class="flex items-center gap-4 mb-4 ">
-        <img :src="developer.logo"  class="w-16 h-16 rounded-full object-cover"/>
+       
+        <img :src="developer.image_url" class="w-16 h-16 rounded-full object-cover"/>
         <div>
           <h2 class="font-bold text-lg">{{ developer.name }}</h2>
           <span class="bg-[#41BE0126] text-[#41BE01] text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -51,10 +52,10 @@
 
       <!-- Recent Projects -->
       <div class="mb-4">
-        <p class="font-semibold text-sm mb-1">Recent Projects</p>
+        <p class="font-semibold text-sm mb-1"></p>
         <div class="flex gap-2 flex-wrap">
-          <span v-for="(project, i) in developer.projects" :key="i" class="bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded">{{ project }}
-          </span>
+          <!-- <span v-for="(project, i) in developer.projects" :key="i" class="bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded">{{ project }}
+          </span> -->
         </div>
       </div>
 
@@ -75,63 +76,24 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from "vue";
-import profile from  "@/assets/images/profile.png"
+import { ref, onMounted } from "vue";
+import { type Developer} from "@/assets/classes/developers.ts";
+import { developerService } from "@/services/developerService";
 
-const developers = reactive([
-  {
-    logo: profile,
-    name: "Ayala Land Inc.",
-    phone: "09325660619",
-    email: "ahmanlangit@up.edu.ph",
-    location: "Lahug, Cebu City",
-    hours: "Monday - Friday <br> 9:00 AM - 6:00 PM",
-    projects: ["Ayala", "Ayala", "Ayala"],
-  },
-  {
-    logo:  profile,
-    name: "Ayala Land Inc.",
-    phone: "09325660619",
-    email: "ahmanlangit@up.edu.ph",
-    location: "Lahug, Cebu City",
-    hours: "Monday - Friday <br> 9:00 AM - 6:00 PM",
-    projects: ["Ayala", "Ayala", "Ayala"],
-  },
-  {
-    logo:  profile,
-    name: "Ayala Land Inc.",
-    phone: "09325660619",
-    email: "ahmanlangit@up.edu.ph",
-    location: "Lahug, Cebu City",
-    hours: "Monday - Friday <br> 9:00 AM - 6:00 PM",
-    projects: ["Ayala", "Ayala", "Ayala"],
-  },
-  {
-    logo:  profile,
-    name: "Ayala Land Inc.",
-    phone: "09325660619",
-    email: "licastanos@up.edu.ph",
-    location: "Lahug, Cebu City",
-    hours: "Monday - Friday <br> 9:00 AM - 6:00 PM",
-    projects: ["Ayala", "Ayala", "Ayala"],
-  },
-  {
-    logo:  profile,
-    name: "Ayala Land Inc.",
-    phone: "09325660619",
-    email: "ahmanlangit@up.edu.ph",
-    location: "Lahug, Cebu City",
-    hours: "Monday - Friday <br> 9:00 AM - 6:00 PM",
-    projects: ["Ayala", "Ayala", "Ayala"],
-  },{
-    logo:  profile,
-    name: "Ayala Land Inc.",
-    phone: "09325660619",
-    email: "ahmanlangit@up.edu.ph",
-    location: "Lahug, Cebu City",
-    hours: "Monday - Friday <br> 9:00 AM - 6:00 PM",
-    projects: ["Ayala", "Ayala", "Ayala"],
-  },
-  
-]);
+const developers = ref<Developer[]>([])
+const loadDevelopers = async () => {
+  try {
+    const data = await developerService.getDevelopers();
+    developers.value = data;
+  } catch (error) {
+    console.error("Error fetching developers:", error);
+  }
+
+};
+
+onMounted(() => {
+  loadDevelopers();
+
+});
+
 </script>

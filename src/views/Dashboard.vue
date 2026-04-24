@@ -65,7 +65,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-const agentName = ref('{[ Agent.Frontname ]}')
+const agentName = ref('Agent')
 </script>
 
 <style scoped>
@@ -75,6 +75,17 @@ const agentName = ref('{[ Agent.Frontname ]}')
   background: #f6f7fb;
   font-family: 'Poppins', sans-serif;
 }
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+}
+
+.welcome-section h1 {
+  color: black;
+  font-size: 2rem;
+}
+
 
 .sidebar {
   width: 280px;

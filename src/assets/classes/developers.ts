@@ -1,5 +1,6 @@
 // developer list interface
 export interface Developer {
+    dev_ID: number;
     image_url: string;
     name: string;
     phone: string;
