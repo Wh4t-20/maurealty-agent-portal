@@ -56,7 +56,7 @@
 
     <main class="relative overflow-hidden">
       <!-- remember to delete: -->
-      <PropertyDetails v-if="false" />
+      <PropertyDetails v-if="true" />
 
       <!-- Listings-->
       <section class="custom-scrollbar h-full overflow-y-auto">

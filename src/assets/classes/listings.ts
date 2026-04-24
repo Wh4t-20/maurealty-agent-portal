@@ -68,3 +68,20 @@ export interface Images {
     display_order: number;
     created_at: number;
 }
+
+export function formattedPropertyType (type: string) {
+  if (type === 'house_and_lot')
+    return 'House and Lot'
+  else if (type === 'lot_only')
+    return 'Lot Only'
+  else if (type === 'condominium')
+    return 'Condominium'
+  else if (type === 'memorial')
+    return 'Memorial'
+  else if (type === 'clubshare')
+    return 'Clubshare'
+  else if (type === 'golfshare')
+    return 'Golfshare'
+  else
+    return 'N/A'
+}

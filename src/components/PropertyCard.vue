@@ -30,11 +30,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue' // Don't forget to import this
-import { type Property }  from '@/assets/classes/listings'
+import { type Property, formattedPropertyType }  from '@/assets/classes/listings'
 import house1 from '@/assets/images/sample-house.jpg' // Kept as a fallback image
 import { MapPin } from 'lucide-vue-next'
 const props = defineProps<{ details: Property }>()
 
+<<<<<<< fix/frontend/PropertyFeatureDetails
+=======
 function formattedPropertyType (type: string) {
   if (type === 'house_and_lot')
     return 'House and Lot'
@@ -71,6 +73,7 @@ function propertyTypeColor(type: string) {
   }
 }
 
+>>>>>>> mainer
 // Returns the database image URL if it exists, otherwise uses the local fallback
 const houseimg = computed(() => {
   return props.details.image_url ? props.details.image_url : house1
