@@ -15,7 +15,7 @@
 
       <!-- Button -->
       <div class="flex items-center gap-4 pr-9 ml-4 ">
-        <button class="max-h-10.75  bg-[#07407B] text-white  rounded-[10px] hover:bg-blue-700 flex items-center gap-2 px-[clamp(0.5rem,2vw,2.5rem)] py-[clamp(0.25rem,0.70vw,1rem)] text-[clamp(0.5rem,2vw,1rem)]">
+        <button @click = "isModalOpen = true" class="max-h-10.75  bg-[#07407B] text-white  rounded-[10px] hover:bg-blue-700 flex items-center gap-2 px-[clamp(0.5rem,2vw,2.5rem)] py-[clamp(0.25rem,0.70vw,1rem)] text-[clamp(0.5rem,2vw,1rem)]">
           <span class="text-lg">+</span> Add Developer
         </button>
 
@@ -61,7 +61,7 @@
 
       <!-- buttons -->
       <div class="flex gap-2 items-end justify-end">
-        <button class="text-[clamp(0.75rem,2vw,1rem)] md:h-[36px] md:w-[108px] h-max-[36px] w-max-[108px]  border border-[#B4AFAF] rounded-[5px] px-4 py-2 hover:bg-gray-100 flex items-center gap-2 justify-center" >
+        <button @click = "isModalOpen = true; handleEdit(developer)" class="text-[clamp(0.75rem,2vw,1rem)] md:h-[36px] md:w-[108px] h-max-[36px] w-max-[108px]  border border-[#B4AFAF] rounded-[5px] px-4 py-2 hover:bg-gray-100 flex items-center gap-2 justify-center" >
           Edit
         </button>
         <button class="text-[clamp(0.75rem,2vw,1rem)] w-max-[121px] md:h-[36px] md:w-[121px] bg-[#07407B] text-white rounded-[5px] px-4 py-2 hover:bg-blue-700 flex items-center gap-2 justify-center">
@@ -71,7 +71,14 @@
     </div>
   </div>
   </div>
-
+  
+  <!-- the input fields will be empty if add developer is clicked, but will have
+   developer data if edit data is clicked
+   also might need a more appropriate name for this component but haven't thought of anything yet -->
+  <addDeveloper :developerData ="editDev" v-if="isModalOpen" 
+  @close= "isModalOpen = false; editDev = undefined"
+  @save = "handleModalSave" 
+  />
   
 </template>
 
@@ -79,8 +86,9 @@
 import { ref, onMounted } from "vue";
 import { type Developer} from "@/assets/classes/developers.ts";
 import { developerService } from "@/services/developerService";
-
-const developers = ref<Developer[]>([])
+import addDeveloper from "@/components/addDeveloper.vue";
+const developers = ref<Developer[]>([]);
+const editDev = ref<Developer | undefined>(undefined);
 const loadDevelopers = async () => {
   try {
     const data = await developerService.getDevelopers();
@@ -95,5 +103,18 @@ onMounted(() => {
   loadDevelopers();
 
 });
+const isModalOpen = ref(false);
+const handleModalSave = (developer: Developer) => {
+  if(editDev){
+    return
+  }
+  else{
+    return
+  }
+};
+const handleEdit = (developer: Developer) => {
+  editDev.value = developer;
+  console.log("Editing developer:", developer);
+};
 
 </script>
