@@ -21,9 +21,9 @@
           <div class="mb-4">
             <input
               type="text"
-              v-model="username"
-              placeholder="Username"
-              autocomplete="username"
+              v-model="email"
+              placeholder="Email"
+              autocomplete="email"
               class="w-full p-[13px_14px] border border-[#d1d5db] rounded-[10px] box-border text-[1rem] text-[#111827] bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-[#27ae60] focus:shadow-[0_0_0_3px_rgba(39,174,96,0.15)]"
             />
           </div>
@@ -38,16 +38,19 @@
             />
           </div>
 
+          <p v-if="errorMessage" class="text-red-500 text-sm mb-3 text-center">{{ errorMessage }}</p>
+
           <button 
             type="submit" 
-            class="w-full p-3.25 mt-1 border-none rounded-[10px] bg-[#27ae60] text-white text-[1rem] font-semibold cursor-pointer transition-[background,transform] duration-200 hover:bg-[#219150] hover:-translate-y-px"
+            :disabled="isLoading"
+            class="w-full p-3.25 mt-1 border-none rounded-[10px] bg-[#27ae60] text-white text-[1rem] font-semibold cursor-pointer transition-[background,transform] duration-200 hover:bg-[#219150] hover:-translate-y-px disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            Sign In
+            {{ isLoading ? 'Signing In...' : 'Sign In' }}
           </button>
 
           <div class="flex items-center gap-2 mt-4 text-[#4b5563] text-[0.95rem]">
             <input id="rememberMe" type="checkbox" v-model="rememberMe" />
-            <label for="rememberMe">Remember username</label>
+            <label for="rememberMe">Remember Email</label>
           </div>
 
           <div class="text-center mt-4.5 text-[0.9rem]">
@@ -62,14 +65,38 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { supabase } from '../supabaseClient'
 
 const router = useRouter()
 
-const username = ref('')
+const email = ref('')
 const password = ref('')
 const rememberMe = ref(false)
+const errorMessage = ref('')
+const isLoading = ref(false)
 
-const handleLogin = () => {
-  router.push('/dashboard')
+const handleLogin = async () => {
+  errorMessage.value = ''
+  isLoading.value = true
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.value,
+      password: password.value,
+    })
+
+    if (error) {
+      errorMessage.value = error.message
+      return
+    }
+
+    if (data.user) {
+      router.push('/listings')
+    }
+  } catch (err: any) {
+    errorMessage.value = 'An unexpected error occurred.'
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
