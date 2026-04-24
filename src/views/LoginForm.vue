@@ -22,7 +22,7 @@
             <input
               type="text"
               v-model="username"
-              placeholder="Username"
+              placeholder="Email"
               autocomplete="username"
               class="w-full p-[13px_14px] border border-[#d1d5db] rounded-[10px] box-border text-[1rem] text-[#111827] bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-[#27ae60] focus:shadow-[0_0_0_3px_rgba(39,174,96,0.15)]"
             />
@@ -47,7 +47,7 @@
 
           <div class="flex items-center gap-2 mt-4 text-[#4b5563] text-[0.95rem]">
             <input id="rememberMe" type="checkbox" v-model="rememberMe" />
-            <label for="rememberMe">Remember username</label>
+            <label for="rememberMe">Remember Email</label>
           </div>
 
           <div class="text-center mt-4.5 text-[0.9rem]">
