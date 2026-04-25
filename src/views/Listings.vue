@@ -124,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, computed, onMounted } from 'vue'
+import { ref, shallowRef, computed, onMounted, watch } from 'vue' 
 import { useRouter } from 'vue-router'
 
 // Property instance
@@ -140,28 +140,45 @@ import { ChevronDown, Plus } from 'lucide-vue-next'
 const properties = shallowRef<Property[]>([])
 const router = useRouter()
 
-// Navigate to specific property details page
-const goToDetails = (id: string | number | undefined) => {
-  if (!id) return
-  // Adjust this route to match wherever your individual property page 
-  router.push(`/property/${id}`)
-}
 
-// Pagination Setup
+
+
+const selectedType = ref("None")
+const selectedCity = ref("None")
+
+// Filter properties based on the selected Type
+const filteredProperties = computed(() => {
+  if (selectedType.value === "None") {
+    return properties.value;
+  }
+  
+  // Convert string to match teh db 
+  const dbFormatType = selectedType.value.toLowerCase().replace(/ /g, '_');
+
+  // Filter 
+  return properties.value.filter(p => p.property_type === dbFormatType); 
+})
+
+// page setup
 const currentPage = ref(1)
 const itemsPerPage = 8
 
-const totalPages = computed(() => Math.ceil(properties.value.length / itemsPerPage))
+// calculate total pages
+const totalPages = computed(() => Math.ceil(filteredProperties.value.length / itemsPerPage))
 
+//  shows 8 pages 
 const paginatedProperties = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
   const end = start + itemsPerPage
-  return properties.value.slice(start, end)
+  return filteredProperties.value.slice(start, end)
 })
- 
-// for filter Type and City
-const selectedType = ref("None")
-const selectedCity = ref("None")
+
+// Reset to page 1 when the filter changes
+watch(selectedType, () => {
+  currentPage.value = 1
+})
+
+
 
 // for Condo and Lot classes + Memorial Types
 const selectedCondoClass = ref("None")
