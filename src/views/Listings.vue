@@ -1,7 +1,6 @@
 <template>
   <div class="w-full h-screen bg-background-gray flex flex-col items-center overflow-hidden">
     <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky z-20">
-      <!-- Header and search -->
       <div class="flex justify-between items-center w-full pb-3 mb-3">
         <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
         <div class="flex gap-5 h-full">
@@ -11,10 +10,8 @@
           <input id="search" type="text" name="search" placeholder="Search"
             class="block min-w-0 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 rounded-sm focus:outline-none sm:text-sm/6" />
         </div>
-              </div>
+      </div>
 
-      <!-- Filter -->
-      
       <Transition name="expand">
         <div v-if="isFilterVisible" class="flex items-center gap-10 pb-5">
             
@@ -79,49 +76,61 @@
         </div>
       </Transition>
       
-      <!-- Button that collpases the Filterbar -->
       <button 
         @click="toggleFilter"
-        class="absolute -bottom-7.5 right-20 px-5 pb-1.5 pt-0 w-fit text-sm font-medium bg-white hover:bg-maurealty-blue hover:text-white rounded-b-full transition-colors"
+        class="absolute -bottom-7.5 right-20 px-5 pb-1.5 pt-0 w-fit text-sm font-medium bg-white hover:bg-maurealty-blue hover:text-white rounded-b-full transition-colors cursor-pointer"
       >
         <ChevronDown :class="{'rotate-180': isFilterVisible}" class="size-6 transition-transform duration-300" />
       </button>
       
     </header>
 
-    <main class="relative overflow-hidden">
-      <!-- remember to delete: -->
-      <PropertyDetails v-if="false" />
-
-      <!-- Listings-->
-      <section class="custom-scrollbar h-full overflow-y-auto">
-        <div class="p-10">
+  <main class="relative flex-1 overflow-hidden flex flex-col w-full">
+      <section class="custom-scrollbar flex-1 overflow-y-auto">
+        <div class="p-10 flex flex-col min-h-full">
+          
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <PropertyCard 
-              v-for="property in properties" 
+              v-for="property in paginatedProperties" 
               :key="property.listing_id" 
               :details="property" 
               class="flex flex-col items-center"
             />
           </div>
-      </div>
+
+          <footer class="bg-transparent pt-5 pb--12 flex justify-center items-center gap-4 w-full mt-auto">
+            <button 
+              @click="currentPage--" 
+              :disabled="currentPage === 1"
+              class="px-4 py-1 border border-maurealty-blue text-maurealty-blue rounded hover:bg-maurealty-blue hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-maurealty-blue cursor-pointer disabled:cursor-not-allowed"
+            >
+              Prev
+            </button>
+            <span class="text-sm font-medium text-maurealty-blue">Page {{ currentPage }} of {{ totalPages }}</span>
+            <button 
+              @click="currentPage++" 
+              :disabled="currentPage >= totalPages || totalPages === 0"
+              class="px-4 py-1 border border-maurealty-blue text-maurealty-blue rounded hover:bg-maurealty-blue hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-maurealty-blue cursor-pointer disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </footer>
+
+        </div>
       </section>
-      
     </main>
     
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, onMounted } from 'vue'
+import { ref, shallowRef, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 // Property instance
 import { type Property }  from '@/assets/classes/listings'
 import PropertyCard from '@/components/PropertyCard.vue'
 import ListingsFilter from '@/components/ListingsFilter.vue'
-
-// remember to delete:
-import PropertyDetails from '@/components/PropertyDetails.vue'
 
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
@@ -129,6 +138,26 @@ import { listingsService } from '@/services/listingsServices'
 import { ChevronDown, Plus } from 'lucide-vue-next'
 
 const properties = shallowRef<Property[]>([])
+const router = useRouter()
+
+// Navigate to specific property details page
+const goToDetails = (id: string | number | undefined) => {
+  if (!id) return
+  // Adjust this route to match wherever your individual property page lives in your Vue Router setup!
+  router.push(`/property/${id}`)
+}
+
+// Pagination Setup
+const currentPage = ref(1)
+const itemsPerPage = 8
+
+const totalPages = computed(() => Math.ceil(properties.value.length / itemsPerPage))
+
+const paginatedProperties = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return properties.value.slice(start, end)
+})
  
 // for filter Type and City
 const selectedType = ref("None")
@@ -152,6 +181,8 @@ const loadProperties = async () => {
     const data = await listingsService.getListings();
     console.log('2. Successfully fetched data:', data);
     properties.value = data;
+    // Reset page to 1 after new data loads
+    currentPage.value = 1;
   } catch (error) {
     console.error('2. Fetch failed:', error);
   }
@@ -161,7 +192,7 @@ onMounted(() => {
   loadProperties();
 })
 
-// for the collapisble filter bar
+// for the collapsible filter bar
 const isFilterVisible = ref(true)
 
 const toggleFilter = () => {
@@ -169,9 +200,6 @@ const toggleFilter = () => {
 }
 
 // for the Add Listing button (goes to property management)
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
 const addListing = () => {
   router.push('/propertymanagement')
 }
