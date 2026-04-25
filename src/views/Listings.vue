@@ -143,7 +143,7 @@ const router = useRouter()
 // Navigate to specific property details page
 const goToDetails = (id: string | number | undefined) => {
   if (!id) return
-  // Adjust this route to match wherever your individual property page lives in your Vue Router setup!
+  // Adjust this route to match wherever your individual property page 
   router.push(`/property/${id}`)
 }
 
