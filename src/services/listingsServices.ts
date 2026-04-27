@@ -7,8 +7,7 @@ const SUB_TABLE_MAP: Record<number, string> = {
   2: 'lot_only',
   3: 'condominium',
   4: 'memorial',
-  5: 'clubshare',
-  6: 'golfshare'
+
 };
 
 export const listingsService = {
@@ -168,15 +167,23 @@ export const listingsService = {
     }
   },
 
-  //soft delete only, can change to hard delete once masabotan
+// Hard delete
   async deleteListing(listingId: number) {
+
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('main_listings')
-        .update({ is_active: false })
-        .eq('listing_ID', listingId);
- 
+        .delete()
+        .eq('listing_ID', listingId)
+        .select();
+
       if (error) throw error;
+
+      if (!data || data.length === 0) {
+        console.error("Database delete failed silently: No rows were  deleted. ");
+        return { success: false };
+      }
+
       return { success: true };
     } catch (error) {
       console.error('Error deleting listing:', error);
