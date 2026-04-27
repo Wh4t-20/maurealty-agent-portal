@@ -36,6 +36,7 @@ import { computed } from 'vue' // Don't forget to import this
 import { type Property, formattedPropertyType }  from '@/assets/classes/listings'
 import house1 from '@/assets/images/sample-house.jpg' // Kept as a fallback image
 import { MapPin } from 'lucide-vue-next'
+
 const props = defineProps<{ details: Property }>()
 
 // Cache formatters for better performance  

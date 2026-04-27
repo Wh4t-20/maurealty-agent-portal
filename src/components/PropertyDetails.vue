@@ -7,7 +7,7 @@
           </h1>
 
           <!-- Reminder: add functionality to close -->
-          <button class="absolute top-0 right-0">
+          <button class="absolute top-0 right-0 p-3 rounded-full hover:bg-gray-200 transition-colors" @click="$emit('closeDetails')">
             <XIcon class="size-7.5" stroke-width="3"/>
           </button>
         </header>
@@ -201,7 +201,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { type Property, formattedPropertyType } from '@/assets/classes/listings'
 
 import house1 from '@/assets/images/sample-house.jpg'
@@ -209,10 +209,13 @@ import house2 from '@/assets/images/house2.webp'
 
 import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen } from "lucide-vue-next";
 
+const props = defineProps<{ prop_id: number }>()
+
 // 2. State definition: Start as null to represent the "not loaded" state
 const details = ref<Property | null>(null)
 
 const thumbnails = ref([house1, house2]);
+
 
 const loadProperties = () => {
   // 4. Correct Assignment: Assign a single object, not an array
