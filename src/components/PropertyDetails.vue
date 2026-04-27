@@ -7,7 +7,7 @@
           </h1>
 
           <!-- Reminder: add functionality to close -->
-          <button class="absolute top-0 right-0">
+          <button class="absolute top-0 right-0 p-3 rounded-full hover:bg-gray-200 transition-colors" @click="$emit('closeDetails')">
             <XIcon class="size-7.5" stroke-width="3"/>
           </button>
         </header>
@@ -201,7 +201,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { type Property, formattedPropertyType } from '@/assets/classes/listings'
 
 import house1 from '@/assets/images/sample-house.jpg'
@@ -215,6 +215,7 @@ const props = defineProps<{ prop_id: number }>()
 const details = ref<Property | null>(null)
 
 const thumbnails = ref([house1, house2]);
+
 
 const loadProperties = () => {
   // 4. Correct Assignment: Assign a single object, not an array

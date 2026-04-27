@@ -86,7 +86,7 @@
     </header>
 
   <main class="relative flex-1 overflow-hidden flex flex-col w-full">
-      <PropertyDetails :prop_id="prop_id" v-if="showDetails"/>
+      <PropertyDetails :prop_id="prop_id" v-if="showDetails" @close-details="showDetails = false"/>
 
       <section class="custom-scrollbar flex-1 overflow-y-auto">
         <div class="p-10 flex flex-col min-h-full">
