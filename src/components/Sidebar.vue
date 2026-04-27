@@ -76,10 +76,11 @@
 
     
   ];
+
   
   const logoutItem = {
     icon: LogOut,
-    path: "/login"
+    path: "/"
   };
   </script>
   
