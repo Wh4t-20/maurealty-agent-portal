@@ -86,6 +86,8 @@
     </header>
 
   <main class="relative flex-1 overflow-hidden flex flex-col w-full">
+      <PropertyDetails  v-if="showDetails"/>
+
       <section class="custom-scrollbar flex-1 overflow-y-auto">
         <div class="p-10 flex flex-col min-h-full">
           
@@ -95,6 +97,7 @@
               :key="property.listing_id" 
               :details="property" 
               class="flex flex-col items-center"
+              @click="displayDetails(property.listing_id)"
             />
           </div>
 
@@ -141,7 +144,7 @@ const properties = shallowRef<Property[]>([])
 const router = useRouter()
 
 
-
+import PropertyDetails from '@/components/PropertyDetails.vue'
 
 const selectedType = ref("None")
 const selectedCity = ref("None")
@@ -219,6 +222,12 @@ const toggleFilter = () => {
 // for the Add Listing button (goes to property management)
 const addListing = () => {
   router.push('/propertymanagement')
+}
+
+const showDetails = ref(false)
+
+const displayDetails = (id: number) => {
+  showDetails.value = true
 }
 </script>
 

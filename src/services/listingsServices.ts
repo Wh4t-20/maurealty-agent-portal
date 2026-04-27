@@ -6,7 +6,9 @@ const SUB_TABLE_MAP: Record<number, string> = {
   1: 'house_and_lot',
   2: 'lot_only',
   3: 'condominium',
-  4: 'memorial'
+  4: 'memorial',
+  5: 'clubshare',
+  6: 'golfshare'
 };
 
 export const listingsService = {
