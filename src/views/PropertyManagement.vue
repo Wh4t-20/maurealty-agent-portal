@@ -53,6 +53,11 @@
                 <input type="text" v-model="form.location" placeholder="Street, City, Province" class="w-full border border-gray-300 bg-white rounded-lg p-3">
               </div>
 
+              <div class="col-span-2">
+                <label class="block text-sm font-bold text-maurealty-blue mb-1">Developer</label>
+                <input type="text" v-model="form.developer_name" placeholder="e.g. Building Construction Co."  class="w-full border border-gray-300 bg-white rounded-lg p-3">
+              </div>
+
               <!-- Dropdown -->
               <div class="col-span-2">
                 <label class="block text-sm font-bold text-maurealty-blue mb-1">Property Type</label>
