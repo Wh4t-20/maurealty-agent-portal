@@ -209,6 +209,8 @@ import house2 from '@/assets/images/house2.webp'
 
 import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen } from "lucide-vue-next";
 
+const props = defineProps<{ prop_id: number }>()
+
 // 2. State definition: Start as null to represent the "not loaded" state
 const details = ref<Property | null>(null)
 

@@ -86,7 +86,7 @@
     </header>
 
   <main class="relative flex-1 overflow-hidden flex flex-col w-full">
-      <PropertyDetails  v-if="showDetails"/>
+      <PropertyDetails :prop_id="prop_id" v-if="showDetails"/>
 
       <section class="custom-scrollbar flex-1 overflow-y-auto">
         <div class="p-10 flex flex-col min-h-full">
@@ -225,9 +225,11 @@ const addListing = () => {
 }
 
 const showDetails = ref(false)
+const prop_id = ref(0)
 
 const displayDetails = (id: number) => {
   showDetails.value = true
+  prop_id.value = id
 }
 </script>
 
