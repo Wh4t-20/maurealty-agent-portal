@@ -104,7 +104,7 @@
               :disabled="currentPage === 1"
               class="px-4 py-1 border border-maurealty-blue text-maurealty-blue rounded hover:bg-maurealty-blue hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-maurealty-blue cursor-pointer disabled:cursor-not-allowed"
             >
-              Prev
+              <
             </button>
             <span class="text-sm font-medium text-maurealty-blue">Page {{ currentPage }} of {{ totalPages }}</span>
             <button 
@@ -112,7 +112,7 @@
               :disabled="currentPage >= totalPages || totalPages === 0"
               class="px-4 py-1 border border-maurealty-blue text-maurealty-blue rounded hover:bg-maurealty-blue hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-maurealty-blue cursor-pointer disabled:cursor-not-allowed"
             >
-              Next
+              >
             </button>
           </footer>
 
