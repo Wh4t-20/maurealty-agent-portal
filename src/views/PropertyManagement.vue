@@ -568,7 +568,7 @@ const saveProperty = async () => {
       };
     }
 
-    // 4. Send to Supabase via our Service
+// 4. Send main data to Supabase via our Service
     console.log("Sending payload to Supabase...");
     const response = await listingsService.createListing(mainData, specificData, propertyTypeId);
     
@@ -583,9 +583,10 @@ const saveProperty = async () => {
 
       alert('Property listing AND photos created successfully!');
       
-      // Reset the form images
+      // Reset the form and clear the images
       imageFiles.value.forEach(img => URL.revokeObjectURL(img.preview));
       imageFiles.value = [];
+      // (You can also add code here to reset form.value to defaults)
     }
 
   } catch (error) {
