@@ -20,10 +20,24 @@
 
             <div class="border-2 border-dashed border-maurealty-blue/20 rounded-2xl p-6 bg-gray-50">
               <div class="flex flex-wrap gap-4 mb-4">
-                <div v-for="i in 2" :key="i" class="w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm">
-                  <img src="https://via.placeholder.com/150" alt="Property Preview" class="object-cover size-full">
+                
+                <div v-for="(img, index) in imageFiles" :key="index" class="relative w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
+                  <img :src="img.preview" alt="Property Preview" class="object-cover size-full">
+                  <button type="button" @click="removeImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                    ✕
+                  </button>
                 </div>
-                <button type="button" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition">
+                
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*" 
+                  ref="fileInput" 
+                  class="hidden" 
+                  @change="handleFileUpload"
+                >
+                
+                <button type="button" @click="triggerFileInput" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition">
                   <span class="text-3xl">+</span>
                   <span class="text-xs font-bold">Add Photo</span>
                 </button>
@@ -382,16 +396,16 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue';
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
-import { listingsService } from '@/services/listingsServices'; 
+import { listingsService } from '@/services/listingsServices';
 
 // Combine all interfaces for the form state
 type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & { listing_title?: string };
 
 const form = ref<Partial<PropertyForm>>({
   // Base Property Fields
-  listing_title: '', // <-- Added this to track the title!
+  listing_title: '', 
   property_type: 'House And Lot',
   price: 0,
   commission: 0,
@@ -405,11 +419,25 @@ const form = ref<Partial<PropertyForm>>({
   with_loft: false,
   townhome: false,
   rowhouse: false,
+  lot_area: 0,
+  floor_area: 0,
+  room_count: 0,
+  toilet_count: 0,
+  helper_room_count: 0,
+  driver_room_count: 0,
+  carpark_count: 0,
 
   // Lot Only Defaults
+  block_number: 0,
+  lot_number: 0,
+  phase_number: 0,
+  area: 0,
   class: 'Residential',
 
   // Condominium Defaults
+  unit_number: 0,
+  bedroom_count: 0,
+  balcony_count: 0,
   is_studio_type: true,
   is_BR_unit: false,
   is_villa: false,
@@ -425,15 +453,45 @@ const form = ref<Partial<PropertyForm>>({
   is_pet_memorial: false
 });
 
+// --- Image Handling Logic ---
+const imageFiles = ref<{ file: File; preview: string }[]>([]);
+const fileInput = ref<HTMLInputElement | null>(null);
+
+const triggerFileInput = () => {
+  if (fileInput.value) fileInput.value.click();
+};
+
+const handleFileUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files) {
+    Array.from(target.files).forEach(file => {
+      imageFiles.value.push({
+        file: file,
+        preview: URL.createObjectURL(file) 
+      });
+    });
+  }
+  if (fileInput.value) fileInput.value.value = '';
+};
+
+const removeImage = (index: number) => {
+  const image = imageFiles.value[index];
+  if (image) {
+    URL.revokeObjectURL(image.preview); 
+    imageFiles.value.splice(index, 1);
+  }
+};
+// ----------------------------
+
 const setExclusively = (group: (keyof PropertyForm)[], selectedField: keyof PropertyForm) => {
   group.forEach(field => {
     (form.value as any)[field] = (field === selectedField);
   });
 };
 
-const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial', 'Clubshare', 'Golfshare']
-const lotClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Farm Lot']
-const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare']
+const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial', 'Clubshare', 'Golfshare'];
+const lotClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Farm Lot'];
+const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare'];
 
 watch(() => form.value.property_type, (newType) => {
   console.log(`Switching layout to: ${newType}`);
@@ -447,9 +505,9 @@ const saveProperty = async () => {
     };
     const propertyTypeId = typeMap[form.value.property_type || 'House And Lot'] || 1;
 
-    // 2. Prepare Main Listing Data (Maps to main_listings table)
+    // 2. Prepare Main Listing Data
     const mainData = {
-      agent_ID: 1, // WARNING: Hardcoded for now. Update this once user login/auth is built!
+      agent_ID: 1, 
       listing_title: form.value.listing_title,
       property_type_ID: propertyTypeId,
       price: form.value.price,
@@ -459,10 +517,10 @@ const saveProperty = async () => {
       is_active: form.value.is_active
     };
 
-    // 3. Prepare Specific Sub-table Data (Translating frontend variables to exact Supabase column names)
+    // 3. Prepare Specific Sub-table Data
     let specificData = {};
 
-    if (propertyTypeId === 1) { // House and Lot
+    if (propertyTypeId === 1) { 
       specificData = {
         "1_storey": form.value.one_storey, 
         with_loft: form.value.with_loft,
@@ -477,8 +535,7 @@ const saveProperty = async () => {
         driver_rooms_count: form.value.driver_room_count,
         carpark_count: form.value.carpark_count
       };
-    } else if (propertyTypeId === 2) { // Lot Only
-      // Map class string to class ID
+    } else if (propertyTypeId === 2) { 
       const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
       specificData = {
         block_number: String(form.value.block_number), 
@@ -487,7 +544,7 @@ const saveProperty = async () => {
         lot_area: form.value.area, 
         lot_class_ID: lotClassMap[form.value.class || 'Residential'] || 1
       };
-    } else if (propertyTypeId === 3) { // Condominium
+    } else if (propertyTypeId === 3) { 
       const condoClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Condotel': 4, 'Timeshare': 5 };
       specificData = {
         condo_class_ID: condoClassMap[form.value.class || 'Residential'] || 1,
@@ -501,7 +558,7 @@ const saveProperty = async () => {
         balcony_count: form.value.balcony_count,
         bedroom_count: form.value.bedroom_count
       };
-    } else if (propertyTypeId === 4) { // Memorial
+    } else if (propertyTypeId === 4) { 
       specificData = {
         is_urn: form.value.is_urn,
         is_vault: form.value.is_vault,
@@ -516,9 +573,20 @@ const saveProperty = async () => {
     console.log("Sending payload to Supabase...");
     const response = await listingsService.createListing(mainData, specificData, propertyTypeId);
     
-    if (response.success) {
-      alert('Property listing created successfully! (Check Supabase Dashboard)');
-      // Optional: Reset form here
+    if (response.success && response.data) {
+      // 5. If we have images, upload them now using the new listing_ID
+      const rawFiles = imageFiles.value.map(img => img.file);
+      
+      if (rawFiles.length > 0) {
+        console.log("Uploading images...");
+        await listingsService.uploadPropertyImages(response.data.listing_ID, rawFiles);
+      }
+
+      alert('Property listing AND photos created successfully!');
+      
+      // Reset the form images
+      imageFiles.value.forEach(img => URL.revokeObjectURL(img.preview));
+      imageFiles.value = [];
     }
 
   } catch (error) {

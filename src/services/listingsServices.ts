@@ -138,6 +138,49 @@ export const listingsService = {
     }
   },
 
+  async uploadPropertyImages(listingId: number, files: File[]) {
+    try {
+      const uploadedRecords = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file) continue;
+        
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${listingId}-${Date.now()}-${i}.${fileExt}`;
+        const filePath = `images/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('listings')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('listings')
+          .getPublicUrl(filePath);
+
+        uploadedRecords.push({
+          listing_ID: listingId,
+          image_url: publicUrl,
+          display_order: i + 1 
+        });
+      }
+
+      if (uploadedRecords.length > 0) {
+        const { error: dbError } = await supabase
+          .from('listing_images')
+          .insert(uploadedRecords);
+          
+        if (dbError) throw dbError;
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      throw error;
+    }
+  },
   async updateListing(listingId: number, mainListingData: any, specificPropertyData: any, propertyTypeId: number) {
     try {
       const { error: mainError } = await supabase
