@@ -6,8 +6,8 @@
             {{ details.listing_title }}
           </h1>
 
-          <button class="absolute top-0 right-0 p-3 rounded-full hover:bg-gray-200 transition-colors cursor-pointer" @click="$emit('closeDetails')">
-            <XIcon class="size-7.5" stroke-width="3"/>
+          <button class="absolute top-0 right-0 p-3 rounded-full hover:bg-gray-200/40 transition-colors cursor-pointer" @click="$emit('closeDetails')">
+            <XIcon class="size-5" stroke-width="3"/>
           </button>
         </header>
 
@@ -64,7 +64,7 @@
 
             <span class="flex items-center gap-1.5">
               <UserStarIcon class="size-6" color="#000000" />
-              <p>{{ details.agent_name }}</p>
+              <p>{{ details.agent_name || 'N/A' }}</p>
               <p class="italic text-gray-700">- {{ details.commission }}% Commision</p>
             </span>
             
@@ -283,35 +283,35 @@ const loadProperties = async () => {
 
 function getCondoType () {
   if (!details.value) 
-  return 'N/A'
+    return 'N/A'
   if (details.value.is_studio_type) 
-  return 'Studio'
+    return 'Studio'
   else if (details.value.is_BR_unit) 
     return 'BR Unit'
   else if (details.value.is_villa) 
-  return 'Villa'
+    return 'Villa'
   else if (details.value.is_garden_villa) 
-  return 'Garden Villa'
+    return 'Garden Villa'
   else if (details.value.is_penthouse) 
-  return 'Penthouse'
+    return 'Penthouse'
   else return 'N/A'
 }
 
 function getMemorialType () {
   if (!details.value) 
-  return 'N/A';
+    return 'N/A';
   if (details.value.is_urn) 
-  return 'Urn'
+    return 'Urn'
   else if (details.value.is_vault) 
-  return 'Vault'
+    return 'Vault'
   else if (details.value.is_garden) 
-  return 'Garden'
+    return 'Garden'
   else if (details.value.is_estate) 
-  return 'Estate'
+    return 'Estate'
   else if (details.value.is_family_estate) 
-  return 'Family Estate'
+    return 'Family Estate'
   else if (details.value.is_pet_memorial) 
-  return 'Pet Memorial'
+    return 'Pet Memorial'
   else return 'N/A'
 }
 
