@@ -8,8 +8,8 @@ export const generateShareLink = async (listingId: number, agentId: number, days
     .from('shared_listings')
     .insert([
       { 
-        listing_ID: listingId, 
-        agent_ID: agentId, 
+        "listing_ID": listingId, 
+        "agent_ID": agentId, 
         expires_at: expiresAt.toISOString() 
       }
     ])
@@ -27,7 +27,13 @@ export const getSharedListing = async (token: string) => {
       *,
       main_listings (
         *,
-        listing_images (image_url)
+        house_and_lot (*),
+        lot_only (*),
+        condominium (*),
+        memorial (*),
+        listing_images (image_url),
+        agents (first_name, last_name),
+        developers (name)
       )
     `)
     .eq('share_id', token)
