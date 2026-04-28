@@ -86,7 +86,14 @@
     </header>
 
   <main class="relative flex-1 overflow-hidden flex flex-col w-full">
-      <PropertyDetails :prop_id="prop_id" v-if="showDetails" @close-details="showDetails = false"/>
+      <PropertyDetails 
+        v-if="showDetails"
+        :prop_id="prop_id" 
+        :prop_type="prop_type"
+        @close-details="showDetails = false"
+        @edit="handleEdit"
+        @delete="processDelete"
+      />
 
       <section class="custom-scrollbar flex-1 overflow-y-auto">
         <div class="p-10 flex flex-col min-h-full">
@@ -96,8 +103,10 @@
               v-for="property in paginatedProperties" 
               :key="property.listing_id" 
               :details="property" 
-              class="flex flex-col items-center hover:shadow-2xl hover:-translate-y-2 hover:scale-105 hover:z-5 transition-all"
-              @click="displayDetails(property.listing_id)"
+              class="flex flex-col items-center hover:shadow-2xl hover:-translate-y-2 hover:scale-105 hover:z-5 transition-all cursor-pointer"
+              @click="displayDetails(property)"
+              @edit="handleEdit"
+              @delete="processDelete"
             />
           </div>
 
@@ -134,6 +143,7 @@ import { useRouter } from 'vue-router'
 import { type Property }  from '@/assets/classes/listings'
 import PropertyCard from '@/components/PropertyCard.vue'
 import ListingsFilter from '@/components/ListingsFilter.vue'
+import PropertyDetails from '@/components/PropertyDetails.vue' 
 
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
@@ -142,9 +152,6 @@ import { ChevronDown, Plus } from 'lucide-vue-next'
 
 const properties = shallowRef<Property[]>([])
 const router = useRouter()
-
-
-import PropertyDetails from '@/components/PropertyDetails.vue'
 
 const selectedType = ref("None")
 const selectedCity = ref("None")
@@ -155,7 +162,7 @@ const filteredProperties = computed(() => {
     return properties.value;
   }
   
-  // Convert string to match teh db 
+  // Convert string to match the db 
   const dbFormatType = selectedType.value.toLowerCase().replace(/ /g, '_');
 
   // Filter 
@@ -181,8 +188,6 @@ watch(selectedType, () => {
   currentPage.value = 1
 })
 
-
-
 // for Condo and Lot classes + Memorial Types
 const selectedCondoClass = ref("None")
 const selectedLotClass = ref("None")
@@ -196,15 +201,14 @@ const memorialTypes: string[] = ['None', 'Urn', 'Vault', 'Garden', 'Estate', 'Fa
 
 // Connect to backend and fetch properties
 const loadProperties = async () => {
-  console.log('1. Attempting to fetch listings...');
+  console.log('Attempt to get listings imnida');
   try {
     const data = await listingsService.getListings();
-    console.log('2. Successfully fetched data:', data);
+    console.log('Naa na ang data bai:', data);
     properties.value = data;
-    // Reset page to 1 after new data loads
     currentPage.value = 1;
   } catch (error) {
-    console.error('2. Fetch failed:', error);
+    console.error('Fetch error yah:', error);
   }
 }
 
@@ -219,17 +223,50 @@ const toggleFilter = () => {
   isFilterVisible.value = !isFilterVisible.value
 }
 
-// for the Add Listing button (goes to property management)
+// for the Add Listing button goes to property management, wala pay logic and such though
 const addListing = () => {
   router.push('/propertymanagement')
 }
 
+
 const showDetails = ref(false)
 const prop_id = ref(0)
+const prop_type = ref('') 
 
-const displayDetails = (id: number) => {
+// displays the details 
+const displayDetails = (property: Property) => {
   showDetails.value = true
-  prop_id.value = id
+  prop_id.value = property.listing_id
+  prop_type.value = property.property_type 
+}
+
+//  edit
+const handleEdit = (property: Property) => {
+  router.push({
+    path: '/propertymanagement',
+    query: { 
+      id: property.listing_id,
+      type: property.property_type 
+    }
+  });
+};
+
+const processDelete = async (id: number) => {
+
+  try {
+    const result = await listingsService.deleteListing(id)
+    
+    if (result.success) {
+      showDetails.value = false 
+      
+      properties.value = properties.value.filter(p => p.listing_id !== id)
+      
+      console.log("Deleted successfully from DB and UI")
+    }
+  } catch (err) {
+    alert("Could not delete listing. Check console for details.")
+    console.error(err)
+  }
 }
 </script>
 
