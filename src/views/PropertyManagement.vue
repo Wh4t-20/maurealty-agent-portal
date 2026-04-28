@@ -500,7 +500,7 @@ const saveProperty = async () => {
   try {
     // 1. Map Property Type String to DB ID
     const typeMap: Record<string, number> = {
-      'House And Lot': 1, 'Lot Only': 2, 'Condominium': 3, 'Memorial': 4
+      'House And Lot': 1, 'Lot Only': 2, 'Condominium': 3, 'Memorial': 4, 'Clubshare': 5, 'Golfshare': 6
     };
     const propertyTypeId = typeMap[form.value.property_type || 'House And Lot'] || 1;
 
