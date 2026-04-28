@@ -453,7 +453,7 @@ const form = ref<Partial<PropertyForm>>({
   is_pet_memorial: false
 });
 
-// --- Image Handling Logic ---
+// Image Handling Logic
 const imageFiles = ref<{ file: File; preview: string }[]>([]);
 const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -481,7 +481,6 @@ const removeImage = (index: number) => {
     imageFiles.value.splice(index, 1);
   }
 };
-// ----------------------------
 
 const setExclusively = (group: (keyof PropertyForm)[], selectedField: keyof PropertyForm) => {
   group.forEach(field => {
