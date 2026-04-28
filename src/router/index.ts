@@ -7,6 +7,8 @@ import PropertyManagement from '@/views/PropertyManagement.vue'
 import Accounting from '@/views/Accounting.vue'
 import Login from '@/views/LoginForm.vue'
 import GenealogyLandingpage from '@/views/Genealogy-landingpage.vue'
+import SharedListing from '@/views/SharedListing.vue'
+
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -30,6 +32,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/listings',
     name: 'Listing',
     component: Listings
+  },
+  {
+    path: '/shared/listing/:token',
+    name: 'SharedListing',
+    component: SharedListing,
+    meta: { requiresAuth: false }
   },
   {
     path: '/propertymanagement',
