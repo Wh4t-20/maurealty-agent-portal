@@ -1,6 +1,6 @@
 <template>
   <div class="relative w-full max-w-150"> 
-    <div class = "relative">
+    <div class = "relative hover:shadow-2xl">
       <img :src="houseimg"
             alt="House"
             loading="lazy"
