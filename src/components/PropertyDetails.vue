@@ -191,7 +191,12 @@
             <span class="flex items-center-safe gap-1"><Trash2 class="size-4" /> DELETE</span>
           </button>
 
-          <button @click="handleShare" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+          <button 
+            @click="handleShare" 
+            :disabled="isShareCooldown"
+            class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            :class="!isShareCooldown ? 'hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75' : ''"
+          >
             <span class="flex items-center-safe gap-1"><ExternalLink class="size-4" /> SHARE</span>
           </button>
         </section>
@@ -303,13 +308,19 @@ const loadProperties = async () => {
   }
 }
 
+// to prevent duplicate share links from being created 
+const isShareCooldown = ref(false);
+
 const handleShare = async () => {
+  if (isShareCooldown.value) return;
+
   if (!details.value || !details.value.listing_id || !details.value.agent_ID) {
     alert('Listing details are incomplete. Cannot generate link.');
     return;
   }
 
   try {
+    isShareCooldown.value = true;
     const shareData = await generateShareLink(details.value.listing_id, details.value.agent_ID, 1);
     const shareUrl = `${window.location.origin}/shared/listing/${shareData.share_id}`;
     
@@ -319,6 +330,10 @@ const handleShare = async () => {
   } catch (error) {
     console.error('Error generating link:', error);
     alert('Failed to generate link.');
+  } finally {
+    setTimeout(() => {
+      isShareCooldown.value = false;
+    }, 5000);
   }
 };
 

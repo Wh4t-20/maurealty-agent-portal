@@ -1,6 +1,20 @@
 import { supabase } from '../supabaseClient';
 
+// helper function to delete expired links muahahhaha
+const cleanupExpiredLinks = async () => {
+  const now = new Date().toISOString();
+  await supabase
+    .from('shared_listings')
+    .delete()
+    .lt('expires_at', now); 
+};
+
+
 export const generateShareLink = async (listingId: number, agentId: number, daysValid: number = 1) => {
+
+// execute cleanup everytime before a new share link is generated.
+cleanupExpiredLinks().catch(err => console.error("Cleanup Failed: ", err));
+
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + daysValid);
 
