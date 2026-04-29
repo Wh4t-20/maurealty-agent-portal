@@ -21,11 +21,6 @@
             </section>
             
             <section class="listings-filter-section">
-              <label for="city-input" class="text-base">City</label>
-              <ListingsFilter :choices="Cities" v-model="selectedCity" />
-            </section>
-            
-            <section class="listings-filter-section">
               <label for="price-range-input" class="text-base">Price Range</label>
               <div class="flex gap-4 items-center">
                 <input type="number" placeholder="₱ Min" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
@@ -154,7 +149,6 @@ const properties = shallowRef<Property[]>([])
 const router = useRouter()
 
 const selectedType = ref("None")
-const selectedCity = ref("None")
 
 // Filter properties based on the selected Type
 const filteredProperties = computed(() => {
@@ -194,7 +188,6 @@ const selectedLotClass = ref("None")
 const selectedMemorialType = ref("None")
 
 const Type: string[] = ["None", "House And Lot", "Lot Only", "Condominium", "Memorial", "Clubshare", "Golfshare"]
-const Cities: string[] = ["None", "Cebu City", "Lapu-Lapu"]
 const lotClasses: string[] = ['None', 'Residential', 'Commercial', 'Industrial', 'Farm Lot']
 const condoClasses: string[] = ['None', 'Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare']
 const memorialTypes: string[] = ['None', 'Urn', 'Vault', 'Garden', 'Estate', 'Family Estate', 'Pet Memorial']
