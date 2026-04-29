@@ -1,14 +1,13 @@
 <template>
-    <div v-if="details" class="absolute inset-0 z-10 flex items-center justify-center bg-black/10 backdrop-blur-sm">
-      <div class="custom-scrollbar bg-white w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 px-10 py-7 overflow-y-auto">
+<div v-if="details && details.listing_title" class="absolute inset-0 z-10 flex items-center justify-center bg-black/10 backdrop-blur-sm">
+  <div class="custom-scrollbar bg-white w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 px-10 py-7 overflow-y-auto">
         <header class="relative mb-4">
           <h1 class="text-3xl max-w-19/20 font-extrabold text-maurealty-blue">
             {{ details.listing_title }}
           </h1>
 
-          <!-- Reminder: add functionality to close -->
-          <button class="absolute top-0 right-0 p-3 rounded-full hover:bg-gray-200 transition-colors" @click="$emit('closeDetails')">
-            <XIcon class="size-7.5" stroke-width="3"/>
+          <button class="absolute top-0 right-0 p-3 rounded-full hover:bg-gray-200/40 transition-colors cursor-pointer" @click="$emit('closeDetails')">
+            <XIcon class="size-5" stroke-width="3"/>
           </button>
         </header>
 
@@ -21,18 +20,17 @@
             <div class="relative flex gap-4 items-center">
               <div class="relative grow aspect-video rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
                 <img 
-                  :src="house2"
+                  :src="activeImage || house2"
                   alt="Property Main View" 
                   class="absolute inset-0 w-full h-full object-contain"
-                />
+                />  
               </div>
 
-              <!-- Reminder: add functionality to move -->
-              <button class="absolute left-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue">
+              <button class="absolute left-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue cursor-pointer">
                 <ChevronLeft stroke-width=2.75 />
               </button>
 
-              <button class="absolute right-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue">
+              <button class="absolute right-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue cursor-pointer">
                 <ChevronRight stroke-width=2.75 />
               </button>
             </div>
@@ -42,6 +40,7 @@
                 v-for="(thumb, index) in thumbnails" 
                 :key="index"
                 :src="thumb" 
+                @click="activeImage = thumb"
                 alt="Property thumbnail" 
                 class="w-32 h-24 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-maurealty-blue"
               />
@@ -65,7 +64,7 @@
 
             <span class="flex items-center gap-1.5">
               <UserStarIcon class="size-6" color="#000000" />
-              <p>{{ details.agent_name }}</p>
+              <p>{{ details.agent_name || 'N/A' }}</p>
               <p class="italic text-gray-700">- {{ details.commission }}% Commision</p>
             </span>
             
@@ -76,8 +75,6 @@
               <p class="ml-2.5">{{ details.developer_name }}</p>
             </span>
             
-            <!-- Property details -->
-            <!-- House and Lot -->
             <template v-if="details.property_type === 'house_and_lot'">
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue">House and Lot Features</legend>
@@ -85,23 +82,23 @@
                   <div class="grid grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ details.lot_area }} sqm</span>
                     <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ details.floor_area }} sqm</span>
-                    <span class="flex items-center-safe gap-1"><Sofa /> {{ details.room_count }} room{{ details.room_count != 1 ? 's' : '' }}</span>
-                    <span class="flex items-center-safe gap-1"><Toilet /> {{ details.toilet_count }} toilet{{ details.toilet_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1"><Sofa /> {{ details.rooms_count }} room{{ details.rooms_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1"><Toilet /> {{ details.toilets_count }} toilet{{ details.s_count != 1 ? 's' : '' }}</span>
                   </div>
-                  
+    
                   <span class="flex items-center-safe justify-around pr-2 mt-3">
-                    <p class="flex items-center-safe gap-1" v-if="details.helper_room_count > 0">
-                      <BrushCleaning class="size-4" /> {{ details.helper_room_count }} helper room{{ details.helper_room_count != 1 ? 's' : '' }}
+                    <p class="flex items-center-safe gap-1" v-if="details.helper_rooms_count > 0">
+                      <BrushCleaning class="size-4" /> {{ details.helper_rooms_count }} helper room{{ details.helper_rooms_count != 1 ? 's' : '' }}
                     </p>
                     <p v-if="details.driver_room_count > 0 || details.carpark_count > 0">|</p>
-                    <p class="flex items-center-safe gap-1" v-if="details.driver_room_count > 0">
-                      <LifeBuoy class="size-3" /> {{ details.driver_room_count }} driver room{{ details.driver_room_count != 1 ? 's' : '' }}
-                    </p>
+                    <p class="flex items-center-safe gap-1" v-if="details.driver_rooms_count > 0">
+                      <LifeBuoy class="size-3" /> {{ details.driver_rooms_count }} driver room{{ details.driver_rooms_count != 1 ? 's' : '' }}
+                    </p> 
                     <p v-if="details.carpark_count > 0">|</p>
                     <p class="flex items-center-safe gap-1" v-if="details.carpark_count > 0">
                       <Car class="size-4" /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}
                     </p>
-                  </span>
+                   </span> 
 
                   <div class="mt-3">
                     <ul class="grid grid-cols-3">
@@ -116,7 +113,6 @@
               </fieldset>
             </template>
 
-            <!-- Lot only -->
             <template v-if="details.property_type === 'lot_only'">
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue">Lot Features</legend>
@@ -128,19 +124,18 @@
                       <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Phase No. <b>{{ details.phase_number }}</b></span>  
                     </div>
                     <div>
-                      <span class="flex items-center-safe gap-1"><SquareDashed /> {{ details.area }} sqm</span>
+                      <span class="flex items-center-safe gap-1"><SquareDashed /> {{ details.lot_area }} sqm</span>
                     </div>
                   </div>
                   
                   <div class="mt-2 pb-2 flex gap-2">
                     <p class="font-bold text-xl text-maurealty-blue">Class:</p>
-                    <p class="text-xl">{{ details.class }}</p>
+                    <p class="text-xl">{{ lotClassesMap[details.lot_class_ID] || 'N/A' }}</p>
                   </div>
                 </main>
               </fieldset>
             </template>
 
-            <!-- Condominium -->
             <template v-if="details.property_type === 'condominium'">
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue">Condominium Features</legend>
@@ -154,9 +149,8 @@
                   
                   <div class="mt-2 flex gap-2">
                     <p class="font-bold text-xl text-maurealty-blue">Class:</p>
-                    <p class="text-xl">{{ details.class }}</p>
+                    <p class="text-xl">{{ condoClassesMap[details.condo_class_ID] || 'N/A' }}</p>
                   </div>
-
                   <div class="pb-2 flex gap-2">
                     <p class="font-bold text-xl text-maurealty-blue">Type:</p>
                     <p class="text-xl">{{ getCondoType() }}</p>
@@ -165,7 +159,6 @@
               </fieldset>
             </template>
 
-            <!-- Memorial -->
             <template v-if="details.property_type === 'memorial'">
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue">Memorial Features</legend>
@@ -178,21 +171,18 @@
               </fieldset>
             </template>
 
-            <!-- Description -->
             <section class="mt-2 text-base">
               {{ details.description }}
             </section>
           </div>
         </main>
 
-        <!-- EDIT and DELETE button -->
-         <!-- Note: if you wanna put it in the right side just put justify-end in section class -->
         <section class="w-full flex mt-4 px-3 gap-4">
-          <button class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition">
+          <button @click="$emit('edit', details)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><SquarePen class="size-4" /> EDIT</span>
           </button>
 
-          <button class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-red-600 text-red-600 font-bold hover:bg-red-600 hover:text-white hover:shadow-md hover:-translate-y-0.75 transition">
+          <button @click="$emit('delete', details.listing_id)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-red-600 text-red-600 font-bold hover:bg-red-600 hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><Trash2 class="size-4" /> DELETE</span>
           </button>
         </section>
@@ -201,75 +191,138 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import { type Property, formattedPropertyType } from '@/assets/classes/listings'
+import { listingsService } from '@/services/listingsServices' 
 
 import house1 from '@/assets/images/sample-house.jpg'
 import house2 from '@/assets/images/house2.webp'
 
 import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen } from "lucide-vue-next";
 
-const props = defineProps<{ prop_id: number }>()
-
-// 2. State definition: Start as null to represent the "not loaded" state
-const details = ref<Property | null>(null)
-
-const thumbnails = ref([house1, house2]);
+const props = defineProps<{ 
+  prop_id: number,
+  prop_type: string
+ }>()
 
 
-const loadProperties = () => {
-  // 4. Correct Assignment: Assign a single object, not an array
-  details.value = { 
-    listing_id: 1,
-    listing_title: 'Pre-selling Single Attached House and Lot in Talamban, Cebu / Metropolis Subdivision', 
-    agent_name: 'Carl Santillan', 
-    property_type: 'house_and_lot', 
-    price: 150000, 
-    commission: 5, 
-    location: 'Cebu City', 
-    description: 'Pre-selling Single Attached House and Lot in Talamban, Cebu / Metropolis Subdivision', 
-    created_at: new Date('2005-09-18T11:49:36'), 
-    is_active: true,
-    developer_name: 'Ayala'
+const emit = defineEmits(['closeDetails', 'edit', 'delete'])
+
+const propertyTypesMap: Record<string, number> = {
+  'house_and_lot': 1,
+  'lot_only': 2,
+  'condominium': 3,
+  'memorial': 4,
+  'clubshare': 5,
+  'golfshare': 6
+};
+
+const condoClassesMap: Record<number, string> = {
+  1: 'Residential',
+  2: 'Commercial',
+  3: 'Industrial',
+  4: 'Condotel',
+  5: 'Timeshare'
+};
+//gikapoi naq sig map
+const lotClassesMap: Record<number, string> = {
+  1: 'Residential',
+  2: 'Commercial',
+  3: 'Industrial',
+  4: 'Farm Lot'
+};
+
+const details = ref<any>(null)
+const thumbnails = ref<string[]>([]);
+//i image
+const activeImage = ref<string>(''); 
+
+const loadProperties = async () => {
+  try {
+    const typeId = propertyTypesMap[props.prop_type] || 1;
+    
+    // Fetch data from database
+    const data = await listingsService.getListingById(props.prop_id, typeId) as any;
+    
+    if (data) {
+      const rawSubData = data[props.prop_type];
+      const subTableData = Array.isArray(rawSubData) ? rawSubData[0] : (rawSubData || {});
+
+      details.value = {
+        listing_id: data.listing_ID,
+        listing_title: data.listing_title,
+        price: data.price,
+        commission: data.commission,
+        location: data.location,
+        description: data.description,
+        created_at: new Date(data.created_at),
+        is_active: data.is_active,
+        
+        agent_name: `${data.agents?.first_name || ''} ${data.agents?.last_name || ''}`.trim(),
+        developer_name: data.developers?.name || 'None',
+        property_type: data.property_type?.property_type || props.prop_type,
+        
+        ...subTableData
+      };
+
+      // Handle Image array from database di pa guro ni magamit if di pa ma insertan og img ang createListibng
+      if (data.listing_images && data.listing_images.length > 0) {
+        const sortedImages = data.listing_images.sort((a: any, b: any) => a.display_order - b.display_order);
+        thumbnails.value = sortedImages.map((img: any) => img.image_url);
+        activeImage.value = thumbnails.value[0]; 
+      } else {
+        thumbnails.value = [house1, house2];
+        activeImage.value = house1;
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching full listing details:", error);
   }
 }
 
-// I swear there's a better way to do these two functions below using maps and stuff, sayang I aint smart enough for that (yet)
+
 function getCondoType () {
-  if (details.is_studio_type)
-    return 'Studio'
-  else if (details.is_BR_unit)
-    return 'BR Unit'
-  else if (details.is_villa)
-    return 'Villa'
-  else if (details.is_garden_villa)
-    return 'Garden Villa'
-  else if (details.is_penthouse)
-    return 'Penthouse'
-  else
+  if (!details.value) 
     return 'N/A'
+  if (details.value.is_studio_type) 
+    return 'Studio'
+  else if (details.value.is_BR_unit) 
+    return 'BR Unit'
+  else if (details.value.is_villa) 
+    return 'Villa'
+  else if (details.value.is_garden_villa) 
+    return 'Garden Villa'
+  else if (details.value.is_penthouse) 
+    return 'Penthouse'
+  else return 'N/A'
 }
 
 function getMemorialType () {
-  if (details.is_urn)
+  if (!details.value) 
+    return 'N/A';
+  if (details.value.is_urn) 
     return 'Urn'
-  else if (details.is_vault)
+  else if (details.value.is_vault) 
     return 'Vault'
-  else if (details.is_garden)
+  else if (details.value.is_garden) 
     return 'Garden'
-  else if (details.is_estate)
+  else if (details.value.is_estate) 
     return 'Estate'
-  else if (details.is_family_estate)
+  else if (details.value.is_family_estate) 
     return 'Family Estate'
-  else if (details.is_pet_memorial)
+  else if (details.value.is_pet_memorial) 
     return 'Pet Memorial'
-  else
-    return 'N/A'
+  else return 'N/A'
 }
 
-onMounted(() => {
-  loadProperties()
-})
+// load the deets 
+watch(() => props.prop_id, (newId) => {
+  if (newId) {
+    details.value = null;
+    loadProperties()
+  }
+}, { immediate: true })
+
 </script>
 
 <style scoped>
@@ -282,7 +335,6 @@ onMounted(() => {
   margin-block: 25px;
 }
 
-/* Style the draggable thumb */
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background-color: #1E3A8A; 
   border-radius: 9999px;
