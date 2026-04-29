@@ -105,6 +105,11 @@
                     <span class="flex items-center-safe gap-1"><SquareDashed /> {{ details.lot_only[0]?.lot_area }} sqm</span>
                   </div>
                 </div>
+                
+                <div class="mt-2 pb-2 flex gap-2">
+                  <p class="font-bold text-xl text-maurealty-blue">Class:</p>
+                  <p class="text-xl">{{ lotClassesMap[details.lot_only[0]?.lot_class_ID] || 'N/A' }}</p>
+                </div>
               </main>
             </fieldset>
           </template>
@@ -119,7 +124,12 @@
                   <span class="flex items-center-safe gap-1"><BookImage /> {{ details.condominium[0]?.balcony_count }} balcony(s)</span>
                   <span class="flex items-center-safe gap-1"><Car /> {{ details.condominium[0]?.carpark_count }} carpark(s)</span>
                 </div>
-                <div class="pb-2 flex gap-2 mt-2">
+                
+                <div class="mt-2 flex gap-2">
+                  <p class="font-bold text-xl text-maurealty-blue">Class:</p>
+                  <p class="text-xl">{{ condoClassesMap[details.condominium[0]?.condo_class_ID] || 'N/A' }}</p>
+                </div>
+                <div class="pb-2 flex gap-2">
                   <p class="font-bold text-xl text-maurealty-blue">Type:</p>
                   <p class="text-xl">{{ getCondoType(details.condominium[0]) }}</p>
                 </div>
@@ -169,23 +179,36 @@ const error = ref<string | null>(null);
 const details = ref<any>(null);
 const thumbnails = ref<string[]>([house1, house2]);
 
+const condoClassesMap: Record<number, string> = {
+  1: 'Residential',
+  2: 'Commercial',
+  3: 'Industrial',
+  4: 'Condotel',
+  5: 'Timeshare'
+};
+
+const lotClassesMap: Record<number, string> = {
+  1: 'Residential',
+  2: 'Commercial',
+  3: 'Industrial',
+  4: 'Farm Lot'
+};
+
 const loadListing = async () => {
   const token = route.params.token as string;
   try {
     const data = await getSharedListing(token);
     const mainListing = data.main_listings;
 
-    // Map the nested agent and developer names to flat properties for the template
     details.value = {
       ...mainListing,
-      property_type: mainListing.property_type_ID === 1 ? 'house_and_lot' : // Replace mapping according to your property_type table
+      property_type: mainListing.property_type_ID === 1 ? 'house_and_lot' : 
                      mainListing.property_type_ID === 2 ? 'lot_only' :
                      mainListing.property_type_ID === 3 ? 'condominium' : 'memorial',
       agent_name: mainListing.agents ? `${mainListing.agents.first_name} ${mainListing.agents.last_name}` : 'Unknown Agent',
       developer_name: mainListing.developers ? mainListing.developers.name : null,
     };
 
-    // Extract dynamic images if available
     if (mainListing.listing_images && mainListing.listing_images.length > 0) {
       thumbnails.value = mainListing.listing_images.map((img: any) => img.image_url);
     }
