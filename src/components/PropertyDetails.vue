@@ -190,6 +190,10 @@
           <button @click="$emit('delete', details.listing_id)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-red-600 text-red-600 font-bold hover:bg-red-600 hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><Trash2 class="size-4" /> DELETE</span>
           </button>
+
+          <button @click="$emit('share')" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+            <span class="flex items-center-safe gap-1"><ExternalLink class="size-4" /> SHARE</span>
+          </button>
         </section>
       </div>
   </div>
@@ -203,7 +207,7 @@ import { listingsService } from '@/services/listingsServices'
 import house1 from '@/assets/images/sample-house.jpg'
 import house2 from '@/assets/images/house2.webp'
 
-import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen } from "lucide-vue-next";
+import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink } from "lucide-vue-next";
 
 const props = defineProps<{ 
   prop_id: number,
@@ -211,7 +215,7 @@ const props = defineProps<{
  }>()
 
 
-const emit = defineEmits(['closeDetails', 'edit', 'delete'])
+const emit = defineEmits(['closeDetails', 'edit', 'delete', 'share'])
 
 const propertyTypesMap: Record<string, number> = {
   'house_and_lot': 1,
