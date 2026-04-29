@@ -98,7 +98,7 @@
               v-for="property in paginatedProperties" 
               :key="property.listing_id" 
               :details="property" 
-              class="flex flex-col items-center hover:shadow-2xl hover:-translate-y-2 hover:scale-105 hover:z-5 transition-all cursor-pointer"
+              class="flex flex-col items-center hover:-translate-y-2 hover:scale-105 hover:z-5 transition-all cursor-pointer"
               @click="displayDetails(property)"
               @edit="handleEdit"
               @delete="processDelete"

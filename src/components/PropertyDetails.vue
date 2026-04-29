@@ -26,11 +26,15 @@
                 />  
               </div>
 
-              <button class="absolute left-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue cursor-pointer">
+              <button 
+                class="absolute left-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue cursor-pointer"
+                @click="updateImage(currentImageIndex - 1)">
                 <ChevronLeft stroke-width=2.75 />
               </button>
 
-              <button class="absolute right-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue cursor-pointer">
+              <button 
+                class="absolute right-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue cursor-pointer"
+                @click="updateImage(currentImageIndex + 1)">
                 <ChevronRight stroke-width=2.75 />
               </button>
             </div>
@@ -40,9 +44,10 @@
                 v-for="(thumb, index) in thumbnails" 
                 :key="index"
                 :src="thumb" 
-                @click="activeImage = thumb"
+                @click="updateImage(index)"
                 alt="Property thumbnail" 
                 class="w-32 h-24 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-maurealty-blue"
+                :class="[index == currentImageIndex ? 'opacity-50' : '']"
               />
             </div>
           </div>
@@ -236,6 +241,24 @@ const details = ref<any>(null)
 const thumbnails = ref<string[]>([]);
 //i image
 const activeImage = ref<string>(''); 
+const currentImageIndex = ref(0);
+
+const updateImage = (i: number) => {
+  if (i >= thumbnails.value.length) {
+    i = 0;
+  }
+  else if (i < 0) {
+    i = thumbnails.value.length - 1
+  }
+
+  // so that it aint gonna have any errors with being undefined
+  const thumbValue = thumbnails.value[i];
+
+  if (typeof thumbValue === 'string') {
+    activeImage.value = thumbValue;
+    currentImageIndex.value = i;
+  }
+}
 
 const loadProperties = async () => {
   try {
@@ -269,7 +292,7 @@ const loadProperties = async () => {
       if (data.listing_images && data.listing_images.length > 0) {
         const sortedImages = data.listing_images.sort((a: any, b: any) => a.display_order - b.display_order);
         thumbnails.value = sortedImages.map((img: any) => img.image_url);
-        activeImage.value = thumbnails.value[0]; 
+        activeImage.value = thumbnails.value[0]!; 
       } else {
         thumbnails.value = [house1, house2];
         activeImage.value = house1;
