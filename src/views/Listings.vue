@@ -24,7 +24,7 @@
               <label for="price-range-input" class="text-base">Price Range</label>
               <div class="flex gap-4 items-center">
                 <input type="number" placeholder="₱ Min" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
-                <span class="w-8 border-2 border-[#d7dde3] self-center -mx-4 -z-1"></span>
+                <span class="font-bold -mx-2"> - </span>
                 <input type="number" placeholder="₱ Max" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
               </div>
             </section>
