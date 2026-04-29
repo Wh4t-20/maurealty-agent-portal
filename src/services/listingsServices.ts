@@ -139,31 +139,51 @@ export const listingsService = {
     }
   },
 
-  async updateListing(listingId: number, mainListingData: any, specificPropertyData: any, propertyTypeId: number) {
+// Upload images to Supabase Storage and link them to the listing
+  async uploadPropertyImages(listingId: number, files: File[]) {
     try {
-      const { error: mainError } = await supabase
-        .from('main_listings')
-        .update(mainListingData)
-        .eq('listing_ID', listingId);
- 
-      if (mainError) throw mainError;
- 
-      if (specificPropertyData && Object.keys(specificPropertyData).length > 0) {
-        const subTable = SUB_TABLE_MAP[propertyTypeId];
- 
-        if (subTable) {
-          const { error: subError } = await supabase
-            .from(subTable)
-            .update(specificPropertyData)
-            .eq('listing_ID', listingId);
- 
-          if (subError) throw subError;
-        }
+      const uploadedRecords = [];
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file) continue;
+        
+        // create a unique, safe file name
+        const fileExt = file.name.split('.').pop() || 'bin';
+        const fileName = `${listingId}-${Date.now()}-${i}.${fileExt}`;
+        
+        const filePath = `listings/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('images')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('images')
+          .getPublicUrl(filePath);
+
+        //Prepare the row to be inserted into the listing_images table
+        uploadedRecords.push({
+          listing_ID: listingId,
+          image_url: publicUrl,
+          display_order: i + 1 
+        });
       }
- 
+
+      //Bulk insert the URLs into the database
+      if (uploadedRecords.length > 0) {
+        const { error: dbError } = await supabase
+          .from('listing_images')
+          .insert(uploadedRecords);
+          
+        if (dbError) throw dbError;
+      }
+
       return { success: true };
     } catch (error) {
-      console.error('Error updating listing:', error);
+      console.error('Error uploading images:', error);
       throw error;
     }
   },

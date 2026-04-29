@@ -21,15 +21,10 @@
             </section>
             
             <section class="listings-filter-section">
-              <label for="city-input" class="text-base">City</label>
-              <ListingsFilter :choices="Cities" v-model="selectedCity" />
-            </section>
-            
-            <section class="listings-filter-section">
               <label for="price-range-input" class="text-base">Price Range</label>
               <div class="flex gap-4 items-center">
                 <input type="number" placeholder="₱ Min" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
-                <span class="w-8 border-2 border-[#d7dde3] self-center -mx-4 -z-1"></span>
+                <span class="font-bold -mx-2"> - </span>
                 <input type="number" placeholder="₱ Max" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
               </div>
             </section>
@@ -86,14 +81,23 @@
     </header>
 
   <main class="relative flex-1 overflow-hidden flex flex-col w-full">
-      <PropertyDetails 
-        v-if="showDetails"
-        :prop_id="prop_id" 
-        :prop_type="prop_type"
-        @close-details="showDetails = false"
-        @edit="handleEdit"
-        @delete="processDelete"
-      />
+      <transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="transform translate-y-4 scale-95 opacity-0"
+            enter-to-class="transform translate-y-0 scale-100 opacity-100"
+            leave-active-class="transition duration-75 ease-out"
+            leave-from-class="transform translate-y-0 scale-100 opacity-100"
+            leave-to-class="transform -translate-y-4 scale-95 opacity-0"
+      >
+        <PropertyDetails 
+          v-if="showDetails"
+          :prop_id="prop_id" 
+          :prop_type="prop_type"
+          @close-details="showDetails = false"
+          @edit="handleEdit"
+          @delete="processDelete"
+        />
+      </transition>
 
       <section class="custom-scrollbar flex-1 overflow-y-auto">
         <div class="p-10 flex flex-col min-h-full">
@@ -103,7 +107,7 @@
               v-for="property in paginatedProperties" 
               :key="property.listing_id" 
               :details="property" 
-              class="flex flex-col items-center hover:shadow-2xl hover:-translate-y-2 hover:scale-105 hover:z-5 transition-all cursor-pointer"
+              class="flex flex-col items-center hover:-translate-y-2 hover:scale-105 hover:z-5 transition-all cursor-pointer"
               @click="displayDetails(property)"
               @edit="handleEdit"
               @delete="processDelete"
@@ -154,7 +158,6 @@ const properties = shallowRef<Property[]>([])
 const router = useRouter()
 
 const selectedType = ref("None")
-const selectedCity = ref("None")
 
 // Filter properties based on the selected Type
 const filteredProperties = computed(() => {
@@ -194,7 +197,6 @@ const selectedLotClass = ref("None")
 const selectedMemorialType = ref("None")
 
 const Type: string[] = ["None", "House And Lot", "Lot Only", "Condominium", "Memorial", "Clubshare", "Golfshare"]
-const Cities: string[] = ["None", "Cebu City", "Lapu-Lapu"]
 const lotClasses: string[] = ['None', 'Residential', 'Commercial', 'Industrial', 'Farm Lot']
 const condoClasses: string[] = ['None', 'Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare']
 const memorialTypes: string[] = ['None', 'Urn', 'Vault', 'Garden', 'Estate', 'Family Estate', 'Pet Memorial']

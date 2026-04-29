@@ -20,10 +20,24 @@
 
             <div class="border-2 border-dashed border-maurealty-blue/20 rounded-2xl p-6 bg-gray-50">
               <div class="flex flex-wrap gap-4 mb-4">
-                <div v-for="i in 2" :key="i" class="w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm">
-                  <img src="https://via.placeholder.com/150" alt="Property Preview" class="object-cover size-full">
+                
+                <div v-for="(img, index) in imageFiles" :key="index" class="relative w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
+                  <img :src="img.preview" alt="Property Preview" class="object-cover size-full">
+                  <button type="button" @click="removeImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                    ✕
+                  </button>
                 </div>
-                <button type="button" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition">
+                
+                <input 
+                  type="file" 
+                  multiple 
+                  accept="image/*" 
+                  ref="fileInput" 
+                  class="hidden" 
+                  @change="handleFileUpload"
+                >
+                
+                <button type="button" @click="triggerFileInput" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition">
                   <span class="text-3xl">+</span>
                   <span class="text-xs font-bold">Add Photo</span>
                 </button>
@@ -385,7 +399,7 @@ import {useRoute} from 'vue-router';
 import { ref, watch, onMounted } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
-import { listingsService } from '@/services/listingsServices'; 
+import { listingsService } from '@/services/listingsServices';
 
 
 // Combine all interfaces for the form state
@@ -489,7 +503,7 @@ onMounted(() => {
 
 const form = ref<Partial<PropertyForm>>({
   // Base Property Fields
-  listing_title: '', // <-- Added this to track the title!
+  listing_title: '', 
   property_type: 'House And Lot',
   price: 0,
   commission: 0,
@@ -503,11 +517,25 @@ const form = ref<Partial<PropertyForm>>({
   with_loft: false,
   townhome: false,
   rowhouse: false,
+  lot_area: 0,
+  floor_area: 0,
+  room_count: 0,
+  toilet_count: 0,
+  helper_room_count: 0,
+  driver_room_count: 0,
+  carpark_count: 0,
 
   // Lot Only Defaults
+  block_number: 0,
+  lot_number: 0,
+  phase_number: 0,
+  area: 0,
   class: 'Residential',
 
   // Condominium Defaults
+  unit_number: 0,
+  bedroom_count: 0,
+  balcony_count: 0,
   is_studio_type: true,
   is_BR_unit: false,
   is_villa: false,
@@ -523,15 +551,44 @@ const form = ref<Partial<PropertyForm>>({
   is_pet_memorial: false
 });
 
+// Image Handling Logic
+const imageFiles = ref<{ file: File; preview: string }[]>([]);
+const fileInput = ref<HTMLInputElement | null>(null);
+
+const triggerFileInput = () => {
+  if (fileInput.value) fileInput.value.click();
+};
+
+const handleFileUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files) {
+    Array.from(target.files).forEach(file => {
+      imageFiles.value.push({
+        file: file,
+        preview: URL.createObjectURL(file) 
+      });
+    });
+  }
+  if (fileInput.value) fileInput.value.value = '';
+};
+
+const removeImage = (index: number) => {
+  const image = imageFiles.value[index];
+  if (image) {
+    URL.revokeObjectURL(image.preview); 
+    imageFiles.value.splice(index, 1);
+  }
+};
+
 const setExclusively = (group: (keyof PropertyForm)[], selectedField: keyof PropertyForm) => {
   group.forEach(field => {
     (form.value as any)[field] = (field === selectedField);
   });
 };
 
-const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial', 'Clubshare', 'Golfshare']
-const lotClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Farm Lot']
-const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare']
+const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial', 'Clubshare', 'Golfshare'];
+const lotClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Farm Lot'];
+const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare'];
 
 watch(() => form.value.property_type, (newType) => {
   console.log(`Switching layout to: ${newType}`);
