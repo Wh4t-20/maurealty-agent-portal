@@ -191,7 +191,7 @@
             <span class="flex items-center-safe gap-1"><Trash2 class="size-4" /> DELETE</span>
           </button>
 
-          <button @click="$emit('share')" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+          <button @click="handleShare" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><ExternalLink class="size-4" /> SHARE</span>
           </button>
         </section>
@@ -203,6 +203,7 @@
 import { ref, watch } from 'vue'
 import { type Property, formattedPropertyType } from '@/assets/classes/listings'
 import { listingsService } from '@/services/listingsServices' 
+import { generateShareLink } from '@/services/shareService'
 
 import house1 from '@/assets/images/sample-house.jpg'
 import house2 from '@/assets/images/house2.webp'
@@ -213,7 +214,6 @@ const props = defineProps<{
   prop_id: number,
   prop_type: string
  }>()
-
 
 const emit = defineEmits(['closeDetails', 'edit', 'delete', 'share'])
 
@@ -233,7 +233,7 @@ const condoClassesMap: Record<number, string> = {
   4: 'Condotel',
   5: 'Timeshare'
 };
-//gikapoi naq sig map
+
 const lotClassesMap: Record<number, string> = {
   1: 'Residential',
   2: 'Commercial',
@@ -243,7 +243,6 @@ const lotClassesMap: Record<number, string> = {
 
 const details = ref<any>(null)
 const thumbnails = ref<string[]>([]);
-//i image
 const activeImage = ref<string>(''); 
 const currentImageIndex = ref(0);
 
@@ -255,7 +254,6 @@ const updateImage = (i: number) => {
     i = thumbnails.value.length - 1
   }
 
-  // so that it aint gonna have any errors with being undefined
   const thumbValue = thumbnails.value[i];
 
   if (typeof thumbValue === 'string') {
@@ -267,8 +265,6 @@ const updateImage = (i: number) => {
 const loadProperties = async () => {
   try {
     const typeId = propertyTypesMap[props.prop_type] || 1;
-    
-    // Fetch data from database
     const data = await listingsService.getListingById(props.prop_id, typeId) as any;
     
     if (data) {
@@ -277,6 +273,7 @@ const loadProperties = async () => {
 
       details.value = {
         listing_id: data.listing_ID,
+        agent_ID: data.agent_ID,
         listing_title: data.listing_title,
         price: data.price,
         commission: data.commission,
@@ -292,7 +289,6 @@ const loadProperties = async () => {
         ...subTableData
       };
 
-      // Handle Image array from database di pa guro ni magamit if di pa ma insertan og img ang createListibng
       if (data.listing_images && data.listing_images.length > 0) {
         const sortedImages = data.listing_images.sort((a: any, b: any) => a.display_order - b.display_order);
         thumbnails.value = sortedImages.map((img: any) => img.image_url);
@@ -307,42 +303,46 @@ const loadProperties = async () => {
   }
 }
 
+const handleShare = async () => {
+  if (!details.value || !details.value.listing_id || !details.value.agent_ID) {
+    alert('Listing details are incomplete. Cannot generate link.');
+    return;
+  }
+
+  try {
+    const shareData = await generateShareLink(details.value.listing_id, details.value.agent_ID, 1);
+    const shareUrl = `${window.location.origin}/shared/listing/${shareData.share_id}`;
+    
+    await navigator.clipboard.writeText(shareUrl);
+    alert('Temporary link copied to clipboard!');
+    emit('share');
+  } catch (error) {
+    console.error('Error generating link:', error);
+    alert('Failed to generate link.');
+  }
+};
 
 function getCondoType () {
-  if (!details.value) 
-    return 'N/A'
-  if (details.value.is_studio_type) 
-    return 'Studio'
-  else if (details.value.is_BR_unit) 
-    return 'BR Unit'
-  else if (details.value.is_villa) 
-    return 'Villa'
-  else if (details.value.is_garden_villa) 
-    return 'Garden Villa'
-  else if (details.value.is_penthouse) 
-    return 'Penthouse'
+  if (!details.value) return 'N/A'
+  if (details.value.is_studio_type) return 'Studio'
+  else if (details.value.is_BR_unit) return 'BR Unit'
+  else if (details.value.is_villa) return 'Villa'
+  else if (details.value.is_garden_villa) return 'Garden Villa'
+  else if (details.value.is_penthouse) return 'Penthouse'
   else return 'N/A'
 }
 
 function getMemorialType () {
-  if (!details.value) 
-    return 'N/A';
-  if (details.value.is_urn) 
-    return 'Urn'
-  else if (details.value.is_vault) 
-    return 'Vault'
-  else if (details.value.is_garden) 
-    return 'Garden'
-  else if (details.value.is_estate) 
-    return 'Estate'
-  else if (details.value.is_family_estate) 
-    return 'Family Estate'
-  else if (details.value.is_pet_memorial) 
-    return 'Pet Memorial'
+  if (!details.value) return 'N/A';
+  if (details.value.is_urn) return 'Urn'
+  else if (details.value.is_vault) return 'Vault'
+  else if (details.value.is_garden) return 'Garden'
+  else if (details.value.is_estate) return 'Estate'
+  else if (details.value.is_family_estate) return 'Family Estate'
+  else if (details.value.is_pet_memorial) return 'Pet Memorial'
   else return 'N/A'
 }
 
-// load the deets 
 watch(() => props.prop_id, (newId) => {
   if (newId) {
     details.value = null;
