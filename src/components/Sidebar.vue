@@ -5,13 +5,22 @@
              transition-all duration-300
              w-20 hover:w-90 group overflow-hidden sticky"
     >
-    <div class="flex flex-col items-center ">
-        <img src="@/assets/images/Maurealty.png" alt="MauRealty Logo" class="w-3/5 h-auto " />
-        <img src="@/assets/images/profile.png" alt="Agent" class="w-3/7 aspect-square object-cover rounded-full outline-2 outline-white m-3" />
-        <p class="group-hover:text-xl  text-0 opacity-0 group-hover:opacity-100 transition whitespace-nowrap text-white text-[clamp(0.5rem,2vw,1rem)"> Carl Santillan</p>
-        <p class="group-hover:text-xl  text-0 opacity-0 group-hover:opacity-100  transition  whitespace-nowrap text-white mb-3">Emerald</p>
-      </div>
+    <router-link to="/profile" class="flex flex-col items-center">
+      <img src="@/assets/images/Maurealty.png" alt="MauRealty Logo" class="w-3/5 h-auto " />
+      <img src="@/assets/images/profile.png" alt="Agent"
+        class="w-3/7 aspect-square object-cover rounded-full outline-2 outline-white m-3" />
+
+      <p class="group-hover:text-xl text-0 opacity-0 group-hover:opacity-100 transition whitespace-nowrap text-white text-[clamp(0.5rem,2vw,1rem)]">
+        Carl Santillan
+      </p>
+
+      <p class="group-hover:text-xl text-0 opacity-0 group-hover:opacity-100 transition whitespace-nowrap text-white mb-3">
+        Emerald
+      </p>
+    </router-link>
+    
       <!-- TOP NAV -->
+
       <div class="flex flex-col overflow-y-auto space-y-2 px-3">
         <router-link
           v-for="item in topItems"
