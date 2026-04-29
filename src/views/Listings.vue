@@ -81,14 +81,23 @@
     </header>
 
   <main class="relative flex-1 overflow-hidden flex flex-col w-full">
-      <PropertyDetails 
-        v-if="showDetails"
-        :prop_id="prop_id" 
-        :prop_type="prop_type"
-        @close-details="showDetails = false"
-        @edit="handleEdit"
-        @delete="processDelete"
-      />
+      <transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="transform translate-y-4 scale-95 opacity-0"
+            enter-to-class="transform translate-y-0 scale-100 opacity-100"
+            leave-active-class="transition duration-75 ease-out"
+            leave-from-class="transform translate-y-0 scale-100 opacity-100"
+            leave-to-class="transform -translate-y-4 scale-95 opacity-0"
+      >
+        <PropertyDetails 
+          v-if="showDetails"
+          :prop_id="prop_id" 
+          :prop_type="prop_type"
+          @close-details="showDetails = false"
+          @edit="handleEdit"
+          @delete="processDelete"
+        />
+      </transition>
 
       <section class="custom-scrollbar flex-1 overflow-y-auto">
         <div class="p-10 flex flex-col min-h-full">
