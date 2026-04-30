@@ -4,7 +4,7 @@
       <div class="flex justify-between items-center w-full pb-3 mb-3">
         <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
         <div class="flex gap-5 h-full">
-          <button class="flex items-center gap-1 bg-maurealty-blue text-md text-white h-full px-4 rounded-full cursor-pointer" @click="addListing">
+          <button class="flex items-center gap-1 bg-maurealty-blue text-md text-white h-full px-4 rounded-full cursor-pointer hover:opacity-70 transition-opacity" @click="addListing">
             <Plus class="size-4" /> Add Listing
           </button>
           <input id="search" type="text" name="search" placeholder="Search"
@@ -96,7 +96,7 @@
               v-for="property in paginatedProperties" 
               :key="property.listing_id" 
               :details="property" 
-              class="flex flex-col items-center hover:shadow-2xl hover:-translate-y-2 hover:scale-105 hover:z-5 transition-all"
+              class="flex flex-col items-center hover:shadow-2xl hover:-translate-y-2 hover:scale-105 hover:z-5 transition-all cursor-pointer"
               @click="displayDetails(property.listing_id)"
             />
           </div>
