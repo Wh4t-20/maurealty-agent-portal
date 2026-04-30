@@ -1,362 +1,211 @@
 <template>
   <div class="w-full dashboard-container">
-    <!-- Main Content -->
     <div class="main-content">
-
       <div class="welcome-section">
-        <h1>Welcome back, {{ agentName }}</h1>
+        <div class="header-flex">
+          <div class="header-title">
+            <h1 class="welcome-message">Welcome back, {{ agentName }}</h1>
+            <p class="subtitle">Dashboard > <span class="text-blue">Senior Agent</span></p>
+          </div>
+          <!-- <div class="quick-actions-top">
+            <button class="btn-action primary" @click="activeModal = 'addListing'">+ Add Listing</button>
+            <button class="btn-action secondary" @click="activeModal = 'addAgent'">+ Add Agent</button>
+            <div class="divider-v"></div>
+            <button class="btn-action calculator-btn" @click="activeModal = 'calculator'">Calculator</button>
+          </div> -->
+        </div>
       </div>
 
-      <div class = "DataTabs">
-        <!-- Stats Cards -->
+      <div class="DataTabs">
         <div class="stats-grid">
-          <div class="stat-card">
-            <h3>RECEIVABLES</h3>
-            <div class="amount">$ 10,000</div>
-          </div>
-          
-          <div class="stat-card">
-            <h3>TOTAL SALES</h3>
-            <div class="amount">$ 700,000</div>
-          </div>
-          
-          <div class="stat-card">
-            <h3>QUOTA</h3>
-            <div class="amount">$ 700,000 / $ 1,000,000</div>
-            <div class="progress-bar">
-              <div class="progress-fill" :style="{width: '70%'}"></div>
-            </div>
-            <div class="percentage">70%</div>
-            <button class="update-btn">Update Quota</button>
-          </div>
+          <StatCard 
+            v-for="stat in metrics" 
+            :key="stat.label" 
+            :stat="stat" 
+            @click="expandMetric(stat)" 
+          />
         </div>
 
-        <!-- Sales Performance -->
-        <div class="sales-section">
-          <h2>SALES PERFORMANCE</h2>
-          <div class="chart-placeholder">
-            <!-- Chart would go here -->
-            <div class="mock-chart"></div>
+        <div class="dashboard-grid">
+          <div class="left-column">
+            <SalesPerformance @open-details="openDetails(performanceData, 'performance')" />
+            <RecentActivity 
+              :activities="activities" 
+              @view-item="(item) => openDetails(item, 'activity')"
+              @view-all="openDetails(activities, 'activity_all')"
+            />
           </div>
-        </div>
 
-        <!-- Level Up Section -->
-        <div class="levelup-section">
-          <h2>LEVEL UP</h2>
-          <div class="levelup-card">
-            <div class="total-sales">TOTAL SALES: $ 700,000.00</div>
-            <div class="next-promo">
-              Reach $ 1,000,000.00 to reach next promotion
-            </div>
-            <div class="current-rank">
-              CURRENT RANK: #5 Kenji Bad BoyBoy
-            </div>
+          <div class="right-column">
+            <GenealogyCard :downline="downline" @view-full="openDetails(null, 'genealogy_full')" />
+            <Reminders :reminders="reminders" @view-all="openDetails(reminders, 'reminders_all')" />
           </div>
-        </div>
-
-        <div class="support-note">
-          Any issues?
         </div>
       </div>
     </div>
+
+    <transition name="fade">
+      <div v-if="selectedItem || selectedMetric || activeModal" class="modal-overlay" @click.self="closeAll">
+        
+        <div v-if="activeModal" class="modal-content">
+          <button class="close-x" @click="activeModal = null">✕</button>
+          <AddListing v-if="activeModal === 'addListing'" />
+          <AddAgent v-if="activeModal === 'addAgent'" />
+          <Calculator v-if="activeModal === 'calculator'" />
+        </div> 
+
+        <div v-else-if="selectedMetric" class="modal-content analytics-modal">
+          <button class="close-x" @click="selectedMetric = null">✕</button>
+          <div class="modal-header-detail">
+            <h2 class="modal-title">{{ selectedMetric.label }} Analysis</h2>
+          </div>
+          </div>
+
+        <div v-else-if="selectedItem" class="modal-content detail-modal">
+           <button class="close-x" @click="closeAll">✕</button>
+           </div>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue';
 
-const agentName = ref('Agent')
+// Component Imports
+import StatCard from '@/components/dashboard/DashboardStatCard.vue';
+import SalesPerformance from '@/components/dashboard/SalesPerfromance.vue';
+import RecentActivity from '@/components/dashboard/RecentActivity.vue';
+import GenealogyCard from '@/components/dashboard/GenealogyCard.vue';
+import Reminders from '@/components/dashboard/Reminders.vue';
+import AddListing from '@/components/dashboard/AddListing.vue';
+import AddAgent from '@/components/dashboard/AddAgent.vue';
+import Calculator from '@/components/dashboard/Calculator.vue';
+
+// State
+const agentName = ref('Kenji Bad BoyBoy');
+const selectedItem = ref<any>(null);
+const selectedMetric = ref<any>(null);
+const activeModal = ref<string | null>(null); // For forms
+const modalType = ref('');
+
+// Data (Keep original structure)
+const metrics = ref([
+  { label: 'TOTAL LISTINGS', value: '42', trend: '+12%', sub: 'vs last month', type: 'positive' },
+  { label: 'COMMISSION (NET)', value: '$38,420', trend: '85%', sub: 'Target: $45k', type: 'positive' },
+  { label: 'TEAM SALES', value: '$1.2M', trend: '+5.4%', sub: 'Downline contrib.', type: 'positive' },
+  { label: 'ACTIVE DEALS', value: '8', trend: '3', sub: 'Pending approval', type: 'neutral' }
+]);
+
+const performanceData = ref({ title: "Performance Data", id: "perf-1" });
+const activities = ref([/* same as your original array */]);
+const reminders = ref([/* same as your original array */]);
+const downline = ref([/* same as your original array */]);
+
+// Handlers
+const expandMetric = (stat: any) => { selectedMetric.value = stat; };
+const openDetails = (item: any, type: string) => {
+  selectedItem.value = item || { id: 'temp' };
+  modalType.value = type;
+};
+const closeAll = () => {
+  selectedItem.value = null;
+  selectedMetric.value = null;
+  activeModal.value = null;
+};
+
+// Scroll Lock
+watch([selectedItem, selectedMetric, activeModal], ([item, metric, modal]) => {
+  document.body.style.overflow = (item || metric || modal) ? 'hidden' : '';
+});
 </script>
 
 <style scoped>
-.dashboard-container {
-  display: flex;
-  min-height: 100vh;
-  background: #f6f7fb;
-  font-family: 'Poppins', sans-serif;
+@import "@/style.css";
+
+.dashboard-container { display: flex; min-height: 100vh; background: var(--color-background-gray); }
+.main-content { flex: 1; display: flex; flex-direction: column; }
+.welcome-section { background: white; padding: 1.5rem 2.5rem; border-bottom: 1px solid #e1e4e8; }
+.header-flex { display: flex; justify-content: space-between; align-items: center; }
+.DataTabs { padding: 2rem 2.5rem; }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+.dashboard-grid { display: grid; grid-template-columns: 1fr 340px; gap: 2rem; }
+.left-column { display: flex; flex-direction: column; gap: 2rem; }
+.mt-8 { margin-top: 2rem; }
+
+.welcome-message {
+  font-size: 30px;
+  color: var(--color-maurealty-blue);
+  font-weight: bold;
 }
 
-.main-content {
-  flex: 1;
-  padding: 20px;
+.header-title {
+  font: Poppins;
 }
 
-.welcome-section h1 {
-  color: black;
-  font-size: 2rem;
+/* Modal Styles */
+.modal-overlay { 
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+  background: rgba(10, 61, 98, 0.7); backdrop-filter: blur(8px); 
+  display: flex; align-items: center; justify-content: center; z-index: 9999;
 }
+.modal-content { background: white; border-radius: 24px; position: relative; }
 
-
-.sidebar {
-  width: 280px;
-  background: linear-gradient(180deg, #0A3D62 0%, #0A3D62 100%);
-  color: white;
-  display: flex;
-  flex-direction: column;
-}
-
-.company-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;   /* centers horizontally */
-  text-align: center;
-}
-
-.company-brand h1 {
-  font-size: 1.8rem;
-  margin: 0;
-  color: #e74c3c;
-}
-
-.company-brand h2 {
-  font-size: 1.4rem;
-  margin: 0;
-  margin-bottom: 1rem;
-}
-
-.logo {
-  margin-bottom: 40px;
-  margin-top: 20px;
-  width: 200px;    
-}
-
-.profile-pic {
-  width: 100px;           /* adjust size as needed */
-  height: 100px;
-  border-radius: 50%;    /* makes it circular */
-  object-fit: cover;
-  margin-bottom: 0.5rem;
-  margin-bottom: 0.5rem;
-  border: 1px solid #fff; /* optional: adds a white border ring */
-}
-
-.agent-name {
-  font-size: 1rem;
-  color: white;
-}
-
-.agent-rank {
-  font-size: 1rem;
-  text-align: center;
-  color: white;
-}
-
-.sidebar-nav {
-  width: 280px;
-  display: flex;
-  flex-direction: column;
-  margin-top: 1rem;
-}
-
-.nav-item {
-  text-decoration: none;
-  color: white;
-  padding: 10px;
-  width: 100%;
-  border-radius: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  transition: 0.3s;
-}
-
-.nav-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.nav-item.active {
-  background: rgba(255, 255, 255, 0.23);
-}
-
-.SidebarFooter {
+/* Container for the buttons */
+.quick-actions-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
-  margin-bottom: 10px;
+  gap: 12px;
 }
 
-.settings-btn {
-  display: flex;
-  background: transparent;
-  color: white;
-  padding: 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.3s;
-  margin-right: 10px;
-}
-
-.settings-btn img {
-  width: 24px;
-  height: 24px;
-}
-
-.signout-btn {
-  display: flex;
-  background: transparent;
-  color: white;
-  padding: 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.3s;
-  margin-left: 10px;
-  gap: 5px;
-}
-
-.signout-btn img {
-  display: flex;
-  width: 18px;
-  height: 18px;
-  margin-top: auto;
-  margin-bottom: 2.5px;
-}
-
-.settings-btn:hover,
-.signout-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.main-content {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
-
-.DataTabs {
-  flex: 1;
-  padding: 2rem;
-  overflow-y: auto;
-}
-
-.welcome-section {
-  width: 100%;
-  background: white;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  transition: 0.3s;
-  margin-bottom: 1.5rem;
-  padding: 1.5rem 2rem;
-}
-
-.welcome-section h1 {
-  padding: 1.5rem;
-  color: #2c3e50;
-  margin-bottom: 2rem;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.stat-card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.stat-card h3 {
-  color: #7f8c8d;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-}
-
-.amount {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #2c3e50;
-}
-
-.progress-bar {
-  background: #ecf0f1;
-  height: 8px;
-  border-radius: 4px;
-  margin: 1rem 0;
-  overflow: hidden;
-}
-
-.progress-fill {
-  background: #27ae60;
-  height: 100%;
-  transition: width 0.3s;
-}
-
-.percentage {
-  text-align: center;
-  font-weight: 600;
-  color: #27ae60;
-}
-
-.update-btn {
-  width: 100%;
-  background: #3498db;
-  color: white;
-  border: none;
-  padding: 8px;
+/* Base button styles */
+.btn-action {
+  padding: 8px 16px;
   border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.9rem;
   cursor: pointer;
-  margin-top: 0.5rem;
-}
-
-.sales-section,
-.levelup-section {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1.5rem;
-}
-
-.sales-section h2,
-.levelup-section h2 {
-  color: #2c3e50;
-  margin-bottom: 1rem;
-}
-
-.chart-placeholder {
-  height: 200px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  justify-content: center;
 }
 
-.mock-chart {
-  width: 90%;
-  height: 80%;
-  background: linear-gradient(90deg, #3498db, #2ecc71);
-  border-radius: 4px;
+/* 1. Add Listing (Blue) */
+.btn-action.primary {
+  background-color: #0066ff;
+  color: white;
+}
+.btn-action.primary:hover {
+  background-color: #0052cc;
 }
 
-.levelup-card {
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
-  padding: 1rem;
-  border-radius: 8px;
+/* 2. Add Agent (Light Green) */
+.btn-action.secondary {
+  background-color: #e6f4ea;
+  color: #1e8e3e;
+}
+.btn-action.secondary:hover {
+  background-color: #d4eeda;
 }
 
-.total-sales {
-  font-weight: 600;
-  color: #856404;
-  margin-bottom: 0.5rem;
+/* 3. Calculator (White/Bordered) */
+.btn-action.calculator-btn {
+  background: white;
+  border: 1px solid #dcdcdc;
+  color: #4a4a4a;
+}
+.btn-action.calculator-btn:hover {
+  background: #f8f9fa;
+  border-color: #bbb;
 }
 
-.next-promo {
-  color: #856404;
-  margin-bottom: 0.5rem;
+/* Vertical Divider */
+.divider-v {
+  width: 1px;
+  height: 24px;
+  background-color: #e1e4e8;
+  margin: 0 4px;
 }
 
-.current-rank {
-  font-weight: 600;
-  color: #e74c3c;
-}
-
-.support-note {
-  text-align: center;
-  color: #7f8c8d;
-  margin-top: 2rem;
-}
 </style>
