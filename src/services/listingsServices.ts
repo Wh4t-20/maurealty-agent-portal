@@ -30,7 +30,7 @@ export const listingsService = {
         listing_images (image_url, display_order)
       `)
       .eq('is_active', true)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(limit); // Adjust the limit as needed
 
     if (error) {
@@ -136,6 +136,34 @@ export const listingsService = {
     } catch (error) {
       console.error('Error creating full listing:', error);
       throw error; 
+    }
+  },
+  async updateListing(listingId: number, mainListingData: any, specificPropertyData: any, propertyTypeId: number) {
+    try {
+      const { error: mainError } = await supabase
+        .from('main_listings')
+        .update(mainListingData)
+        .eq('listing_ID', listingId);
+
+      if (mainError) throw mainError;
+
+      if (specificPropertyData && Object.keys(specificPropertyData).length > 0) {
+        const subTable = SUB_TABLE_MAP[propertyTypeId];
+
+        if (subTable) {
+          const { error: subError } = await supabase
+            .from(subTable)
+            .update(specificPropertyData)
+            .eq('listing_ID', listingId);
+
+          if (subError) throw subError;
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating listing:', error);
+      throw error;
     }
   },
 
