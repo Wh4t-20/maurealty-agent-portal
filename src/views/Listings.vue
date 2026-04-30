@@ -227,7 +227,12 @@ const toggleFilter = () => {
 
 // for the Add Listing button goes to property management, wala pay logic and such though
 const addListing = () => {
-  router.push('/propertymanagement')
+  router.push({ 
+    path: '/propertymanagement',
+    query:{
+      edit: 0 // indicates edit mode, 1 if true, 0 if not
+    } 
+  })
 }
 
 
@@ -243,12 +248,22 @@ const displayDetails = (property: Property) => {
 }
 
 //  edit
+const propertyTypesMap: Record<string, number> = {
+  'house_and_lot': 1,
+  'lot_only': 2,
+  'condominium': 3,
+  'memorial': 4,
+  'clubshare': 5,
+  'golfshare': 6
+};
 const handleEdit = (property: Property) => {
+  const typeId = propertyTypesMap[property.property_type] || 1;
   router.push({
     path: '/propertymanagement',
     query: { 
+      edit: 1, // indicates edit mode, 1 if true, 0 if not
       id: property.listing_id,
-      type: property.property_type 
+      type: typeId 
     }
   });
 };

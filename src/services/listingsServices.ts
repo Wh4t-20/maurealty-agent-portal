@@ -30,8 +30,8 @@ export const listingsService = {
         listing_images (image_url, display_order)
       `)
       .eq('is_active', true)
-      .order('created_at', { ascending: false }) 
-      .limit(limit);
+      .order('created_at', { ascending: true })
+      .limit(limit); // Adjust the limit as needed
 
     if (error) {
       console.error('Error fetching listings:', error);

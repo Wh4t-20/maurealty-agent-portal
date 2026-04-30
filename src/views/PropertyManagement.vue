@@ -395,13 +395,111 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue';
+import {useRoute} from 'vue-router';
+import { ref, watch, onMounted } from 'vue';
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
 import { listingsService } from '@/services/listingsServices';
 
+
 // Combine all interfaces for the form state
 type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & { listing_title?: string };
+const route = useRoute();
+
+const propertyId = Number(route.query.id) || -1;
+const propertyType = Number(route.query.type) || -1;
+
+const loadProperties = async () => {
+  if (route.query.edit === '0') return; 
+
+  try {
+    const data = await listingsService.getListingById(propertyId, propertyType) as any;
+    
+    if (data) {
+      const subTableName: Record<number, string> = {
+        1: 'house_and_lot',
+        2: 'lot_only',
+        3: 'condominium',
+        4: 'memorial'
+      };
+      
+      const propTypeString = subTableName[propertyType];
+      if (!propTypeString) return;
+
+      const rawSubData = data[propTypeString];
+      const subTableData = Array.isArray(rawSubData) ? rawSubData[0] : (rawSubData || {});
+
+      const typeReverseMap: Record<number, string> = {
+        1: 'House And Lot', 2: 'Lot Only', 3: 'Condominium', 4: 'Memorial'
+      };
+
+      
+      form.value.listing_title = data.listing_title;
+      form.value.property_type = typeReverseMap[propertyType] || typeReverseMap[1];
+      form.value.price = data.price;
+      form.value.commission = data.commission;
+      form.value.location = data.location;
+      form.value.description = data.description;
+      form.value.is_active = data.is_active;
+      form.value.developer_name = data.developers?.name || '';
+
+     
+      if (propertyType === 1) { // House and Lot
+        form.value.one_storey = subTableData['1_storey'];
+        form.value.two_storey = subTableData['2_storey'];
+        form.value.with_loft = subTableData.with_loft;
+        form.value.townhome = subTableData.townhomes; // UI: townhome, DB: townhomes
+        form.value.rowhouse = subTableData.rowhouse;
+        form.value.lot_area = subTableData.lot_area;
+        form.value.floor_area = subTableData.floor_area;
+        form.value.room_count = subTableData.rooms_count; // UI: room_count, DB: rooms_count
+        form.value.toilet_count = subTableData.toilets_count;
+        form.value.helper_room_count = subTableData.helper_rooms_count;
+        form.value.driver_room_count = subTableData.driver_rooms_count;
+        form.value.carpark_count = subTableData.carpark_count;
+
+      } else if (propertyType === 2) { // Lot Only
+        const lotClassReverseMap: Record<number, string> = { 1: 'Residential', 2: 'Commercial', 3: 'Industrial', 4: 'Farm Lot' };
+        
+        form.value.block_number = Number(subTableData.block_number);
+        form.value.lot_number = Number(subTableData.lot_number);
+        form.value.phase_number = Number(subTableData.phase_number);
+        form.value.area = subTableData.lot_area; // UI: area, DB: lot_area
+        form.value.class = lotClassReverseMap[subTableData.lot_class_ID] || 'Residential';
+
+      } else if (propertyType === 3) { // Condominium
+        const condoClassReverseMap: Record<number, string> = { 1: 'Residential', 2: 'Commercial', 3: 'Industrial', 4: 'Condotel', 5: 'Timeshare' };
+        
+        form.value.class = condoClassReverseMap[subTableData.condo_class_ID] || 'Residential';
+        form.value.unit_number = subTableData.unit_number;
+        form.value.carpark_count = subTableData.carpark_count;
+        form.value.balcony_count = subTableData.balcony_count;
+        form.value.bedroom_count = subTableData.bedroom_count;
+        
+        // Radio buttons
+        form.value.is_studio_type = subTableData.is_studio_type;
+        form.value.is_BR_unit = subTableData.is_BR_unit;
+        form.value.is_villa = subTableData.is_villa;
+        form.value.is_garden_villa = subTableData.is_garden_villa;
+        form.value.is_penthouse = subTableData.is_penthouse;
+
+      } else if (propertyType === 4) { // Memorial
+        form.value.is_urn = subTableData.is_urn;
+        form.value.is_vault = subTableData.is_vault;
+        form.value.is_garden = subTableData.is_garden;
+        form.value.is_estate = subTableData.is_estate;
+        form.value.is_family_estate = subTableData.is_family_estate;
+        form.value.is_pet_memorial = subTableData.is_pet_memorial;
+      }
+    }
+  } catch (error) {
+    console.error("Failed to load property data:", error);
+  }
+}
+
+onMounted(() => {
+  loadProperties();
+});
 
 const form = ref<Partial<PropertyForm>>({
   // Base Property Fields
@@ -495,103 +593,165 @@ const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Cond
 watch(() => form.value.property_type, (newType) => {
   console.log(`Switching layout to: ${newType}`);
 });
-
 const saveProperty = async () => {
-  try {
-    // 1. Map Property Type String to DB ID
-    const typeMap: Record<string, number> = {
-      'House And Lot': 1, 'Lot Only': 2, 'Condominium': 3, 'Memorial': 4, 'Clubshare': 5, 'Golfshare': 6
-    };
-    const propertyTypeId = typeMap[form.value.property_type || 'House And Lot'] || 1;
-
-    // 2. Prepare Main Listing Data
-    const mainData = {
-      agent_ID: 1, 
-      listing_title: form.value.listing_title,
-      property_type_ID: propertyTypeId,
-      price: form.value.price,
-      commission: form.value.commission,
-      location: form.value.location,
-      description: form.value.description || 'No description provided.',
-      is_active: form.value.is_active
-    };
-
-    // 3. Prepare Specific Sub-table Data
-    let specificData = {};
-
-    if (propertyTypeId === 1) { 
-      specificData = {
-        "1_storey": form.value.one_storey, 
-        with_loft: form.value.with_loft,
-        "2_storey": form.value.two_storey, 
-        townhomes: form.value.townhome,
-        rowhouse: form.value.rowhouse,
-        lot_area: form.value.lot_area,
-        floor_area: form.value.floor_area,
-        rooms_count: form.value.room_count, 
-        toilets_count: form.value.toilet_count, 
-        helper_rooms_count: form.value.helper_room_count,
-        driver_rooms_count: form.value.driver_room_count,
-        carpark_count: form.value.carpark_count
+  if(route.query.edit === '0') {
+    try {
+      // 1. Map Property Type String to DB ID
+      const typeMap: Record<string, number> = {
+        'House And Lot': 1, 'Lot Only': 2, 'Condominium': 3, 'Memorial': 4
       };
-    } else if (propertyTypeId === 2) { 
-      const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
-      specificData = {
-        block_number: String(form.value.block_number), 
-        lot_number: String(form.value.lot_number),
-        phase_number: String(form.value.phase_number),
-        lot_area: form.value.area, 
-        lot_class_ID: lotClassMap[form.value.class || 'Residential'] || 1
-      };
-    } else if (propertyTypeId === 3) { 
-      const condoClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Condotel': 4, 'Timeshare': 5 };
-      specificData = {
-        condo_class_ID: condoClassMap[form.value.class || 'Residential'] || 1,
-        unit_number: form.value.unit_number,
-        carpark_count: form.value.carpark_count,
-        is_studio_type: form.value.is_studio_type,
-        is_BR_unit: form.value.is_BR_unit,
-        is_villa: form.value.is_villa,
-        is_garden_villa: form.value.is_garden_villa,
-        is_penthouse: form.value.is_penthouse,
-        balcony_count: form.value.balcony_count,
-        bedroom_count: form.value.bedroom_count
-      };
-    } else if (propertyTypeId === 4) { 
-      specificData = {
-        is_urn: form.value.is_urn,
-        is_vault: form.value.is_vault,
-        is_garden: form.value.is_garden,
-        is_estate: form.value.is_estate,
-        is_family_estate: form.value.is_family_estate,
-        is_pet_memorial: form.value.is_pet_memorial
-      };
-    }
+      const propertyTypeId = typeMap[form.value.property_type || 'House And Lot'] || 1;
 
-// 4. Send main data to Supabase via our Service
-    console.log("Sending payload to Supabase...");
-    const response = await listingsService.createListing(mainData, specificData, propertyTypeId);
-    
-    if (response.success && response.data) {
-      // 5. If we have images, upload them now using the new listing_ID
-      const rawFiles = imageFiles.value.map(img => img.file);
-      
-      if (rawFiles.length > 0) {
-        console.log("Uploading images...");
-        await listingsService.uploadPropertyImages(response.data.listing_ID, rawFiles);
+      // 2. Prepare Main Listing Data (Maps to main_listings table)
+      const mainData = {
+        agent_ID: 1, // WARNING: Hardcoded for now. Update this once user login/auth is built!
+        listing_title: form.value.listing_title,
+        property_type_ID: propertyTypeId,
+        price: form.value.price,
+        commission: form.value.commission,
+        location: form.value.location,
+        description: form.value.description || 'No description provided.',
+        is_active: form.value.is_active
+      };
+
+      // 3. Prepare Specific Sub-table Data (Translating frontend variables to exact Supabase column names)
+      let specificData = {};
+
+      if (propertyTypeId === 1) { // House and Lot
+        specificData = {
+          "1_storey": form.value.one_storey, 
+          with_loft: form.value.with_loft,
+          "2_storey": form.value.two_storey, 
+          townhomes: form.value.townhome,
+          rowhouse: form.value.rowhouse,
+          lot_area: form.value.lot_area,
+          floor_area: form.value.floor_area,
+          rooms_count: form.value.room_count, 
+          toilets_count: form.value.toilet_count, 
+          helper_rooms_count: form.value.helper_room_count,
+          driver_rooms_count: form.value.driver_room_count,
+          carpark_count: form.value.carpark_count
+        };
+      } else if (propertyTypeId === 2) { // Lot Only
+        // Map class string to class ID
+        const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
+        specificData = {
+          block_number: String(form.value.block_number), 
+          lot_number: String(form.value.lot_number),
+          phase_number: String(form.value.phase_number),
+          lot_area: form.value.area, 
+          lot_class_ID: lotClassMap[form.value.class || 'Residential'] || 1
+        };
+      } else if (propertyTypeId === 3) { // Condominium
+        const condoClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Condotel': 4, 'Timeshare': 5 };
+        specificData = {
+          condo_class_ID: condoClassMap[form.value.class || 'Residential'] || 1,
+          unit_number: form.value.unit_number,
+          carpark_count: form.value.carpark_count,
+          is_studio_type: form.value.is_studio_type,
+          is_BR_unit: form.value.is_BR_unit,
+          is_villa: form.value.is_villa,
+          is_garden_villa: form.value.is_garden_villa,
+          is_penthouse: form.value.is_penthouse,
+          balcony_count: form.value.balcony_count,
+          bedroom_count: form.value.bedroom_count
+        };
+      } else if (propertyTypeId === 4) { // Memorial
+        specificData = {
+          is_urn: form.value.is_urn,
+          is_vault: form.value.is_vault,
+          is_garden: form.value.is_garden,
+          is_estate: form.value.is_estate,
+          is_family_estate: form.value.is_family_estate,
+          is_pet_memorial: form.value.is_pet_memorial
+        };
       }
 
-      alert('Property listing AND photos created successfully!');
+      // 4. Send to Supabase via our Service
+      console.log("Sending payload to Supabase...");
+      const response = await listingsService.createListing(mainData, specificData, propertyTypeId);
       
-      // Reset the form and clear the images
-      imageFiles.value.forEach(img => URL.revokeObjectURL(img.preview));
-      imageFiles.value = [];
-      // (You can also add code here to reset form.value to defaults)
-    }
+      if (response.success) {
+        alert('Property listing created successfully! (Check Supabase Dashboard)');
+        // Optional: Reset form here
+      }
 
-  } catch (error) {
+    } catch (error) {
+      console.error('Failed to save property:', error);
+      alert('Error saving property. Check the console for details.');
+    }
+  }
+  else{
+    try {
+      const typeMap: Record<string, number> = {
+        'House And Lot': 1, 'Lot Only': 2, 'Condominium': 3, 'Memorial': 4
+      };
+      const propertyTypeId = typeMap[form.value.property_type || 'House And Lot'] || 1;
+      const mainData = {
+        listing_title: form.value.listing_title,
+        property_type_ID: propertyTypeId,
+        price: form.value.price,
+        commission: form.value.commission,
+        location: form.value.location,
+        description: form.value.description || 'No description provided.',
+        is_active: form.value.is_active
+      };
+      let specificData = {};
+
+      if (propertyTypeId === 1) { // House and Lot
+        specificData = {
+          "1_storey": form.value.one_storey, 
+          with_loft: form.value.with_loft,
+          "2_storey": form.value.two_storey, 
+          townhomes: form.value.townhome,
+          rowhouse: form.value.rowhouse,
+          lot_area: form.value.lot_area,
+          floor_area: form.value.floor_area,
+          rooms_count: form.value.room_count, 
+          toilets_count: form.value.toilet_count, 
+          helper_rooms_count: form.value.helper_room_count,
+          driver_rooms_count: form.value.driver_room_count,
+          carpark_count: form.value.carpark_count
+        };
+      } else if (propertyTypeId === 2) { // Lot Only
+        // Map class string to class ID
+        const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
+        specificData = {
+          block_number: String(form.value.block_number), 
+          lot_number: String(form.value.lot_number),
+          phase_number: String(form.value.phase_number),
+          lot_area: form.value.area, 
+          lot_class_ID: lotClassMap[form.value.class || 'Residential'] || 1
+        };
+      } else if (propertyTypeId === 3) { // Condominium
+        const condoClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Condotel': 4, 'Timeshare': 5 };
+        specificData = {
+          condo_class_ID: condoClassMap[form.value.class || 'Residential'] || 1,
+          unit_number: form.value.unit_number,
+          carpark_count: form.value.carpark_count,
+          is_studio_type: form.value.is_studio_type,
+          is_BR_unit: form.value.is_BR_unit,
+          is_villa: form.value.is_villa,
+          is_garden_villa: form.value.is_garden_villa,
+          is_penthouse: form.value.is_penthouse,
+          balcony_count: form.value.balcony_count,
+          bedroom_count: form.value.bedroom_count
+        };
+      } else if (propertyTypeId === 4) { // Memorial
+        specificData = {
+          is_urn: form.value.is_urn,
+          is_vault: form.value.is_vault,
+          is_garden: form.value.is_garden,
+          is_estate: form.value.is_estate,
+          is_family_estate: form.value.is_family_estate,
+          is_pet_memorial: form.value.is_pet_memorial
+        };
+      }
+      const response = await listingsService.updateListing(propertyId, mainData, specificData, propertyTypeId);
+    }catch (error) {
     console.error('Failed to save property:', error);
     alert('Error saving property. Check the console for details.');
+  } 
   }
 };
 </script>
