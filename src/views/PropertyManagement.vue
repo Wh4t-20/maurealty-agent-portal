@@ -593,18 +593,17 @@ const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Cond
 watch(() => form.value.property_type, (newType) => {
   console.log(`Switching layout to: ${newType}`);
 });
+
 const saveProperty = async () => {
   if(route.query.edit === '0') {
     try {
-      // 1. Map Property Type String to DB ID
       const typeMap: Record<string, number> = {
         'House And Lot': 1, 'Lot Only': 2, 'Condominium': 3, 'Memorial': 4
       };
       const propertyTypeId = typeMap[form.value.property_type || 'House And Lot'] || 1;
 
-      // 2. Prepare Main Listing Data (Maps to main_listings table)
       const mainData = {
-        agent_ID: 1, // WARNING: Hardcoded for now. Update this once user login/auth is built!
+        agent_ID: 1, 
         listing_title: form.value.listing_title,
         property_type_ID: propertyTypeId,
         price: form.value.price,
@@ -614,10 +613,9 @@ const saveProperty = async () => {
         is_active: form.value.is_active
       };
 
-      // 3. Prepare Specific Sub-table Data (Translating frontend variables to exact Supabase column names)
       let specificData = {};
 
-      if (propertyTypeId === 1) { // House and Lot
+      if (propertyTypeId === 1) { 
         specificData = {
           "1_storey": form.value.one_storey, 
           with_loft: form.value.with_loft,
@@ -632,8 +630,7 @@ const saveProperty = async () => {
           driver_rooms_count: form.value.driver_room_count,
           carpark_count: form.value.carpark_count
         };
-      } else if (propertyTypeId === 2) { // Lot Only
-        // Map class string to class ID
+      } else if (propertyTypeId === 2) { 
         const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
         specificData = {
           block_number: String(form.value.block_number), 
@@ -642,7 +639,7 @@ const saveProperty = async () => {
           lot_area: form.value.area, 
           lot_class_ID: lotClassMap[form.value.class || 'Residential'] || 1
         };
-      } else if (propertyTypeId === 3) { // Condominium
+      } else if (propertyTypeId === 3) { 
         const condoClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Condotel': 4, 'Timeshare': 5 };
         specificData = {
           condo_class_ID: condoClassMap[form.value.class || 'Residential'] || 1,
@@ -656,7 +653,7 @@ const saveProperty = async () => {
           balcony_count: form.value.balcony_count,
           bedroom_count: form.value.bedroom_count
         };
-      } else if (propertyTypeId === 4) { // Memorial
+      } else if (propertyTypeId === 4) { 
         specificData = {
           is_urn: form.value.is_urn,
           is_vault: form.value.is_vault,
@@ -667,13 +664,16 @@ const saveProperty = async () => {
         };
       }
 
-      // 4. Send to Supabase via our Service
       console.log("Sending payload to Supabase...");
       const response = await listingsService.createListing(mainData, specificData, propertyTypeId);
-      
-      if (response.success) {
+if (response.success) {
+        // Upload images if files were added
+        if (imageFiles.value.length > 0) {
+          const filesToUpload = imageFiles.value.map(img => img.file);
+          await listingsService.uploadPropertyImages(response.data.listing_ID, filesToUpload);
+        }
+
         alert('Property listing created successfully! (Check Supabase Dashboard)');
-        // Optional: Reset form here
       }
 
     } catch (error) {
@@ -698,7 +698,7 @@ const saveProperty = async () => {
       };
       let specificData = {};
 
-      if (propertyTypeId === 1) { // House and Lot
+      if (propertyTypeId === 1) { 
         specificData = {
           "1_storey": form.value.one_storey, 
           with_loft: form.value.with_loft,
@@ -713,8 +713,7 @@ const saveProperty = async () => {
           driver_rooms_count: form.value.driver_room_count,
           carpark_count: form.value.carpark_count
         };
-      } else if (propertyTypeId === 2) { // Lot Only
-        // Map class string to class ID
+      } else if (propertyTypeId === 2) { 
         const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
         specificData = {
           block_number: String(form.value.block_number), 
@@ -723,7 +722,7 @@ const saveProperty = async () => {
           lot_area: form.value.area, 
           lot_class_ID: lotClassMap[form.value.class || 'Residential'] || 1
         };
-      } else if (propertyTypeId === 3) { // Condominium
+      } else if (propertyTypeId === 3) { 
         const condoClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Condotel': 4, 'Timeshare': 5 };
         specificData = {
           condo_class_ID: condoClassMap[form.value.class || 'Residential'] || 1,
@@ -737,7 +736,7 @@ const saveProperty = async () => {
           balcony_count: form.value.balcony_count,
           bedroom_count: form.value.bedroom_count
         };
-      } else if (propertyTypeId === 4) { // Memorial
+      } else if (propertyTypeId === 4) { 
         specificData = {
           is_urn: form.value.is_urn,
           is_vault: form.value.is_vault,
@@ -748,12 +747,20 @@ const saveProperty = async () => {
         };
       }
       const response = await listingsService.updateListing(propertyId, mainData, specificData, propertyTypeId);
-    }catch (error) {
-    console.error('Failed to save property:', error);
-    alert('Error saving property. Check the console for details.');
-  } 
+// Upload images if update successful and files exist
+      if (response.success && imageFiles.value.length > 0) {
+        const filesToUpload = imageFiles.value.map(img => img.file);
+        await listingsService.uploadPropertyImages(propertyId, filesToUpload);
+      }
+
+    } catch (error) {
+      console.error('Failed to save property:', error);
+      alert('Error saving property. Check the console for details.');
+    } 
   }
 };
+
+
 </script>
 
 <style scoped>
