@@ -599,7 +599,7 @@ const saveProperty = async () => {
     try {
       // 1. Map Property Type String to DB ID
       const typeMap: Record<string, number> = {
-        'House And Lot': 1, 'Lot Only': 2, 'Condominium': 3, 'Memorial': 4
+        'House And Lot': 1, 'Lot Only': 2, 'Condominium': 3, 'Memorial': 4, 'Clubshare': 5, 'Golfshare': 6
       };
       const propertyTypeId = typeMap[form.value.property_type || 'House And Lot'] || 1;
       // 2. Prepare Main Listing Data (Maps to main_listings table)
@@ -667,7 +667,7 @@ const saveProperty = async () => {
 // 4. Send to supabase via our service
       console.log("Sending payload to Supabase...");
       const response = await listingsService.createListing(mainData, specificData, propertyTypeId);
-if (response.success) {
+      if (response.success) {
         // Upload images if files were added
         if (imageFiles.value.length > 0) {
           const filesToUpload = imageFiles.value.map(img => img.file);
