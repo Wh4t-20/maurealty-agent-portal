@@ -9,7 +9,7 @@
       {{ error }}
     </div>
 
-    <div v-else-if="details" class="bg-white w-10/12 max-w-6xl rounded-3xl shadow-2xl border border-gray-100 px-10 py-7">
+    <div v-else-if="details" class="bg-white w-full mx-20 rounded-3xl shadow-2xl border border-gray-100 px-10 py-7">
       <header class="relative mb-4">
         <h1 class="text-3xl max-w-19/20 font-extrabold text-maurealty-blue">
           {{ details.listing_title }}
