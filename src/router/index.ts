@@ -38,7 +38,7 @@ const routes: Array<RouteRecordRaw> = [
     path: '/shared/listing/:token',
     name: 'SharedListing',
     component: SharedListing,
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: false, hideSidebar: true }
   },
   {
     path: '/propertymanagement',
