@@ -21,34 +21,41 @@
       <main class="flex gap-12 mx-4 flex-col lg:flex-row">
         
         <div class="grow lg:w-3/5 flex flex-col gap-6">
+          
           <div class="relative flex gap-4 items-center">
-            <div class="relative grow aspect-video rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
-              <img 
-                :src="thumbnails[0] || house2"
-                alt="Property Main View" 
-                class="absolute inset-0 w-full h-full object-contain"
-              />
+              <div class="relative grow aspect-video rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
+                <img 
+                  :src="thumbnails[currentImageIndex]"
+                  alt="Property Main View" 
+                  class="absolute inset-0 w-full h-full object-contain"
+                />  
+              </div>
+
+              <button 
+                class="absolute left-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue cursor-pointer"
+                @click="updateImage(currentImageIndex - 1)">
+                <ChevronLeft stroke-width=2.75 />
+              </button>
+
+              <button 
+                class="absolute right-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue cursor-pointer"
+                @click="updateImage(currentImageIndex + 1)">
+                <ChevronRight stroke-width=2.75 />
+              </button>
             </div>
 
-            <button class="absolute left-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue">
-              <ChevronLeft stroke-width="2.75" />
-            </button>
-
-            <button class="absolute right-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue">
-              <ChevronRight stroke-width="2.75" />
-            </button>
+            <div class="flex gap-4">
+              <img 
+                v-for="(thumb, index) in thumbnails" 
+                :key="index"
+                :src="thumb" 
+                @click="updateImage(index)"
+                alt="Property thumbnail" 
+                class="w-32 h-24 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-maurealty-blue"
+                :class="[index == currentImageIndex ? 'opacity-50' : '']"
+              />
+            </div>
           </div>
-
-          <div class="flex gap-4 overflow-x-auto">
-            <img 
-              v-for="(thumb, index) in thumbnails" 
-              :key="index"
-              :src="thumb" 
-              alt="Property thumbnail" 
-              class="w-32 h-24 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-maurealty-blue"
-            />
-          </div>
-        </div>
 
         <div class="lg:w-2/5 flex flex-col gap-2 text-gray-800 text-lg">
           <span class="inline-block bg-maurealty-green w-fit text-2xl text-white px-4 py-0.5 rounded-full tracking-wider mt-0.5">
@@ -164,9 +171,6 @@ import { useRoute } from 'vue-router';
 import { getSharedListing } from '@/services/shareService';
 import { formattedPropertyType } from '@/assets/classes/listings';
 
-import house1 from '@/assets/images/sample-house.jpg';
-import house2 from '@/assets/images/house2.webp';
-
 import { 
   Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, 
   LandPlot, SquareDashed, Sofa, Toilet, Car, CircleSmall, BedDouble, 
@@ -177,7 +181,8 @@ const route = useRoute();
 const loading = ref(true);
 const error = ref<string | null>(null);
 const details = ref<any>(null);
-const thumbnails = ref<string[]>([house1, house2]);
+const thumbnails = ref<string[]>([]);
+const currentImageIndex = ref(0);
 
 const condoClassesMap: Record<number, string> = {
   1: 'Residential',
@@ -193,6 +198,21 @@ const lotClassesMap: Record<number, string> = {
   3: 'Industrial',
   4: 'Farm Lot'
 };
+
+const updateImage = (i: number) => {
+  if (i >= thumbnails.value.length) {
+    i = 0;
+  }
+  else if (i < 0) {
+    i = thumbnails.value.length - 1
+  }
+
+  const thumbValue = thumbnails.value[i];
+
+  if (typeof thumbValue === 'string') {
+    currentImageIndex.value = i;
+  }
+}
 
 const loadListing = async () => {
   const token = route.params.token as string;
