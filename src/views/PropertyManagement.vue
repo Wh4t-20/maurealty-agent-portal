@@ -45,8 +45,19 @@
             </div>
 
             <div>
-              <label class="block text-sm font-bold text-maurealty-blue mb-1">Description</label>
-              <textarea type="text" v-model="form.description" placeholder="e.g. This house has amazing features!" class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"/>
+              <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
+                <label class="block">Description</label>
+                <button class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleMarkdown">
+                    {{ (displayMarkdown) ? "Edit" : "Preview" }}
+                </button>
+              </section>
+              
+              <!-- Editable section for the input -->
+              <textarea type="text" v-if="!displayMarkdown" v-model="form.description" placeholder="e.g. This house has amazing features!" 
+                        class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"/>
+              
+              <div v-if="displayMarkdown" v-html="compiledMarkdown"></div>
+              
             </div>
           </div>
 
@@ -396,11 +407,20 @@
 
 <script setup lang="ts">
 import {useRoute} from 'vue-router';
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
 import { listingsService } from '@/services/listingsServices';
 
+// for the description stuff
+import { marked } from 'marked'
+import DOMPurify from 'dompurify'
+const displayMarkdown = ref(false);
+
+function toggleMarkdown() {
+  displayMarkdown.value = !displayMarkdown.value;
+  console.log("Markdown display status: " + displayMarkdown.value)
+}
 
 // Combine all interfaces for the form state
 type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & { listing_title?: string };
@@ -761,6 +781,16 @@ const saveProperty = async () => {
   }
 };
 
+// description markdown conversion and input
+const compiledMarkdown = computed(() => {
+  if (!form.value.description) return '';
+  
+  // parsing the markdown input into html
+  const rawHtml = marked.parse(form.value.description);
+  
+  // check if goods
+  return DOMPurify.sanitize(rawHtml);
+});
 
 </script>
 
