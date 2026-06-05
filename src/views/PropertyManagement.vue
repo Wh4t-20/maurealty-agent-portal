@@ -788,6 +788,7 @@ const compiledMarkdown = computed(() => {
   return compileMarkdown(form.value.description)
 });
 
+// goes back to previous page
 function goBack() {
   window.history.back()
 }

@@ -26,59 +26,17 @@
         
 
     <!-- Developer Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2  mt-[50px] gap-6 p-4">
-    <div v-for="(developer, index) in developers" :key="index" class="bg-white p-6 rounded-[15px] shadow-lg  w-full max-w-[502px] hover:shadow-[0_10px_15px_rgba(2,5,5.1,0.3)] transition-shadow">
-     
-      <!-- Profile -->
-      <div class="flex items-center gap-4 mb-4 ">
-       
-        <img :src="developer.image_url" class="w-16 h-16 rounded-full object-cover"/>
-        <div>
-          <h2 class="font-bold text-lg">{{ developer.name }}</h2>
-          <span class="bg-[#41BE0126] text-[#41BE01] text-xs font-semibold px-2 py-1 rounded">Active</span>
-        </div>
-      </div>
-
-      <!-- Contact info -->
-      <div class="grid mt-10 break-all text-[clamp(1rem,1vw,1.5rem)] grid-cols-1 md:grid-cols-2 px-1 gap-2 mb-4 text-gray-700">
-        <div class="flex items-center gap-2"> {{ developer.phone }}</div>
-        <div class="flex items-center gap-2">{{ developer.email }}</div>
-        <div class="flex items-center gap-2"> {{ developer.location }}</div>
-        <div class="flex items-start gap-2">
-          <div v-html="developer.hours" class="leading-tight">
-          </div>
-        </div>
-      </div>
-
-      <!-- Recent Projects -->
-      <div class="mb-4">
-        <p class="font-semibold text-sm mb-1"></p>
-        <div class="flex gap-2 flex-wrap">
-          <!-- <span v-for="(project, i) in developer.projects" :key="i" class="bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded">{{ project }}
-          </span> -->
-        </div>
-      </div>
-
-      <!-- buttons -->
-      <div class="flex gap-2 items-end justify-end">
-        <button class="text-[clamp(0.75rem,2vw,1rem)] md:h-[36px] md:w-[108px] h-max-[36px] w-max-[108px]  border border-[#B4AFAF] rounded-[5px] px-4 py-2 hover:bg-gray-100 flex items-center gap-2 justify-center" >
-          Edit
-        </button>
-        <button class="text-[clamp(0.75rem,2vw,1rem)] w-max-[121px] md:h-[36px] md:w-[121px] bg-[#07407B] text-white rounded-[5px] px-4 py-2 hover:bg-blue-700 flex items-center gap-2 justify-center">
-          Contact
-        </button>
-      </div>
+    <div class="grid grid-cols-1 md:grid-cols-2  mt-12.5 gap-6 p-4">
+      <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" />
     </div>
   </div>
-  </div>
-
-  
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { type Developer} from "@/assets/classes/developers.ts";
+import { type Developer } from "@/assets/classes/developers.ts";
 import { developerService } from "@/services/developerService";
+import DeveloperCard from "@/components/developer/developerCard.vue";
 
 const developers = ref<Developer[]>([])
 const loadDevelopers = async () => {
