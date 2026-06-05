@@ -240,3 +240,17 @@ export const listingsService = {
     }
   },
 };
+
+// for markdown formatting of description, etc.
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+
+export const compileMarkdown = (rawInput: string | undefined): string => {
+  if (!rawInput) return '';
+  
+  // parsing the markdown input into html
+  const rawHtml = marked.parse(rawInput) as string;
+  
+  // return the sanitized html
+  return DOMPurify.sanitize(rawHtml);
+};

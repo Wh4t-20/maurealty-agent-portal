@@ -45,8 +45,22 @@
             </div>
 
             <div>
-              <label class="block text-sm font-bold text-maurealty-blue mb-1">Description</label>
-              <textarea type="text" v-model="form.description" placeholder="e.g. This house has amazing features!" class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"/>
+              <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
+                <label class="block">Description</label>
+                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleMarkdown">
+                    {{ (displayMarkdown) ? "Edit" : "Preview" }}
+                </button>
+              </section>
+              
+              <!-- Editable section for the input -->
+              <textarea type="text" v-if="!displayMarkdown" v-model="form.description" placeholder="e.g. This house has amazing features!" 
+                        class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"/>
+              
+              <div v-if="displayMarkdown" class="prose max-w-none w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3" v-html="compiledMarkdown"></div>
+              
+              <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
+                <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
+              for formatting options</p>
             </div>
           </div>
 
@@ -384,7 +398,7 @@
               <button type="button" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition">
                 CANCEL
               </button>
-              <button type="submit" class="px-8 py-3 bg-maurealty-blue text-white font-bold rounded-full shadow-md hover:bg-opacity-90 transition flex items-center gap-2">
+              <button type="submit" class="px-8 py-3 bg-maurealty-blue text-white font-bold rounded-full shadow-md hover:bg-opacity-90 hover:bg-[#045fa3] active:bg-white active:text-maurealty-blue border border-maurealty-blue transition flex items-center gap-2">
                 <span>★</span> SAVE PROPERTY
               </button>
           </div>
@@ -396,11 +410,19 @@
 
 <script setup lang="ts">
 import {useRoute} from 'vue-router';
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
 import { listingsService } from '@/services/listingsServices';
 
+// for the description stuff
+import { compileMarkdown } from '@/services/listingsServices';
+const displayMarkdown = ref(false);
+
+function toggleMarkdown() {
+  displayMarkdown.value = !displayMarkdown.value;
+  console.log("Markdown display status: " + displayMarkdown.value)
+}
 
 // Combine all interfaces for the form state
 type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & { listing_title?: string };
@@ -761,6 +783,10 @@ const saveProperty = async () => {
   }
 };
 
+// description markdown conversion and input
+const compiledMarkdown = computed(() => {
+  return compileMarkdown(form.value.description)
+});
 
 </script>
 
