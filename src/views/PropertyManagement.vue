@@ -56,8 +56,11 @@
               <textarea type="text" v-if="!displayMarkdown" v-model="form.description" placeholder="e.g. This house has amazing features!" 
                         class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"/>
               
-              <div v-if="displayMarkdown" v-html="compiledMarkdown"></div>
+              <div v-if="displayMarkdown" class="prose max-w-none w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3" v-html="compiledMarkdown"></div>
               
+              <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
+                <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
+              for formatting options</p>
             </div>
           </div>
 
@@ -786,7 +789,7 @@ const compiledMarkdown = computed(() => {
   if (!form.value.description) return '';
   
   // parsing the markdown input into html
-  const rawHtml = marked.parse(form.value.description);
+  const rawHtml = marked.parse(form.value.description) as string;
   
   // check if goods
   return DOMPurify.sanitize(rawHtml);
