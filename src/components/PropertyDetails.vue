@@ -176,9 +176,8 @@
               </fieldset>
             </template>
 
-            <section class="mt-2 text-base">
-              {{ details.description }}
-            </section>
+            <!-- Description section -->
+            <section class="mt-2 prose" v-html="compiledMarkdown" />
           </div>
         </main>
 
@@ -205,9 +204,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { type Property, formattedPropertyType } from '@/assets/classes/listings'
-import { listingsService } from '@/services/listingsServices' 
+import { listingsService, compileMarkdown } from '@/services/listingsServices' 
 import { generateShareLink } from '@/services/shareService'
 
 import house1 from '@/assets/images/sample-house.jpg'
@@ -365,6 +364,11 @@ watch(() => props.prop_id, (newId) => {
   }
 }, { immediate: true })
 
+
+// description markdown conversion and input
+const compiledMarkdown = computed(() => {
+  return compileMarkdown(details.value.description)
+});
 </script>
 
 <style scoped>
