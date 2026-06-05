@@ -156,9 +156,7 @@
             </fieldset>
           </template>
 
-          <section class="mt-4 text-base bg-gray-50 p-4 rounded-xl border border-gray-100">
-            {{ details.description }}
-          </section>
+          <section class="mt-4 prose bg-gray-50 p-4 rounded-xl border border-gray-100" v-html="compiledMarkdown" />
         </div>
       </main>
     </div>
@@ -166,10 +164,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { getSharedListing } from '@/services/shareService';
 import { formattedPropertyType } from '@/assets/classes/listings';
+import { compileMarkdown } from '@/services/listingsServices';
 
 import { 
   Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, 
@@ -262,5 +261,10 @@ function getMemorialType(memorialData: any) {
 
 onMounted(() => {
   loadListing();
+});
+
+// description markdown conversion and input
+const compiledMarkdown = computed(() => {
+  return compileMarkdown(details.value.description)
 });
 </script>
