@@ -47,7 +47,7 @@
             <div>
               <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
                 <label class="block">Description</label>
-                <button class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleMarkdown">
+                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleMarkdown">
                     {{ (displayMarkdown) ? "Edit" : "Preview" }}
                 </button>
               </section>
@@ -398,7 +398,7 @@
               <button type="button" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition">
                 CANCEL
               </button>
-              <button type="submit" class="px-8 py-3 bg-maurealty-blue text-white font-bold rounded-full shadow-md hover:bg-opacity-90 transition flex items-center gap-2">
+              <button type="submit" class="px-8 py-3 bg-maurealty-blue text-white font-bold rounded-full shadow-md hover:bg-opacity-90 hover:bg-[#045fa3] active:bg-white active:text-maurealty-blue border border-maurealty-blue transition flex items-center gap-2">
                 <span>★</span> SAVE PROPERTY
               </button>
           </div>
@@ -416,8 +416,7 @@ import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/l
 import { listingsService } from '@/services/listingsServices';
 
 // for the description stuff
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
+import { compileMarkdown } from '@/services/listingsServices';
 const displayMarkdown = ref(false);
 
 function toggleMarkdown() {
@@ -786,13 +785,7 @@ const saveProperty = async () => {
 
 // description markdown conversion and input
 const compiledMarkdown = computed(() => {
-  if (!form.value.description) return '';
-  
-  // parsing the markdown input into html
-  const rawHtml = marked.parse(form.value.description) as string;
-  
-  // check if goods
-  return DOMPurify.sanitize(rawHtml);
+  return compileMarkdown(form.value.description)
 });
 
 </script>
