@@ -15,7 +15,7 @@
 
       <!-- Button -->
       <div class="flex items-center gap-4 pr-9 ml-4 ">
-        <button class="max-h-10.75  bg-[#07407B] text-white  rounded-[10px] hover:bg-blue-700 flex items-center gap-2 px-[clamp(0.5rem,2vw,2.5rem)] py-[clamp(0.25rem,0.70vw,1rem)] text-[clamp(0.5rem,2vw,1rem)]">
+        <button class="max-h-10.75  bg-[#07407B] text-white  rounded-[10px] hover:bg-[#045fa3] flex items-center gap-2 px-[clamp(0.5rem,2vw,2.5rem)] py-[clamp(0.25rem,0.70vw,1rem)] text-[clamp(0.5rem,2vw,1rem)]">
           <span class="text-lg">+</span> Add Developer
         </button>
 
