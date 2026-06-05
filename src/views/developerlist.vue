@@ -1,5 +1,11 @@
 <template>
-  <div class="min-h-screen w-full bg-background-gray pt-8 px-4 flex flex-col items-center">
+  <!-- Add developer tab -->
+  <div class="relative">
+    <AddDeveloperTab v-if="true"/>
+  </div>
+  
+
+  <div class="min-h-screen w-full bg-background-gray pt-8 flex flex-col items-center">
 
     <!--Header I think mas better if ma component ni sya-->
     <header class="pl-9 flex items-center w-full max-w-264.25 h-30 bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] shadow-[0_10px_15px_rgba(0,0,0,0.3)] rounded-lg">
@@ -23,8 +29,7 @@
         <img src="/src/assets/profile.png" class="w-[71px] h-[71px] rounded-full object-cover"/> -->
       </div>
     </header>
-        
-
+    
     <!-- Developer Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2  mt-12.5 gap-6 p-4">
       <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" />
@@ -37,6 +42,7 @@ import { ref, onMounted } from "vue";
 import { type Developer } from "@/assets/classes/developers.ts";
 import { developerService } from "@/services/developerService";
 import DeveloperCard from "@/components/developer/developerCard.vue";
+import AddDeveloperTab from "@/components/developer/addDeveloper.vue";
 
 const developers = ref<Developer[]>([])
 const loadDevelopers = async () => {
