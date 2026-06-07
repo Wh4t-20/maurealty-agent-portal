@@ -8,3 +8,4 @@ export interface Developer {
     location: string;
     hours: string; // could be date tho Im not sure if itll output like Monday - Friday
 }
+
