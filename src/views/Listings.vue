@@ -1,5 +1,12 @@
 <template>
   <div class="w-full h-screen bg-background-gray flex flex-col items-center overflow-hidden">
+    <Transition name="toast">
+      <div v-if="savedNotice" class="fixed top-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-white border border-maurealty-green/40 shadow-lg px-5 py-3">
+        <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-green text-white text-sm font-bold">✓</span>
+        <p class="text-sm font-medium text-gray-700">{{ savedNotice }}</p>
+      </div>
+    </Transition>
+
     <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky z-20">
       <div class="flex justify-between items-center w-full pb-3 mb-3">
         <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
@@ -140,8 +147,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, computed, onMounted, watch } from 'vue' 
-import { useRouter } from 'vue-router'
+import { ref, shallowRef, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 // Property instance
 import { type Property }  from '@/assets/classes/listings'
@@ -156,6 +163,7 @@ import { ChevronDown, Plus } from 'lucide-vue-next'
 
 const properties = shallowRef<Property[]>([])
 const router = useRouter()
+const route = useRoute()
 
 const selectedType = ref("None")
 
@@ -214,8 +222,24 @@ const loadProperties = async () => {
   }
 }
 
+const savedNotice = ref<string | null>(null)
+
+const showSavedNotice = () => {
+  const messages: Record<string, string> = {
+    created: 'Listing saved successfully.',
+    updated: 'Listing updated successfully.'
+  }
+  const message = messages[String(route.query.saved)]
+  if (!message) return
+
+  savedNotice.value = message
+  router.replace({ query: {} })
+  setTimeout(() => { savedNotice.value = null }, 4000)
+}
+
 onMounted(() => {
   loadProperties();
+  showSavedNotice();
 })
 
 // for the collapsible filter bar
@@ -312,5 +336,16 @@ input[type=number] {
   max-height: 0;
   opacity: 0;
   transform: translateY(-10px);
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.25s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 </style>
