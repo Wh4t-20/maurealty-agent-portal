@@ -36,7 +36,7 @@
 		<button class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px]  border border-[#B4AFAF] rounded-[5px] px-4 py-2 hover:bg-gray-100 flex items-center gap-2 justify-center" >
 			Edit
 		</button>
-		<button class="text-[clamp(0.75rem,2vw,1rem)] w-max-[121px] md:h-9 md:w-30.25 bg-[#07407B] text-white rounded-[5px] px-4 py-2 hover:bg-[#045fa3] flex items-center gap-2 justify-center">
+		<button class="text-[clamp(0.75rem,2vw,1rem)] w-max-[121px] md:h-9 md:w-30.25 bg-maurealty-blue text-white rounded-[5px] px-4 py-2 hover:bg-[#045fa3] flex items-center gap-2 justify-center">
 			Contact
 		</button>
 		</div>

@@ -2,10 +2,14 @@
     <div class="absolute h-screen w-full z-5 bg-black/25 backdrop-blur-sm py-30 px-40">
         <div class="bg-white size-full rounded-3xl border border-gray-400 p-10">
 
-            <header>
+            <header class="relative">
                 <h1 class="text-4xl max-w-19/20 font-extrabold text-maurealty-blue mb-4 ml-5">
                     ADD NEW DEVELOPER
                 </h1>
+
+                <button class="absolute top-0 right-0 p-3 rounded-full hover:bg-gray-200/40 transition-colors cursor-pointer" @click="$emit('closeAddDeveloper')">
+                    <XIcon class="size-6" stroke-width="3"/>
+                </button>
 
                 <hr width="100%" class="mb-4 text-maurealty-blue/30">
             </header>
@@ -138,6 +142,7 @@ import { ref, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue';
 import { type DayOption } from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
+import { XIcon } from 'lucide-vue-next';
 
 // reminder to safeguard the non-nullable inputs pls (error message if missing part)
 

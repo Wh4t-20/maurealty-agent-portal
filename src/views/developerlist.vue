@@ -1,13 +1,22 @@
 <template>
   <!-- Add developer tab -->
   <div class="relative">
-    <AddDeveloperTab v-if="true"/>
+    <transition
+            enter-active-class="transition duration-200 ease-out"
+            enter-from-class="transform opacity-0"
+            enter-to-class="transform opacity-100"
+            leave-active-class="transition duration-75 ease-out"
+            leave-from-class="transform opacity-100"
+            leave-to-class="transform opacity-0"
+      >
+      <AddDeveloperTab v-if="showAddDeveloper" @close-add-developer="showAddDeveloper = false"/>
+    </transition>
   </div>
   
-
   <div class="min-h-screen w-full bg-background-gray pt-8 flex flex-col items-center">
 
     <!--Header I think mas better if ma component ni sya-->
+    <!-- Better component iff we will use the same exact design for every page -->
     <header class="pl-9 flex items-center w-full max-w-264.25 h-30 bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] shadow-[0_10px_15px_rgba(0,0,0,0.3)] rounded-lg">
   
       <h1 class="text-[clamp(1rem,2vw,2rem)] font-extrabold text-[#07407B]">
@@ -21,7 +30,7 @@
 
       <!-- Button -->
       <div class="flex items-center gap-4 pr-9 ml-4 ">
-        <button class="max-h-10.75  bg-[#07407B] text-white  rounded-[10px] hover:bg-[#045fa3] flex items-center gap-2 px-[clamp(0.5rem,2vw,2.5rem)] py-[clamp(0.25rem,0.70vw,1rem)] text-[clamp(0.5rem,2vw,1rem)]">
+        <button @click="showAddDeveloper = true" class="max-h-10.75 bg-maurealty-blue text-white  rounded-[10px] hover:bg-[#045fa3] flex items-center gap-2 px-[clamp(0.5rem,2vw,2.5rem)] py-[clamp(0.25rem,0.70vw,1rem)] text-[clamp(0.5rem,2vw,1rem)]">
           <span class="text-lg">+</span> Add Developer
         </button>
 
@@ -54,6 +63,8 @@ const loadDevelopers = async () => {
   }
 
 };
+
+const showAddDeveloper = ref(false);
 
 onMounted(() => {
   loadDevelopers();
