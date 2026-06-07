@@ -366,7 +366,7 @@ watch(() => props.prop_id, (newId) => {
 
 // description markdown conversion and input
 const compiledMarkdown = computed(() => {
-  return compileMarkdown(details.value.description)
+  return compileMarkdown(details.value?.description)
 });
 </script>
 
