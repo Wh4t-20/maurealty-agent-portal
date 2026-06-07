@@ -14,7 +14,7 @@
           <button class="flex items-center gap-1 bg-maurealty-blue text-md text-white h-full px-4 rounded-full cursor-pointer hover:opacity-70 transition-opacity" @click="addListing">
             <Plus class="size-4" /> Add Listing
           </button>
-          <input id="search" type="text" name="search" placeholder="Search"
+          <input id="search" type="text" name="search" placeholder="Search" v-model="searchQuery"
             class="block min-w-0 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 rounded-sm focus:outline-none sm:text-sm/6" />
         </div>
       </div>
@@ -166,18 +166,26 @@ const router = useRouter()
 const route = useRoute()
 
 const selectedType = ref("None")
+const searchQuery = ref("")
 
-// Filter properties based on the selected Type
 const filteredProperties = computed(() => {
-  if (selectedType.value === "None") {
-    return properties.value;
-  }
-  
-  // Convert string to match the db 
-  const dbFormatType = selectedType.value.toLowerCase().replace(/ /g, '_');
+  let result = properties.value
 
-  // Filter 
-  return properties.value.filter(p => p.property_type === dbFormatType); 
+  if (selectedType.value !== "None") {
+    const dbFormatType = selectedType.value.toLowerCase().replace(/ /g, '_')
+    result = result.filter(p => p.property_type === dbFormatType)
+  }
+
+  const query = searchQuery.value.trim().toLowerCase()
+  if (query) {
+    result = result.filter(p =>
+      p.listing_title?.toLowerCase().includes(query) ||
+      p.location?.toLowerCase().includes(query) ||
+      p.developer_name?.toLowerCase().includes(query)
+    )
+  }
+
+  return result
 })
 
 // page setup
@@ -194,8 +202,8 @@ const paginatedProperties = computed(() => {
   return filteredProperties.value.slice(start, end)
 })
 
-// Reset to page 1 when the filter changes
-watch(selectedType, () => {
+// Reset to page 1 when the filter or search changes
+watch([selectedType, searchQuery], () => {
   currentPage.value = 1
 })
 
