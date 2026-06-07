@@ -68,8 +68,8 @@ export const listingsService = {
     const subTable = SUB_TABLE_MAP[propertyTypeId];
  
     const selectQuery = subTable
-      ? `*, listing_images (image_url, display_order), ${subTable} (*)`
-      : `*, listing_images (image_url, display_order)`;
+      ? `*, developers (name), listing_images (image_url, display_order), ${subTable} (*)`
+      : `*, developers (name), listing_images (image_url, display_order)`;
  
     const { data, error } = await supabase
       .from('main_listings')
@@ -212,6 +212,38 @@ export const listingsService = {
       return { success: true };
     } catch (error) {
       console.error('Error uploading images:', error);
+      throw error;
+    }
+  },
+
+  async deleteListingImages(imageUrls: string[]) {
+    if (imageUrls.length === 0) return { success: true };
+
+    try {
+      // Public URLs embed the in-bucket path after this marker; we need that path to remove the stored file
+      const marker = '/object/public/images/';
+      const storagePaths = imageUrls
+        .map((url) => {
+          const index = url.indexOf(marker);
+          return index === -1 ? null : url.slice(index + marker.length);
+        })
+        .filter((path): path is string => path !== null);
+
+      if (storagePaths.length > 0) {
+        const { error: storageError } = await supabase.storage.from('images').remove(storagePaths);
+        if (storageError) throw storageError;
+      }
+
+      const { error: dbError } = await supabase
+        .from('listing_images')
+        .delete()
+        .in('image_url', imageUrls);
+
+      if (dbError) throw dbError;
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error deleting listing images:', error);
       throw error;
     }
   },

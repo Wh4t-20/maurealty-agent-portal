@@ -20,7 +20,15 @@
 
             <div class="border-2 border-dashed border-maurealty-blue/20 rounded-2xl p-6 bg-gray-50">
               <div class="flex flex-wrap gap-4 mb-4">
-                
+
+                <div v-for="(img, index) in existingImages" :key="`existing-${index}`" class="relative w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
+                  <img :src="img.url" alt="Current property photo" class="object-cover size-full">
+                  <span class="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">Current</span>
+                  <button type="button" @click="removeExistingImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                    ✕
+                  </button>
+                </div>
+
                 <div v-for="(img, index) in imageFiles" :key="index" class="relative w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
                   <img :src="img.preview" alt="Property Preview" class="object-cover size-full">
                   <button type="button" @click="removeImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold">
@@ -409,7 +417,7 @@
 </template>
 
 <script setup lang="ts">
-import {useRoute} from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ref, watch, onMounted, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
@@ -427,6 +435,7 @@ function toggleMarkdown() {
 // Combine all interfaces for the form state
 type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & { listing_title?: string };
 const route = useRoute();
+const router = useRouter();
 
 const propertyId = Number(route.query.id) || -1;
 const propertyType = Number(route.query.type) || -1;
@@ -438,24 +447,10 @@ const loadProperties = async () => {
     const data = await listingsService.getListingById(propertyId, propertyType) as any;
     
     if (data) {
-      const subTableName: Record<number, string> = {
-        1: 'house_and_lot',
-        2: 'lot_only',
-        3: 'condominium',
-        4: 'memorial'
-      };
-      
-      const propTypeString = subTableName[propertyType];
-      if (!propTypeString) return;
-
-      const rawSubData = data[propTypeString];
-      const subTableData = Array.isArray(rawSubData) ? rawSubData[0] : (rawSubData || {});
-
       const typeReverseMap: Record<number, string> = {
-        1: 'House And Lot', 2: 'Lot Only', 3: 'Condominium', 4: 'Memorial'
+        1: 'House And Lot', 2: 'Lot Only', 3: 'Condominium', 4: 'Memorial', 5: 'Clubshare', 6: 'Golfshare'
       };
 
-      
       form.value.listing_title = data.listing_title;
       form.value.property_type = typeReverseMap[propertyType] || typeReverseMap[1];
       form.value.price = data.price;
@@ -465,7 +460,20 @@ const loadProperties = async () => {
       form.value.is_active = data.is_active;
       form.value.developer_name = data.developers?.name || '';
 
-     
+      const images = Array.isArray(data.listing_images) ? data.listing_images : [];
+      existingImages.value = [...images]
+        .sort((a, b) => a.display_order - b.display_order)
+        .map((img) => ({ url: img.image_url }));
+
+      const subTableName: Record<number, string> = {
+        1: 'house_and_lot', 2: 'lot_only', 3: 'condominium', 4: 'memorial'
+      };
+      const propTypeString = subTableName[propertyType];
+      if (!propTypeString) return;
+
+      const rawSubData = data[propTypeString];
+      const subTableData = Array.isArray(rawSubData) ? rawSubData[0] : (rawSubData || {});
+
       if (propertyType === 1) { // House and Lot
         form.value.one_storey = subTableData['1_storey'];
         form.value.two_storey = subTableData['2_storey'];
@@ -575,6 +583,8 @@ const form = ref<Partial<PropertyForm>>({
 
 // Image Handling Logic
 const imageFiles = ref<{ file: File; preview: string }[]>([]);
+const existingImages = ref<{ url: string }[]>([]);
+const removedImageUrls = ref<string[]>([]);
 const fileInput = ref<HTMLInputElement | null>(null);
 
 const triggerFileInput = () => {
@@ -597,9 +607,17 @@ const handleFileUpload = (event: Event) => {
 const removeImage = (index: number) => {
   const image = imageFiles.value[index];
   if (image) {
-    URL.revokeObjectURL(image.preview); 
+    URL.revokeObjectURL(image.preview);
     imageFiles.value.splice(index, 1);
   }
+};
+
+// Defer deletion until save so cancelling leaves the stored images untouched
+const removeExistingImage = (index: number) => {
+  const image = existingImages.value[index];
+  if (!image) return;
+  removedImageUrls.value.push(image.url);
+  existingImages.value.splice(index, 1);
 };
 
 const setExclusively = (group: (keyof PropertyForm)[], selectedField: keyof PropertyForm) => {
@@ -690,13 +708,12 @@ const saveProperty = async () => {
       console.log("Sending payload to Supabase...");
       const response = await listingsService.createListing(mainData, specificData, propertyTypeId);
       if (response.success) {
-        // Upload images if files were added
         if (imageFiles.value.length > 0) {
           const filesToUpload = imageFiles.value.map(img => img.file);
           await listingsService.uploadPropertyImages(response.data.listing_ID, filesToUpload);
         }
 
-        alert('Property listing created successfully! (Check Supabase Dashboard)');
+        router.push({ path: '/listings', query: { saved: 'created' } });
       }
 
     } catch (error) {
@@ -770,10 +787,17 @@ const saveProperty = async () => {
         };
       }
       const response = await listingsService.updateListing(propertyId, mainData, specificData, propertyTypeId);
-// Upload images if update successful and files exist
-      if (response.success && imageFiles.value.length > 0) {
-        const filesToUpload = imageFiles.value.map(img => img.file);
-        await listingsService.uploadPropertyImages(propertyId, filesToUpload);
+      if (response.success) {
+        if (removedImageUrls.value.length > 0) {
+          await listingsService.deleteListingImages(removedImageUrls.value);
+        }
+
+        if (imageFiles.value.length > 0) {
+          const filesToUpload = imageFiles.value.map(img => img.file);
+          await listingsService.uploadPropertyImages(propertyId, filesToUpload);
+        }
+
+        router.push({ path: '/listings', query: { saved: 'updated' } });
       }
 
     } catch (error) {
