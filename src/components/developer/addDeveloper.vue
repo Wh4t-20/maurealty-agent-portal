@@ -115,11 +115,11 @@
                     >
                     
                     <div class="w-full flex gap-2">
-                        <button type="button" @click="removeImage" class="h-12 w-full border-2 py-3 border-maurealty-blue rounded-xl flex flex-col items-center justify-center text-maurealty-blue hover:bg-maurealty-blue/5 transition">
+                        <button type="button" @click="removeImage" class="h-auto w-full border-2 py-3 border-maurealty-blue rounded-xl flex flex-col items-center justify-center text-maurealty-blue hover:bg-maurealty-blue/5 transition">
                             <span class="text-xl ">✕ Remove Image</span>
                         </button>
 
-                        <button type="button" @click="triggerFileInput" class="h-12 w-full border-2 py-3 border-maurealty-blue rounded-xl flex flex-col items-center justify-center text-maurealty-blue hover:bg-maurealty-blue/5 transition">
+                        <button type="button" @click="triggerFileInput" class="h-auto w-full border-2 py-3 border-maurealty-blue rounded-xl flex flex-col items-center justify-center text-maurealty-blue hover:bg-maurealty-blue/5 transition">
                             <span class="text-xl ">+ Upload Image</span>
                         </button>
                     </div>
