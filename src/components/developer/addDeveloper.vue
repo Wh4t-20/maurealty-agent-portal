@@ -99,7 +99,7 @@
                     </div>
                 </section>
 
-                <section class="grid grid-rows-2 gap-5 justify-items-center p-5">
+                <section class="flex flex-col gap-5 items-center justify-start p-5">
                     
                     <div class="relative w-[40%] aspect-square bg-gray-200 rounded-full overflow-hidden shadow-sm group border-2 border-maurealty-blue">
                         <img v-if="!currentImage" :src="placeholder" alt="Developer Profile" class="object-cover size-full">
