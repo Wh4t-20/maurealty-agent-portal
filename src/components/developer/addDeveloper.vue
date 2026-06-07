@@ -1,6 +1,6 @@
 <template>
-    <div class="absolute h-screen w-full z-5 bg-black/25 backdrop-blur-sm py-30 px-40">
-        <div class="bg-white size-full rounded-3xl border border-gray-400 p-10">
+    <div class="absolute h-screen w-full z-5 bg-black/25 backdrop-blur-sm flex items-center justify-center">
+        <div class="bg-white w-full rounded-3xl border border-gray-400 my-30 mx-40 p-10">
 
             <header class="relative">
                 <h1 class="text-4xl max-w-19/20 font-extrabold text-maurealty-blue mb-4 ml-5">
@@ -99,7 +99,7 @@
                     </div>
                 </section>
 
-                <section class="grid grid-rows-2 gap-5 justify-items-center p-5">
+                <section class="flex flex-col gap-5 items-center justify-start p-5">
                     
                     <div class="relative w-[40%] aspect-square bg-gray-200 rounded-full overflow-hidden shadow-sm group border-2 border-maurealty-blue">
                         <img v-if="!currentImage" :src="placeholder" alt="Developer Profile" class="object-cover size-full">
@@ -114,7 +114,7 @@
                         @change="handleFileUpload"
                     >
                     
-                    <div class="size-full flex gap-2">
+                    <div class="w-full flex gap-2">
                         <button type="button" @click="removeImage" class="h-12 w-full border-2 py-3 border-maurealty-blue rounded-xl flex flex-col items-center justify-center text-maurealty-blue hover:bg-maurealty-blue/5 transition">
                             <span class="text-xl ">✕ Remove Image</span>
                         </button>
