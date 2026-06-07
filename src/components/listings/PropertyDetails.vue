@@ -1,9 +1,9 @@
 <template>
-<div v-if="details && details.listing_title" class="absolute inset-0 z-10 flex items-center justify-center bg-black/10 backdrop-blur-sm">
+<div v-if="details" class="absolute inset-0 z-10 flex items-center justify-center bg-black/10 backdrop-blur-sm">
   <div class="custom-scrollbar bg-white w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 px-10 py-7 overflow-y-auto">
         <header class="relative mb-4">
           <h1 class="text-3xl max-w-19/20 font-extrabold text-maurealty-blue">
-            {{ details.listing_title }}
+            {{ details.listing_title || 'Untitled Listing' }}
           </h1>
 
           <button class="absolute top-0 right-0 p-3 rounded-full hover:bg-gray-200/40 transition-colors cursor-pointer" @click="$emit('closeDetails')">
@@ -54,7 +54,7 @@
 
           <div class="w-2/5 flex flex-col gap-2 text-gray-800 text-lg">
             <span class="inline-block bg-maurealty-green w-fit text-2xl text-white px-4 py-0.5 rounded-full tracking-wider mt-0.5">
-              ₱ {{ details.price.toLocaleString() }}
+              ₱ {{ (details.price ?? 0).toLocaleString() }}
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
@@ -366,7 +366,7 @@ watch(() => props.prop_id, (newId) => {
 
 // description markdown conversion and input
 const compiledMarkdown = computed(() => {
-  return compileMarkdown(details.value.description)
+  return compileMarkdown(details.value?.description)
 });
 </script>
 
