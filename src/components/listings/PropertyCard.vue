@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import { computed } from 'vue' // Don't forget to import this
 import { type Property, formattedPropertyType }  from '@/assets/classes/listings'
-import house1 from '@/assets/images/sample-house.jpg' // Kept as a fallback image
+import placeholder from '@/assets/images/default_placeholder.png'
 import { MapPin } from 'lucide-vue-next'
 
 const props = defineProps<{ details: Property }>()
@@ -69,6 +69,6 @@ const formattedDate = computed(() => dateFormatter.format(props.details.created_
 
 // Returns the database image URL if it exists, otherwise uses the local fallback
 const houseimg = computed(() => {
-  return props.details.image_url ? props.details.image_url : house1
+  return props.details.image_url ? props.details.image_url : placeholder
 })
 </script>

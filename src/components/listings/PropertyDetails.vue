@@ -20,7 +20,7 @@
             <div class="relative flex gap-4 items-center">
               <div class="relative grow aspect-video rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
                 <img 
-                  :src="activeImage || house2"
+                  :src="activeImage || placeholder"
                   alt="Property Main View" 
                   class="absolute inset-0 w-full h-full object-contain"
                 />  
@@ -209,8 +209,7 @@ import { type Property, formattedPropertyType } from '@/assets/classes/listings'
 import { listingsService, compileMarkdown } from '@/services/listingsServices' 
 import { generateShareLink } from '@/services/shareService'
 
-import house1 from '@/assets/images/sample-house.jpg'
-import house2 from '@/assets/images/house2.webp'
+import placeholder from '@/assets/images/default_placeholder.png'
 
 import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink } from "lucide-vue-next";
 
@@ -298,8 +297,8 @@ const loadProperties = async () => {
         thumbnails.value = sortedImages.map((img: any) => img.image_url);
         activeImage.value = thumbnails.value[0]!; 
       } else {
-        thumbnails.value = [house1, house2];
-        activeImage.value = house1;
+        thumbnails.value = [placeholder];
+        activeImage.value = placeholder;
       }
     }
   } catch (error) {

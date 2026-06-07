@@ -4,7 +4,7 @@
 		<!-- Profile -->
 		<div class="flex items-center gap-4 mb-4 ">
 
-			<img :src="dev.image_url" class="w-16 h-16 rounded-full object-cover"/>
+			<img :src="dev.image_url || placeholder" class="w-16 h-16 rounded-full object-cover"/>
 			<div>
 				<h2 class="font-bold text-lg">{{ dev.name }}</h2>
 				<span class="bg-[#41BE0126] text-[#41BE01] text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -45,6 +45,7 @@
 
 <script setup lang="ts">
 import { type Developer } from '@/assets/classes/developers';
+import placeholder from '@/assets/images/default_placeholder.png'
 
 const props = defineProps<{ dev: Developer }>()
 </script>

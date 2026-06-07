@@ -106,9 +106,11 @@
     </div>
   </template>
   
-  <script setup lang="ts">
-  
-  </script>
+<script setup lang="ts">
+// replaces the default user image with this if ever no pfp uploaded yet
+import placeholder from '@/assets/images/default_placeholder.png'
+
+</script>
   
   <style scoped>
   
