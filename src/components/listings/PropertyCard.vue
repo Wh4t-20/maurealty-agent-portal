@@ -16,7 +16,7 @@
       <p class="text-xl text-maurealty-blue truncate font-semibold tracking-tight ">{{ details.listing_title }}</p>
       
       <span class="block bg-maurealty-green break-all font-normal text-lg text-white px-3 rounded-full tracking-wider mr-2 mt-0.5">
-        ₱ {{ formattedPrice}}
+        ₱ {{ formattedPrice }}
       </span>
       
       <div class="flex items-center gap-1 text-black mt-2">

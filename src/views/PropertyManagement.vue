@@ -395,7 +395,7 @@
           </div>
           
           <div class="flex col-span-2 justify-end gap-4 mt-8">
-              <button type="button" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition">
+              <button type="button" @click="goBack" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition">
                 CANCEL
               </button>
               <button type="submit" class="px-8 py-3 bg-maurealty-blue text-white font-bold rounded-full shadow-md hover:bg-opacity-90 hover:bg-[#045fa3] active:bg-white active:text-maurealty-blue border border-maurealty-blue transition flex items-center gap-2">
@@ -787,6 +787,11 @@ const saveProperty = async () => {
 const compiledMarkdown = computed(() => {
   return compileMarkdown(form.value.description)
 });
+
+// goes back to previous page
+function goBack() {
+  window.history.back()
+}
 
 </script>
 

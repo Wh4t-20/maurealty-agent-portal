@@ -145,9 +145,9 @@ import { useRouter } from 'vue-router'
 
 // Property instance
 import { type Property }  from '@/assets/classes/listings'
-import PropertyCard from '@/components/PropertyCard.vue'
-import ListingsFilter from '@/components/ListingsFilter.vue'
-import PropertyDetails from '@/components/PropertyDetails.vue' 
+import PropertyCard from '@/components/listings/PropertyCard.vue'
+import ListingsFilter from '@/components/listings/ListingsFilter.vue'
+import PropertyDetails from '@/components/listings/PropertyDetails.vue' 
 
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
