@@ -716,7 +716,7 @@ const saveProperty = async () => {
 
       if (propertyTypeId === 1) { // House and Lot 
         specificData = {
-          "1_storey": form.value.one_storey, 
+          "1_storey": form.value.one_storey, mainData
           with_loft: form.value.with_loft,
           "2_storey": form.value.two_storey, 
           townhomes: form.value.townhome,
@@ -792,7 +792,8 @@ const saveProperty = async () => {
         commission: form.value.commission,
         location: form.value.location,
         description: form.value.description || 'No description provided.',
-        is_active: form.value.is_active
+        is_active: form.value.is_active,
+        dev_ID: form.value.dev_ID
       };
       let specificData = {};
 
