@@ -669,7 +669,8 @@ const saveProperty = async () => {
         commission: form.value.commission,
         location: form.value.location,
         description: form.value.description || 'No description provided.',
-        is_active: form.value.is_active
+        is_active: form.value.is_active,
+        dev_ID: form.dev_ID
       };
       // 3. Prepare Specific Sub-table Data (Translating frontend variables to exact Supabase column names)
       let specificData = {};
