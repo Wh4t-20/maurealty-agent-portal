@@ -467,7 +467,7 @@ const loadProperties = async () => {
       form.value.location = data.location;
       form.value.description = data.description;
       form.value.is_active = data.is_active;
-      form.value.developer_name = data.developers?.name || '';
+      form.value.developer_name = data.dev_ID;
 
       const images = Array.isArray(data.listing_images) ? data.listing_images : [];
       existingImages.value = [...images]
