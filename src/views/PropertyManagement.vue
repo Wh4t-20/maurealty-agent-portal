@@ -440,6 +440,9 @@ type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & {
   dev_ID: number | null  
 };
 
+// Store fetched developers (for dropdown)
+const developersList = ref<{ dev_ID: number | null; name: string }[]>([]);
+
 const route = useRoute();
 const router = useRouter();
 
