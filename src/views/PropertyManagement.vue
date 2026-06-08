@@ -60,9 +60,8 @@
                 </button>
               </section>
               
-              <!-- Editable section for the input -->
               <textarea type="text" v-if="!displayMarkdown" v-model="form.description" placeholder="e.g. This house has amazing features!" 
-                        class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"/>
+                        class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
               
               <div v-if="displayMarkdown" class="prose max-w-none w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3" v-html="compiledMarkdown"></div>
               
@@ -90,11 +89,51 @@
               </div>
 
               <div class="col-span-2">
-                <label class="block text-sm font-bold text-maurealty-blue mb-1">Developer</label>
-                <input type="text" v-model="form.developer_name" placeholder="e.g. Building Construction Co."  class="w-full border border-gray-300 bg-white rounded-lg p-3">
-              </div>
+              <label class="block text-sm font-bold text-maurealty-blue mb-1">Developer</label>
+              
+              <Listbox v-model="form.dev_ID">
+                <div class="relative">
+                  <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 bg-white p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
+                    <span class="block truncate text-gray-700">
+                      {{ developersList.find(d => d.dev_ID === form.dev_ID)?.name || 'None' }}
+                    </span>
+                    <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                      <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                      </svg>
+                    </span>
+                  </ListboxButton>
 
-              <!-- Dropdown -->
+                  <transition
+                    leave-active-class="transition duration-100 ease-in"
+                    leave-from-class="opacity-100"
+                    leave-to-class="opacity-0"
+                  >
+                    <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
+                      <ListboxOption
+                        v-slot="{ active, selected }"
+                        v-for="dev in developersList"
+                        :key="dev.dev_ID ?? 'none'"
+                        :value="dev.dev_ID"
+                        as="template"
+                      >
+                        <li
+                          :class="[
+                            active ? 'bg-maurealty-blue/10 text-maurealty-blue' : 'text-gray-900',
+                            'relative cursor-default select-none py-2 pl-4 pr-4 transition-colors',
+                          ]"
+                        >
+                          <span :class="[selected ? 'font-bold' : 'font-normal', 'block truncate']">
+                            {{ dev.name }}
+                          </span>
+                        </li>
+                      </ListboxOption>
+                    </ListboxOptions>
+                  </transition>
+                </div>
+              </Listbox>
+            </div>
+
               <div class="col-span-2">
                 <label class="block text-sm font-bold text-maurealty-blue mb-1">Property Type</label>
                 
@@ -423,6 +462,8 @@ import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headless
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
 import { listingsService } from '@/services/listingsServices';
 
+import { developerService} from '@/services/developerService'
+
 // for the description stuff
 import { compileMarkdown } from '@/services/listingsServices';
 const displayMarkdown = ref(false);
@@ -433,7 +474,14 @@ function toggleMarkdown() {
 }
 
 // Combine all interfaces for the form state
-type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & { listing_title?: string };
+type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & {
+  listing_title?: string;
+  dev_ID: number | null  
+};
+
+// Store fetched developers (for dropdown)
+const developersList = ref<{ dev_ID: number | null; name: string }[]>([]);
+
 const route = useRoute();
 const router = useRouter();
 
@@ -458,7 +506,7 @@ const loadProperties = async () => {
       form.value.location = data.location;
       form.value.description = data.description;
       form.value.is_active = data.is_active;
-      form.value.developer_name = data.developers?.name || '';
+      form.value.developer_name = data.dev_ID;
 
       const images = Array.isArray(data.listing_images) ? data.listing_images : [];
       existingImages.value = [...images]
@@ -527,8 +575,16 @@ const loadProperties = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadProperties();
+
+// Fetch developers from Supabase and populate the dropdown list
+// might need to redo because this is dirty code yucky yuck
+  const devs = await developerService.getDevelopers();
+  developersList.value = [
+    { dev_ID: null, name: 'None' }, 
+    ...devs.map(d => ({ dev_ID: Number(d.dev_ID), name: String(d.name) }))
+  ];
 });
 
 const form = ref<Partial<PropertyForm>>({
@@ -540,6 +596,7 @@ const form = ref<Partial<PropertyForm>>({
   location: '',
   description: '',
   is_active: true,
+  dev_ID: null,
 
   // House and Lot Defaults
   one_storey: true,
@@ -651,7 +708,8 @@ const saveProperty = async () => {
         commission: form.value.commission,
         location: form.value.location,
         description: form.value.description || 'No description provided.',
-        is_active: form.value.is_active
+        is_active: form.value.is_active,
+        dev_ID: form.value.dev_ID
       };
       // 3. Prepare Specific Sub-table Data (Translating frontend variables to exact Supabase column names)
       let specificData = {};
@@ -734,7 +792,8 @@ const saveProperty = async () => {
         commission: form.value.commission,
         location: form.value.location,
         description: form.value.description || 'No description provided.',
-        is_active: form.value.is_active
+        is_active: form.value.is_active,
+        dev_ID: form.value.dev_ID
       };
       let specificData = {};
 
