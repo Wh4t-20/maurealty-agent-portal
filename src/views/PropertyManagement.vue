@@ -435,7 +435,11 @@ function toggleMarkdown() {
 }
 
 // Combine all interfaces for the form state
-type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & { listing_title?: string };
+type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & {
+  listing_title?: string;
+  dev_ID: number | null  
+};
+
 const route = useRoute();
 const router = useRouter();
 
