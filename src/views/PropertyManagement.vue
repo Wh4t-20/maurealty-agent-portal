@@ -538,6 +538,14 @@ const loadProperties = async () => {
 
 onMounted(() => {
   loadProperties();
+
+// Fetch developers from Supabase and populate the dropdown list
+// might need to redo because this is dirty code yucky yuck
+  const devs = await developerService.getDevelopers();
+  developersList.value = [
+    { dev_ID: null, name: 'None' }, 
+    ...devs.map(d => ({ dev_ID: Number(d.dev_ID), name: String(d.name) }))
+  ];
 });
 
 const form = ref<Partial<PropertyForm>>({
