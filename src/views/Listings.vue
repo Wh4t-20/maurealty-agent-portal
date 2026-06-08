@@ -30,15 +30,15 @@
             <section class="listings-filter-section">
               <label for="price-range-input" class="text-base">Price Range</label>
               <div class="flex gap-4 items-center">
-                <input type="number" placeholder="₱ Min" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+                <input type="number" placeholder="₱ Min" v-model="priceMin" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
                 <span class="font-bold -mx-2"> - </span>
-                <input type="number" placeholder="₱ Max" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+                <input type="number" placeholder="₱ Max" v-model="priceMax" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
               </div>
             </section>
 
             <section class="listings-filter-section">
               <label for="developer-input" class="text-base">Developer</label>
-              <input id="developer-input" type="text" class="text-sm w-40 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+              <input id="developer-input" type="text" v-model="developerQuery" class="text-sm w-40 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
             </section>
 
             <section class="listings-filter-section" v-if="selectedType === 'House And Lot'">
@@ -167,6 +167,9 @@ const route = useRoute()
 
 const selectedType = ref("None")
 const searchQuery = ref("")
+const priceMin = ref("")
+const priceMax = ref("")
+const developerQuery = ref("")
 
 const filteredProperties = computed(() => {
   let result = properties.value
@@ -183,6 +186,21 @@ const filteredProperties = computed(() => {
       p.location?.toLowerCase().includes(query) ||
       p.developer_name?.toLowerCase().includes(query)
     )
+  }
+
+  const developer = developerQuery.value.trim().toLowerCase()
+  if (developer) {
+    result = result.filter(p => p.developer_name?.toLowerCase().includes(developer))
+  }
+
+  const min = Number(priceMin.value)
+  if (priceMin.value !== "" && !Number.isNaN(min)) {
+    result = result.filter(p => p.price >= min)
+  }
+
+  const max = Number(priceMax.value)
+  if (priceMax.value !== "" && !Number.isNaN(max)) {
+    result = result.filter(p => p.price <= max)
   }
 
   return result
@@ -202,8 +220,8 @@ const paginatedProperties = computed(() => {
   return filteredProperties.value.slice(start, end)
 })
 
-// Reset to page 1 when the filter or search changes
-watch([selectedType, searchQuery], () => {
+// Reset to page 1 when any filter or search changes
+watch([selectedType, searchQuery, developerQuery, priceMin, priceMax], () => {
   currentPage.value = 1
 })
 
