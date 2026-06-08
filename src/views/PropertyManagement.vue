@@ -423,6 +423,8 @@ import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headless
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
 import { listingsService } from '@/services/listingsServices';
 
+import { developerService} from '@/services/developerService'
+
 // for the description stuff
 import { compileMarkdown } from '@/services/listingsServices';
 const displayMarkdown = ref(false);
