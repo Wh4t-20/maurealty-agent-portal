@@ -549,6 +549,7 @@ const form = ref<Partial<PropertyForm>>({
   location: '',
   description: '',
   is_active: true,
+  dev_ID: null,
 
   // House and Lot Defaults
   one_storey: true,
