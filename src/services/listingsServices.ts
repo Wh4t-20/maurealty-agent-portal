@@ -68,8 +68,8 @@ export const listingsService = {
     const subTable = SUB_TABLE_MAP[propertyTypeId];
  
     const selectQuery = subTable
-      ? `*, developers (name), listing_images (image_url, display_order), ${subTable} (*)`
-      : `*, developers (name), listing_images (image_url, display_order)`;
+      ? `*, agents (first_name, last_name), developers (name), listing_images (image_url, display_order), ${subTable} (*)`
+      : `*, agents (first_name, last_name), developers (name), listing_images (image_url, display_order)`;
  
     const { data, error } = await supabase
       .from('main_listings')
