@@ -1,6 +1,6 @@
 <template>
   <div class="w-full h-screen bg-background-gray flex flex-col items-center overflow-hidden">
-    <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky z-20">
+    <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#CEE5F9] to-[#FFFFFF] text-maurealty-blue shadow-md sticky z-20">
       <div class="flex justify-between items-center w-full pb-3 mb-3">
         <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
         <div class="flex gap-5 h-full">

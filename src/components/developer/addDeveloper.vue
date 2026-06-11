@@ -1,7 +1,7 @@
 <template>
-    <div class="absolute h-screen w-full z-5 bg-black/25 backdrop-blur-sm flex items-center justify-center">
-        <div class="bg-white w-full rounded-3xl border border-gray-400 my-30 mx-40 p-10">
-
+    <div class="absolute inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm py-10">
+        
+        <div class="bg-white w-10/12 max-h-full overflow-y-auto rounded-3xl border border-gray-400 p-10 shadow-xl">
             <header class="relative">
                 <h1 class="text-4xl max-w-19/20 font-extrabold text-maurealty-blue mb-4 ml-5">
                     ADD NEW DEVELOPER
