@@ -140,23 +140,37 @@ export const listingsService = {
   },
   async updateListing(listingId: number, mainListingData: any, specificPropertyData: any, propertyTypeId: number) {
     try {
-      const { error: mainError } = await supabase
+      const { data: mainData, error: mainError } = await supabase
         .from('main_listings')
         .update(mainListingData)
-        .eq('listing_ID', listingId);
+        .eq('listing_ID', listingId)
+        .select(); // Returns modified rows (do not ERASE so that we can catch RLS blocks)
 
       if (mainError) throw mainError;
 
+      // Detects if RLS blocked the update
+      if (!mainData || mainData.length === 0) {
+        console.error('Update failed silently. Zero rows modified in main_listings.');
+        return { success: false };
+      }
+      
       if (specificPropertyData && Object.keys(specificPropertyData).length > 0) {
         const subTable = SUB_TABLE_MAP[propertyTypeId];
 
         if (subTable) {
-          const { error: subError } = await supabase
+          const { data: subData, error: subError } = await supabase
             .from(subTable)
             .update(specificPropertyData)
-            .eq('listing_ID', listingId);
+            .eq('listing_ID', listingId)
+            .select(); // Returns modified rows (do not ERASE so that we can catch RLS blocks)
 
           if (subError) throw subError;
+
+          // Detects if RLS blocked the update
+          if (!subData || subData.length === 0) {
+            console.error('Update failed silently. Zero rows modified in ${subTable}.');
+            return { success: false };
+          }
         }
       }
 
