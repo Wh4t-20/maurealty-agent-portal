@@ -140,7 +140,7 @@ export const listingsService = {
   },
   async updateListing(listingId: number, mainListingData: any, specificPropertyData: any, propertyTypeId: number) {
     try {
-      const { error: mainError } = await supabase
+      const { data: mainData, error: mainError } = await supabase
         .from('main_listings')
         .update(mainListingData)
         .eq('listing_ID', listingId)
@@ -149,7 +149,7 @@ export const listingsService = {
       if (mainError) throw mainError;
 
       // Detects if RLS blocked the update
-      if (!mainListingData || mainListingData.length === 0) {
+      if (!mainData || mainData.length === 0) {
         console.error('Update failed silently. Zero rows modified in main_listings.');
         return { success: false };
       }
@@ -158,7 +158,7 @@ export const listingsService = {
         const subTable = SUB_TABLE_MAP[propertyTypeId];
 
         if (subTable) {
-          const { error: subError } = await supabase
+          const { data: subData, error: subError } = await supabase
             .from(subTable)
             .update(specificPropertyData)
             .eq('listing_ID', listingId)
@@ -167,7 +167,7 @@ export const listingsService = {
           if (subError) throw subError;
 
           // Detects if RLS blocked the update
-          if (!specificPropertyData || specificPropertyData.length === 0) {
+          if (!subData || subData.length === 0) {
             console.error('Update failed silently. Zero rows modified in ${subTable}.');
             return { success: false };
           }
