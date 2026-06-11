@@ -143,7 +143,8 @@ export const listingsService = {
       const { error: mainError } = await supabase
         .from('main_listings')
         .update(mainListingData)
-        .eq('listing_ID', listingId);
+        .eq('listing_ID', listingId)
+        .select(); // Returns modified rows (do not ERASE so that we can catch RLS blocks)
 
       if (mainError) throw mainError;
 
@@ -154,7 +155,8 @@ export const listingsService = {
           const { error: subError } = await supabase
             .from(subTable)
             .update(specificPropertyData)
-            .eq('listing_ID', listingId);
+            .eq('listing_ID', listingId)
+            .select(); // Returns modified rows (do not ERASE so that we can catch RLS blocks)
 
           if (subError) throw subError;
         }
