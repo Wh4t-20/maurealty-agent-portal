@@ -40,7 +40,7 @@
     </header>
     
     <!-- Developer Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2  mt-12.5 gap-6 p-4">
+    <div class="w-3/4 grid grid-cols-1 md:grid-cols-2  mt-12.5 gap-6 p-4">
       <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" />
     </div>
   </div>

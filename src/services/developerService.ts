@@ -31,7 +31,7 @@ export const developerService = {
             location: item.location,
             hours: (item.available_days && item.open_hours && item.close_hours) ?  
             `${item.available_days} ${formatToAMPM(item.open_hours)} - ${formatToAMPM(item.close_hours)}`
-            : '${item.available_days} office hours not specified'
+            : 'Office hours not specified'
         }));
 
         return developers;
