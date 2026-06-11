@@ -1,13 +1,20 @@
 <template>
   <div class="w-full h-screen bg-background-gray flex flex-col items-center overflow-hidden">
-    <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#CEE5F9] to-[#FFFFFF] text-maurealty-blue shadow-md sticky z-20">
+    <Transition name="toast">
+      <div v-if="savedNotice" class="fixed top-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-white border border-maurealty-green/40 shadow-lg px-5 py-3">
+        <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-green text-white text-sm font-bold">✓</span>
+        <p class="text-sm font-medium text-gray-700">{{ savedNotice }}</p>
+      </div>
+    </Transition>
+
+    <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky z-20">
       <div class="flex justify-between items-center w-full pb-3 mb-3">
         <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
         <div class="flex gap-5 h-full">
           <button class="flex items-center gap-1 bg-maurealty-blue text-md text-white h-full px-4 rounded-full cursor-pointer hover:opacity-70 transition-opacity" @click="addListing">
             <Plus class="size-4" /> Add Listing
           </button>
-          <input id="search" type="text" name="search" placeholder="Search"
+          <input id="search" type="text" name="search" placeholder="Search" v-model="searchQuery"
             class="block min-w-0 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 rounded-sm focus:outline-none sm:text-sm/6" />
         </div>
       </div>
@@ -23,15 +30,15 @@
             <section class="listings-filter-section">
               <label for="price-range-input" class="text-base">Price Range</label>
               <div class="flex gap-4 items-center">
-                <input type="number" placeholder="₱ Min" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+                <input type="number" placeholder="₱ Min" v-model="priceMin" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
                 <span class="font-bold -mx-2"> - </span>
-                <input type="number" placeholder="₱ Max" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+                <input type="number" placeholder="₱ Max" v-model="priceMax" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
               </div>
             </section>
 
             <section class="listings-filter-section">
               <label for="developer-input" class="text-base">Developer</label>
-              <input id="developer-input" type="text" class="text-sm w-40 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+              <input id="developer-input" type="text" v-model="developerQuery" class="text-sm w-40 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
             </section>
 
             <section class="listings-filter-section" v-if="selectedType === 'House And Lot'">
@@ -140,8 +147,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, computed, onMounted, watch } from 'vue' 
-import { useRouter } from 'vue-router'
+import { ref, shallowRef, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
 // Property instance
 import { type Property }  from '@/assets/classes/listings'
@@ -156,20 +163,47 @@ import { ChevronDown, Plus } from 'lucide-vue-next'
 
 const properties = shallowRef<Property[]>([])
 const router = useRouter()
+const route = useRoute()
 
 const selectedType = ref("None")
+const searchQuery = ref("")
+const priceMin = ref("")
+const priceMax = ref("")
+const developerQuery = ref("")
 
-// Filter properties based on the selected Type
 const filteredProperties = computed(() => {
-  if (selectedType.value === "None") {
-    return properties.value;
-  }
-  
-  // Convert string to match the db 
-  const dbFormatType = selectedType.value.toLowerCase().replace(/ /g, '_');
+  let result = properties.value
 
-  // Filter 
-  return properties.value.filter(p => p.property_type === dbFormatType); 
+  if (selectedType.value !== "None") {
+    const dbFormatType = selectedType.value.toLowerCase().replace(/ /g, '_')
+    result = result.filter(p => p.property_type === dbFormatType)
+  }
+
+  const query = searchQuery.value.trim().toLowerCase()
+  if (query) {
+    result = result.filter(p =>
+      p.listing_title?.toLowerCase().includes(query) ||
+      p.location?.toLowerCase().includes(query) ||
+      p.developer_name?.toLowerCase().includes(query)
+    )
+  }
+
+  const developer = developerQuery.value.trim().toLowerCase()
+  if (developer) {
+    result = result.filter(p => p.developer_name?.toLowerCase().includes(developer))
+  }
+
+  const min = Number(priceMin.value)
+  if (priceMin.value !== "" && !Number.isNaN(min)) {
+    result = result.filter(p => p.price >= min)
+  }
+
+  const max = Number(priceMax.value)
+  if (priceMax.value !== "" && !Number.isNaN(max)) {
+    result = result.filter(p => p.price <= max)
+  }
+
+  return result
 })
 
 // page setup
@@ -186,8 +220,8 @@ const paginatedProperties = computed(() => {
   return filteredProperties.value.slice(start, end)
 })
 
-// Reset to page 1 when the filter changes
-watch(selectedType, () => {
+// Reset to page 1 when any filter or search changes
+watch([selectedType, searchQuery, developerQuery, priceMin, priceMax], () => {
   currentPage.value = 1
 })
 
@@ -214,8 +248,24 @@ const loadProperties = async () => {
   }
 }
 
+const savedNotice = ref<string | null>(null)
+
+const showSavedNotice = () => {
+  const messages: Record<string, string> = {
+    created: 'Listing saved successfully.',
+    updated: 'Listing updated successfully.'
+  }
+  const message = messages[String(route.query.saved)]
+  if (!message) return
+
+  savedNotice.value = message
+  router.replace({ query: {} })
+  setTimeout(() => { savedNotice.value = null }, 4000)
+}
+
 onMounted(() => {
   loadProperties();
+  showSavedNotice();
 })
 
 // for the collapsible filter bar
@@ -312,5 +362,16 @@ input[type=number] {
   max-height: 0;
   opacity: 0;
   transform: translateY(-10px);
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.25s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 </style>

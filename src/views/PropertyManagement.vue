@@ -20,7 +20,15 @@
 
             <div class="border-2 border-dashed border-maurealty-blue/20 rounded-2xl p-6 bg-gray-50">
               <div class="flex flex-wrap gap-4 mb-4">
-                
+
+                <div v-for="(img, index) in existingImages" :key="`existing-${index}`" class="relative w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
+                  <img :src="img.url" alt="Current property photo" class="object-cover size-full">
+                  <span class="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">Current</span>
+                  <button type="button" @click="removeExistingImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                    ✕
+                  </button>
+                </div>
+
                 <div v-for="(img, index) in imageFiles" :key="index" class="relative w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
                   <img :src="img.preview" alt="Property Preview" class="object-cover size-full">
                   <button type="button" @click="removeImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold">
@@ -52,9 +60,8 @@
                 </button>
               </section>
               
-              <!-- Editable section for the input -->
               <textarea type="text" v-if="!displayMarkdown" v-model="form.description" placeholder="e.g. This house has amazing features!" 
-                        class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"/>
+                        class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
               
               <div v-if="displayMarkdown" class="prose max-w-none w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3" v-html="compiledMarkdown"></div>
               
@@ -82,11 +89,51 @@
               </div>
 
               <div class="col-span-2">
-                <label class="block text-sm font-bold text-maurealty-blue mb-1">Developer</label>
-                <input type="text" v-model="form.developer_name" placeholder="e.g. Building Construction Co."  class="w-full border border-gray-300 bg-white rounded-lg p-3">
-              </div>
+              <label class="block text-sm font-bold text-maurealty-blue mb-1">Developer</label>
+              
+              <Listbox v-model="form.dev_ID">
+                <div class="relative">
+                  <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 bg-white p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
+                    <span class="block truncate text-gray-700">
+                      {{ developersList.find(d => d.dev_ID === form.dev_ID)?.name || 'None' }}
+                    </span>
+                    <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                      <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                      </svg>
+                    </span>
+                  </ListboxButton>
 
-              <!-- Dropdown -->
+                  <transition
+                    leave-active-class="transition duration-100 ease-in"
+                    leave-from-class="opacity-100"
+                    leave-to-class="opacity-0"
+                  >
+                    <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
+                      <ListboxOption
+                        v-slot="{ active, selected }"
+                        v-for="dev in developersList"
+                        :key="dev.dev_ID ?? 'none'"
+                        :value="dev.dev_ID"
+                        as="template"
+                      >
+                        <li
+                          :class="[
+                            active ? 'bg-maurealty-blue/10 text-maurealty-blue' : 'text-gray-900',
+                            'relative cursor-default select-none py-2 pl-4 pr-4 transition-colors',
+                          ]"
+                        >
+                          <span :class="[selected ? 'font-bold' : 'font-normal', 'block truncate']">
+                            {{ dev.name }}
+                          </span>
+                        </li>
+                      </ListboxOption>
+                    </ListboxOptions>
+                  </transition>
+                </div>
+              </Listbox>
+            </div>
+
               <div class="col-span-2">
                 <label class="block text-sm font-bold text-maurealty-blue mb-1">Property Type</label>
                 
@@ -409,11 +456,13 @@
 </template>
 
 <script setup lang="ts">
-import {useRoute} from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ref, watch, onMounted, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
 import { listingsService } from '@/services/listingsServices';
+
+import { developerService} from '@/services/developerService'
 
 // for the description stuff
 import { compileMarkdown } from '@/services/listingsServices';
@@ -425,8 +474,16 @@ function toggleMarkdown() {
 }
 
 // Combine all interfaces for the form state
-type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & { listing_title?: string };
+type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & {
+  listing_title?: string;
+  dev_ID: number | null  
+};
+
+// Store fetched developers (for dropdown)
+const developersList = ref<{ dev_ID: number | null; name: string }[]>([]);
+
 const route = useRoute();
+const router = useRouter();
 
 const propertyId = Number(route.query.id) || -1;
 const propertyType = Number(route.query.type) || -1;
@@ -438,24 +495,10 @@ const loadProperties = async () => {
     const data = await listingsService.getListingById(propertyId, propertyType) as any;
     
     if (data) {
-      const subTableName: Record<number, string> = {
-        1: 'house_and_lot',
-        2: 'lot_only',
-        3: 'condominium',
-        4: 'memorial'
-      };
-      
-      const propTypeString = subTableName[propertyType];
-      if (!propTypeString) return;
-
-      const rawSubData = data[propTypeString];
-      const subTableData = Array.isArray(rawSubData) ? rawSubData[0] : (rawSubData || {});
-
       const typeReverseMap: Record<number, string> = {
-        1: 'House And Lot', 2: 'Lot Only', 3: 'Condominium', 4: 'Memorial'
+        1: 'House And Lot', 2: 'Lot Only', 3: 'Condominium', 4: 'Memorial', 5: 'Clubshare', 6: 'Golfshare'
       };
 
-      
       form.value.listing_title = data.listing_title;
       form.value.property_type = typeReverseMap[propertyType] || typeReverseMap[1];
       form.value.price = data.price;
@@ -463,9 +506,22 @@ const loadProperties = async () => {
       form.value.location = data.location;
       form.value.description = data.description;
       form.value.is_active = data.is_active;
-      form.value.developer_name = data.developers?.name || '';
+      form.value.developer_name = data.dev_ID;
 
-     
+      const images = Array.isArray(data.listing_images) ? data.listing_images : [];
+      existingImages.value = [...images]
+        .sort((a, b) => a.display_order - b.display_order)
+        .map((img) => ({ url: img.image_url }));
+
+      const subTableName: Record<number, string> = {
+        1: 'house_and_lot', 2: 'lot_only', 3: 'condominium', 4: 'memorial'
+      };
+      const propTypeString = subTableName[propertyType];
+      if (!propTypeString) return;
+
+      const rawSubData = data[propTypeString];
+      const subTableData = Array.isArray(rawSubData) ? rawSubData[0] : (rawSubData || {});
+
       if (propertyType === 1) { // House and Lot
         form.value.one_storey = subTableData['1_storey'];
         form.value.two_storey = subTableData['2_storey'];
@@ -519,8 +575,16 @@ const loadProperties = async () => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadProperties();
+
+// Fetch developers from Supabase and populate the dropdown list
+// might need to redo because this is dirty code yucky yuck
+  const devs = await developerService.getDevelopers();
+  developersList.value = [
+    { dev_ID: null, name: 'None' }, 
+    ...devs.map(d => ({ dev_ID: Number(d.dev_ID), name: String(d.name) }))
+  ];
 });
 
 const form = ref<Partial<PropertyForm>>({
@@ -532,6 +596,7 @@ const form = ref<Partial<PropertyForm>>({
   location: '',
   description: '',
   is_active: true,
+  dev_ID: null,
 
   // House and Lot Defaults
   one_storey: true,
@@ -575,6 +640,8 @@ const form = ref<Partial<PropertyForm>>({
 
 // Image Handling Logic
 const imageFiles = ref<{ file: File; preview: string }[]>([]);
+const existingImages = ref<{ url: string }[]>([]);
+const removedImageUrls = ref<string[]>([]);
 const fileInput = ref<HTMLInputElement | null>(null);
 
 const triggerFileInput = () => {
@@ -597,9 +664,17 @@ const handleFileUpload = (event: Event) => {
 const removeImage = (index: number) => {
   const image = imageFiles.value[index];
   if (image) {
-    URL.revokeObjectURL(image.preview); 
+    URL.revokeObjectURL(image.preview);
     imageFiles.value.splice(index, 1);
   }
+};
+
+// Defer deletion until save so cancelling leaves the stored images untouched
+const removeExistingImage = (index: number) => {
+  const image = existingImages.value[index];
+  if (!image) return;
+  removedImageUrls.value.push(image.url);
+  existingImages.value.splice(index, 1);
 };
 
 const setExclusively = (group: (keyof PropertyForm)[], selectedField: keyof PropertyForm) => {
@@ -633,7 +708,8 @@ const saveProperty = async () => {
         commission: form.value.commission,
         location: form.value.location,
         description: form.value.description || 'No description provided.',
-        is_active: form.value.is_active
+        is_active: form.value.is_active,
+        dev_ID: form.value.dev_ID
       };
       // 3. Prepare Specific Sub-table Data (Translating frontend variables to exact Supabase column names)
       let specificData = {};
@@ -690,13 +766,12 @@ const saveProperty = async () => {
       console.log("Sending payload to Supabase...");
       const response = await listingsService.createListing(mainData, specificData, propertyTypeId);
       if (response.success) {
-        // Upload images if files were added
         if (imageFiles.value.length > 0) {
           const filesToUpload = imageFiles.value.map(img => img.file);
           await listingsService.uploadPropertyImages(response.data.listing_ID, filesToUpload);
         }
 
-        alert('Property listing created successfully! (Check Supabase Dashboard)');
+        router.push({ path: '/listings', query: { saved: 'created' } });
       }
 
     } catch (error) {
@@ -717,7 +792,8 @@ const saveProperty = async () => {
         commission: form.value.commission,
         location: form.value.location,
         description: form.value.description || 'No description provided.',
-        is_active: form.value.is_active
+        is_active: form.value.is_active,
+        dev_ID: form.value.dev_ID
       };
       let specificData = {};
 
@@ -770,10 +846,17 @@ const saveProperty = async () => {
         };
       }
       const response = await listingsService.updateListing(propertyId, mainData, specificData, propertyTypeId);
-// Upload images if update successful and files exist
-      if (response.success && imageFiles.value.length > 0) {
-        const filesToUpload = imageFiles.value.map(img => img.file);
-        await listingsService.uploadPropertyImages(propertyId, filesToUpload);
+      if (response.success) {
+        if (removedImageUrls.value.length > 0) {
+          await listingsService.deleteListingImages(removedImageUrls.value);
+        }
+
+        if (imageFiles.value.length > 0) {
+          const filesToUpload = imageFiles.value.map(img => img.file);
+          await listingsService.uploadPropertyImages(propertyId, filesToUpload);
+        }
+
+        router.push({ path: '/listings', query: { saved: 'updated' } });
       }
 
     } catch (error) {
