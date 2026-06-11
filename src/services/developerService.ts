@@ -29,9 +29,8 @@ export const developerService = {
             phone: item.contact_number,
             email: item.contact_email,
             location: item.location,
-            hours: (item.available_days && item.open_hours && item.close_hours) ?  
-            `${item.available_days} ${formatToAMPM(item.open_hours)} - ${formatToAMPM(item.close_hours)}`
-            : 'Office hours not specified'
+            days: (item.available_days) ? `${item.available_days} `: null,
+            hours: (item.open_hours && item.close_hours) ? `${formatToAMPM(item.open_hours)} - ${formatToAMPM(item.close_hours)}` : null
         }));
 
         return developers;
