@@ -148,6 +148,12 @@ export const listingsService = {
 
       if (mainError) throw mainError;
 
+      // Detects if RLS blocked the update
+      if (!mainListingData || mainListingData.length === 0) {
+        console.error('Update failed silently. Zero rows modified in main_listings.');
+        return { success: false };
+      }
+      
       if (specificPropertyData && Object.keys(specificPropertyData).length > 0) {
         const subTable = SUB_TABLE_MAP[propertyTypeId];
 
