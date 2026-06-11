@@ -165,6 +165,12 @@ export const listingsService = {
             .select(); // Returns modified rows (do not ERASE so that we can catch RLS blocks)
 
           if (subError) throw subError;
+
+          // Detects if RLS blocked the update
+          if (!specificPropertyData || specificPropertyData.length === 0) {
+            console.error('Update failed silently. Zero rows modified in ${subTable}.');
+            return { success: false };
+          }
         }
       }
 
