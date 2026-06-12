@@ -477,6 +477,7 @@ import { ref, watch, onMounted, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
 import { listingsService } from '@/services/listingsServices';
+import { authService } from '@/services/authService'; // just for getting agent_ID
 
 // maps stuff
 import { MapIcon } from 'lucide-vue-next';
@@ -493,6 +494,7 @@ import { developerService } from '@/services/developerService'
 // for the description stuff
 import { compileMarkdown } from '@/services/listingsServices';
 const displayMarkdown = ref(false);
+const currentAgentId = ref<number | null>(null); // store agent ID of current user
 
 function toggleMarkdown() {
   displayMarkdown.value = !displayMarkdown.value;
@@ -611,6 +613,15 @@ onMounted(async () => {
     { dev_ID: null, name: 'None' }, 
     ...devs.map(d => ({ dev_ID: Number(d.dev_ID), name: String(d.name) }))
   ];
+
+// Fetch currently authenticated user
+  const agentProfile = await authService.getCurrentAgent();
+
+  if(agentProfile){
+    currentAgentId.value = agentProfile.agent_ID;
+  }else {
+    console.error('No authenticated agent profile found');
+  }
 });
 
 const form = ref<Partial<PropertyForm>>({
@@ -727,7 +738,7 @@ const saveProperty = async () => {
       const propertyTypeId = typeMap[form.value.property_type || 'House And Lot'] || 1;
       // 2. Prepare Main Listing Data (Maps to main_listings table)
       const mainData = {
-        agent_ID: 1, // WARNING: Hardcoded for now. Update this once user login/auth is built!
+        agent_ID: currentAgentId.value,
         listing_title: form.value.listing_title,
         property_type_ID: propertyTypeId,
         price: form.value.price,
