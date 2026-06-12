@@ -1,6 +1,6 @@
 <template>
-<div v-if="details" class="absolute inset-0 z-10 flex items-center justify-center bg-black/10 backdrop-blur-sm">
-  <div class="custom-scrollbar bg-white w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 px-10 py-7 overflow-y-auto">
+<div class="absolute inset-0 z-10 flex items-center justify-center bg-black/10 backdrop-blur-sm">
+  <div v-if="details" class="custom-scrollbar bg-white w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 px-10 py-7 overflow-y-auto">
         <header class="relative mb-4">
           <h1 class="text-3xl max-w-19/20 font-extrabold text-maurealty-blue">
             {{ details.listing_title || 'Untitled Listing' }}
@@ -66,6 +66,10 @@
               <MapPinIcon class="size-6" color="#000000" />
               {{ details.location }}
             </span>
+
+            <section class="w-full h-64 rounded-xl overflow-hidden border border-gray-200">
+              <MapHolder />
+            </section>
 
             <span class="flex items-center gap-1.5">
               <UserStarIcon class="size-6" color="#000000" />
@@ -205,9 +209,10 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { type Property, formattedPropertyType } from '@/assets/classes/listings'
+import { formattedPropertyType } from '@/assets/classes/listings'
 import { listingsService, compileMarkdown } from '@/services/listingsServices' 
 import { generateShareLink } from '@/services/shareService'
+import MapHolder from './MapHolder.vue'
 
 import placeholder from '@/assets/images/default_placeholder.png'
 
