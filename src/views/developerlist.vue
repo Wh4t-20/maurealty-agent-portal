@@ -16,14 +16,14 @@
 
     <!--Header I think mas better if ma component ni sya-->
     <!-- Better component iff we will use the same exact design for every page -->
-    <header class="fixed z-5 pl-9 flex items-center w-full max-w-264.25 h-30 bg-linear-to-r from-[#CEE5F9] to-[#FFFFFF] shadow-[0_10px_15px_rgba(0,0,0,0.3)] rounded-lg">
+    <header class="fixed z-5 pl-9 flex items-center w-auto h-30 bg-linear-to-r from-[#CEE5F9] to-[#FFFFFF] shadow-[0_10px_15px_rgba(0,0,0,0.3)] rounded-lg">
   
       <h1 class="text-[clamp(1rem,2vw,2rem)] font-extrabold text-[#07407B]">
         DEVELOPERS
       </h1>
 
       <!-- Search -->
-      <div class=" flex-1 ml-4 md:ml-62.5  max-w-87.5">
+      <div class=" flex-1 ml-4 md:ml-20 lg:ml-62.5 max-w-87.5">
         <input type="text"placeholder="Search Developer" class=" text-[clamp(0.5rem,2vw,1rem)] w-full rounded-[10px] border border-[#1C1E76] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-maurealty-blue"/>
       </div>
 
@@ -39,7 +39,7 @@
     </header>
     
     <!-- Developer Cards -->
-    <div class="w-3/4 grid grid-cols-1 md:grid-cols-2 mt-35 gap-6 p-4">
+    <div class="w-3/4 grid grid-cols-1 lg:grid-cols-2 mt-35 gap-6 p-4">
       <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" />
     </div>
   </div>
