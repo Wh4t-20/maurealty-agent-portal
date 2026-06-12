@@ -494,6 +494,7 @@ import { developerService } from '@/services/developerService'
 // for the description stuff
 import { compileMarkdown } from '@/services/listingsServices';
 const displayMarkdown = ref(false);
+const currentAgentId = ref<number | null>(null); // store agent ID of current user
 
 function toggleMarkdown() {
   displayMarkdown.value = !displayMarkdown.value;
