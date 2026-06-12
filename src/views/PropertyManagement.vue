@@ -477,7 +477,8 @@ import { ref, watch, onMounted, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
 import { listingsService } from '@/services/listingsServices';
-import { supabase } from '@/supabaseClient';
+
+import { authService } from '@/services/authService'; // just for getting agent_ID
 
 // maps stuff
 import { MapIcon } from 'lucide-vue-next';
@@ -613,6 +614,11 @@ onMounted(async () => {
     { dev_ID: null, name: 'None' }, 
     ...devs.map(d => ({ dev_ID: Number(d.dev_ID), name: String(d.name) }))
   ];
+
+// Fetch currently authenticated user
+
+
+
 });
 
 const form = ref<Partial<PropertyForm>>({
