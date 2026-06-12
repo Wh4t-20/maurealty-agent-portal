@@ -25,7 +25,7 @@
 			</div>
 
 			<div class="mt-4 flex flex-col items-start">
-				<h1 class="font-semibold col-span-full">Available Office Hours</h1>
+				<h1 class="font-semibold">Available Office Hours</h1>
 				<span class="text-lg p-2 pl-4 bg-gray-200 rounded-2xl w-full">
 					<span v-if="dev.days" class="flex items-center gap-2"> <CalendarCheck2Icon class="size-4.5" /> {{ dev.days }} </span>
 					<span v-if="dev.hours" class="flex items-center gap-2"> <ClockIcon class="size-4.5" /> {{ dev.hours }} </span>
@@ -45,6 +45,9 @@
 
 		<!-- buttons -->
 		<div class="flex gap-2 items-end justify-end">
+			<button class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px]  border border-red-600 text-red-600 rounded-[5px] px-4 py-2 hover:bg-red-100 flex items-center gap-2 justify-center" >
+				Delete
+			</button>
 			<button class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px]  border border-[#B4AFAF] rounded-[5px] px-4 py-2 hover:bg-gray-100 flex items-center gap-2 justify-center" >
 				Edit
 			</button>
