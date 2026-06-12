@@ -477,6 +477,7 @@ import { ref, watch, onMounted, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
 import { listingsService } from '@/services/listingsServices';
+import { supabase } from '@/supabaseClient';
 
 // maps stuff
 import { MapIcon } from 'lucide-vue-next';
