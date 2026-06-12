@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { supabase } from '@/supabaseClient'
 import DeveloperList from '@/views/developerlist.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import Listings from '@/views/Listings.vue'
