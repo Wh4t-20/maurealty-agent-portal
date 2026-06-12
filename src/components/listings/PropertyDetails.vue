@@ -204,6 +204,11 @@
           </button>
         </section>
       </div>
+
+      <div v-else class="bg-white w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 flex flex-col items-center justify-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-3 border-maurealty-blue mb-4"></div>
+        <p class="text-maurealty-blue font-semibold">Loading property...</p>
+      </div>
   </div>
 </template>
 
