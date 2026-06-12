@@ -477,7 +477,6 @@ import { ref, watch, onMounted, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
 import { listingsService } from '@/services/listingsServices';
-
 import { authService } from '@/services/authService'; // just for getting agent_ID
 
 // maps stuff
@@ -616,9 +615,13 @@ onMounted(async () => {
   ];
 
 // Fetch currently authenticated user
+  const agentProfile = await authService.getCurrentAgent();
 
-
-
+  if(agentProfile){
+    currentAgentId.value = agentProfile.agent_ID;
+  }else {
+    console.error('No authenticated agent profile found');
+  }
 });
 
 const form = ref<Partial<PropertyForm>>({
