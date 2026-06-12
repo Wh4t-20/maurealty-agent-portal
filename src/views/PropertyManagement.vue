@@ -87,10 +87,23 @@
                 <label class="block text-sm font-bold text-maurealty-blue mb-1">Location</label>
                 <span class="w-full flex gap-2">
                   <input type="text" v-model="form.location" placeholder="Street, City, Province" class="w-full border border-gray-300 bg-white rounded-lg p-3">
-                  <button type="button" class="border border-gray-300 bg-white hover:bg-gray-100 cursor-pointer rounded-lg p-3"><MapIcon /></button>
+                  <button type="button" class="border border-gray-300 bg-white hover:bg-gray-100 cursor-pointer rounded-lg p-3" @click="toggleMaps"><MapIcon /></button>
                 </span>
               </div>
 
+              <transition
+                    enter-active-class="transition duration-100 ease-out"
+                    enter-from-class="transform scale-y-0"
+                    enter-to-class="transform scale-y-100"
+                    leave-active-class="transition duration-100 ease-out"
+                    leave-from-class="transform scale-y-100"
+                    leave-to-class="transform scale-y-0"
+              >
+                <div v-if="displayMaps" class="col-span-2 w-full h-64 rounded-xl overflow-hidden border border-gray-200">
+                  <MapHolder />
+                </div>
+              </transition>
+              
               <div class="col-span-2">
               <label class="block text-sm font-bold text-maurealty-blue mb-1">Developer</label>
               
