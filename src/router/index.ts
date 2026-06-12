@@ -18,48 +18,55 @@ const routes: Array<RouteRecordRaw> = [
     name: 'Landing',
     component: Login,
     // This flag tells App.vue NOT to show the sidebar here
-    meta: { hideSidebar: true } 
+    meta: { hideSidebar: true, requiresAuth: false } 
   },
   {
     path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,
+    meta: { requiresAuth: true}
   },
   {
     path: '/developerlist',
     name: 'DeveloperList',
-    component: DeveloperList
+    component: DeveloperList,
+    meta: { requiresAuth: true}
   },
   {
     path: '/listings',
     name: 'Listing',
-    component: Listings
+    component: Listings,
+    meta: { requiresAuth: true}
   },
   {
     path: '/shared/listing/:token',
     name: 'SharedListing',
     component: SharedListing,
-    meta: { requiresAuth: false, hideSidebar: true }
+    meta: { requiresAuth: false, hideSidebar: true } // keeping this public to share to clients
   },
   {
     path: '/propertymanagement',
     name: 'PropertyManagement',
-    component: PropertyManagement 
+    component: PropertyManagement,
+    meta: { requiresAuth: true}
   },
   {
     path: '/accounting',
     name: 'Accounting',
-    component: Accounting
+    component: Accounting,
+    meta: { requiresAuth: true}
   },
   {
     path: '/genealogy',
     name: 'Genealogy',
-    component: GenealogyLandingpage
+    component: GenealogyLandingpage,
+    meta: { requiresAuth: true}
   },
   {
     path: '/profile',
     name: 'Profile',
-    component: Profile
+    component: Profile,
+    meta: { requiresAuth: true}
   },
 ]
 
