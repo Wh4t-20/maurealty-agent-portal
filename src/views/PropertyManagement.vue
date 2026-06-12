@@ -85,7 +85,10 @@
 
               <div class="col-span-2">
                 <label class="block text-sm font-bold text-maurealty-blue mb-1">Location</label>
-                <input type="text" v-model="form.location" placeholder="Street, City, Province" class="w-full border border-gray-300 bg-white rounded-lg p-3">
+                <span class="w-full flex gap-2">
+                  <input type="text" v-model="form.location" placeholder="Street, City, Province" class="w-full border border-gray-300 bg-white rounded-lg p-3">
+                  <button type="button" class="border border-gray-300 bg-white hover:bg-gray-100 cursor-pointer rounded-lg p-3"><MapIcon /></button>
+                </span>
               </div>
 
               <div class="col-span-2">
@@ -462,7 +465,17 @@ import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headless
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
 import { listingsService } from '@/services/listingsServices';
 
-import { developerService} from '@/services/developerService'
+// maps stuff
+import { MapIcon } from 'lucide-vue-next';
+import MapHolder from '@/components/listings/MapHolder.vue';
+const displayMaps = ref(false);
+
+function toggleMaps() {
+  displayMaps.value = !displayMaps.value;
+  console.log("Map display status: " + displayMaps.value);
+}
+
+import { developerService } from '@/services/developerService'
 
 // for the description stuff
 import { compileMarkdown } from '@/services/listingsServices';
@@ -470,7 +483,7 @@ const displayMarkdown = ref(false);
 
 function toggleMarkdown() {
   displayMarkdown.value = !displayMarkdown.value;
-  console.log("Markdown display status: " + displayMarkdown.value)
+  console.log("Markdown display status: " + displayMarkdown.value);
 }
 
 // Combine all interfaces for the form state
