@@ -7,7 +7,7 @@ import PropertyManagement from '@/views/PropertyManagement.vue'
 import Accounting from '@/views/Accounting.vue'
 import Login from '@/views/LoginForm.vue'
 import GenealogyLandingpage from '@/views/Genealogy-landingpage.vue'
-import Profile from '@/components/Profile.vue'
+import Profile from '@/views/Profile.vue'
 import SharedListing from '@/views/SharedListing.vue'
 
 
