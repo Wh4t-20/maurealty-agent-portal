@@ -738,7 +738,7 @@ const saveProperty = async () => {
       const propertyTypeId = typeMap[form.value.property_type || 'House And Lot'] || 1;
       // 2. Prepare Main Listing Data (Maps to main_listings table)
       const mainData = {
-        agent_ID: 1, // WARNING: Hardcoded for now. Update this once user login/auth is built!
+        agent_ID: currentAgentId.value,
         listing_title: form.value.listing_title,
         property_type_ID: propertyTypeId,
         price: form.value.price,
