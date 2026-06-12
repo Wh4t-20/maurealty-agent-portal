@@ -75,4 +75,22 @@ const router = createRouter({
   routes,
 })
 
+// Verify current session everytime the PATH changes
+router.beforeEach(async (to,from, next) =>{
+  
+  const { data: { session } } = await supabase.auth.getSession();
+  const isAuthenticated = !!session;
+
+  // check if route being navigated through needs auth
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+
+  if (requiresAuth && !isAuthenticated){
+    next({ name: 'Landing' }); // block user
+  } else if (to.name === 'Landing' && isAuthenticated){
+    next({ name: 'Listing' }); // user is alerady logged in but trying to view login page
+  } else {
+    next();
+  }
+})
+
 export default router
