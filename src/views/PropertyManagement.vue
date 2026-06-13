@@ -100,7 +100,7 @@
                     leave-to-class="transform scale-y-0"
               >
                 <div v-if="displayMaps" class="col-span-2 w-full h-74 rounded-xl overflow-hidden border border-gray-200">
-                  <MapHolder />
+                  <MapHolder :target-location="{ lng: form.lng ?? 123.8854, lat: form.lat ?? 10.3157 }" />
                 </div>
               </transition>
               
@@ -530,9 +530,15 @@ const loadProperties = async () => {
       form.value.price = data.price;
       form.value.commission = data.commission;
       form.value.location = data.location;
+      form.value.lng = data.longitude;
+      form.value.lat = data.latitude;
       form.value.description = data.description;
       form.value.is_active = data.is_active;
       form.value.dev_ID = data.dev_ID;
+
+      console.log(data.longitude, data.latitude);
+      console.log("^Data | vForm\n");
+      console.log(form.value.lng, form.value.lat);
 
       const images = Array.isArray(data.listing_images) ? data.listing_images : [];
       existingImages.value = [...images]
@@ -620,6 +626,8 @@ const form = ref<Partial<PropertyForm>>({
   price: 0,
   commission: 0,
   location: '',
+  lng: 123.885398864746,
+  lat: 10.3156995773315,
   description: '',
   is_active: true,
   dev_ID: null,
@@ -733,6 +741,8 @@ const saveProperty = async () => {
         price: form.value.price,
         commission: form.value.commission,
         location: form.value.location,
+        longitude: form.value.lng,
+        latitude: form.value.lat,
         description: form.value.description || 'No description provided.',
         is_active: form.value.is_active,
         dev_ID: form.value.dev_ID
@@ -817,6 +827,8 @@ const saveProperty = async () => {
         price: form.value.price,
         commission: form.value.commission,
         location: form.value.location,
+        longitude: form.value.lng,
+        latitude: form.value.lat,
         description: form.value.description || 'No description provided.',
         is_active: form.value.is_active,
         dev_ID: form.value.dev_ID

@@ -2,34 +2,57 @@
   <div id='map-container' ref="mapContainer" />
 </template>
 
-<script setup>
-import { onMounted, onUnmounted, ref } from 'vue';
+<script setup lang="ts">
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-const mapContainer = ref(null);
-const map = ref(null);
+const mapContainer = ref<HTMLElement | null>(null);
+const map = ref<any>(null);
+const marker = ref<any>(null);
 
-// marker stuff
-const marker = ref(null);
+const props = defineProps<{
+  targetLocation?: { lng: number; lat: number; } | null
+}>();
 
 onMounted(() => {
-    mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
+  mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
   if (!mapContainer.value) return;
   
+  console.log(props.targetLocation?.lng, props.targetLocation?.lat)
+
+  // fallback coords to somewhere in Guadalupe
+  const lng = props.targetLocation?.lng ?? 123.8854;
+  const lat = props.targetLocation?.lat ?? 10.3157;
+
   map.value = new mapboxgl.Map({
     container: mapContainer.value,
     style: 'mapbox://styles/mapbox/streets-v12',
-    center: [123.8854, 10.3157],
+    center: [lng, lat],
     zoom: 15
   });
 
   marker.value = new mapboxgl.Marker({
     color: 'red'
-  }).setLngLat([123.8854, 10.3157])
+  }).setLngLat([lng, lat])
     .addTo(map.value);
 });
+
+// Watch for coordinate changes to dynamically update the map and marker
+watch(() => props.targetLocation, (newLoc) => {
+  if (map.value && newLoc) {
+    map.value.flyTo({ center: [newLoc.lng, newLoc.lat], essential: true });
+    
+    if (marker.value) {
+      marker.value.setLngLat([newLoc.lng, newLoc.lat]);
+    } else {
+      marker.value = new mapboxgl.Marker({ color: 'red' })
+        .setLngLat([newLoc.lng, newLoc.lat])
+        .addTo(map.value);
+    }
+  }
+}, { deep: true });
 
 const clearMarker = () => {
   if (marker.value) {
