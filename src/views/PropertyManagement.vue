@@ -99,7 +99,7 @@
                     leave-from-class="transform scale-y-100"
                     leave-to-class="transform scale-y-0"
               >
-                <div v-if="displayMaps" class="col-span-2 w-full h-64 rounded-xl overflow-hidden border border-gray-200">
+                <div v-if="displayMaps" class="col-span-2 w-full h-74 rounded-xl overflow-hidden border border-gray-200">
                   <MapHolder />
                 </div>
               </transition>
