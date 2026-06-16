@@ -20,7 +20,7 @@
         </button>
 
         <MapInteractive 
-          :target-location="{ lng: form.lng ?? 123.89313980, lat: form.lat ?? 10.30995455 }" 
+          :target-location="{ lng: form.lng ?? 123.89313980, lat: form.lat ?? 10.30995455, loc: form.location ?? '' }" 
           @update:targetLocation="(loc) => { form.lng = loc.lng; form.lat = loc.lat, form.location = loc.name; }"
         />
       </div>
@@ -115,7 +115,7 @@
                   <button type="button" class="border border-gray-300 bg-white hover:bg-gray-100 cursor-pointer rounded-lg p-3" @click="toggleMaps"><MapIcon /></button>
                 </span>
               </div>
-              
+
               <div class="col-span-2">
               <label class="block text-sm font-bold text-maurealty-blue mb-1">Developer</label>
               

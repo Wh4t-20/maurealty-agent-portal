@@ -1,4 +1,9 @@
 <template>
+  <!-- DETAILS -->
+  <div class="absolute z-20 p-4 w-fit bg-maurealty-blue text-white bottom-10 left-5">
+    <h1>{{ props.targetLocation?.loc ?? 'Nothin'  }}</h1>
+  </div>
+
   <div id='map-container' ref="mapContainer" />
 </template>
 
@@ -16,7 +21,7 @@ const map = ref<any>(null);
 const marker = ref<any>(null);
 
 const props = defineProps<{
-  targetLocation?: { lng: number; lat: number; } | null
+  targetLocation?: { lng: number; lat: number; loc: string } | null
 }>();
 
 // Emit the new coordinates back to the parent when searched
