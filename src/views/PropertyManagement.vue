@@ -1,6 +1,31 @@
 <template>
   <div class="w-full h-screen bg-background-gray flex flex-col overflow-hidden p-10">
-    <main class="custom-scrollbar size-full bg-white border border-maurealty-blue/25 rounded-2xl shadow-lg py-7 px-10 overflow-y-scroll">
+    <main class="relative custom-scrollbar size-full bg-white border border-maurealty-blue/25 rounded-2xl shadow-lg py-7 px-10 overflow-y-scroll">
+      <transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 scale-95"
+      enter-to-class="opacity-100 scale-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 scale-100"
+      leave-to-class="opacity-0 scale-95"
+    >
+      <div v-if="displayMaps" class="absolute inset-0 z-50 bg-white overflow-hidden rounded-2xl">
+        
+        <button 
+          @click="toggleMaps" 
+          type="button" 
+          class="absolute top-4 right-4 z-60 bg-red-500 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-red-600 transition-colors"
+        >
+          Close Map
+        </button>
+
+        <MapInteractive 
+          :target-location="{ lng: form.lng ?? 123.89313980, lat: form.lat ?? 10.30995455 }" 
+          @update:targetLocation="(loc) => { form.lng = loc.lng; form.lat = loc.lat, form.location = loc.name; }"
+        />
+      </div>
+    </transition>
+      
       <header class="relative">
           <h1 class="text-4xl max-w-19/20 font-extrabold text-maurealty-blue mb-4 ml-5">
             PROPERTY MANAGEMENT
@@ -90,19 +115,6 @@
                   <button type="button" class="border border-gray-300 bg-white hover:bg-gray-100 cursor-pointer rounded-lg p-3" @click="toggleMaps"><MapIcon /></button>
                 </span>
               </div>
-
-              <transition
-                    enter-active-class="transition duration-100 ease-out"
-                    enter-from-class="transform scale-y-0"
-                    enter-to-class="transform scale-y-100"
-                    leave-active-class="transition duration-100 ease-out"
-                    leave-from-class="transform scale-y-100"
-                    leave-to-class="transform scale-y-0"
-              >
-                <div v-if="displayMaps" class="col-span-2 w-full h-74 rounded-xl overflow-hidden border border-gray-200">
-                  <MapHolder :target-location="{ lng: form.lng ?? 123.8854, lat: form.lat ?? 10.3157 }" />
-                </div>
-              </transition>
               
               <div class="col-span-2">
               <label class="block text-sm font-bold text-maurealty-blue mb-1">Developer</label>
@@ -481,6 +493,7 @@ import { listingsService } from '@/services/listingsServices';
 // maps stuff
 import { MapIcon } from 'lucide-vue-next';
 import MapHolder from '@/components/listings/MapHolder.vue';
+import MapInteractive from '@/components/listings/MapInteractive.vue';
 const displayMaps = ref(false);
 
 function toggleMaps() {

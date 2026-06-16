@@ -7,12 +7,21 @@ import { onMounted, onUnmounted, ref, watch } from 'vue';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
+// Import the Geocoder and its CSS
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
+
 const mapContainer = ref<HTMLElement | null>(null);
 const map = ref<any>(null);
 const marker = ref<any>(null);
 
 const props = defineProps<{
   targetLocation?: { lng: number; lat: number; } | null
+}>();
+
+// Emit the new coordinates back to the parent when searched
+const emit = defineEmits<{
+  (e: 'update:targetLocation', location: { lng: number; lat: number; name: string }): void
 }>();
 
 onMounted(() => {
@@ -37,9 +46,39 @@ onMounted(() => {
     color: 'red'
   }).setLngLat([lng, lat])
     .addTo(map.value);
+
+  // Initialize the Geocoder
+  const geocoder = new MapboxGeocoder({
+    accessToken: mapboxgl.accessToken as string,
+    mapboxgl: mapboxgl as any,
+    marker: false, // Set to false so we can manually manage our existing red marker
+    placeholder: 'Search for a location...'
+  });
+
+  // Add the search bar to the top-left of the map
+  map.value.addControl(geocoder, 'top-left');
+
+  // Listen for the result event when a user clicks an autofill option
+  geocoder.on('result', (e: any) => {
+    const [newLng, newLat] = e.result.center;
+    const locationName = e.result.place_name;
+
+    // The map automatically flies to the location, so we just update the pin
+    if (marker.value) {
+      marker.value.setLngLat([newLng, newLat]);
+    } else {
+      marker.value = new mapboxgl.Marker({ color: 'red' })
+        .setLngLat([newLng, newLat])
+        .addTo(map.value);
+    }
+
+    console.log(newLng, newLat, locationName )
+    // Inform the parent component of the new state
+    emit('update:targetLocation', { lng: newLng, lat: newLat, name: locationName });
+  });
 });
 
-// Watch for coordinate changes to dynamically update the map and marker
+// Watch for coordinate changes from the parent to dynamically update the map and marker
 watch(() => props.targetLocation, (newLoc) => {
   if (map.value && newLoc) {
     map.value.flyTo({ center: [newLoc.lng, newLoc.lat], essential: true });
@@ -75,5 +114,10 @@ onUnmounted(() => {
 #map-container {
   width: 100%;
   height: 100%;
+}
+
+/* Optional: Ensure the geocoder doesn't break styling on smaller screens */
+:deep(.mapboxgl-ctrl-geocoder) {
+  min-width: 280px;
 }
 </style>
