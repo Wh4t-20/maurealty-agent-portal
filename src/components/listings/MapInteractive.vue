@@ -81,6 +81,45 @@ onMounted(() => {
     // Inform the parent component of the new state
     emit('update:targetLocation', { lng: newLng, lat: newLat, name: locationName });
   });
+
+  map.value.on('click', async (e: any) => {
+    const { lng, lat } = e.lngLat;
+
+    // setting up the pin
+    if (marker.value) {
+      marker.value.setLngLat([lng, lat]);
+    } else {
+      marker.value = new mapboxgl.Marker({ color: 'red' })
+        .setLngLat([lng, lat])
+        .addTo(map.value);
+    }
+
+    // Query Mapbox API to turn coordinates into a location name (Reverse Geocoding)
+    try {
+      const token = mapboxgl.accessToken;
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${token}`
+      );
+      const data = await response.json();
+
+      const locationName = data.features?.[0]?.place_name || `Pinned Location (${lat.toFixed(8)}, ${lng.toFixed(8)})`;
+
+      // update the text inside the Geocoder search bar so the UI matches the pin
+      geocoder.setInput(locationName);
+
+      // send everything back to the parent PropertyManagement form
+      emit('update:targetLocation', { lng, lat, name: locationName });
+
+    } catch (error) {
+      console.error("Reverse geocoding failed:", error);
+      // fallback
+      emit('update:targetLocation', { 
+        lng, 
+        lat, 
+        name: `Pinned Location (${lat.toFixed(4)}, ${lng.toFixed(4)})` 
+      });
+    }
+  });
 });
 
 // Watch for coordinate changes from the parent to dynamically update the map and marker
@@ -121,7 +160,6 @@ onUnmounted(() => {
   height: 100%;
 }
 
-/* Optional: Ensure the geocoder doesn't break styling on smaller screens */
 :deep(.mapboxgl-ctrl-geocoder) {
   min-width: 280px;
 }
