@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
-    "@mapbox/mapbox-gl-geocoder": "^5.1.2",
     "@supabase/supabase-js": "^2.101.1",
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.18",
@@ -33,7 +32,6 @@
   "devDependencies": {
     "@tsconfig/node22": "^22.0.2",
     "@types/chart.js": "^2.9.41",
-    "@types/mapbox__mapbox-gl-geocoder": "^5.1.1",
     "@types/node": "^22.18.11",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",

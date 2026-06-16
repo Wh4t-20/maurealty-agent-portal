@@ -1,9 +1,5 @@
 <template>
   <div class="w-full h-screen bg-background-gray flex flex-col overflow-hidden p-10">
-    <div class="absolute">
-      <MapInteractive :target-location="{ lng: form.lng ?? 123.89315517066801, lat: form.lat ?? 10.309933165401256 }" />
-    </div>
-
     <main class="custom-scrollbar size-full bg-white border border-maurealty-blue/25 rounded-2xl shadow-lg py-7 px-10 overflow-y-scroll">
       <header class="relative">
           <h1 class="text-4xl max-w-19/20 font-extrabold text-maurealty-blue mb-4 ml-5">
@@ -485,7 +481,6 @@ import { listingsService } from '@/services/listingsServices';
 // maps stuff
 import { MapIcon } from 'lucide-vue-next';
 import MapHolder from '@/components/listings/MapHolder.vue';
-import MapInteractive from '@/components/listings/MapInteractive.vue';
 const displayMaps = ref(false);
 
 function toggleMaps() {
