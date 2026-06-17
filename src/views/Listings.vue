@@ -253,7 +253,7 @@ const loadProperties = async () => {
     console.log('Naa na ang data bai:', data);
     properties.value = data;
     currentPage.value = 1;
-  } catch (error) {
+  } catch (error) { 
     console.error('Fetch error yah:', error);
   }
 }
