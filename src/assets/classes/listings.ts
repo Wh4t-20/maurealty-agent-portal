@@ -11,7 +11,7 @@ export interface Property {
     lat: number;
     description: string;
     created_at: Date;
-    is_active: boolean;
+    status: boolean;
     developer_name: string;
     image_url?: string;
 }
