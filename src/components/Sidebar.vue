@@ -42,12 +42,12 @@
   
       <!-- LOGOUT -->
       <div class="mt-auto px-3">
-        <router-link
-          :to="logoutItem.path"
+        <button
+          @click="handleLogout"
           class="flex items-center text-white
                  p-3 rounded-lg hover:bg-[#2A3242] transition"
         >
-          <component :is="logoutItem.icon" class="w-7 h-7 shrink-0" :stroke-width="1"/>
+          <LogOut class="w-7 h-7 shrink-0" :stroke-width="1"/>
   
           <span
             class="ml-4 whitespace-nowrap opacity-0 text-[clamp(0.5rem,2vw,1rem) font-light
@@ -55,7 +55,7 @@
           >
             Logout
           </span>
-        </router-link>
+        </button>
       </div>
     </aside>
   </template>
