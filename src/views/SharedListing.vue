@@ -242,9 +242,8 @@ const loadListing = async () => {
       condominium: Array.isArray(mainListing.condominium) ? mainListing.condominium[0] : mainListing.condominium,
       memorial: Array.isArray(mainListing.memorial) ? mainListing.memorial[0] : mainListing.memorial,
       
-      property_type: mainListing.property_type_ID === 1 ? 'house_and_lot' : 
-                     mainListing.property_type_ID === 2 ? 'lot_only' :
-                     mainListing.property_type_ID === 3 ? 'condominium' : 'memorial',
+      property_type: typeMap[mainListing.property_type_ID] || 'unknown',
+
       agent_name: mainListing.agents ? `${mainListing.agents.first_name} ${mainListing.agents.last_name}` : 'Unknown Agent',
       developer_name: mainListing.developers ? mainListing.developers.name : null,
     };
