@@ -133,6 +133,49 @@ export const salesService = {
     return { success: true, data };
   },
 
+  // Update an existing sale. Selects after updating so a silent RLS block
+  // (zero rows touched) is detectable, same as the listings service.
+  async updateSale(id: number, payload: Record<string, any>) {
+    const { data, error } = await supabase
+      .from('sales')
+      .update(payload)
+      .eq('sale_ID', id)
+      .select();
+
+    if (error) {
+      console.error('Error updating sale:', error);
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      console.error('Update failed silently. Zero rows modified in sales.');
+      return { success: false };
+    }
+
+    return { success: true };
+  },
+
+  // Delete a sale by ID. Selects deleted rows to catch a silent RLS block.
+  async deleteSale(id: number) {
+    const { data, error } = await supabase
+      .from('sales')
+      .delete()
+      .eq('sale_ID', id)
+      .select();
+
+    if (error) {
+      console.error('Error deleting sale:', error);
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      console.error('Delete failed silently. Zero rows deleted in sales.');
+      return { success: false };
+    }
+
+    return { success: true };
+  },
+
   // Aggregate totals. Summed in JS (reliable at dev scale) rather than via a
   // PostgREST aggregate/RPC. Scope to one agent with agentId, or all if omitted.
   async getTotalSales(agentId?: number): Promise<SalesTotals> {
