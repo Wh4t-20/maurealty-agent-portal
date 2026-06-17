@@ -121,25 +121,22 @@ watch([selectedItem, selectedMetric, activeModal], ([item, metric, modal]) => {
 });
 onMounted(async () => {
   try {
-    // 1. Get the Auth UUID
     const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
       const authId = user.id
 
-      // 2. Search the database using the 'user_id' column, NOT 'agent_ID'
       const { data, error } = await supabase
         .from('agents')
         .select('agent_ID, first_name, last_name')
-        .eq('user_id', authId) // <-- This is the magic fix!
+        .eq('user_id', authId)
         .single()
 
       if (error) throw error
 
-      // 3. Update the template variables
       if (data) {
         agentName.value = `${data.first_name} ${data.last_name}`
-        agent_ID.value = String(data.agent_ID) // Show the short number (e.g., '3') in the badge!
+        agent_ID.value = String(data.agent_ID) 
       }
     } else {
       agentName.value = 'Guest'
