@@ -267,10 +267,7 @@ export const listingsService = {
   },
   async updateListingStatus(listingId: number, newStatus: string) {
     try {
-      const updateTo = newStatus === 'sold' 
-        ? { status: newStatus, is_active: false } 
-        : { status: newStatus };
-
+      const updateTo = { status: newStatus };
 
       const { data, error } = await supabase
         .from('main_listings')
