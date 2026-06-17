@@ -11,7 +11,7 @@
   </section>
   
 
-  <div id='map-container' ref="mapContainer" />
+  <div :class="{ 'pin-enabled': enablePin }" id='map-container' ref="mapContainer" />
 </template>
 
 <script setup lang="ts">
@@ -96,7 +96,7 @@ onMounted(() => {
     // Inform the parent component of the new state
     emit('update:targetLocation', { lng: newLng, lat: newLat, name: locationName });
   });
-  
+
   map.value.on('click', async (e: any) => {
     if (enablePin.value) {
       const { lng, lat } = e.lngLat;
@@ -179,5 +179,9 @@ onUnmounted(() => {
 
 :deep(.mapboxgl-ctrl-geocoder) {
   min-width: 280px;
+}
+
+#map-container.pin-enabled :deep(.mapboxgl-canvas) {
+  cursor: crosshair !important;
 }
 </style>
