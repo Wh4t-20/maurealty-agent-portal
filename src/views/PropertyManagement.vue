@@ -517,7 +517,7 @@ const propertyId = Number(route.query.id) || -1;
 const propertyType = Number(route.query.type) || -1;
 
 const loadProperties = async () => {
-  if (route.query.edit === '0') return; 
+  if (propertyId === -1) return;
 
   try {
     const data = await listingsService.getListingById(propertyId, propertyType) as any;
@@ -729,8 +729,8 @@ watch(() => form.value.property_type, (newType) => {
 });
 
 const saveProperty = async () => {
-  if(route.query.edit === '0') {
-    try {
+  if(propertyId === -1) {
+      try {
       // 1. Map Property Type String to DB ID
       const typeMap: Record<string, number> = {
         'House And Lot': 1, 'Lot Only': 2, 'Condominium': 3, 'Memorial': 4, 'Clubshare': 5, 'Golfshare': 6

@@ -4,7 +4,7 @@
       <div class="welcome-section">
         <div class="header-flex">
           <div class="header-title">
-            <h1 class="welcome-message">Welcome back, {{ agentName }}</h1>
+            <h1 class="welcome-message">Welcome back, {{agentName}} </h1>
             <p class="subtitle">Dashboard > <span class="text-blue">Senior Agent</span></p>
           </div>
           <!-- <div class="quick-actions-top">
@@ -70,8 +70,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-
+import { ref, watch, onMounted } from 'vue';
+import { supabase } from '@/supabaseClient'
 // Component Imports
 import StatCard from '@/components/dashboard/DashboardStatCard.vue';
 import SalesPerformance from '@/components/dashboard/SalesPerfromance.vue';
@@ -83,11 +83,12 @@ import AddAgent from '@/components/dashboard/AddAgent.vue';
 import Calculator from '@/components/dashboard/Calculator.vue';
 
 // State
-const agentName = ref('Kenji Bad BoyBoy');
 const selectedItem = ref<any>(null);
 const selectedMetric = ref<any>(null);
 const activeModal = ref<string | null>(null); // For forms
 const modalType = ref('');
+const agent_ID = ref('');
+const agentName = ref ('');
 
 // Data (Keep original structure)
 const metrics = ref([
@@ -118,6 +119,38 @@ const closeAll = () => {
 watch([selectedItem, selectedMetric, activeModal], ([item, metric, modal]) => {
   document.body.style.overflow = (item || metric || modal) ? 'hidden' : '';
 });
+onMounted(async () => {
+  try {
+    // 1. Get the Auth UUID
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (user) {
+      const authId = user.id
+
+      // 2. Search the database using the 'user_id' column, NOT 'agent_ID'
+      const { data, error } = await supabase
+        .from('agents')
+        .select('agent_ID, first_name, last_name')
+        .eq('user_id', authId) // <-- This is the magic fix!
+        .single()
+
+      if (error) throw error
+
+      // 3. Update the template variables
+      if (data) {
+        agentName.value = `${data.first_name} ${data.last_name}`
+        agent_ID.value = String(data.agent_ID) // Show the short number (e.g., '3') in the badge!
+      }
+    } else {
+      agentName.value = 'Guest'
+      agent_ID.value = 'N/A'
+    }
+
+  } catch (error) {
+    console.error("Error fetching agent profile:", error)
+    agentName.value = "Unknown Agent"
+  }
+})
 </script>
 
 <style scoped>
