@@ -1,8 +1,15 @@
 <template>
-  <!-- DETAILS -->
-  <div class="absolute z-20 p-4 w-fit bg-maurealty-blue text-white bottom-10 left-5">
-    <h1>{{ props.targetLocation?.loc ?? 'Nothin'  }}</h1>
-  </div>
+  <!-- DETAILS & OTHER FUNCTIONALITY -->
+  <section class="absolute z-20 bottom-10 left-5 flex gap-2">
+    <div v-if="props.targetLocation?.loc" class="p-4 px-6 w-fit bg-maurealty-blue text-white rounded-2xl">
+      <h1>Pinned Location: {{ props.targetLocation?.loc  }}</h1>
+    </div>
+    <button type="button" class="p-4 bg-maurealty-blue hover:bg-[#045fa3] rounded-2xl text-white cursor-pointer" @click="togglePinning">
+      <MapPinIcon v-if="!enablePin" />
+      <MapPinOffIcon v-if="enablePin" />
+    </button>
+  </section>
+  
 
   <div id='map-container' ref="mapContainer" />
 </template>
@@ -15,6 +22,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 // Import the Geocoder and its CSS
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
+import { MapPinIcon, MapPinOffIcon } from 'lucide-vue-next';
 
 const mapContainer = ref<HTMLElement | null>(null);
 const map = ref<any>(null);
@@ -23,6 +31,13 @@ const marker = ref<any>(null);
 const props = defineProps<{
   targetLocation?: { lng: number; lat: number; loc: string } | null
 }>();
+
+const enablePin = ref(false);
+
+function togglePinning() {
+  enablePin.value = !enablePin.value;
+  console.log(enablePin.value ? "Pin enabled" : "Pin disabled");
+}
 
 // Emit the new coordinates back to the parent when searched
 const emit = defineEmits<{
@@ -81,45 +96,47 @@ onMounted(() => {
     // Inform the parent component of the new state
     emit('update:targetLocation', { lng: newLng, lat: newLat, name: locationName });
   });
-
+  
   map.value.on('click', async (e: any) => {
-    const { lng, lat } = e.lngLat;
+    if (enablePin.value) {
+      const { lng, lat } = e.lngLat;
 
-    // setting up the pin
-    if (marker.value) {
-      marker.value.setLngLat([lng, lat]);
-    } else {
-      marker.value = new mapboxgl.Marker({ color: 'red' })
-        .setLngLat([lng, lat])
-        .addTo(map.value);
+      // setting up the pin
+      if (marker.value) {
+        marker.value.setLngLat([lng, lat]);
+      } else {
+        marker.value = new mapboxgl.Marker({ color: 'red' })
+          .setLngLat([lng, lat])
+          .addTo(map.value);
+      }
+
+      // Query Mapbox API to turn coordinates into a location name (Reverse Geocoding)
+      try {
+        const token = mapboxgl.accessToken;
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${token}`
+        );
+        const data = await response.json();
+
+        const locationName = data.features?.[0]?.place_name || `Pinned Location (${lat.toFixed(8)}, ${lng.toFixed(8)})`;
+
+        // update the text inside the Geocoder search bar so the UI matches the pin
+        geocoder.setInput(locationName);
+
+        // send everything back to the parent PropertyManagement form
+        emit('update:targetLocation', { lng, lat, name: locationName });
+
+      } catch (error) {
+        console.error("Reverse geocoding failed:", error);
+        // fallback
+        emit('update:targetLocation', { 
+          lng, 
+          lat, 
+          name: `Pinned Location (${lat.toFixed(4)}, ${lng.toFixed(4)})` 
+        });
+      }
     }
-
-    // Query Mapbox API to turn coordinates into a location name (Reverse Geocoding)
-    try {
-      const token = mapboxgl.accessToken;
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${token}`
-      );
-      const data = await response.json();
-
-      const locationName = data.features?.[0]?.place_name || `Pinned Location (${lat.toFixed(8)}, ${lng.toFixed(8)})`;
-
-      // update the text inside the Geocoder search bar so the UI matches the pin
-      geocoder.setInput(locationName);
-
-      // send everything back to the parent PropertyManagement form
-      emit('update:targetLocation', { lng, lat, name: locationName });
-
-    } catch (error) {
-      console.error("Reverse geocoding failed:", error);
-      // fallback
-      emit('update:targetLocation', { 
-        lng, 
-        lat, 
-        name: `Pinned Location (${lat.toFixed(4)}, ${lng.toFixed(4)})` 
-      });
-    }
-  });
+  }); 
 });
 
 // Watch for coordinate changes from the parent to dynamically update the map and marker

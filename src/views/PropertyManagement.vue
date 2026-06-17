@@ -8,23 +8,23 @@
       leave-active-class="transition duration-150 ease-in"
       leave-from-class="opacity-100 scale-100"
       leave-to-class="opacity-0 scale-95"
-    >
-      <div v-if="displayMaps" class="absolute inset-0 z-50 bg-white overflow-hidden rounded-2xl">
-        
-        <button 
-          @click="toggleMaps" 
-          type="button" 
-          class="absolute top-4 right-4 z-60 bg-red-500 text-white px-4 py-2 rounded-lg font-bold shadow-md hover:bg-red-600 transition-colors"
-        >
-          Close Map
-        </button>
+      >
+        <div v-if="displayMaps" class="absolute inset-0 z-50 bg-white overflow-hidden rounded-2xl">
+          
+          <button 
+            @click="toggleMaps" 
+            type="button" 
+            class="absolute top-4 right-4 z-60 bg-red-500 text-white p-3 rounded-full font-bold shadow-md hover:bg-red-600 transition-colors"
+          >
+            <XIcon />
+          </button>
 
-        <MapInteractive 
-          :target-location="{ lng: form.lng ?? 123.89313980, lat: form.lat ?? 10.30995455, loc: form.location ?? '' }" 
-          @update:targetLocation="(loc) => { form.lng = loc.lng; form.lat = loc.lat, form.location = loc.name; }"
-        />
-      </div>
-    </transition>
+          <MapInteractive 
+            :target-location="{ lng: form.lng ?? 123.89313980, lat: form.lat ?? 10.30995455, loc: form.location ?? '' }" 
+            @update:targetLocation="(loc) => { form.lng = loc.lng; form.lat = loc.lat, form.location = loc.name; }"
+          />
+        </div>
+      </transition>
       
       <header class="relative">
           <h1 class="text-4xl max-w-19/20 font-extrabold text-maurealty-blue mb-4 ml-5">
@@ -491,7 +491,7 @@ import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/l
 import { listingsService } from '@/services/listingsServices';
 
 // maps stuff
-import { MapIcon } from 'lucide-vue-next';
+import { MapIcon, XIcon } from 'lucide-vue-next';
 import MapHolder from '@/components/listings/MapHolder.vue';
 import MapInteractive from '@/components/listings/MapInteractive.vue';
 const displayMaps = ref(false);
@@ -941,7 +941,7 @@ function goBack() {
 
 /* Style the draggable thumb */
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #1E3A8A; 
+  background-color: #044677; 
   border-radius: 9999px;
 }
 
