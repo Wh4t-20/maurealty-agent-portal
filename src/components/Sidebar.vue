@@ -45,7 +45,7 @@
         <button
           @click="handleLogout"
           class="flex items-center text-white
-                 p-3 rounded-lg hover:bg-[#2A3242] transition"
+                 p-3 rounded-lg hover:bg-[#2A3242] transition cursor-pointer group"
         >
           <LogOut class="w-7 h-7 shrink-0" :stroke-width="1"/>
   
