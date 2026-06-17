@@ -265,7 +265,32 @@ export const listingsService = {
       throw error;
     }
   },
+  async updateListingStatus(listingId: number, newStatus: string) {
+    try {
+      const updateTo = newStatus === 'sold' 
+        ? { status: newStatus, is_active: false } 
+        : { status: newStatus };
 
+
+      const { data, error } = await supabase
+        .from('main_listings')
+        .update(updateTo)  
+        .eq('listing_ID', listingId)
+        .select();
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        console.error('Update failed silently. Zero rows modified in listing.');
+        return { success: false };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error updating listing status:', error);
+      throw error;
+    }
+  },
 // Hard delete
   async deleteListing(listingId: number) {
 
