@@ -202,6 +202,13 @@
           >
             <span class="flex items-center-safe gap-1"><ExternalLink class="size-4" /> SHARE</span>
           </button>
+          <button 
+            v-if="details.status !== 'sold'" 
+            @click="$emit('sold', details.listing_id)" 
+            class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-green text-maurealty-green font-bold hover:bg-maurealty-green hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
+          >
+            <span class="flex items-center-safe gap-1"><BadgeCheck class="size-4" /> SOLD</span>
+          </button>
         </section>
       </div>
 
@@ -221,14 +228,14 @@ import MapHolder from './MapHolder.vue'
 
 import placeholder from '@/assets/images/default_placeholder.png'
 
-import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink } from "lucide-vue-next";
+import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink, BadgeCheck} from "lucide-vue-next";
 
 const props = defineProps<{ 
   prop_id: number,
   prop_type: string
  }>()
 
-const emit = defineEmits(['closeDetails', 'edit', 'delete', 'share'])
+const emit = defineEmits(['closeDetails', 'edit', 'delete', 'share', 'sold'])
 
 const propertyTypesMap: Record<string, number> = {
   'house_and_lot': 1,
