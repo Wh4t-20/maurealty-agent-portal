@@ -25,13 +25,13 @@ export const listingsService = {
         latitude,
         description,
         created_at,
-        is_active,
+        status,
         agents (first_name, last_name),
         property_type (property_type),
         developers (name),
         listing_images (image_url, display_order)
       `)
-      .eq('is_active', true)
+      .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(limit); // Adjust the limit as needed
 
@@ -61,7 +61,7 @@ export const listingsService = {
       lat: item.latitude,
       description: item.description,
       created_at: new Date(item.created_at),
-      is_active: item.is_active,
+      status: item.status,
       developer_name: item.developers?.name || 'None',
       image_url: thumbnailUrl // Attach the thumbnail
     };
@@ -267,10 +267,7 @@ export const listingsService = {
   },
   async updateListingStatus(listingId: number, newStatus: string) {
     try {
-      const updateTo = newStatus === 'sold' 
-        ? { status: newStatus, is_active: false } 
-        : { status: newStatus };
-
+      const updateTo = { status: newStatus };
 
       const { data, error } = await supabase
         .from('main_listings')

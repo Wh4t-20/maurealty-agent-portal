@@ -302,7 +302,7 @@ const loadProperties = async () => {
         lat: data.latitude,
         description: data.description,
         created_at: new Date(data.created_at),
-        is_active: data.is_active,
+        status: data.status,
         
         agent_name: `${data.agents?.first_name || ''} ${data.agents?.last_name || ''}`.trim(),
         developer_name: data.developers?.name || 'None',
