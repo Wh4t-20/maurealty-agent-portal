@@ -149,7 +149,7 @@
       v-if="soldListing"
       :locked-listing="{ id: soldListing.listing_id, title: soldListing.listing_title, price: soldListing.price }"
       @close="soldListing = null"
-      @created="onSaleSaved"
+      @saved="onSaleSaved"
     />
 
   </div>

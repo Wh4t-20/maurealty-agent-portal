@@ -4,7 +4,7 @@
 
       <!-- HEADER -->
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
-        <h2 class="text-xl font-bold text-maurealty-blue">{{ lockedListing ? 'Confirm Sale' : 'Upload Sale' }}</h2>
+        <h2 class="text-xl font-bold text-maurealty-blue">{{ editSale ? 'Edit Sale' : lockedListing ? 'Confirm Sale' : 'Upload Sale' }}</h2>
         <button class="text-gray-400 hover:text-gray-700 text-xl leading-none cursor-pointer" @click="$emit('close')">✕</button>
       </div>
 
@@ -16,9 +16,9 @@
           <label class="text-sm font-medium text-gray-600">Property <span class="text-red-500">*</span></label>
           <!-- Sold flow: property is fixed, shown read-only. Manual flow: dropdown. -->
           <input
-            v-if="lockedListing"
+            v-if="propertyLocked"
             type="text"
-            :value="lockedListing.title"
+            :value="lockedTitle"
             readonly
             :class="[inputClass, 'bg-gray-100 cursor-not-allowed']"
           />
@@ -85,7 +85,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { salesService } from '@/services/salesService'
+import { salesService, type Sale } from '@/services/salesService'
 import { listingsService } from '@/services/listingsServices'
 import { authService } from '@/services/authService'
 import type { Property } from '@/assets/classes/listings'
@@ -94,9 +94,16 @@ import type { Property } from '@/assets/classes/listings'
 // locked and the contract price is prefilled. Omit it for the manual flow.
 const props = defineProps<{
   lockedListing?: { id: number; title: string; price?: number }
+  // When provided, the modal edits this existing sale instead of creating one.
+  editSale?: Sale
 }>()
 
-const emit = defineEmits<{ (e: 'close'): void; (e: 'created'): void }>()
+const emit = defineEmits<{ (e: 'close'): void; (e: 'saved'): void }>()
+
+// Property field is read-only in both the Sold flow and edit (the listing of an
+// existing sale isn't changed here). Manual create uses the dropdown.
+const lockedTitle = props.lockedListing?.title ?? props.editSale?.listing_title ?? ''
+const propertyLocked = !!props.lockedListing || !!props.editSale
 
 const inputClass =
   'py-2 px-3 rounded-md border border-gray-300 bg-white focus:outline-2 focus:outline-maurealty-blue text-sm'
@@ -105,26 +112,27 @@ const listings = ref<Property[]>([])
 const saving = ref(false)
 const error = ref('')
 
+const e = props.editSale
 const form = reactive({
-  // Prefill from the locked listing when coming from the Sold flow.
-  listing_ID: props.lockedListing?.id ?? null as number | null,
-  client_name: '',
-  reservation_date: '',
-  total_contract_price: props.lockedListing?.price ?? null as number | null,
-  agent_sale_seq: null as number | null,
-  gross_commission: null as number | null,
-  net_commission: null as number | null,
-  voucher_series: '',
-  remarks: '',
+  // Prefill from the edited sale, else the locked listing (Sold flow), else blank.
+  listing_ID: e?.listing_ID ?? props.lockedListing?.id ?? null as number | null,
+  client_name: e?.client_name ?? '',
+  reservation_date: e?.reservation_date ?? '',
+  total_contract_price: e?.total_contract_price ?? props.lockedListing?.price ?? null as number | null,
+  agent_sale_seq: e?.agent_sale_seq ?? null as number | null,
+  gross_commission: e?.gross_commission ?? null as number | null,
+  net_commission: e?.net_commission ?? null as number | null,
+  voucher_series: e?.voucher_series ?? '',
+  remarks: e?.remarks ?? '',
 })
 
 onMounted(async () => {
-  // Locked flow already has its property — no need to load the dropdown list.
-  if (props.lockedListing) return
+  // Locked/edit flows already have their property — no dropdown needed.
+  if (propertyLocked) return
   try {
     listings.value = await listingsService.getListings(100)
-  } catch (e) {
-    console.error('Failed to load listings for sale form:', e)
+  } catch (err) {
+    console.error('Failed to load listings for sale form:', err)
     error.value = 'Could not load properties.'
   }
 })
@@ -132,32 +140,37 @@ onMounted(async () => {
 async function submit() {
   error.value = ''
 
-  // The seller is the current agent.
-  const agent = await authService.getCurrentAgent()
-  if (!agent?.agent_ID) {
-    error.value = 'No authenticated agent — please log in again.'
-    return
+  // Keys must match the DB column names exactly. Empty optional fields → null.
+  const payload = {
+    listing_ID: form.listing_ID,
+    client_name: form.client_name,
+    reservation_date: form.reservation_date,
+    total_contract_price: form.total_contract_price,
+    agent_sale_seq: form.agent_sale_seq,
+    gross_commission: form.gross_commission,
+    net_commission: form.net_commission,
+    voucher_series: form.voucher_series || null,
+    remarks: form.remarks || null,
   }
 
   saving.value = true
   try {
-    // Keys must match the DB column names exactly. Empty optional fields → null.
-    await salesService.createSale({
-      agent_ID: agent.agent_ID,
-      listing_ID: form.listing_ID,
-      client_name: form.client_name,
-      reservation_date: form.reservation_date,
-      total_contract_price: form.total_contract_price,
-      agent_sale_seq: form.agent_sale_seq,
-      gross_commission: form.gross_commission,
-      net_commission: form.net_commission,
-      voucher_series: form.voucher_series || null,
-      remarks: form.remarks || null,
-    })
-    emit('created')
-  } catch (e: any) {
-    console.error('Failed to create sale:', e)
-    error.value = e?.message || 'Failed to save sale. Please try again.'
+    if (props.editSale) {
+      // Edit: agent_ID (the seller) stays as-is — don't reassign on edit.
+      await salesService.updateSale(props.editSale.sale_ID, payload)
+    } else {
+      // Create: the seller is the current agent.
+      const agent = await authService.getCurrentAgent()
+      if (!agent?.agent_ID) {
+        error.value = 'No authenticated agent — please log in again.'
+        return
+      }
+      await salesService.createSale({ agent_ID: agent.agent_ID, ...payload })
+    }
+    emit('saved')
+  } catch (err: any) {
+    console.error('Failed to save sale:', err)
+    error.value = err?.message || 'Failed to save sale. Please try again.'
   } finally {
     saving.value = false
   }
