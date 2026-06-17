@@ -64,6 +64,8 @@
   import { useRouter } from 'vue-router';
   import { authService } from '@/services/authService';
 
+  const router = useRouter();
+
   import {
     LayoutDashboard,
     LayoutList,
@@ -89,8 +91,19 @@
 
   ];
 
+  const handleLogout = async () => {
+    // Send the logout request to Supabase via our service
+    const response = await authService.logoutUser();
+
+    //  Evaluate the response
+    if (response.success) {
+      // If successful, push the user back to the login screen
+      router.push('/');
+    } else {
+      alert('Failed to log out: ' + response.error);
+    }
+  };
 
   
-
   </script>
   
