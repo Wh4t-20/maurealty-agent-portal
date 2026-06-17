@@ -72,6 +72,10 @@
             {{ details.location }}
           </span>
 
+          <section class="w-full h-64 rounded-xl overflow-hidden border border-gray-200">
+            <MapHolder :target-location="{ lng: details.lng, lat: details.lat }" />
+          </section>
+
           <span class="flex items-center gap-1.5">
             <UserStarIcon class="size-6" color="#000000" />
             <p>{{ details.agent_name }}</p>
@@ -169,6 +173,8 @@ import { useRoute } from 'vue-router';
 import { getSharedListing } from '@/services/shareService';
 import { formattedPropertyType } from '@/assets/classes/listings';
 import { compileMarkdown } from '@/services/listingsServices';
+
+import MapHolder from '@/components/listings/MapHolder.vue';
 
 import { 
   Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, 
