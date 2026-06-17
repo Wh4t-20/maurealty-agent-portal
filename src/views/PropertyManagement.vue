@@ -14,7 +14,7 @@
           <button 
             @click="toggleMaps" 
             type="button" 
-            class="absolute top-4 right-4 z-60 bg-red-500 text-white p-3 rounded-full font-bold shadow-md hover:bg-red-600 transition-colors"
+            class="absolute top-4 right-4 z-60 bg-red-500 text-white p-3 rounded-full font-bold shadow-md hover:bg-red-600 transition-colors cursor-pointer"
           >
             <XIcon />
           </button>
