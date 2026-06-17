@@ -7,6 +7,8 @@ export interface Property {
     price: number;
     commission: number;
     location: string;
+    lng: number;
+    lat: number;
     description: string;
     created_at: Date;
     is_active: boolean;

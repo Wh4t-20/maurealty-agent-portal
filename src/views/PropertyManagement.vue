@@ -1,6 +1,31 @@
 <template>
   <div class="w-full h-screen bg-background-gray flex flex-col overflow-hidden p-10">
-    <main class="custom-scrollbar size-full bg-white border border-maurealty-blue/25 rounded-2xl shadow-lg py-7 px-10 overflow-y-scroll">
+    <main class="relative custom-scrollbar size-full bg-white border border-maurealty-blue/25 rounded-2xl shadow-lg py-7 px-10 overflow-y-scroll">
+      <transition
+      enter-active-class="transition duration-200 ease-out"
+      enter-from-class="opacity-0 scale-95"
+      enter-to-class="opacity-100 scale-100"
+      leave-active-class="transition duration-150 ease-in"
+      leave-from-class="opacity-100 scale-100"
+      leave-to-class="opacity-0 scale-95"
+      >
+        <div v-if="displayMaps" class="absolute inset-0 z-50 bg-white overflow-hidden rounded-2xl">
+          
+          <button 
+            @click="toggleMaps" 
+            type="button" 
+            class="absolute top-4 right-4 z-60 bg-red-500 text-white p-3 rounded-full font-bold shadow-md hover:bg-red-600 transition-colors"
+          >
+            <XIcon />
+          </button>
+
+          <MapInteractive 
+            :target-location="{ lng: form.lng ?? 123.89313980, lat: form.lat ?? 10.30995455, loc: form.location ?? '' }" 
+            @update:targetLocation="(loc) => { form.lng = loc.lng; form.lat = loc.lat, form.location = loc.name; }"
+          />
+        </div>
+      </transition>
+      
       <header class="relative">
           <h1 class="text-4xl max-w-19/20 font-extrabold text-maurealty-blue mb-4 ml-5">
             PROPERTY MANAGEMENT
@@ -91,19 +116,6 @@
                 </span>
               </div>
 
-              <transition
-                    enter-active-class="transition duration-100 ease-out"
-                    enter-from-class="transform scale-y-0"
-                    enter-to-class="transform scale-y-100"
-                    leave-active-class="transition duration-100 ease-out"
-                    leave-from-class="transform scale-y-100"
-                    leave-to-class="transform scale-y-0"
-              >
-                <div v-if="displayMaps" class="col-span-2 w-full h-64 rounded-xl overflow-hidden border border-gray-200">
-                  <MapHolder />
-                </div>
-              </transition>
-              
               <div class="col-span-2">
               <label class="block text-sm font-bold text-maurealty-blue mb-1">Developer</label>
               
@@ -480,8 +492,9 @@ import { listingsService } from '@/services/listingsServices';
 import { authService } from '@/services/authService'; // just for getting agent_ID
 
 // maps stuff
-import { MapIcon } from 'lucide-vue-next';
+import { MapIcon, XIcon } from 'lucide-vue-next';
 import MapHolder from '@/components/listings/MapHolder.vue';
+import MapInteractive from '@/components/listings/MapInteractive.vue';
 const displayMaps = ref(false);
 
 function toggleMaps() {
@@ -532,9 +545,15 @@ const loadProperties = async () => {
       form.value.price = data.price;
       form.value.commission = data.commission;
       form.value.location = data.location;
+      form.value.lng = data.longitude;
+      form.value.lat = data.latitude;
       form.value.description = data.description;
       form.value.is_active = data.is_active;
       form.value.dev_ID = data.dev_ID;
+
+      console.log(data.longitude, data.latitude);
+      console.log("^Data | vForm\n");
+      console.log(form.value.lng, form.value.lat);
 
       const images = Array.isArray(data.listing_images) ? data.listing_images : [];
       existingImages.value = [...images]
@@ -631,6 +650,8 @@ const form = ref<Partial<PropertyForm>>({
   price: 0,
   commission: 0,
   location: '',
+  lng: 123.89315517066801,
+  lat: 10.309933165401256,
   description: '',
   is_active: true,
   dev_ID: null,
@@ -744,6 +765,8 @@ const saveProperty = async () => {
         price: form.value.price,
         commission: form.value.commission,
         location: form.value.location,
+        longitude: form.value.lng,
+        latitude: form.value.lat,
         description: form.value.description || 'No description provided.',
         is_active: form.value.is_active,
         dev_ID: form.value.dev_ID
@@ -828,6 +851,8 @@ const saveProperty = async () => {
         price: form.value.price,
         commission: form.value.commission,
         location: form.value.location,
+        longitude: form.value.lng,
+        latitude: form.value.lat,
         description: form.value.description || 'No description provided.',
         is_active: form.value.is_active,
         dev_ID: form.value.dev_ID
@@ -927,7 +952,7 @@ function goBack() {
 
 /* Style the draggable thumb */
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #1E3A8A; 
+  background-color: #044677; 
   border-radius: 9999px;
 }
 

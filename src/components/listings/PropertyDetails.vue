@@ -68,7 +68,7 @@
             </span>
 
             <section class="w-full h-64 rounded-xl overflow-hidden border border-gray-200">
-              <MapHolder />
+              <MapHolder :target-location="{ lng: details.lng, lat: details.lat }" />
             </section>
 
             <span class="flex items-center gap-1.5">
@@ -298,6 +298,8 @@ const loadProperties = async () => {
         price: data.price,
         commission: data.commission,
         location: data.location,
+        lng: data.longitude,
+        lat: data.latitude,
         description: data.description,
         created_at: new Date(data.created_at),
         is_active: data.is_active,
@@ -308,6 +310,10 @@ const loadProperties = async () => {
         
         ...subTableData
       };
+
+      console.log(data.longitude, data.latitude);
+      console.log("^Data | vForm\n");
+      console.log(details.value.lng, details.value.lat);
 
       if (data.listing_images && data.listing_images.length > 0) {
         const sortedImages = data.listing_images.sort((a: any, b: any) => a.display_order - b.display_order);
