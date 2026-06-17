@@ -530,7 +530,7 @@ const propertyId = Number(route.query.id) || -1;
 const propertyType = Number(route.query.type) || -1;
 
 const loadProperties = async () => {
-  if(route.query.edit === '0') 
+  if(route.query.edit === '0') return;
 
   try {
     const data = await listingsService.getListingById(propertyId, propertyType) as any;
