@@ -548,7 +548,7 @@ const loadProperties = async () => {
       form.value.lng = data.longitude;
       form.value.lat = data.latitude;
       form.value.description = data.description;
-      form.value.is_active = data.is_active;
+      form.value.status = data.status;
       form.value.dev_ID = data.dev_ID;
 
       console.log(data.longitude, data.latitude);
@@ -653,7 +653,7 @@ const form = ref<Partial<PropertyForm>>({
   lng: 123.89315517066801,
   lat: 10.309933165401256,
   description: '',
-  is_active: true,
+  status: 'active',
   dev_ID: null,
 
   // House and Lot Defaults
@@ -768,7 +768,7 @@ const saveProperty = async () => {
         longitude: form.value.lng,
         latitude: form.value.lat,
         description: form.value.description || 'No description provided.',
-        is_active: form.value.is_active,
+        status: form.value.status,
         dev_ID: form.value.dev_ID
       };
       // 3. Prepare Specific Sub-table Data (Translating frontend variables to exact Supabase column names)
@@ -854,7 +854,7 @@ const saveProperty = async () => {
         longitude: form.value.lng,
         latitude: form.value.lat,
         description: form.value.description || 'No description provided.',
-        is_active: form.value.is_active,
+        status: form.value.status,
         dev_ID: form.value.dev_ID
       };
       let specificData = {};
