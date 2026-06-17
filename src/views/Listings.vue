@@ -143,7 +143,15 @@
         </div>
       </section>
     </main>
-    
+
+    <!-- Sold flow: pre-filled sale form. On save, the listing is marked sold. -->
+    <SalesUploadModal
+      v-if="soldListing"
+      :locked-listing="{ id: soldListing.listing_id, title: soldListing.listing_title, price: soldListing.price }"
+      @close="soldListing = null"
+      @created="onSaleSaved"
+    />
+
   </div>
 </template>
 
@@ -155,7 +163,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { type Property }  from '@/assets/classes/listings'
 import PropertyCard from '@/components/listings/PropertyCard.vue'
 import ListingsFilter from '@/components/listings/ListingsFilter.vue'
-import PropertyDetails from '@/components/listings/PropertyDetails.vue' 
+import PropertyDetails from '@/components/listings/PropertyDetails.vue'
+import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
@@ -336,23 +345,31 @@ const processDelete = async (id: number) => {
     console.error(err)
   }
 }
-// updates the listing making it sold 
-const markSold = async (listingId: number) => {
-  const isConfirmed = confirm("Are you sure you want to mark this property as SOLD?");
-  if (!isConfirmed) return;
+// Marking sold opens the sale form pre-filled with this listing. The agent
+// confirms buyer + date there; the listing is only flipped to 'sold' AFTER the
+// sale row is saved (see onSaleSaved) so we never hide a listing with no record.
+const soldListing = ref<Property | null>(null)
+
+const markSold = (listingId: number) => {
+  const prop = properties.value.find(p => p.listing_id === listingId)
+  if (!prop) return
+  soldListing.value = prop
+  showDetails.value = false
+}
+
+// Runs after the sale is created. Now safe to mark the listing sold + hide it.
+const onSaleSaved = async () => {
+  const listingId = soldListing.value?.listing_id
+  soldListing.value = null
+  if (listingId == null) return
 
   try {
-    await listingsService.updateListingStatus(listingId, 'sold' );
-
-    properties.value = properties.value.filter(p => p.listing_id !== listingId);    
-    
-    showDetails.value = false;
-
-    alert("Success! The property has been marked as sold.");
-
+    await listingsService.updateListingStatus(listingId, 'sold')
+    properties.value = properties.value.filter(p => p.listing_id !== listingId)
+    alert("Success! The property has been marked as sold.")
   } catch (error) {
-    console.error("Error marking property as sold:", error);
-    alert("Something went wrong. Please try again.");
+    console.error("Error marking property as sold:", error)
+    alert("The sale was saved, but updating the listing status failed. Please retry.")
   }
 }
 </script>

@@ -6,6 +6,7 @@ import Dashboard from '@/views/Dashboard.vue'
 import Listings from '@/views/Listings.vue'
 import PropertyManagement from '@/views/PropertyManagement.vue'
 import Accounting from '@/views/Accounting.vue'
+import SalesReport from '@/views/SalesReport.vue'
 import Login from '@/views/LoginForm.vue'
 import GenealogyLandingpage from '@/views/Genealogy-landingpage.vue'
 import Profile from '@/components/Profile.vue'
@@ -54,6 +55,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/accounting',
     name: 'Accounting',
     component: Accounting,
+    meta: { requiresAuth: true}
+  },
+  {
+    path: '/sales',
+    name: 'SalesReport',
+    component: SalesReport,
     meta: { requiresAuth: true}
   },
   {

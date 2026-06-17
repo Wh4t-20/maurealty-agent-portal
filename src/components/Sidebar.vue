@@ -68,15 +68,17 @@
     Ticket,
     Mail,
     Trophy,
-    ContactRound, 
+    ContactRound,
     LogOut,
-    SquareChartGantt
+    SquareChartGantt,
+    ReceiptText
   } from "lucide-vue-next";
-  
+
   const topItems = [
     { id: 1, icon: LayoutDashboard, path: "/dashboard", label: "Dashboard" },
     { id: 2, icon: LayoutList, path: "/listings", label: "Project Listing" },
     { id: 3, icon: Calculator, path: "/accounting", label: "Accounting" },
+    { id: 9, icon: ReceiptText, path: "/sales", label: "Sales Report" },
     { id: 4, icon: Ticket, path: "/voucher", label: "Voucher" },
     { id: 5, icon: Mail, path: "/inbox", label: "Inbox" },
     { id: 6, icon: Trophy, path: "/leaderboards", label: "Leaderboards" },
