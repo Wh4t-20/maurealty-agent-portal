@@ -225,6 +225,16 @@ const loadListing = async () => {
     const data = await getSharedListing(token);
     const mainListing = data.main_listings;
 
+    // map for all property types
+    const typeMap: Record<number, string> ={
+      1: 'house_and_lot',
+      2: 'lot_only',
+      3: 'condominium',
+      4: 'memorial',
+      5: 'clubshare',
+      6: 'golfshare'
+    };
+
     details.value = {
       ...mainListing,
       house_and_lot: Array.isArray(mainListing.house_and_lot) ? mainListing.house_and_lot[0] : mainListing.house_and_lot,
