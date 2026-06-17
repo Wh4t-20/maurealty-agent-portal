@@ -227,6 +227,11 @@ const loadListing = async () => {
 
     details.value = {
       ...mainListing,
+      house_and_lot: Array.isArray(mainListing.house_and_lot) ? mainListing.house_and_lot[0] : mainListing.house_and_lot,
+      lot_only: Array.isArray(mainListing.lot_only) ? mainListing.lot_only[0] : mainListing.lot_only,
+      condominium: Array.isArray(mainListing.condominium) ? mainListing.condominium[0] : mainListing.condominium,
+      memorial: Array.isArray(mainListing.memorial) ? mainListing.memorial[0] : mainListing.memorial,
+      
       property_type: mainListing.property_type_ID === 1 ? 'house_and_lot' : 
                      mainListing.property_type_ID === 2 ? 'lot_only' :
                      mainListing.property_type_ID === 3 ? 'condominium' : 'memorial',
