@@ -93,10 +93,10 @@
               <legend class="px-2 font-semibold text-maurealty-blue">House and Lot Features</legend>
               <main class="text-sm px-2 flex flex-col">
                 <div class="grid grid-cols-2 gap-y-0.5">
-                  <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ details.house_and_lot[0]?.lot_area }} sqm</span>
-                  <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ details.house_and_lot[0]?.floor_area }} sqm</span>
-                  <span class="flex items-center-safe gap-1"><Sofa /> {{ details.house_and_lot[0]?.rooms_count }} room(s)</span>
-                  <span class="flex items-center-safe gap-1"><Toilet /> {{ details.house_and_lot[0]?.toilets_count }} toilet(s)</span>
+                  <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ details.house_and_lot?.lot_area }} sqm</span>
+                  <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ details.house_and_lot?.floor_area }} sqm</span>
+                  <span class="flex items-center-safe gap-1"><Sofa /> {{ details.house_and_lot?.rooms_count }} room(s)</span>
+                  <span class="flex items-center-safe gap-1"><Toilet /> {{ details.house_and_lot?.toilets_count }} toilet(s)</span>
                 </div>
               </main>
             </fieldset>
@@ -108,18 +108,18 @@
               <main class="text-sm px-2 flex flex-col">
                 <div class="grid grid-cols-2">
                   <div>
-                    <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Block No. <b>{{ details.lot_only[0]?.block_number }}</b></span>
-                    <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Lot No. <b>{{ details.lot_only[0]?.lot_number }}</b></span>
-                    <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Phase No. <b>{{ details.lot_only[0]?.phase_number }}</b></span>  
+                    <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Block No. <b>{{ details.lot_only?.block_number }}</b></span>
+                    <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Lot No. <b>{{ details.lot_only?.lot_number }}</b></span>
+                    <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Phase No. <b>{{ details.lot_only?.phase_number }}</b></span>  
                   </div>
                   <div>
-                    <span class="flex items-center-safe gap-1"><SquareDashed /> {{ details.lot_only[0]?.lot_area }} sqm</span>
+                    <span class="flex items-center-safe gap-1"><SquareDashed /> {{ details.lot_only?.lot_area }} sqm</span>
                   </div>
                 </div>
                 
                 <div class="mt-2 pb-2 flex gap-2">
                   <p class="font-bold text-xl text-maurealty-blue">Class:</p>
-                  <p class="text-xl">{{ lotClassesMap[details.lot_only[0]?.lot_class_ID] || 'N/A' }}</p>
+                  <p class="text-xl">{{ lotClassesMap[details.lot_only?.lot_class_ID] || 'N/A' }}</p>
                 </div>
               </main>
             </fieldset>
@@ -130,19 +130,19 @@
               <legend class="px-2 font-semibold text-maurealty-blue">Condominium Features</legend>
               <main class="text-sm px-2 flex flex-col">
                 <div class="grid grid-cols-2">
-                  <span class="flex items-center-safe gap-1"><Hash /> Unit No. <b>{{ details.condominium[0]?.unit_number }}</b></span>
-                  <span class="flex items-center-safe gap-1"><BedDouble /> {{ details.condominium[0]?.bedroom_count }} bedroom(s)</span>
-                  <span class="flex items-center-safe gap-1"><BookImage /> {{ details.condominium[0]?.balcony_count }} balcony(s)</span>
-                  <span class="flex items-center-safe gap-1"><Car /> {{ details.condominium[0]?.carpark_count }} carpark(s)</span>
+                  <span class="flex items-center-safe gap-1"><Hash /> Unit No. <b>{{ details.condominium?.unit_number }}</b></span>
+                  <span class="flex items-center-safe gap-1"><BedDouble /> {{ details.condominium?.bedroom_count }} bedroom(s)</span>
+                  <span class="flex items-center-safe gap-1"><BookImage /> {{ details.condominium?.balcony_count }} balcony(s)</span>
+                  <span class="flex items-center-safe gap-1"><Car /> {{ details.condominium?.carpark_count }} carpark(s)</span>
                 </div>
                 
                 <div class="mt-2 flex gap-2">
                   <p class="font-bold text-xl text-maurealty-blue">Class:</p>
-                  <p class="text-xl">{{ condoClassesMap[details.condominium[0]?.condo_class_ID] || 'N/A' }}</p>
+                  <p class="text-xl">{{ condoClassesMap[details.condominium?.condo_class_ID] || 'N/A' }}</p>
                 </div>
                 <div class="pb-2 flex gap-2">
                   <p class="font-bold text-xl text-maurealty-blue">Type:</p>
-                  <p class="text-xl">{{ getCondoType(details.condominium[0]) }}</p>
+                  <p class="text-xl">{{ getCondoType(details.condominium) }}</p>
                 </div>
               </main>
             </fieldset>
@@ -154,7 +154,7 @@
               <main class="text-sm px-2 flex flex-col">
                 <div class="pb-2 flex gap-2">
                   <p class="font-bold text-xl text-maurealty-blue">Type:</p>
-                  <p class="text-xl">{{ getMemorialType(details.memorial[0]) }}</p>
+                  <p class="text-xl">{{ getMemorialType(details.memorial) }}</p>
                 </div>
               </main>
             </fieldset>
