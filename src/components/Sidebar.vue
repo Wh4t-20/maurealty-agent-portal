@@ -61,6 +61,9 @@
   </template>
   
   <script lang="ts" setup>
+  import { useRouter } from 'vue-router';
+  import { authService } from '@/services/authService';
+  
   import {
     LayoutDashboard,
     LayoutList,
@@ -83,7 +86,7 @@
     { id: 7, icon: ContactRound, path: "/developerlist", label: "Developer List" },
     { id: 8, icon: SquareChartGantt, path: "/propertymanagement", label: "Property Management"}
 
-    
+
   ];
 
   
@@ -91,5 +94,8 @@
     icon: LogOut,
     path: "/"
   };
+
+  
+
   </script>
   
