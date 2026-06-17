@@ -103,6 +103,7 @@
           @close-details="showDetails = false"
           @edit="handleEdit"
           @delete="processDelete"
+          @sold="markSold"
         />
       </transition>
 
@@ -333,6 +334,25 @@ const processDelete = async (id: number) => {
   } catch (err) {
     alert("Could not delete listing. Check console for details.")
     console.error(err)
+  }
+}
+// updates the listing making it sold 
+const markSold = async (listingId: number) => {
+  const isConfirmed = confirm("Are you sure you want to mark this property as SOLD?");
+  if (!isConfirmed) return;
+
+  try {
+    await listingsService.updateListingStatus(listingId, 'sold' );
+
+    properties.value = properties.value.filter(p => p.listing_id !== listingId);    
+    
+    showDetails.value = false;
+
+    alert("Success! The property has been marked as sold.");
+
+  } catch (error) {
+    console.error("Error marking property as sold:", error);
+    alert("Something went wrong. Please try again.");
   }
 }
 </script>
