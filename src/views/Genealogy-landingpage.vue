@@ -100,14 +100,15 @@
       </section>
   
       </div>
+    <Gen /> 
     </div>
   </template>
-<script lang="ts">
+<script setup lang ="ts">
 //import { computed } from 'vue' // Don't forget to import this
 //import { type Genealogy }  from '@/assets/classes/genealogy'
 
 //const props = defineProps<{ details: Genealogy }>()
-
+import Gen  from '@/components/genealogymodal.vue'
 </script>
 
 

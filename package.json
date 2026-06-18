@@ -14,10 +14,13 @@
     "type-check": "vue-tsc --build"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^3.0.0",
     "@headlessui/vue": "^1.7.23",
     "@supabase/supabase-js": "^2.101.1",
     "@tailwindcss/vite": "^4.1.18",
+    "@vue-flow/core": "^1.48.2",
     "chart.js": "^4.5.1",
+    "dagre": "^0.8.5",
     "lucide": "^0.563.0",
     "lucide-vue-next": "^0.563.0",
     "next": "^16.1.6",
@@ -28,6 +31,7 @@
   "devDependencies": {
     "@tsconfig/node22": "^22.0.2",
     "@types/chart.js": "^2.9.41",
+    "@types/dagre": "^0.7.54",
     "@types/node": "^22.18.11",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vue/tsconfig": "^0.8.1",
