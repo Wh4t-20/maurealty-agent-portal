@@ -20,7 +20,7 @@
 				<span class="flex items-center gap-2 text-lg"> <MailIcon />{{ dev.email }}</span>
 			</div>
 		
-			<div class="mt-4 flex items-center gap-2 text-xl"> 
+			<div class="mt-4 flex items-center gap-2 text-xl break-normal text-wrap"> 
 				<MapPinIcon /> {{ dev.location }}
 			</div>
 
