@@ -80,15 +80,15 @@
             <div>
               <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
                 <label class="block">Description</label>
-                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleMarkdown">
-                    {{ (displayMarkdown) ? "Edit" : "Preview" }}
+                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleDescriptionMarkdown">
+                    {{ (displayDescriptionMarkdown) ? "Edit" : "Preview" }}
                 </button>
               </section>
               
-              <textarea type="text" v-if="!displayMarkdown" v-model="form.description" placeholder="e.g. This house has amazing features!" 
+              <textarea type="text" v-if="!displayDescriptionMarkdown" v-model="form.description" placeholder="e.g. This house has amazing features!" 
                         class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
               
-              <div v-if="displayMarkdown" class="prose max-w-none w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3" v-html="compiledMarkdown"></div>
+              <div v-if="displayDescriptionMarkdown" class="prose max-w-none w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3" v-html="compiledDescriptionMarkdown"></div>
               
               <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
                 <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
@@ -468,6 +468,24 @@
 
             </div>
           </div>
+
+          <div class="col-span-full">
+              <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
+                <label class="block">Frequently Asked Questions</label>
+                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleFAQMarkdown">
+                    {{ (displayFAQMarkdown) ? "Edit" : "Preview" }}
+                </button>
+              </section>
+              
+              <textarea type="text" v-if="!displayFAQMarkdown" v-model="form.faq" placeholder="e.g. This house has amazing features!" 
+                        class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
+              
+              <div v-if="displayFAQMarkdown" class="prose max-w-none w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
+              
+              <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
+                <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
+              for formatting options</p>
+            </div>
           
           <div class="flex col-span-2 justify-end gap-4 mt-8">
               <button type="button" @click="goBack" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition">
@@ -506,12 +524,20 @@ import { developerService } from '@/services/developerService'
 
 // for the description stuff
 import { compileMarkdown } from '@/services/listingsServices';
-const displayMarkdown = ref(false);
+const displayDescriptionMarkdown = ref(false);
 const currentAgentId = ref<number | null>(null); // store agent ID of current user
 
-function toggleMarkdown() {
-  displayMarkdown.value = !displayMarkdown.value;
-  console.log("Markdown display status: " + displayMarkdown.value);
+function toggleDescriptionMarkdown() {
+  displayDescriptionMarkdown.value = !displayDescriptionMarkdown.value;
+  console.log("Description Markdown display status: " + displayDescriptionMarkdown.value);
+}
+
+// for the FAQ stuff
+const displayFAQMarkdown = ref(false);
+
+function toggleFAQMarkdown() {
+  displayFAQMarkdown.value = !displayFAQMarkdown.value;
+  console.log("FAQ Markdown display status: " + displayFAQMarkdown.value);
 }
 
 // Combine all interfaces for the form state
@@ -929,8 +955,13 @@ const saveProperty = async () => {
 };
 
 // description markdown conversion and input
-const compiledMarkdown = computed(() => {
+const compiledDescriptionMarkdown = computed(() => {
   return compileMarkdown(form.value.description)
+});
+
+// FAQ markdown conversion and input
+const compiledFAQMarkdown = computed(() => {
+  return compileMarkdown(form.value.faq)
 });
 
 // goes back to previous page

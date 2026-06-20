@@ -63,7 +63,8 @@ export const listingsService = {
       created_at: new Date(item.created_at),
       status: item.status,
       developer_name: item.developers?.name || 'None',
-      image_url: thumbnailUrl // Attach the thumbnail
+      image_url: thumbnailUrl, // Attach the thumbnail
+      faq: item.faq
     };
   },
 
@@ -313,7 +314,7 @@ export const listingsService = {
   },
 };
 
-// for markdown formatting of description, etc.
+// for markdown formatting of description, FAQ, etc.
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
