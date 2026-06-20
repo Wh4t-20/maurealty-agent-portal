@@ -511,7 +511,6 @@ import { authService } from '@/services/authService'; // just for getting agent_
 
 // maps stuff
 import { MapIcon, XIcon } from 'lucide-vue-next';
-import MapHolder from '@/components/listings/MapHolder.vue';
 import MapInteractive from '@/components/listings/MapInteractive.vue';
 const displayMaps = ref(false);
 
@@ -576,6 +575,7 @@ const loadProperties = async () => {
       form.value.description = data.description;
       form.value.status = data.status;
       form.value.dev_ID = data.dev_ID;
+      form.value.faq = data.faq;
 
       console.log(data.longitude, data.latitude);
       console.log("^Data | vForm\n");
@@ -681,6 +681,7 @@ const form = ref<Partial<PropertyForm>>({
   description: '',
   status: 'active',
   dev_ID: null,
+  faq: '# FREQUENTLY ASKED QUESTIONS\n\n',
 
   // House and Lot Defaults
   one_storey: true,
@@ -795,7 +796,8 @@ const saveProperty = async () => {
         latitude: form.value.lat,
         description: form.value.description || 'No description provided.',
         status: form.value.status,
-        dev_ID: form.value.dev_ID
+        dev_ID: form.value.dev_ID,
+        faq: form.value.faq
       };
       // 3. Prepare Specific Sub-table Data (Translating frontend variables to exact Supabase column names)
       let specificData = {};
