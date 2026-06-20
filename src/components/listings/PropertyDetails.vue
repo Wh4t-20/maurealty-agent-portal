@@ -186,7 +186,7 @@
         </main>
 
         <!-- FAQs -->
-        <section class="p-5 border border-maurealty-blue/20 rounded-3xl w-full mt-3">
+        <section class="p-5 border border-maurealty-blue/20 rounded-3xl w-full mt-10">
           <section class="prose" v-html="compiledFAQMarkdown" />
         </section>
         

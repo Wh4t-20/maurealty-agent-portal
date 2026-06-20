@@ -477,10 +477,13 @@
                 </button>
               </section>
               
-              <textarea type="text" v-if="!displayFAQMarkdown" v-model="form.faq" placeholder="e.g. This house has amazing features!" 
-                        class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
+              <div v-if="!displayFAQMarkdown" class="w-full flex">
+                <textarea type="text" v-model="form.faq" placeholder="e.g. This house has amazing features!" 
+                        class="custom-scrollbar w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
+                
+              </div>
               
-              <div v-if="displayFAQMarkdown" class="prose max-w-none w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
+              <div v-if="displayFAQMarkdown" class="prose max-w-none w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
               
               <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
                 <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
