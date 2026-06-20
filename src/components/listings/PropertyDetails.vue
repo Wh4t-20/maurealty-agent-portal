@@ -181,10 +181,15 @@
             </template>
 
             <!-- Description section -->
-            <section class="mt-2 prose" v-html="compiledMarkdown" />
+            <section class="mt-2 prose" v-html="compiledDescriptionMarkdown" />
           </div>
         </main>
 
+        <!-- FAQs -->
+        <section class="p-5 border border-maurealty-blue/20 rounded-3xl w-full mt-10">
+          <section class="prose" v-html="compiledFAQMarkdown" />
+        </section>
+        
         <section class="w-full flex mt-4 px-3 gap-4">
           <button @click="$emit('edit', details)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><SquarePen class="size-4" /> EDIT</span>
@@ -303,6 +308,7 @@ const loadProperties = async () => {
         description: data.description,
         created_at: new Date(data.created_at),
         status: data.status,
+        faq: data.faq,
         
         agent_name: `${data.agents?.first_name || ''} ${data.agents?.last_name || ''}`.trim(),
         developer_name: data.developers?.name || 'None',
@@ -388,8 +394,13 @@ watch(() => props.prop_id, (newId) => {
 
 
 // description markdown conversion and input
-const compiledMarkdown = computed(() => {
+const compiledDescriptionMarkdown = computed(() => {
   return compileMarkdown(details.value?.description)
+});
+
+// FAQ markdown conversion and input
+const compiledFAQMarkdown = computed(() => {
+  return compileMarkdown(details.value?.faq)
 });
 </script>
 
