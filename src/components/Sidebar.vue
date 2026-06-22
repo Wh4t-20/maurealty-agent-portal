@@ -7,15 +7,15 @@
     >
     <router-link to="/profile" class="flex flex-col items-center">
       <img src="@/assets/images/Maurealty.png" alt="MauRealty Logo" class="w-3/5 h-auto " />
-      <img src="@/assets/images/profile.png" alt="Agent"
+      <img :src="profileImage" alt="Agent"
         class="w-3/7 aspect-square object-cover rounded-full outline-2 outline-white m-3" />
 
       <p class="group-hover:text-xl text-0 opacity-0 group-hover:opacity-100 transition whitespace-nowrap text-white text-[clamp(0.5rem,2vw,1rem)]">
-        Carl Santillan
+        {{ agentName }}
       </p>
 
       <p class="group-hover:text-xl text-0 opacity-0 group-hover:opacity-100 transition whitespace-nowrap text-white mb-3">
-        Emerald
+        {{ agentPosition }}
       </p>
     </router-link>
     
