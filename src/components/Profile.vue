@@ -1,117 +1,134 @@
 <template>
-    <div class="min-h-screen bg-gray-200  ">
-      <header class="w-full bg-gradient-to-r from-[#A9D6FF70] to-white shadow-md sticky top-0 z-20">
-          <div class="flex justify-between items-center px-10 py-10">
-            <h1 class="text-3xl font-bold text-maurealty-blue">
-              PROFILE
-            </h1>
-          </div>
-      </header>
+  <div class="min-h-screen bg-gray-200">
+    <header class="w-full bg-gradient-to-r from-[#A9D6FF70] to-white shadow-md sticky top-0 z-20">
+        <div class="flex justify-between items-center px-10 py-10">
+          <h1 class="text-3xl font-bold text-maurealty-blue">
+            PROFILE
+          </h1>
+        </div>
+    </header>
 
-      <div class="flex items-center justify-center p-6 mt-10">
-        <div class="bg-gray-100 w-full max-w-6xl rounded-2xl shadow-md p-10 flex gap-10">
-          <div class="flex items-center justify-center">
-            <img
-              src="@/assets/images/profile.png"
-              alt="Profile"
-              class="w-80 h-80 object-cover rounded-full border-4 border-white shadow"
-            />
+    <div v-if="isLoading" class="flex justify-center items-center mt-20">
+      <p class="text-xl font-medium text-gray-600">Loading profile data...</p>
+    </div>
+
+    <div v-else-if="agent" class="flex items-center justify-center p-6 mt-10">
+      <div class="bg-gray-100 w-full max-w-6xl rounded-2xl shadow-md p-10 flex gap-10">
+        <div class="flex items-center justify-center">
+          <img
+            :src="agent.profile_url || placeholder"
+            alt="Profile"
+            class="w-80 h-80 object-cover rounded-full border-4 border-white shadow"
+          />
+        </div>
+
+        <div class="flex-1 space-y-3">
+          <div class="mt-10">
+            <label class="text-blue-800 font-medium text-sm block">Last Name, First Name, Middle Name</label>
+            <p class="w-full font-medium text-lg tracking-wider uppercase">
+              {{ agent.last_name }}, {{ agent.first_name }} {{ agent.middle_name || '' }}
+            </p>
           </div>
-  
-          <!--face-->
-          <div class="flex-1 space-y-3">
-            <!-- NAME -->
-            <div class = "mt-10">
-              <label class="text-blue-800 font-medium text-sm block">Last Name, First Name, Middle Name</label>
-              <p class="w-full font-medium text-lg tracking-wider " >
-                SANTILLAN, CARL BENEDICT 
+
+          <div class="grid grid-cols-3 gap-5">
+            <div>
+              <label class="text-blue-800 font-medium text-sm block">Sex</label>
+              <p class="w-full font-medium text-base tracking-wider uppercase">
+                {{ agent.sex }}
               </p>
             </div>
-  
-            <!--  SEX / AGE / DOB -->
-            <div class="grid grid-cols-3 gap-5">
-              <div>
-                <label class="text-blue-800 font-medium text-sm block">Sex</label>
-                <p class="w-full font-medium text-base tracking-wider " >
-                  MALE 
-                </p>
-              </div>
-  
+
             <div>
               <label class="text-blue-800 font-medium text-sm block">Age</label>
-              <p class="w-full font-medium text-base tracking-wider " >
-                21 
+              <p class="w-full font-medium text-base tracking-wider">
+                {{ agent.age }}
               </p>
             </div>
-  
+
             <div>
               <label class="text-blue-800 font-medium text-sm block">Date of Birth</label>
-              <p class="w-full font-medium text-base tracking-wider " >
-                SEPTEMBER 18, 2005 
+              <p class="w-full font-medium text-base tracking-wider uppercase">
+                {{ formatDate(agent.birth_date) }}
               </p>
             </div>
           </div>
-  
-            <!-- ADDRESS -->
+
+          <div>
+            <label class="text-blue-800 font-medium text-sm block">Address</label>
+            <p class="w-full font-normal text-base tracking-wider uppercase">
+              {{ agent.home_address }}
+            </p>
+          </div>
+
+          <div class="grid grid-cols-3 gap-5">
             <div>
-              <label class="text-blue-800 font-medium text-sm block">Address</label>
-              <p class="w-full font-normal text-base tracking-wider " >
-                LILO-AN CEBU
+              <label class="text-blue-800 font-medium text-sm block">Contact No.</label>
+              <p class="w-full font-normal text-base tracking-wider uppercase">
+                {{ agent.contact_number }}
               </p>
             </div>
-  
-            <!-- CONTACT / EMAIL / HIRE -->
-            <div class="grid grid-cols-3 gap-5">
-              <div>
-                <label class="text-blue-800 font-medium text-sm block">Contact No.</label>
-                <p class="w-full font-normal text-base tracking-wider " >
-                  0999-999-9999
-                </p>
-              </div>
-  
+
             <div>
               <label class="text-blue-800 font-medium text-sm block">Email Address</label>
-              <p class="w-full font-normal text-base tracking-wider " >
-                ctsantillan@gmail.com
+              <p class="w-full font-normal text-base tracking-wider">
+                {{ agent.email_address }}
               </p>
             </div>
-  
+
             <div>
               <label class="text-blue-800 font-medium text-sm block">Hire Date</label>
-              <p class="w-full font-normal text-base tracking-wider " >
-                SEPTEMBER 18, 2023
+              <p class="w-full font-normal text-base tracking-wider uppercase">
+                {{ formatDate(agent.hire_date) }}
               </p>
             </div>
           </div>
-  
-            <!-- AGENT ID / POSITION -->
-            <div class="grid grid-cols-3 gap-5">
-              <div>
-                <label class="text-blue-800 font-medium text-sm block">Agent ID</label>
-                <p class="w-full font-medium text-base tracking-wider " >
-                1
-                </p>
-              </div>
-  
-              <div>
-                <label class="text-blue-800 font-medium text-sm block">Position</label>
-                <p class="w-full font-medium text-base tracking-wider " >
-                SPECIALIST
-                </p>
-              </div>
+
+          <div class="grid grid-cols-3 gap-5">
+            <div>
+              <label class="text-blue-800 font-medium text-sm block">Agent ID</label>
+              <p class="w-full font-medium text-base tracking-wider uppercase">
+                {{ agent.agent_ID }}
+              </p>
+            </div>
+
+            <div>
+              <label class="text-blue-800 font-medium text-sm block">Position</label>
+              <p class="w-full font-medium text-base tracking-wider uppercase">
+                {{ agent.positions?.position || 'N/A' }}
+              </p>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </template>
-  
+
+    <div v-else class="flex justify-center items-center mt-20">
+      <p class="text-xl font-medium text-red-600">Failed to load profile data.</p>
+    </div>
+  </div>
+</template>
+
 <script setup lang="ts">
-// replaces the default user image with this if ever no pfp uploaded yet
+import { ref, onMounted } from 'vue'
+import { agentService } from '@/services/agentService'
 import placeholder from '@/assets/images/default_placeholder.png'
 
+const agent = ref<any>(null)
+const isLoading = ref(true)
+
+// Fetch data when component mounts
+onMounted(async () => {
+  agent.value = await agentService.getCurrentAgentProfile()
+  isLoading.value = false
+})
+
+// Format database date strings to readable text
+const formatDate = (dateString: string) => {
+  if (!dateString) return ''
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
+  return new Date(dateString).toLocaleDateString(undefined, options)
+}
 </script>
-  
-  <style scoped>
-  
-  </style>
+
+<style scoped>
+</style>
