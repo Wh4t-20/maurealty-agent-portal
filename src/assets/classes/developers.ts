@@ -31,4 +31,6 @@ export interface OfficeHourSlot {
     selectedDays: DayOption[];
     openTime: string;
     closeTime: string;
+    isOpenUnavailable?: boolean; // if unavailable open time (would be null in db)
+    isCloseUnavailable?: boolean; // same as comment above but close time
 }

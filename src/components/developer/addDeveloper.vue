@@ -55,7 +55,7 @@
                                 + Add Schedule
                             </button>
                         </div>
-                        
+
                         <div 
                             v-for="(slot, index) in officeHours" 
                             :key="index" 
@@ -115,13 +115,42 @@
 
                             <span class="flex flex-col">
                                 <label class="block text-base font-bold text-maurealty-blue mb-1">Open Hours</label>
-                                <input type="time" v-model="slot.openTime" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none bg-white">
+                                <span class="flex gap-1">
+                                    <input v-if="!slot.isOpenUnavailable " type="time" v-model="slot.openTime"
+                                            class="bg-white border-gray-300 focus:ring-2 focus:ring-maurealty-blue w-full border rounded-lg p-2 outline-none">
+                                    <input v-if="slot.isOpenUnavailable " type="text"
+                                            :disabled="true"
+                                            placeholder="Unavailable"
+                                            class="bg-gray-200 text-gray-600 border-gray-200 cursor-not-allowed w-full border rounded-lg p-2 outline-none select-none">
+                                        
+                                    <button type="button" @click="toggleOpenUnavailable(slot)" 
+                                            class="w-fit p-2 border rounded-lg bg-white text-gray-700 border-gray-300 hover:bg-gray-100 active:bg-maurealty-blue active:text-white  cursor-pointer"
+                                            :title="slot.isOpenUnavailable ? 'Make Available' : 'Mark Unavailable'">
+                                            <XIcon v-if="!slot.isOpenUnavailable" />
+                                            <CheckIcon v-if="slot.isOpenUnavailable" />
+                                    </button>  
+                                </span>
                             </span>
 
                             <span class="flex flex-col">
-                                <label class="block text-base font-bold text-maurealty-blue mb-1">Closed Hours</label>
-                                <input type="time" v-model="slot.closeTime" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none bg-white">
+                                <label class="block text-base font-bold text-maurealty-blue mb-1">Close Hours</label>
+                                <span class="flex gap-1">
+                                    <input v-if="!slot.isCloseUnavailable " type="time" v-model="slot.closeTime"
+                                            class="bg-white border-gray-300 focus:ring-2 focus:ring-maurealty-blue w-full border rounded-lg p-2 outline-none">
+                                    <input v-if="slot.isCloseUnavailable " type="text"
+                                            :disabled="true"
+                                            placeholder="Unavailable"
+                                            class="bg-gray-200 text-gray-600 border-gray-200 cursor-not-allowed w-full border rounded-lg p-2 outline-none select-none">
+                                        
+                                    <button type="button" @click="toggleCloseUnavailable(slot)" 
+                                            class="w-fit p-2 border rounded-lg bg-white text-gray-700 border-gray-300 hover:bg-gray-100 active:bg-maurealty-blue active:text-white  cursor-pointer"
+                                            :title="slot.isCloseUnavailable ? 'Make Available' : 'Mark Unavailable'">
+                                            <XIcon v-if="!slot.isCloseUnavailable" />
+                                            <CheckIcon v-if="slot.isCloseUnavailable" />
+                                    </button>  
+                                </span>
                             </span>
+
                         </div>
                     </div>
                 </section>
@@ -169,7 +198,7 @@ import { ref, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue';
 import { type DayOption, type OfficeHourSlot, days } from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
-import { XIcon } from 'lucide-vue-next';
+import { CheckIcon, XIcon } from 'lucide-vue-next';
 
 // reminder to safeguard the non-nullable inputs pls (error message if missing part)
 
@@ -217,16 +246,30 @@ function saveDeveloper() {
 }
 
 const officeHours = ref<OfficeHourSlot[]>([
-    { selectedDays: [], openTime: '', closeTime: '' }
+    { selectedDays: [], openTime: '', closeTime: '', isOpenUnavailable: false, isCloseUnavailable: false }
 ]);
 
 const addHoursSlot = () => {
-    officeHours.value.push({ selectedDays: [], openTime: '', closeTime: '' });
+    officeHours.value.push({ selectedDays: [], openTime: '', closeTime: '', isOpenUnavailable: false, isCloseUnavailable: false });
 };
 
 const removeHoursSlot = (index: number) => {
     if (officeHours.value.length > 1) {
         officeHours.value.splice(index, 1);
+    }
+};
+
+const toggleOpenUnavailable = (slot: OfficeHourSlot) => {
+    slot.isOpenUnavailable = !slot.isOpenUnavailable;
+    if (slot.isOpenUnavailable) {
+        slot.openTime = '';
+    }
+};
+
+const toggleCloseUnavailable = (slot: OfficeHourSlot) => {
+    slot.isCloseUnavailable = !slot.isCloseUnavailable;
+    if (slot.isCloseUnavailable) {
+        slot.closeTime = '';
     }
 };
 
