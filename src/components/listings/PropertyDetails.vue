@@ -186,7 +186,7 @@
         </main>
 
         <!-- FAQs -->
-        <section class="p-5 border border-maurealty-blue/20 rounded-3xl w-full mt-10">
+        <section v-if="compiledFAQMarkdown" class="p-5 border border-maurealty-blue/20 rounded-3xl w-full mt-10">
           <section class="prose" v-html="compiledFAQMarkdown" />
         </section>
         
@@ -214,6 +214,13 @@
           >
             <span class="flex items-center-safe gap-1"><BadgeCheck class="size-4" /> SOLD</span>
           </button>
+
+          <button
+            v-if="!details.fact_sheet"
+            class="flex flex-col items-center py-2 px-5 w-45 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+            <span class="flex items-center-safe gap-1"><DownloadIcon class="size-4" /> FACT SHEET</span>
+          </button>
+          
         </section>
       </div>
 
@@ -233,7 +240,7 @@ import MapHolder from './MapHolder.vue'
 
 import placeholder from '@/assets/images/default_placeholder.png'
 
-import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink, BadgeCheck} from "lucide-vue-next";
+import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink, BadgeCheck, DownloadIcon} from "lucide-vue-next";
 
 const props = defineProps<{ 
   prop_id: number,
@@ -309,6 +316,7 @@ const loadProperties = async () => {
         created_at: new Date(data.created_at),
         status: data.status,
         faq: data.faq,
+        fact_sheet: data.fact_sheet,
         
         agent_name: `${data.agents?.first_name || ''} ${data.agents?.last_name || ''}`.trim(),
         developer_name: data.developers?.name || 'None',
@@ -402,6 +410,48 @@ const compiledDescriptionMarkdown = computed(() => {
 const compiledFAQMarkdown = computed(() => {
   return compileMarkdown(details.value?.faq)
 });
+
+// thank you Gemini
+const downloadFactSheet = async () => {
+  if (!details.value || !details.value.fact_sheet) return;
+
+  try {
+    // 1. Fetch the file data as a blob to bypass cross-origin browser view behaviors
+    const response = await fetch(details.value.fact_sheet);
+    if (!response.ok) throw new Error('Network response was not ok');
+    const blob = await response.blob();
+
+    // 2. Extract a filename from the end of the Supabase storage URL
+    const fileUrl = details.value.fact_sheet;
+    let fileName = fileUrl.substring(fileUrl.lastIndexOf('/') + 1) || 'fact_sheet.pdf';
+
+    // Regex to strip out "listingID-Timestamp-" prefix if present
+    const prefixRegex = /^\d+-\d+-/;
+    if (prefixRegex.test(fileName)) {
+      fileName = fileName.replace(prefixRegex, ''); 
+    }
+
+    // 3. Create a local object URL from the blob
+    const blobUrl = window.URL.createObjectURL(blob);
+    
+    // 4. Trigger the programatic download anchor click
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fileName; // Safely assign the string name here
+    document.body.appendChild(link);
+    link.click();
+    
+    // 5. Cleanup DOM elements and memory objects
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (err: any) {
+    console.error('Error downloading file:', err.message);
+    alert('Failed to download file. Opening directly instead.');
+    
+    // Fallback: If fetch fails due to strict CORS settings, attempt a direct open
+    window.open(details.value.fact_sheet, '_blank');
+  } 
+};
 </script>
 
 <style scoped>

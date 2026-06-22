@@ -65,12 +65,12 @@
                   type="file" 
                   multiple 
                   accept="image/*" 
-                  ref="fileInput" 
+                  ref="imageInput" 
                   class="hidden" 
-                  @change="handleFileUpload"
+                  @change="handleImageFileUpload"
                 >
                 
-                <button type="button" @click="triggerFileInput" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition">
+                <button type="button" @click="triggerImageFileInput" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition">
                   <span class="text-3xl">+</span>
                   <span class="text-xs font-bold">Add Photo</span>
                 </button>
@@ -488,7 +488,24 @@
               <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
                 <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
               for formatting options</p>
-            </div>
+          </div>
+
+          <!-- FACT SHEET -->
+          <div class="col-span-full">
+            <input 
+              type="file" 
+              accept="application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, text/markdown, application/pdf" 
+              ref="factSheetInput" 
+              class="hidden" 
+              @change="handleFactSheetFileUpload"
+            >
+
+            <button type="button" @click="triggerFactSheetFileInput" class="size-full py-8 bg-blue-50/30 hover:bg-blue-50/70 border border-maurealty-blue/10 rounded-xl flex flex-col items-center gap-4 justify-center text-maurealty-blue cursor-pointer">
+              <UploadIcon class="size-15" :stroke-width="3"/>
+              <h3 v-if="!factSheetFile" class="italic">Upload a fact sheet</h3>
+              <h3 v-else class="font-bold text-green-600 italic">{{ factSheetFile.name }}</h3>
+            </button>
+          </div>
           
           <div class="flex col-span-2 justify-end gap-4 mt-8">
               <button type="button" @click="goBack" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition">
@@ -513,7 +530,7 @@ import { listingsService } from '@/services/listingsServices';
 import { authService } from '@/services/authService'; // just for getting agent_ID
 
 // maps stuff
-import { MapIcon, XIcon } from 'lucide-vue-next';
+import { MapIcon, UploadIcon, XIcon } from 'lucide-vue-next';
 import MapInteractive from '@/components/listings/MapInteractive.vue';
 const displayMaps = ref(false);
 
@@ -579,6 +596,7 @@ const loadProperties = async () => {
       form.value.status = data.status;
       form.value.dev_ID = data.dev_ID;
       form.value.faq = data.faq;
+      form.value.fact_sheet = data.fact_sheet;
 
       console.log(data.longitude, data.latitude);
       console.log("^Data | vForm\n");
@@ -685,6 +703,7 @@ const form = ref<Partial<PropertyForm>>({
   status: 'active',
   dev_ID: null,
   faq: '# FREQUENTLY ASKED QUESTIONS\n\n',
+  fact_sheet: '',
 
   // House and Lot Defaults
   one_storey: true,
@@ -730,13 +749,13 @@ const form = ref<Partial<PropertyForm>>({
 const imageFiles = ref<{ file: File; preview: string }[]>([]);
 const existingImages = ref<{ url: string }[]>([]);
 const removedImageUrls = ref<string[]>([]);
-const fileInput = ref<HTMLInputElement | null>(null);
+const imageInput = ref<HTMLInputElement | null>(null);
 
-const triggerFileInput = () => {
-  if (fileInput.value) fileInput.value.click();
+const triggerImageFileInput = () => {
+  if (imageInput.value) imageInput.value.click();
 };
 
-const handleFileUpload = (event: Event) => {
+const handleImageFileUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files) {
     Array.from(target.files).forEach(file => {
@@ -746,7 +765,7 @@ const handleFileUpload = (event: Event) => {
       });
     });
   }
-  if (fileInput.value) fileInput.value.value = '';
+  if (imageInput.value) imageInput.value.value = '';
 };
 
 const removeImage = (index: number) => {
@@ -771,6 +790,30 @@ const setExclusively = (group: (keyof PropertyForm)[], selectedField: keyof Prop
   group.forEach(field => {
     (form.value as any)[field] = (field === selectedField);
   });
+};
+
+// fact sheet functionality
+const factSheetFile = ref<{ file: File; name: string } | null>(null);
+const factSheetInput = ref<HTMLInputElement | null>(null);
+
+const triggerFactSheetFileInput = () => {
+  if (factSheetInput.value) factSheetInput.value.click();
+};
+
+const handleFactSheetFileUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files.length > 0) {
+    const file = target.files[0]; // Extract the single document upload
+    
+    if (file) {
+      factSheetFile.value = {
+        file: file,
+        name: file.name
+      };
+      console.log("Fact sheet staged:", file.name);
+    }
+  }
+  if (factSheetInput.value) factSheetInput.value.value = '';
 };
 
 const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial', 'Clubshare', 'Golfshare'];

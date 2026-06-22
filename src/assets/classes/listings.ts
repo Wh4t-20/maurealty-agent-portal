@@ -15,6 +15,7 @@ export interface Property {
     developer_name: string;
     image_url?: string;
     faq: string;
+    fact_sheet?: string;
 }
 
 // lot only interface
