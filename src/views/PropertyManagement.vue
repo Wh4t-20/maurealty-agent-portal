@@ -762,6 +762,8 @@ const removeExistingImage = (index: number) => {
   const image = existingImages.value[index];
   if (!image) return;
   removedImageUrls.value.push(image.url);
+  console.log(`[DEBUG] Queued existing image for deletion: ${image.url}`); // debugging
+
   existingImages.value.splice(index, 1);
 };
 
@@ -940,8 +942,24 @@ const saveProperty = async () => {
       }
       const response = await listingsService.updateListing(propertyId, mainData, specificData, propertyTypeId);
       if (response.success) {
+        // --- Image Deletion Logic ---
         if (removedImageUrls.value.length > 0) {
-          await listingsService.deleteListingImages(removedImageUrls.value);
+          console.log(`[DEBUG] Attempting to delete ${removedImageUrls.value.length} image(s)...`);
+          
+          // Deep copy array to sever reactive proxy bindings before passing to service
+          const cleanUrls = JSON.parse(JSON.stringify(removedImageUrls.value));
+          
+          try {
+            const deleteResult = await listingsService.deleteListingImages(cleanUrls);
+            if (!deleteResult.success) {
+              alert("Warning: Images were removed from storage but the database records could not be deleted. Please verify your Supabase RLS delete policy on the 'listing_images' table.");
+            } else {
+              console.log("[DEBUG] Image deletion transaction finished successfully.");
+            }
+          } catch (deleteError) {
+            console.error("[DEBUG] Image deletion threw an error:", deleteError);
+            alert("An error occurred while deleting images. Check the console.");
+          }
         }
 
         if (imageFiles.value.length > 0) {
