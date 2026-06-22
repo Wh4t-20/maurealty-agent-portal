@@ -494,7 +494,6 @@
           <div class="col-span-full">
             <input 
               type="file" 
-              multiple 
               accept="application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, text/markdown, application/pdf" 
               ref="factSheetInput" 
               class="hidden" 
@@ -503,7 +502,8 @@
 
             <button type="button" @click="triggerFactSheetFileInput" class="size-full py-8 bg-blue-50/30 hover:bg-blue-50/70 border border-maurealty-blue/10 rounded-xl flex flex-col items-center gap-4 justify-center text-maurealty-blue cursor-pointer">
               <UploadIcon class="size-15" :stroke-width="3"/>
-              <h3 class="">Upload a fact sheet</h3>
+              <h3 v-if="!factSheetFile" class="italic">Upload a fact sheet</h3>
+              <h3 v-else class="font-bold text-green-600 italic">{{ factSheetFile.name }}</h3>
             </button>
           </div>
           
@@ -791,6 +791,7 @@ const setExclusively = (group: (keyof PropertyForm)[], selectedField: keyof Prop
 };
 
 // fact sheet functionality
+const factSheetFile = ref<{ file: File; name: string } | null>(null);
 const factSheetInput = ref<HTMLInputElement | null>(null);
 
 const triggerFactSheetFileInput = () => {
@@ -799,15 +800,18 @@ const triggerFactSheetFileInput = () => {
 
 const handleFactSheetFileUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
-  if (target.files) {
-    Array.from(target.files).forEach(file => {
-      imageFiles.value.push({
+  if (target.files && target.files.length > 0) {
+    const file = target.files[0]; // Extract the single document upload
+    
+    if (file) {
+      factSheetFile.value = {
         file: file,
-        preview: URL.createObjectURL(file) 
-      });
-    });
+        name: file.name
+      };
+      console.log("Fact sheet staged:", file.name);
+    }
   }
-  if (imageInput.value) imageInput.value.value = '';
+  if (factSheetInput.value) factSheetInput.value.value = '';
 };
 
 const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial', 'Clubshare', 'Golfshare'];
