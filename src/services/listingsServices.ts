@@ -270,7 +270,6 @@ export const listingsService = {
   // fact sheet upload
   async uploadFactSheet(listingId: number, file: File) {
     try {
-      const fileExt = file.name.split('.').pop() || 'bin';
       const sanitizedName = file.name.replace(/\s+/g, '_');
       const filePath = `${listingId}-${Date.now()}-${sanitizedName}`;
 
