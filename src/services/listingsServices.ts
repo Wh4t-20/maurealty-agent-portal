@@ -266,6 +266,40 @@ export const listingsService = {
       throw error;
     }
   },
+  
+  // fact sheet upload
+  async uploadFactSheet(listingId: number, file: File) {
+    try {
+      const fileExt = file.name.split('.').pop() || 'bin';
+      const filePath = `${listingId}-${Date.now()}.${fileExt}`;
+
+      // upload the file to the fact_sheets bucket
+      const { error } = await supabase.storage
+        .from('fact_sheets')
+        .upload(filePath, file, { upsert: true });
+
+      if (error) throw error;
+
+      // get the public URL of the uploaded document
+      const { data: urlData } = supabase.storage
+        .from('fact_sheet')
+        .getPublicUrl(filePath);
+
+      // update the main_listings table row with this file's public URL
+      const { error: dbError } = await supabase
+        .from('main_listings')
+        .update({ fact_sheet: urlData.publicUrl })
+        .eq('listing_ID', listingId);
+
+      if (dbError) throw dbError;
+
+      return { success: true, url: urlData.publicUrl };
+    } catch (error) {
+      console.error("Storage upload failed:", error);
+      throw error;
+    }
+  },
+
   async updateListingStatus(listingId: number, newStatus: string) {
     try {
       const updateTo = { status: newStatus };
