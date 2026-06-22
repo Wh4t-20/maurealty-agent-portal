@@ -945,15 +945,20 @@ const saveProperty = async () => {
         // --- Image Deletion Logic ---
         if (removedImageUrls.value.length > 0) {
           console.log(`[DEBUG] Attempting to delete ${removedImageUrls.value.length} image(s)...`);
-          console.log(`[DEBUG] Target URLs:`, removedImageUrls.value);
-
+          
+          // Deep copy array to sever reactive proxy bindings before passing to service
+          const cleanUrls = JSON.parse(JSON.stringify(removedImageUrls.value));
+          
           try {
-            const deleteResult = await listingsService.deleteListingImages(removedImageUrls.value);
-            if (deleteResult.success) {
-              console.log("[DEBUG] Successfully deleted images from both Supabase storage and the database.");
+            const deleteResult = await listingsService.deleteListingImages(cleanUrls);
+            if (!deleteResult.success) {
+              alert("Warning: Images were removed from storage but the database records could not be deleted. Please verify your Supabase RLS delete policy on the 'listing_images' table.");
+            } else {
+              console.log("[DEBUG] Image deletion transaction finished successfully.");
             }
           } catch (deleteError) {
-            console.error("[DEBUG] Image deletion failed:", deleteError);
+            console.error("[DEBUG] Image deletion threw an error:", deleteError);
+            alert("An error occurred while deleting images. Check the console.");
           }
         }
 
