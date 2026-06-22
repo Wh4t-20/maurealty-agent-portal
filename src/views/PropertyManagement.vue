@@ -762,6 +762,8 @@ const removeExistingImage = (index: number) => {
   const image = existingImages.value[index];
   if (!image) return;
   removedImageUrls.value.push(image.url);
+  console.log(`[DEBUG] Queued existing image for deletion: ${image.url}`); // debugging
+
   existingImages.value.splice(index, 1);
 };
 
@@ -940,8 +942,19 @@ const saveProperty = async () => {
       }
       const response = await listingsService.updateListing(propertyId, mainData, specificData, propertyTypeId);
       if (response.success) {
+        // --- Image Deletion Logic ---
         if (removedImageUrls.value.length > 0) {
-          await listingsService.deleteListingImages(removedImageUrls.value);
+          console.log(`[DEBUG] Attempting to delete ${removedImageUrls.value.length} image(s)...`);
+          console.log(`[DEBUG] Target URLs:`, removedImageUrls.value);
+
+          try {
+            const deleteResult = await listingsService.deleteListingImages(removedImageUrls.value);
+            if (deleteResult.success) {
+              console.log("[DEBUG] Successfully deleted images from both Supabase storage and the database.");
+            }
+          } catch (deleteError) {
+            console.error("[DEBUG] Image deletion failed:", deleteError);
+          }
         }
 
         if (imageFiles.value.length > 0) {
