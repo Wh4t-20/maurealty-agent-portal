@@ -210,9 +210,9 @@
 
           <button
             @click="showCalc = true"
-            class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
+            class="flex flex-col items-center justify-center py-2 px-6 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold whitespace-nowrap hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
           >
-            <span class="flex items-center-safe gap-1"><CalculatorIcon class="size-4" /> CALCULATOR</span>
+            <span class="flex items-center gap-1.5"><CalculatorIcon class="size-4 shrink-0" /> CALCULATOR</span>
           </button>
 
           <button
