@@ -7,15 +7,15 @@
     >
     <router-link to="/profile" class="flex flex-col items-center">
       <img src="@/assets/images/Maurealty.png" alt="MauRealty Logo" class="w-3/5 h-auto " />
-      <img src="@/assets/images/profile.png" alt="Agent"
+      <img :src="profileImage" alt="Agent"
         class="w-3/7 aspect-square object-cover rounded-full outline-2 outline-white m-3" />
 
       <p class="group-hover:text-xl text-0 opacity-0 group-hover:opacity-100 transition whitespace-nowrap text-white text-[clamp(0.5rem,2vw,1rem)]">
-        Carl Santillan
+        {{ agentName }}
       </p>
 
       <p class="group-hover:text-xl text-0 opacity-0 group-hover:opacity-100 transition whitespace-nowrap text-white mb-3">
-        Emerald
+        {{ agentPosition }}
       </p>
     </router-link>
     
@@ -61,10 +61,14 @@
   </template>
   
   <script lang="ts" setup>
+  import { ref, computed, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { authService } from '@/services/authService';
+  import { agentService } from '@/services/agentService';
+  import placeholder from '@/assets/images/default_placeholder.png';
 
   const router = useRouter();
+  const agent = ref<any>(null);
 
   import {
     LayoutDashboard,
@@ -78,6 +82,25 @@
     SquareChartGantt,
     ReceiptText
   } from "lucide-vue-next";
+
+// fetch current Agent profile data
+onMounted(async () => {
+  agent.value = await agentService.getCurrentAgentProfile();
+});
+
+const agentName = computed(() => {
+  if (!agent.value) return 'Loading...';
+  return `${agent.value.first_name} ${agent.value.last_name}`;
+});
+
+const agentPosition = computed(() => {
+  if (!agent.value) return '';
+  return agent.value.positions?.position || 'N/A';
+});
+
+const profileImage = computed(() => {
+  return agent.value?.profile_url || placeholder;
+});
 
   const topItems = [
     { id: 1, icon: LayoutDashboard, path: "/dashboard", label: "Dashboard" },
