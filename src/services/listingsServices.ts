@@ -266,12 +266,13 @@ export const listingsService = {
       throw error;
     }
   },
-  
+
   // fact sheet upload
   async uploadFactSheet(listingId: number, file: File) {
     try {
       const fileExt = file.name.split('.').pop() || 'bin';
-      const filePath = `${listingId}-${Date.now()}.${fileExt}`;
+      const sanitizedName = file.name.replace(/\s+/g, '_');
+      const filePath = `${listingId}-${Date.now()}-${sanitizedName}`;
 
       // upload the file to the fact_sheets bucket
       const { error } = await supabase.storage
@@ -282,7 +283,7 @@ export const listingsService = {
 
       // get the public URL of the uploaded document
       const { data: urlData } = supabase.storage
-        .from('fact_sheet')
+        .from('fact_sheets')
         .getPublicUrl(filePath);
 
       // update the main_listings table row with this file's public URL
