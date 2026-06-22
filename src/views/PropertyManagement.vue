@@ -488,7 +488,15 @@
               <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
                 <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
               for formatting options</p>
-            </div>
+          </div>
+
+          <!-- FACT SHEET -->
+          <div class="col-span-full">
+            <button type="button" class="size-full py-8 bg-blue-50/30 hover:bg-blue-50/70 border border-maurealty-blue/10 rounded-xl flex flex-col items-center gap-4 justify-center text-maurealty-blue cursor-pointer">
+              <UploadIcon class="size-15" :stroke-width="3"/>
+              <h3 class="">Upload a fact sheet</h3>
+            </button>
+          </div>
           
           <div class="flex col-span-2 justify-end gap-4 mt-8">
               <button type="button" @click="goBack" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition">
@@ -513,7 +521,7 @@ import { listingsService } from '@/services/listingsServices';
 import { authService } from '@/services/authService'; // just for getting agent_ID
 
 // maps stuff
-import { MapIcon, XIcon } from 'lucide-vue-next';
+import { MapIcon, UploadIcon, XIcon } from 'lucide-vue-next';
 import MapInteractive from '@/components/listings/MapInteractive.vue';
 const displayMaps = ref(false);
 
@@ -579,6 +587,7 @@ const loadProperties = async () => {
       form.value.status = data.status;
       form.value.dev_ID = data.dev_ID;
       form.value.faq = data.faq;
+      form.value.fact_sheet = data.fact_sheet;
 
       console.log(data.longitude, data.latitude);
       console.log("^Data | vForm\n");
@@ -685,6 +694,7 @@ const form = ref<Partial<PropertyForm>>({
   status: 'active',
   dev_ID: null,
   faq: '# FREQUENTLY ASKED QUESTIONS\n\n',
+  fact_sheet: '',
 
   // House and Lot Defaults
   one_storey: true,
