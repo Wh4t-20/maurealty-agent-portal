@@ -207,8 +207,16 @@
           >
             <span class="flex items-center-safe gap-1"><ExternalLink class="size-4" /> SHARE</span>
           </button>
-          <button 
-            v-if="details.status !== 'sold'" 
+
+          <button
+            @click="showCalc = true"
+            class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
+          >
+            <span class="flex items-center-safe gap-1"><CalculatorIcon class="size-4" /> CALCULATOR</span>
+          </button>
+
+          <button
+            v-if="details.status !== 'sold'"
             @click="$emit('sold', details.listing_id)" 
             class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-green text-maurealty-green font-bold hover:bg-maurealty-green hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
           >
@@ -221,6 +229,18 @@
         <div class="animate-spin rounded-full h-12 w-12 border-b-3 border-maurealty-blue mb-4"></div>
         <p class="text-maurealty-blue font-semibold">Loading property...</p>
       </div>
+
+      <!-- CALCULATOR POPUP: reuses the accounting calculator, prefilled with this listing's price -->
+      <div
+        v-if="showCalc"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,61,98,0.7)] backdrop-blur-sm p-4"
+        @click.self="showCalc = false"
+      >
+        <div class="w-full max-w-md relative">
+          <button class="absolute -top-3 -right-3 z-10 size-8 rounded-full bg-white shadow-md text-gray-500 hover:text-gray-800 cursor-pointer" @click="showCalc = false">✕</button>
+          <CalculatorPanel :prefill-price="details?.price ?? undefined" />
+        </div>
+      </div>
   </div>
 </template>
 
@@ -230,10 +250,14 @@ import { formattedPropertyType } from '@/assets/classes/listings'
 import { listingsService, compileMarkdown } from '@/services/listingsServices' 
 import { generateShareLink } from '@/services/shareService'
 import MapHolder from './MapHolder.vue'
+import CalculatorPanel from '@/components/calculator/CalculatorPanel.vue'
 
 import placeholder from '@/assets/images/default_placeholder.png'
 
-import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink, BadgeCheck} from "lucide-vue-next";
+import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink, BadgeCheck, Calculator as CalculatorIcon} from "lucide-vue-next";
+
+// Toggles the calculator popup for this listing.
+const showCalc = ref(false)
 
 const props = defineProps<{ 
   prop_id: number,
