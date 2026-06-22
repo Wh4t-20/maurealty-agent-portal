@@ -1,0 +1,227 @@
+<template>
+  <div class="card calculator">
+    <h2 class="card-title">CALCULATOR</h2>
+
+    <div class="calc-header">
+      <label class="calc-label">{{ calcMode }} Calculator:</label>
+      <select v-model="calcMode" class="calc-dropdown">
+        <option value="Sales">Sales</option>
+        <option value="Mortgage">Mortgage</option>
+        <option value="Taxes">Property Tax</option>
+      </select>
+    </div>
+
+    <div class="calc-display">
+      <span class="peso-symbol">₱</span>
+      <input type="text" class="calc-input large" :value="displayedTotal" readonly />
+    </div>
+
+    <div v-if="calcMode === 'Sales'" class="calc-inputs">
+      <div class="input-pair">
+        <label>Gross Profit (₱)</label>
+        <input type="number" v-model.number="totalSales" />
+      </div>
+      <div class="input-pair">
+        <label>Net Commission Rate (%)</label>
+        <input type="number" v-model.number="commRate" />
+      </div>
+      <div class="input-pair">
+        <label>Commission Tax (%)</label>
+        <input type="number" v-model.number="taxRate" />
+      </div>
+    </div>
+
+    <div v-if="calcMode === 'Mortgage'" class="calc-inputs">
+      <div class="input-pair">
+        <label>Property Price (₱)</label>
+        <input type="number" v-model.number="mortPrice" />
+      </div>
+      <div class="input-pair">
+        <label>Downpayment (%)</label>
+        <input type="number" v-model.number="mortDownPercent" />
+      </div>
+      <div class="input-pair">
+        <label>Interest Rate (Annual %)</label>
+        <input type="number" v-model.number="mortInterest" />
+      </div>
+      <div class="input-pair">
+        <label>Loan Term (Years)</label>
+        <input type="number" v-model.number="mortYears" />
+      </div>
+      <p class="text-xs text-center text-gray-400 mt-2">*Estimated Monthly Payment</p>
+    </div>
+
+    <div v-if="calcMode === 'Taxes'" class="calc-inputs">
+      <div class="input-pair">
+        <label>Property Value (₱)</label>
+        <input type="number" v-model.number="taxValue" />
+      </div>
+      <div class="input-pair">
+        <label>Tax Rate (%)</label>
+        <input type="number" v-model.number="taxRatePercent" />
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+
+// Optional: when opened from a listing, prefill the property price and default
+// to Mortgage mode (the common "what's the loan on this property" use).
+const props = defineProps<{ prefillPrice?: number }>()
+
+const calcMode = ref(props.prefillPrice != null ? 'Mortgage' : 'Sales')
+
+// Formatting Tool
+const formatCurrency = (val: number) => {
+  if (isNaN(val) || !isFinite(val)) return '0.00'
+  return val.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+const totalSales = ref()
+const commRate = ref()
+const taxRate = ref()
+
+const salesTotal = computed(() => {
+  const gross = totalSales.value * (commRate.value / 100)
+  const tax = gross * (taxRate.value / 100)
+  return gross - tax
+})
+
+const mortPrice = ref(props.prefillPrice)
+const mortDownPercent = ref()
+const mortInterest = ref()
+const mortYears = ref()
+
+const mortTotal = computed(() => {
+  const principal = mortPrice.value * (1 - (mortDownPercent.value / 100))
+  const monthlyInterestRate = (mortInterest.value / 100) / 12
+  const totalPayments = mortYears.value * 12
+
+  if (monthlyInterestRate === 0) return principal / totalPayments
+
+  const monthly = principal * ((monthlyInterestRate * Math.pow(1 + monthlyInterestRate, totalPayments)) / (Math.pow(1 + monthlyInterestRate, totalPayments) - 1))
+  return monthly
+})
+
+const taxValue = ref()
+const taxRatePercent = ref()
+
+const taxTotal = computed(() => {
+  return taxValue.value * (taxRatePercent.value / 100)
+})
+
+const displayedTotal = computed(() => {
+  if (calcMode.value === 'Sales') return formatCurrency(salesTotal.value)
+  if (calcMode.value === 'Mortgage') return formatCurrency(mortTotal.value)
+  if (calcMode.value === 'Taxes') return formatCurrency(taxTotal.value)
+  return '0.00'
+})
+</script>
+
+<style scoped>
+/* Chrome, Safari, Edge, Opera fixes for input[type=number] */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  border: 1px solid rgba(169, 214, 255, 0.2);
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1e2a5a;
+  margin-bottom: 1rem;
+  letter-spacing: 0.5px;
+}
+
+.calculator .calc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.2rem;
+}
+
+.calc-label {
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+.calc-dropdown {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: white;
+  outline: none;
+  cursor: pointer;
+}
+
+.calc-dropdown:focus {
+  border-color: #1e2a5a;
+}
+
+.calc-display {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.peso-symbol {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #1e2a5a;
+  font-weight: 800;
+  font-size: 1.4rem;
+}
+
+.calc-input.large {
+  width: 100%;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #1e2a5a;
+  padding: 1rem 1rem 1rem 2.5rem;
+  border: 2px solid #e1e4e8;
+  background: #f8fafc;
+  border-radius: 10px;
+  text-align: right;
+  outline: none;
+}
+
+.calc-inputs .input-pair {
+  margin-bottom: 1rem;
+}
+
+.input-pair label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.4rem;
+}
+
+.input-pair input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 500;
+  outline: none;
+}
+</style>
