@@ -65,12 +65,12 @@
                   type="file" 
                   multiple 
                   accept="image/*" 
-                  ref="fileInput" 
+                  ref="imageInput" 
                   class="hidden" 
-                  @change="handleFileUpload"
+                  @change="handleImageFileUpload"
                 >
                 
-                <button type="button" @click="triggerFileInput" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition">
+                <button type="button" @click="triggerImageFileInput" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition">
                   <span class="text-3xl">+</span>
                   <span class="text-xs font-bold">Add Photo</span>
                 </button>
@@ -492,7 +492,16 @@
 
           <!-- FACT SHEET -->
           <div class="col-span-full">
-            <button type="button" class="size-full py-8 bg-blue-50/30 hover:bg-blue-50/70 border border-maurealty-blue/10 rounded-xl flex flex-col items-center gap-4 justify-center text-maurealty-blue cursor-pointer">
+            <input 
+              type="file" 
+              multiple 
+              accept="application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, text/markdown, application/pdf" 
+              ref="factSheetInput" 
+              class="hidden" 
+              @change="handleFactSheetFileUpload"
+            >
+
+            <button type="button" @click="triggerFactSheetFileInput" class="size-full py-8 bg-blue-50/30 hover:bg-blue-50/70 border border-maurealty-blue/10 rounded-xl flex flex-col items-center gap-4 justify-center text-maurealty-blue cursor-pointer">
               <UploadIcon class="size-15" :stroke-width="3"/>
               <h3 class="">Upload a fact sheet</h3>
             </button>
@@ -740,13 +749,13 @@ const form = ref<Partial<PropertyForm>>({
 const imageFiles = ref<{ file: File; preview: string }[]>([]);
 const existingImages = ref<{ url: string }[]>([]);
 const removedImageUrls = ref<string[]>([]);
-const fileInput = ref<HTMLInputElement | null>(null);
+const imageInput = ref<HTMLInputElement | null>(null);
 
-const triggerFileInput = () => {
-  if (fileInput.value) fileInput.value.click();
+const triggerImageFileInput = () => {
+  if (imageInput.value) imageInput.value.click();
 };
 
-const handleFileUpload = (event: Event) => {
+const handleImageFileUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files) {
     Array.from(target.files).forEach(file => {
@@ -756,7 +765,7 @@ const handleFileUpload = (event: Event) => {
       });
     });
   }
-  if (fileInput.value) fileInput.value.value = '';
+  if (imageInput.value) imageInput.value.value = '';
 };
 
 const removeImage = (index: number) => {
@@ -779,6 +788,26 @@ const setExclusively = (group: (keyof PropertyForm)[], selectedField: keyof Prop
   group.forEach(field => {
     (form.value as any)[field] = (field === selectedField);
   });
+};
+
+// fact sheet functionality
+const factSheetInput = ref<HTMLInputElement | null>(null);
+
+const triggerFactSheetFileInput = () => {
+  if (factSheetInput.value) factSheetInput.value.click();
+};
+
+const handleFactSheetFileUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files) {
+    Array.from(target.files).forEach(file => {
+      imageFiles.value.push({
+        file: file,
+        preview: URL.createObjectURL(file) 
+      });
+    });
+  }
+  if (imageInput.value) imageInput.value.value = '';
 };
 
 const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial', 'Clubshare', 'Golfshare'];
