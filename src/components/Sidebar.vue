@@ -68,6 +68,7 @@
   import placeholder from '@/assets/images/default_placeholder.png';
 
   const router = useRouter();
+  const agent = ref<any>(null);
 
   import {
     LayoutDashboard,
@@ -81,6 +82,25 @@
     SquareChartGantt,
     ReceiptText
   } from "lucide-vue-next";
+
+// fetch current Agent profile data
+onMounted(async () => {
+  agent.value = await agentService.getCurrentAgentProfile();
+});
+
+const agentName = computed(() => {
+  if (!agent.value) return 'Loading...';
+  return `${agent.value.first_name} ${agent.value.last_name}`;
+});
+
+const agentPosition = computed(() => {
+  if (!agent.value) return '';
+  return agent.value.positions?.position || 'N/A';
+});
+
+const profileImage = computed(() => {
+  return agent.value?.profile_url || placeholder;
+});
 
   const topItems = [
     { id: 1, icon: LayoutDashboard, path: "/dashboard", label: "Dashboard" },
