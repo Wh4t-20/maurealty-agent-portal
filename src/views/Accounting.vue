@@ -15,69 +15,7 @@
         
         <div class="flex flex-col gap-6">
           
-          <div class="card calculator">
-            <h2 class="card-title">CALCULATOR</h2>
-
-            <div class="calc-header">
-              <label class="calc-label">{{ calcMode }} Calculator:</label>
-              <select v-model="calcMode" class="calc-dropdown">
-                <option value="Sales">Sales</option>
-                <option value="Mortgage">Mortgage</option>
-                <option value="Taxes">Property Tax</option>
-              </select>
-            </div>
-
-            <div class="calc-display">
-              <span class="peso-symbol">₱</span>
-              <input type="text" class="calc-input large" :value="displayedTotal" readonly />
-            </div>
-
-            <div v-if="calcMode === 'Sales'" class="calc-inputs">
-              <div class="input-pair">
-                <label>Gross Profit (₱)</label>
-                <input type="number" v-model.number="totalSales" />
-              </div>
-              <div class="input-pair">
-                <label>Net Commission Rate (%)</label>
-                <input type="number" v-model.number="commRate" />
-              </div>
-              <div class="input-pair">
-                <label>Commission Tax (%)</label>
-                <input type="number" v-model.number="taxRate" />
-              </div>
-            </div>
-
-            <div v-if="calcMode === 'Mortgage'" class="calc-inputs">
-              <div class="input-pair">
-                <label>Property Price (₱)</label>
-                <input type="number" v-model.number="mortPrice" />
-              </div>
-              <div class="input-pair">
-                <label>Downpayment (%)</label>
-                <input type="number" v-model.number="mortDownPercent" />
-              </div>
-              <div class="input-pair">
-                <label>Interest Rate (Annual %)</label>
-                <input type="number" v-model.number="mortInterest" />
-              </div>
-              <div class="input-pair">
-                <label>Loan Term (Years)</label>
-                <input type="number" v-model.number="mortYears" />
-              </div>
-              <p class="text-xs text-center text-gray-400 mt-2">*Estimated Monthly Payment</p>
-            </div>
-
-            <div v-if="calcMode === 'Taxes'" class="calc-inputs">
-              <div class="input-pair">
-                <label>Property Value (₱)</label>
-                <input type="number" v-model.number="taxValue" />
-              </div>
-              <div class="input-pair">
-                <label>Tax Rate (%)</label>
-                <input type="number" v-model.number="taxRatePercent" />
-              </div>
-            </div>
-          </div>
+          <CalculatorPanel />
 
           <div class="card notices">
             <h2 class="card-title red">RED FLAG NOTICES</h2>
@@ -168,55 +106,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-
-const calcMode = ref('Sales')
-
-// Formatting Tool
-const formatCurrency = (val: number) => {
-  if (isNaN(val) || !isFinite(val)) return '0.00'
-  return val.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-const totalSales = ref()
-const commRate = ref()
-const taxRate = ref()
-
-const salesTotal = computed(() => {
-  const gross = totalSales.value * (commRate.value / 100)
-  const tax = gross * (taxRate.value / 100)
-  return gross - tax 
-})
-
-const mortPrice = ref()
-const mortDownPercent = ref()
-const mortInterest = ref()
-const mortYears = ref()
-
-const mortTotal = computed(() => {
-  const principal = mortPrice.value * (1 - (mortDownPercent.value / 100))
-  const monthlyInterestRate = (mortInterest.value / 100) / 12
-  const totalPayments = mortYears.value * 12
-
-  if (monthlyInterestRate === 0) return principal / totalPayments
-
-  const monthly = principal * ((monthlyInterestRate * Math.pow(1 + monthlyInterestRate, totalPayments)) / (Math.pow(1 + monthlyInterestRate, totalPayments) - 1))
-  return monthly
-})
-
-const taxValue = ref()
-const taxRatePercent = ref() 
-
-const taxTotal = computed(() => {
-  return taxValue.value * (taxRatePercent.value / 100)
-})
-
-const displayedTotal = computed(() => {
-  if (calcMode.value === 'Sales') return formatCurrency(salesTotal.value)
-  if (calcMode.value === 'Mortgage') return formatCurrency(mortTotal.value)
-  if (calcMode.value === 'Taxes') return formatCurrency(taxTotal.value)
-  return '0.00'
-})
+// Calculator extracted to a shared component so the listing popup can reuse it.
+import CalculatorPanel from '@/components/calculator/CalculatorPanel.vue'
 </script>
 
 <style scoped>
