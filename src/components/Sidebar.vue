@@ -61,8 +61,11 @@
   </template>
   
   <script lang="ts" setup>
+  import { ref, computed, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { authService } from '@/services/authService';
+  import { agentService } from '@/services/agentService';
+  import placeholder from '@/assets/images/default_placeholder.png';
 
   const router = useRouter();
 
