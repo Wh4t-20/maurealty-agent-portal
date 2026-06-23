@@ -217,6 +217,7 @@
 
           <button
             v-if="details.fact_sheet"
+            @click="downloadFactSheet"
             class="flex flex-col items-center py-2 px-5 w-45 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><DownloadIcon class="size-4" /> FACT SHEET</span>
           </button>
