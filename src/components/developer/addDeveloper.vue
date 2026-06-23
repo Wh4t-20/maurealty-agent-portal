@@ -162,7 +162,7 @@ watch(() => props.dev, (newDev) => {
         openhours.value = reformatHours(newDev.hours)[0];
         closedhours.value = reformatHours(newDev.hours)[1];
         currentImage.value = { file: null as any, preview: newDev.profile_url };
-        selectedDays.value = days.filter(day => newDev.available_days.includes(day.id));
+        selectedDays.value = days.filter(day => newDev.available_days === day.id);
     } else {
         editMode.value = false;
         form.value = {};
@@ -219,7 +219,7 @@ async function saveDeveloper() {
         contact_number: form.value.contact_number ?? '',
         contact_email: form.value.contact_email ?? '',
         location: form.value.location ?? '',
-        available_days: selectedDays.value.map(day => day.id),
+        available_days: selectedDays.value.map(day => day.id)[0],
         hours: `${openhours.value} - ${closedhours.value}`
     };
     
