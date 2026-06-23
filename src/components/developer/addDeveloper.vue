@@ -19,7 +19,7 @@
                 <section class="flex flex-col gap-4">
                     <div class="flex items-center gap-5 w-full">
                         <label class="block text-2xl font-bold text-maurealty-blue mb-1">Name:</label>
-                        <input type="text" placeholder="e.g. MauRealty Developer" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
+                        <input v-model="form.name" type="text" placeholder="e.g. MauRealty Developer" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
                     </div>
 
                     <div class="flex items-center gap-5 w-full">
@@ -33,7 +33,7 @@
                         <h1 class="col-span-2 block text-2xl font-bold text-maurealty-blue mb-2">Contact details</h1>
                         <span class="justify-items-center">
                           <label class="block text-lg font-bold text-maurealty-blue mb-1">Phone No.</label>
-                            <input type="text" placeholder="(+63)900-000-0000" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
+                            <input v-model="form.contact_number" type="text" placeholder="(+63)900-000-0000" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
                         </span>
                         <span class="justify-items-center">
                           <label class="block text-lg font-bold text-maurealty-blue mb-1">Email</label>
@@ -90,11 +90,11 @@
                         </span>
                         <span class="justify-items-center">
                           <label class="block text-lg font-bold text-maurealty-blue mb-1">Open Hours</label>
-                            <input type="time" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
+                            <input v-model="openhours" type="time" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
                         </span>
                         <span class="justify-items-center">
                           <label class="block text-lg font-bold text-maurealty-blue mb-1">Closed Hours</label>
-                            <input type="time" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
+                            <input v-model="closedhours" type="time" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
                         </span>
                     </div>
                 </section>
@@ -138,16 +138,43 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch} from 'vue';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue';
 import { type DayOption } from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
 import { XIcon } from 'lucide-vue-next';
+import { developerService, reformatHours } from '@/services/developerService';
+import { type Developer } from '@/assets/classes/developers';
 
 // reminder to safeguard the non-nullable inputs pls (error message if missing part)
 
 // taken from Property Management 
 // Image Handling Logic
+
+//need to complete saveDeveloper function to include the image file in the payload when adding a new developer
+
+const props = defineProps<{ dev: Developer }>()
+const editMode = ref(false);
+watch(() => props.dev, (newDev) => {
+        if (newDev) {
+        editMode.value = true;
+        form.value = newDev;
+        openhours.value = reformatHours(newDev.hours)[0];
+        closedhours.value = reformatHours(newDev.hours)[1];
+        currentImage.value = { file: null as any, preview: newDev.profile_url };
+        selectedDays.value = days.filter(day => newDev.available_days.includes(day.id));
+    } else {
+        editMode.value = false;
+        form.value = {};
+        openhours.value = '';
+        closedhours.value = '';
+        currentImage.value = undefined;
+        selectedDays.value = [];
+    }
+}, { immediate: true })
+const form = ref<Partial<Developer>>({});
+const openhours = ref('');
+const closedhours = ref('');
 const currentImage = ref<{ file: File; preview: string }>();
 const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -155,7 +182,8 @@ const triggerFileInput = () => {
   if (fileInput.value) fileInput.value.click();
 };
 
-const handleFileUpload = (event: Event) => {
+const handleFileUpload = (event: Event) => { // The purpose of this code block is to store the uploaded image file into a state wtih which we can work on
+    // So now, we need to do something with that file after it has been stored
   const target = event.target as HTMLInputElement;
   
   if (target.files && target.files.length > 0) {
@@ -183,8 +211,25 @@ const removeImage = () => {
   }
 };
 
-function saveDeveloper() {
-    console.log("Saving developer");
+async function saveDeveloper() {
+    const payload: Developer = {
+        dev_ID: null,
+        profile_url: '',
+        name: form.value.name ?? '',
+        contact_number: form.value.contact_number ?? '',
+        contact_email: form.value.contact_email ?? '',
+        location: form.value.location ?? '',
+        available_days: selectedDays.value.map(day => day.id),
+        hours: `${openhours.value} - ${closedhours.value}`
+    };
+    
+    const devID = await developerService.addDeveloper(payload);
+    let imageUrl = '';
+    if (currentImage.value && currentImage.value.file) {
+        imageUrl = await developerService.uploadImage(devID,currentImage.value.file);
+        await developerService.updateDeveloper({ ...payload, dev_ID: devID, profile_url: imageUrl });
+
+    }
 }
 
 // for the days logic
@@ -206,4 +251,5 @@ const displayShortcuts = computed(() => {
     const sortedDays = [...selectedDays.value].sort((a, b) => a.id - b.id);
     return sortedDays.map(day => day.shortcut).join(', ');
 });
+
 </script>

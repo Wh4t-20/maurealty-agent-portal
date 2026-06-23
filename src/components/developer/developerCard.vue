@@ -4,7 +4,7 @@
 		<!-- Profile -->
 		<div class="flex items-center gap-4 mb-4 ">
 
-			<img :src="dev.image_url || placeholder" class="w-16 h-16 rounded-full object-cover"/>
+			<img :src="dev.profile_url || placeholder" class="w-16 h-16 rounded-full object-cover"/>
 			<div>
 				<h2 class="font-bold text-lg">{{ dev.name }}</h2>
 				<span class="bg-[#41BE0126] text-[#41BE01] text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -13,8 +13,8 @@
 
 		<!-- Contact info -->
 		<div class="grid mt-10 break-all text-[clamp(1rem,1vw,1.5rem)] grid-cols-1 md:grid-cols-2 px-1 gap-2 mb-4 text-gray-700">
-		<div class="flex items-center gap-2"> {{ dev.phone }}</div>
-		<div class="flex items-center gap-2">{{ dev.email }}</div>
+		<div class="flex items-center gap-2"> {{ dev.contact_number }}</div>
+		<div class="flex items-center gap-2">{{ dev.contact_email }}</div>
 		<div class="flex items-center gap-2"> {{ dev.location }}</div>
 		<div class="flex items-start gap-2">
 			<div v-html="dev.hours" class="leading-tight">
