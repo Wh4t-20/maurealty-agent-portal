@@ -30,10 +30,11 @@
                 {{ agent.last_name }}, {{ agent.first_name }} {{ agent.middle_name || '' }}
               </p>
               <img
-              :src="MauBadge" 
-              alt="Admin Access Enabled"
-              class="size-6 border-0"  
-            />
+                v-if="agent.admin_access"
+                :src="MauBadge" 
+                alt="Admin Access Enabled"
+                class="size-6 border-0"  
+              />
             </span>
           </div>          
 
