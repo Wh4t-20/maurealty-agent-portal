@@ -201,10 +201,9 @@ const filteredProperties = computed(() => {
     )
   }
 
-  const developer = developerQuery.value.trim().toLowerCase()
-  if (developer) {
-    result = result.filter(p => p.developer_name?.toLowerCase().includes(developer))
-  }
+  if (selectedDeveloper.value !== "None") {
+      result = result.filter(p => p.developer_name === selectedDeveloper.value)
+    }
 
   const min = Number(priceMin.value)
   if (priceMin.value !== "" && !Number.isNaN(min)) {
