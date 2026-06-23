@@ -301,7 +301,8 @@ async deleteListingImages(imageUrls: string[]) {
       const { error: dbError } = await supabase
         .from('main_listings')
         .update({ fact_sheet: urlData.publicUrl })
-        .eq('listing_ID', listingId);
+        .eq('listing_ID', listingId)
+        .select();
 
       if (dbError) throw dbError;
 

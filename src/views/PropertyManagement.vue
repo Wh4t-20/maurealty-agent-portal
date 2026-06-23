@@ -907,6 +907,16 @@ const saveProperty = async () => {
           await listingsService.uploadPropertyImages(response.data.listing_ID, filesToUpload);
         }
 
+        if (factSheetFile.value) {
+          console.log("[DEBUG] Uploading fact sheet for new listing...");
+          try {
+            await listingsService.uploadFactSheet(propertyId, factSheetFile.value.file);
+            console.log("[DEBUG] Fact sheet uploaded successfully.");
+          } catch (err) {
+            console.error("[DEBUG] Failed to upload fact sheet:", err);
+          }
+        }
+
         router.push({ path: '/listings', query: { saved: 'created' } });
       }
 
@@ -983,6 +993,7 @@ const saveProperty = async () => {
           is_pet_memorial: form.value.is_pet_memorial
         };
       }
+
       const response = await listingsService.updateListing(propertyId, mainData, specificData, propertyTypeId);
       if (response.success) {
         // --- Image Deletion Logic ---
@@ -1008,6 +1019,17 @@ const saveProperty = async () => {
         if (imageFiles.value.length > 0) {
           const filesToUpload = imageFiles.value.map(img => img.file);
           await listingsService.uploadPropertyImages(propertyId, filesToUpload);
+        }
+
+        console.log(factSheetFile.value);
+        if (factSheetFile.value) {
+          console.log("[DEBUG] Uploading fact sheet for new listing...");
+          try {
+            await listingsService.uploadFactSheet(propertyId, factSheetFile.value.file);
+            console.log("[DEBUG] Fact sheet uploaded successfully.");
+          } catch (err) {
+            console.error("[DEBUG] Failed to upload fact sheet:", err);
+          }
         }
 
         router.push({ path: '/listings', query: { saved: 'updated' } });
