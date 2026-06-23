@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gray-200">
-    <header class="w-full bg-gradient-to-r from-[#A9D6FF70] to-white shadow-md sticky top-0 z-20">
+    <header class="w-full bg-linear-to-r from-[#A9D6FF70] to-white shadow-md sticky top-0 z-20">
         <div class="flex justify-between items-center px-10 py-10">
           <h1 class="text-3xl font-bold text-maurealty-blue">
             PROFILE
@@ -14,7 +14,7 @@
 
     <div v-else-if="agent" class="flex items-center justify-center p-6 mt-10">
       <div class="bg-gray-100 w-full max-w-6xl rounded-2xl shadow-md p-10 flex gap-10">
-        <div class="flex items-center justify-center">
+        <div class="relative flex items-center justify-center">
           <img
             :src="agent.profile_url || placeholder"
             alt="Profile"
@@ -25,10 +25,17 @@
         <div class="flex-1 space-y-3">
           <div class="mt-10">
             <label class="text-blue-800 font-medium text-sm block">Last Name, First Name, Middle Name</label>
-            <p class="w-full font-medium text-lg tracking-wider uppercase">
-              {{ agent.last_name }}, {{ agent.first_name }} {{ agent.middle_name || '' }}
-            </p>
-          </div>
+              <span class="flex items-center gap-2.5">
+              <p class="w-auto font-medium text-lg tracking-wider uppercase">
+                {{ agent.last_name }}, {{ agent.first_name }} {{ agent.middle_name || '' }}
+              </p>
+              <img
+              :src="MauBadge" 
+              alt="Admin Access Enabled"
+              class="size-6 border-0"  
+            />
+            </span>
+          </div>          
 
           <div class="grid grid-cols-3 gap-5">
             <div>
@@ -112,6 +119,7 @@
 import { ref, onMounted } from 'vue'
 import { agentService } from '@/services/agentService'
 import placeholder from '@/assets/images/default_placeholder.png'
+import MauBadge from '@/assets/images/MauBadge.svg'
 
 const agent = ref<any>(null)
 const isLoading = ref(true)
