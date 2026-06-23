@@ -14,7 +14,7 @@
       <p class="group-hover:text-xl text-0 opacity-0 group-hover:opacity-100 transition whitespace-nowrap text-white text-[clamp(0.5rem,2vw,1rem)]">
         {{ agentName }}
       </p>
-      <img v-if="agent.admin_access" :src="MauBadge" alt="Admin Badge" class="opacity-0 group-hover:opacity-100 size-4.75 transition whitespace-nowrap"/>
+      <img v-if="isAdmin" :src="MauBadge" alt="Admin Badge" class="opacity-0 group-hover:opacity-100 size-4.75 transition whitespace-nowrap"/>
     </span>
     
 
@@ -105,6 +105,10 @@ const agentPosition = computed(() => {
 
 const profileImage = computed(() => {
   return agent.value?.profile_url || placeholder;
+});
+
+const isAdmin = computed(() => {
+  return agent.value?.admin_access || false;
 });
 
   const topItems = [
