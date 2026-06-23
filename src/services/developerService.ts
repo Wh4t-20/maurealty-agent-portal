@@ -34,7 +34,27 @@ export const developerService = {
         }));
 
         return developers;
+    },
+    // fetch only the names for the filter dropdown
+    async getDeveloperNames(): Promise<string[]> {
+        try {
+        const { data, error } = await supabase
+            .from('developers')
+            .select('name')
+            .order('name');
+
+        if (error) {
+            console.error('Error fetching developer names:', error);
+            return [];
+        }
+
+        return data.map(dev => dev.name);
+        } catch (error) {
+        console.error('Unexpected error fetching developer names:', error);
+        return [];
+        }
     }
+
 }
 
     

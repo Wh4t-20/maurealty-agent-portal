@@ -38,7 +38,7 @@
 
             <section class="listings-filter-section">
               <label for="developer-input" class="text-base">Developer</label>
-              <input id="developer-input" type="text" v-model="developerQuery" class="text-sm w-40 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+              <ListingsFilter :choices="developerChoices" v-model="selectedDeveloper" />
             </section>
 
             <section class="listings-filter-section" v-if="selectedType === 'House And Lot'">
@@ -168,6 +168,7 @@ import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
+import { developerService } from '@/services/developerService'
 
 import { ChevronDown, Plus } from 'lucide-vue-next'
 
@@ -179,7 +180,9 @@ const selectedType = ref("None")
 const searchQuery = ref("")
 const priceMin = ref("")
 const priceMax = ref("")
-const developerQuery = ref("")
+
+const selectedDeveloper = ref("None")
+const developerChoices = ref<string[]>(["None"])
 
 const filteredProperties = computed(() => {
   let result = properties.value
@@ -198,10 +201,9 @@ const filteredProperties = computed(() => {
     )
   }
 
-  const developer = developerQuery.value.trim().toLowerCase()
-  if (developer) {
-    result = result.filter(p => p.developer_name?.toLowerCase().includes(developer))
-  }
+  if (selectedDeveloper.value !== "None") {
+      result = result.filter(p => p.developer_name === selectedDeveloper.value)
+    }
 
   const min = Number(priceMin.value)
   if (priceMin.value !== "" && !Number.isNaN(min)) {
@@ -231,7 +233,7 @@ const paginatedProperties = computed(() => {
 })
 
 // Reset to page 1 when any filter or search changes
-watch([selectedType, searchQuery, developerQuery, priceMin, priceMax], () => {
+watch([selectedType, searchQuery, selectedDeveloper, priceMin, priceMax], () => {
   currentPage.value = 1
 })
 
@@ -273,8 +275,14 @@ const showSavedNotice = () => {
   setTimeout(() => { savedNotice.value = null }, 4000)
 }
 
+const loadDeveloperChoices = async () => {
+  const names = await developerService.getDeveloperNames()
+  developerChoices.value = ["None", ...names]
+}
+
 onMounted(() => {
   loadProperties();
+  loadDeveloperChoices();
   showSavedNotice();
 })
 
