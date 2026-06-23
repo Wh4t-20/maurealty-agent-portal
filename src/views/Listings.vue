@@ -168,6 +168,7 @@ import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
+import { developerService } from '@/services/developerService'
 
 import { ChevronDown, Plus } from 'lucide-vue-next'
 
@@ -179,7 +180,9 @@ const selectedType = ref("None")
 const searchQuery = ref("")
 const priceMin = ref("")
 const priceMax = ref("")
-const developerQuery = ref("")
+
+const selectedDeveloper = ref("None")
+const developerChoices = ref<string[]>(["None"])
 
 const filteredProperties = computed(() => {
   let result = properties.value
