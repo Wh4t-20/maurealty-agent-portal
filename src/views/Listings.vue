@@ -38,7 +38,7 @@
 
             <section class="listings-filter-section">
               <label for="developer-input" class="text-base">Developer</label>
-              <input id="developer-input" type="text" v-model="developerQuery" class="text-sm w-40 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+              <ListingsFilter :choices="developerChoices" v-model="selectedDeveloper" />
             </section>
 
             <section class="listings-filter-section" v-if="selectedType === 'House And Lot'">
