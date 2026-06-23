@@ -233,7 +233,7 @@ const paginatedProperties = computed(() => {
 })
 
 // Reset to page 1 when any filter or search changes
-watch([selectedType, searchQuery, developerQuery, priceMin, priceMax], () => {
+watch([selectedType, searchQuery, selectedDeveloper, priceMin, priceMax], () => {
   currentPage.value = 1
 })
 
@@ -275,8 +275,14 @@ const showSavedNotice = () => {
   setTimeout(() => { savedNotice.value = null }, 4000)
 }
 
+const loadDeveloperChoices = async () => {
+  const names = await developerService.getDeveloperNames()
+  developerChoices.value = ["None", ...names]
+}
+
 onMounted(() => {
   loadProperties();
+  loadDeveloperChoices();
   showSavedNotice();
 })
 
