@@ -54,7 +54,7 @@
 
           <div class="w-2/5 flex flex-col gap-2 text-gray-800 text-lg">
             <span class="inline-block bg-maurealty-green w-fit text-2xl text-white px-4 py-0.5 rounded-full tracking-wider mt-0.5">
-              ₱ {{ (details.price ?? 0).toLocaleString() }}
+               {{ formatPrice(details.price ?? 0).toLocaleString() }}
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
