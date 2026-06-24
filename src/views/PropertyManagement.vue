@@ -100,7 +100,7 @@
             <div class="grid grid-cols-2 gap-4">
     
               <div class="col-span-1">
-                <label class="block text-sm font-bold text-maurealty-blue mb-1">Price (₱)</label>
+                <label class="block text-sm font-bold text-maurealty-blue mb-1">Price ({{ currentCurrency }})</label>
                 <input type="number" v-model="form.price" class="w-full border border-gray-300 bg-white rounded-lg p-3">
               </div>
               <div class="col-span-1">
@@ -213,11 +213,11 @@
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Lot Area</label>
-                    <input type="number" v-model="form.lot_area" placeholder="sqm" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.lot_area" placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Floor Area</label>
-                    <input type="number" v-model="form.floor_area" placeholder="sqm" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.floor_area" placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Rooms</label>
@@ -289,7 +289,7 @@
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Area</label>
-                    <input type="number" v-model="form.area" placeholder="sqm" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.area" placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                 
                   <div class="cols-2 md:col-span-4">
@@ -534,10 +534,16 @@ import { MapIcon, UploadIcon, XIcon } from 'lucide-vue-next';
 import MapInteractive from '@/components/listings/MapInteractive.vue';
 const displayMaps = ref(false);
 
+
 function toggleMaps() {
   displayMaps.value = !displayMaps.value;
   console.log("Map display status: " + displayMaps.value);
 }
+
+// utilities
+import { currentCurrency, currentUnit, convertPrice, convertArea, convertPriceToPHP, convertAreaToSqm } from '@/utils/conversion.ts';
+
+const unitPlaceholder = computed(() => currentUnit.value === 'English' ? 'sqft' : 'sqm');
 
 import { developerService } from '@/services/developerService'
 
