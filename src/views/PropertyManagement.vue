@@ -575,6 +575,8 @@ function toggleQuestions() {
   console.log("Question display status: " + displayQuestions.value);
 }
 
+import questions from '@/assets/questions.json'
+
 // Combine all interfaces for the form state
 type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & {
   listing_title?: string;

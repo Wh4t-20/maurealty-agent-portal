@@ -1,12 +1,19 @@
 {
-    "questionList": [
+    "FAQs": [
         {
             "type": "General",
-            "question": "How many square meters?"
+            "questionList": [
+                { "question": "How many square meters?" },
+                { "question": "How many feet meters?" }
+            ]
+            
         },
         {
-            "type": "General",
-            "question": "How many feet meters?"
+            "type": "House and Lot",
+            "questionList": [
+                { "question": "How many houses?" },
+                { "question": "How many hise?" }
+            ]
         }
     ]
 }
