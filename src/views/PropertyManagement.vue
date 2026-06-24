@@ -49,14 +49,14 @@
                 <div v-for="(img, index) in existingImages" :key="`existing-${index}`" class="relative w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
                   <img :src="img.url" alt="Current property photo" class="object-cover size-full">
                   <span class="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">Current</span>
-                  <button type="button" @click="removeExistingImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                  <button type="button" @click="removeExistingImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold cursor-pointer">
                     ✕
                   </button>
                 </div>
 
                 <div v-for="(img, index) in imageFiles" :key="index" class="relative w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
                   <img :src="img.preview" alt="Property Preview" class="object-cover size-full">
-                  <button type="button" @click="removeImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                  <button type="button" @click="removeImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold cursor-pointer">
                     ✕
                   </button>
                 </div>
@@ -70,7 +70,7 @@
                   @change="handleImageFileUpload"
                 >
                 
-                <button type="button" @click="triggerImageFileInput" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition">
+                <button type="button" @click="triggerImageFileInput" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition cursor-pointer">
                   <span class="text-3xl">+</span>
                   <span class="text-xs font-bold">Add Photo</span>
                 </button>
@@ -80,7 +80,7 @@
             <div>
               <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
                 <label class="block">Description</label>
-                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleDescriptionMarkdown">
+                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer" @click="toggleDescriptionMarkdown">
                     {{ (displayDescriptionMarkdown) ? "Edit" : "Preview" }}
                 </button>
               </section>
@@ -245,27 +245,27 @@
                   <p class="text-xs font-bold text-maurealty-blue mb-3 uppercase opacity-70">Property Features</p>
                   <div class="flex flex-wrap gap-x-6 gap-y-3">
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.one_storey" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.one_storey" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">One Storey</span>
                     </label>
                     
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.two_storey" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.two_storey" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Two Storey</span>
                     </label>
 
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.with_loft" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.with_loft" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">With Loft</span>
                     </label>
 
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.townhome" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.townhome" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Townhome</span>
                     </label>
 
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.rowhouse" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.rowhouse" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Rowhouse</span>
                     </label>
                   </div>
@@ -425,7 +425,7 @@
                             type="radio" 
                             :checked="!!form[cType.field as keyof PropertyForm]" 
                             @change="setExclusively(['is_studio_type', 'is_BR_unit', 'is_villa', 'is_garden_villa', 'is_penthouse'], cType.field as keyof PropertyForm)"
-                            class="w-4 h-4 accent-maurealty-blue"
+                            class="w-4 h-4 accent-maurealty-blue cursor-pointer"
                           >
                           <span class="text-sm text-gray-700">{{ cType.label }}</span>
                         </label>
@@ -455,7 +455,7 @@
                             type="radio" 
                             :checked="!!form[mType.field as keyof PropertyForm]" 
                             @change="setExclusively(['is_urn', 'is_vault', 'is_garden', 'is_estate', 'is_family_estate', 'is_pet_memorial'], mType.field as keyof PropertyForm)"
-                            class="w-4 h-4 accent-maurealty-blue"
+                            class="w-4 h-4 accent-maurealty-blue cursor-pointer"
                           >
                           <span class="text-sm text-gray-700">{{ mType.label }}</span>
                         </label>
@@ -473,10 +473,10 @@
               <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
                 <label class="block">Frequently Asked Questions</label>
                 <span class="flex gap-3">
-                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleFAQMarkdown">
+                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer" @click="toggleFAQMarkdown">
                       {{ (displayFAQMarkdown) ? "Edit" : "Preview" }}
                   </button>
-                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleQuestions">
+                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer" @click="toggleQuestions">
                       {{ (displayQuestions) ? "Hide Questions" : "View Questions" }}
                   </button>
                 </span>
@@ -534,7 +534,7 @@
           </div>
           
           <div class="flex col-span-2 justify-end gap-4 mt-8">
-              <button type="button" @click="goBack" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition">
+              <button type="button" @click="goBack" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition cursor-pointer">
                 CANCEL
               </button>
               <button type="submit" class="px-8 py-3 bg-maurealty-blue text-white font-bold rounded-full shadow-md hover:bg-opacity-90 hover:bg-[#045fa3] active:bg-white active:text-maurealty-blue border border-maurealty-blue transition flex items-center gap-2 cursor-pointer">
