@@ -20,7 +20,7 @@
       </div>
 
       <Transition name="expand">
-        <div v-if="isFilterVisible" class="flex items-center gap-10 pb-5">
+        <div v-if="isFilterVisible" class="flex items-center gap-10 pb-5 w-full flex-warp">
             
             <section class="listings-filter-section">
               <label for="Type-input" class="text-base">Type</label>
@@ -30,9 +30,9 @@
             <section class="listings-filter-section">
               <label for="price-range-input" class="text-base">Price Range</label>
               <div class="flex gap-4 items-center">
-                <input type="number" placeholder="₱ Min" v-model="priceMin" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+                <input type="number" :placeholder="`${currencySymbols[currentCurrency]} Min`" v-model="priceMin" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
                 <span class="font-bold -mx-2"> - </span>
-                <input type="number" placeholder="₱ Max" v-model="priceMax" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+                <input type="number" :placeholder="`${currencySymbols[currentCurrency]} Max`" v-model="priceMax" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
               </div>
             </section>
 
@@ -75,6 +75,19 @@
               <label for="memorial-type-input" class="text-base">Type</label>
               <ListingsFilter :choices="memorialTypes" v-model="selectedMemorialType" />
             </section>
+
+            <div class = "flex-grow"></div>
+
+            <section class="listings-filter-section">
+              <label class="text-base text-gray-500 font-medium">Currency</label>
+              <ListingsFilter :choices="currencies" v-model="currentCurrency" />
+            </section>
+            
+            <section class="listings-filter-section">
+              <label class="text-base text-gray-500 font-medium">Units</label>
+              <ListingsFilter :choices="units" v-model="currentUnit" />
+            </section>
+
         </div>
       </Transition>
       
