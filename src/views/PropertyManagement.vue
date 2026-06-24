@@ -593,7 +593,7 @@ const loadProperties = async () => {
 
       form.value.listing_title = data.listing_title;
       form.value.property_type = typeReverseMap[propertyType] || typeReverseMap[1];
-      form.value.price = data.price;
+      form.value.price = Number(convertPrice(data.price).toFixed(2));
       form.value.commission = data.commission;
       form.value.location = data.location;
       form.value.lng = data.longitude;
@@ -628,8 +628,8 @@ const loadProperties = async () => {
         form.value.with_loft = subTableData.with_loft;
         form.value.townhome = subTableData.townhomes; // UI: townhome, DB: townhomes
         form.value.rowhouse = subTableData.rowhouse;
-        form.value.lot_area = subTableData.lot_area;
-        form.value.floor_area = subTableData.floor_area;
+        form.value.lot_area = Number(convertArea(subTableData.lot_area).toFixed(2));
+        form.value.floor_area = Number(convertArea(subTableData.floor_area).toFixed(2));
         form.value.room_count = subTableData.rooms_count; // UI: room_count, DB: rooms_count
         form.value.toilet_count = subTableData.toilets_count;
         form.value.helper_room_count = subTableData.helper_rooms_count;
@@ -642,7 +642,7 @@ const loadProperties = async () => {
         form.value.block_number = Number(subTableData.block_number);
         form.value.lot_number = Number(subTableData.lot_number);
         form.value.phase_number = Number(subTableData.phase_number);
-        form.value.area = subTableData.lot_area; // UI: area, DB: lot_area
+        form.value.area = Number(convertArea(subTableData.lot_area).toFixed(2)); // UI: area, DB: lot_area
         form.value.class = lotClassReverseMap[subTableData.lot_class_ID] || 'Residential';
 
       } else if (propertyType === 3) { // Condominium
