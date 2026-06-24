@@ -213,11 +213,11 @@
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Lot Area</label>
-                    <input type="number" v-model="form.lot_area" placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.lot_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Floor Area</label>
-                    <input type="number" v-model="form.floor_area" placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.floor_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Rooms</label>
@@ -289,7 +289,7 @@
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Area</label>
-                    <input type="number" v-model="form.area" placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                 
                   <div class="cols-2 md:col-span-4">
