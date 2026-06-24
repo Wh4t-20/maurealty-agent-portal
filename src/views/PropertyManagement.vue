@@ -478,7 +478,7 @@
               </section>
               
               <div v-if="!displayFAQMarkdown" class="w-full flex">
-                <textarea type="text" v-model="form.faq" placeholder="e.g. This house has amazing features!" 
+                <textarea type="text" v-model="form.faq" placeholder="Follow this format:&#10;### (Question Here)&#10;- (Answers here)&#10;&#10;Note: Click Preview to see the formatting" 
                         class="custom-scrollbar w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
                 
               </div>
@@ -702,7 +702,7 @@ const form = ref<Partial<PropertyForm>>({
   description: '',
   status: 'active',
   dev_ID: null,
-  faq: '# FREQUENTLY ASKED QUESTIONS\n\n',
+  faq: '',
   fact_sheet: '',
 
   // House and Lot Defaults
@@ -941,7 +941,8 @@ const saveProperty = async () => {
         latitude: form.value.lat,
         description: form.value.description || 'No description provided.',
         status: form.value.status,
-        dev_ID: form.value.dev_ID
+        dev_ID: form.value.dev_ID,
+        faq: form.value.faq
       };
       let specificData = {};
 
