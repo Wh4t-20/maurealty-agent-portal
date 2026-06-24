@@ -472,18 +472,28 @@
           <div class="col-span-full">
               <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
                 <label class="block">Frequently Asked Questions</label>
-                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleFAQMarkdown">
-                    {{ (displayFAQMarkdown) ? "Edit" : "Preview" }}
-                </button>
+                <span class="flex gap-3">
+                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleFAQMarkdown">
+                      {{ (displayFAQMarkdown) ? "Edit" : "Preview" }}
+                  </button>
+                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleQuestions">
+                      {{ (displayQuestions) ? "Hide Questions" : "View Questions" }}
+                  </button>
+                </span>
+                
               </section>
               
-              <div v-if="!displayFAQMarkdown" class="w-full flex">
-                <textarea type="text" v-model="form.faq" placeholder="Follow this format:&#10;### (Question Here)&#10;- (Answers here)&#10;&#10;Note: Click Preview to see the formatting" 
-                        class="custom-scrollbar w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
-                
-              </div>
-              
-              <div v-if="displayFAQMarkdown" class="prose max-w-none w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
+              <section class="grid grid-cols-2">
+                <div :class="[ !displayQuestions ? 'col-span-full' : '' ]">
+                  <div v-if="!displayFAQMarkdown" class="w-full flex">
+                    <textarea type="text" v-model="form.faq" placeholder="Follow this format:&#10;### (Question Here)&#10;- (Answers here)&#10;&#10;Note: Click Preview to see the formatting" 
+                            class="custom-scrollbar w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
+                    
+                  </div>
+                  
+                  <div v-if="displayFAQMarkdown" class="prose max-w-none w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
+                </div>
+              </section>
               
               <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
                 <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
@@ -553,10 +563,16 @@ function toggleDescriptionMarkdown() {
 
 // for the FAQ stuff
 const displayFAQMarkdown = ref(false);
+const displayQuestions = ref(false);
 
 function toggleFAQMarkdown() {
   displayFAQMarkdown.value = !displayFAQMarkdown.value;
   console.log("FAQ Markdown display status: " + displayFAQMarkdown.value);
+}
+
+function toggleQuestions() {
+  displayQuestions.value = !displayQuestions.value;
+  console.log("Question display status: " + displayQuestions.value);
 }
 
 // Combine all interfaces for the form state
