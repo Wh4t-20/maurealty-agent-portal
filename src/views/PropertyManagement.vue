@@ -483,7 +483,7 @@
                 
               </section>
               
-              <section class="grid grid-cols-2">
+              <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div :class="[ !displayQuestions ? 'col-span-full' : '' ]">
                   <div v-if="!displayFAQMarkdown" class="w-full flex">
                     <textarea type="text" v-model="form.faq" placeholder="Follow this format:&#10;### (Question Here)&#10;- (Answers here)&#10;&#10;Note: Click Preview to see the formatting" 
@@ -493,9 +493,25 @@
                   
                   <div v-if="displayFAQMarkdown" class="prose max-w-none w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
                 </div>
+
+                <div v-if="displayQuestions" class="col-span-1 border border-gray-300 rounded-lg max-h-50 bg-gray-50 overflow-y-auto custom-scrollbar">
+                  <div v-for="(item, itemIndex) in questions.FAQs" :key="itemIndex" class="mb-3">
+                    <h1 class="w-full bg-white py-2 pl-6 mb-2 font-bold uppercase text-xl text-maurealty-blue">{{ item.type }}</h1>
+                    <div class="grid grid-cols-1 justify-items-start px-3">
+                      <button v-for="(q, qIndex) in item.questionList"
+                        type="button"
+                        :key="qIndex" 
+                        class="flex gap-2.5 items-center text-md text-gray-700 pl-4 py-1.5 hover:bg-maurealty-blue/15 hover:font-semibold hover:text-lg transition-all w-full border-gray-200 cursor-pointer"
+                        :class="(qIndex < item.questionList.length - 1) ? 'border-b' : ''"
+                        @click="addQuestion(q.question)">
+                          <PlusIcon class="size-5" /> {{ q.question }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </section>
               
-              <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
+              <p class="text-sm text-gray-500 italic">Note: FAQs follows the Markdown format, read 
                 <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
               for formatting options</p>
           </div>
@@ -540,7 +556,7 @@ import { listingsService } from '@/services/listingsServices';
 import { authService } from '@/services/authService'; // just for getting agent_ID
 
 // maps stuff
-import { MapIcon, UploadIcon, XIcon } from 'lucide-vue-next';
+import { MapIcon, PlusIcon, UploadIcon, XIcon } from 'lucide-vue-next';
 import MapInteractive from '@/components/listings/MapInteractive.vue';
 const displayMaps = ref(false);
 
@@ -562,6 +578,7 @@ function toggleDescriptionMarkdown() {
 }
 
 // for the FAQ stuff
+import questions from '@/assets/questions.json'
 const displayFAQMarkdown = ref(false);
 const displayQuestions = ref(false);
 
@@ -574,8 +591,6 @@ function toggleQuestions() {
   displayQuestions.value = !displayQuestions.value;
   console.log("Question display status: " + displayQuestions.value);
 }
-
-import questions from '@/assets/questions.json'
 
 // Combine all interfaces for the form state
 type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & {
@@ -1070,6 +1085,15 @@ const compiledDescriptionMarkdown = computed(() => {
 const compiledFAQMarkdown = computed(() => {
   return compileMarkdown(form.value.faq)
 });
+
+// to add a selected question into the faq
+function addQuestion(question: string) {
+  if (form.value.faq) {
+    form.value.faq += `\n\n`;
+  }
+
+  form.value.faq += `### ${question}\n- `
+}
 
 // goes back to previous page
 function goBack() {
