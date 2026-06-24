@@ -411,7 +411,10 @@ const compiledDescriptionMarkdown = computed(() => {
 
 // FAQ markdown conversion and input
 const compiledFAQMarkdown = computed(() => {
-  return compileMarkdown(details.value?.faq)
+  if (details.value.faq)
+    return compileMarkdown("# FREQUENTLY ASKED QUESTIONS\n\n" + details.value.faq);
+  else
+    return '';
 });
 
 // thank you Gemini

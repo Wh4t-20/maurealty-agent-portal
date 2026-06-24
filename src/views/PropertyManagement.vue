@@ -49,14 +49,14 @@
                 <div v-for="(img, index) in existingImages" :key="`existing-${index}`" class="relative w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
                   <img :src="img.url" alt="Current property photo" class="object-cover size-full">
                   <span class="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">Current</span>
-                  <button type="button" @click="removeExistingImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                  <button type="button" @click="removeExistingImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold cursor-pointer">
                     ✕
                   </button>
                 </div>
 
                 <div v-for="(img, index) in imageFiles" :key="index" class="relative w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
                   <img :src="img.preview" alt="Property Preview" class="object-cover size-full">
-                  <button type="button" @click="removeImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                  <button type="button" @click="removeImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold cursor-pointer">
                     ✕
                   </button>
                 </div>
@@ -70,7 +70,7 @@
                   @change="handleImageFileUpload"
                 >
                 
-                <button type="button" @click="triggerImageFileInput" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition">
+                <button type="button" @click="triggerImageFileInput" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition cursor-pointer">
                   <span class="text-3xl">+</span>
                   <span class="text-xs font-bold">Add Photo</span>
                 </button>
@@ -80,7 +80,7 @@
             <div>
               <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
                 <label class="block">Description</label>
-                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleDescriptionMarkdown">
+                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer" @click="toggleDescriptionMarkdown">
                     {{ (displayDescriptionMarkdown) ? "Edit" : "Preview" }}
                 </button>
               </section>
@@ -245,27 +245,27 @@
                   <p class="text-xs font-bold text-maurealty-blue mb-3 uppercase opacity-70">Property Features</p>
                   <div class="flex flex-wrap gap-x-6 gap-y-3">
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.one_storey" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.one_storey" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">One Storey</span>
                     </label>
                     
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.two_storey" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.two_storey" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Two Storey</span>
                     </label>
 
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.with_loft" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.with_loft" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">With Loft</span>
                     </label>
 
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.townhome" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.townhome" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Townhome</span>
                     </label>
 
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.rowhouse" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.rowhouse" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Rowhouse</span>
                     </label>
                   </div>
@@ -425,7 +425,7 @@
                             type="radio" 
                             :checked="!!form[cType.field as keyof PropertyForm]" 
                             @change="setExclusively(['is_studio_type', 'is_BR_unit', 'is_villa', 'is_garden_villa', 'is_penthouse'], cType.field as keyof PropertyForm)"
-                            class="w-4 h-4 accent-maurealty-blue"
+                            class="w-4 h-4 accent-maurealty-blue cursor-pointer"
                           >
                           <span class="text-sm text-gray-700">{{ cType.label }}</span>
                         </label>
@@ -455,7 +455,7 @@
                             type="radio" 
                             :checked="!!form[mType.field as keyof PropertyForm]" 
                             @change="setExclusively(['is_urn', 'is_vault', 'is_garden', 'is_estate', 'is_family_estate', 'is_pet_memorial'], mType.field as keyof PropertyForm)"
-                            class="w-4 h-4 accent-maurealty-blue"
+                            class="w-4 h-4 accent-maurealty-blue cursor-pointer"
                           >
                           <span class="text-sm text-gray-700">{{ mType.label }}</span>
                         </label>
@@ -472,20 +472,46 @@
           <div class="col-span-full">
               <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
                 <label class="block">Frequently Asked Questions</label>
-                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleFAQMarkdown">
-                    {{ (displayFAQMarkdown) ? "Edit" : "Preview" }}
-                </button>
+                <span class="flex gap-3">
+                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer" @click="toggleFAQMarkdown">
+                      {{ (displayFAQMarkdown) ? "Edit" : "Preview" }}
+                  </button>
+                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer" @click="toggleQuestions">
+                      {{ (displayQuestions) ? "Hide Questions" : "View Questions" }}
+                  </button>
+                </span>
+                
               </section>
               
-              <div v-if="!displayFAQMarkdown" class="w-full flex">
-                <textarea type="text" v-model="form.faq" placeholder="e.g. This house has amazing features!" 
-                        class="custom-scrollbar w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
-                
-              </div>
+              <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div :class="[ !displayQuestions ? 'col-span-full' : '' ]">
+                  <div v-if="!displayFAQMarkdown" class="w-full flex">
+                    <textarea type="text" v-model="form.faq" placeholder="Follow this format:&#10;### (Question Here)&#10;- (Answers here)&#10;&#10;Note: Click Preview to see the formatting" 
+                            class="custom-scrollbar w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
+                    
+                  </div>
+                  
+                  <div v-if="displayFAQMarkdown" class="prose max-w-none w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
+                </div>
+
+                <div v-if="displayQuestions" class="col-span-1 border border-gray-300 rounded-lg max-h-50 bg-gray-50 overflow-y-auto custom-scrollbar">
+                  <div v-for="(item, itemIndex) in questions.FAQs" :key="itemIndex" class="mb-3">
+                    <h1 class="w-full bg-white py-2 pl-6 mb-2 font-bold uppercase text-xl text-maurealty-blue">{{ item.type }}</h1>
+                    <div class="grid grid-cols-1 justify-items-start px-3">
+                      <button v-for="(q, qIndex) in item.questionList"
+                        type="button"
+                        :key="qIndex" 
+                        class="flex gap-2.5 items-center text-md text-gray-700 pl-4 py-1.5 hover:bg-maurealty-blue/15 hover:font-semibold hover:text-lg transition-all w-full border-gray-200 cursor-pointer"
+                        :class="(qIndex < item.questionList.length - 1) ? 'border-b' : ''"
+                        @click="addQuestion(q.question)">
+                          <PlusIcon class="size-5" /> {{ q.question }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
               
-              <div v-if="displayFAQMarkdown" class="prose max-w-none w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
-              
-              <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
+              <p class="text-sm text-gray-500 italic">Note: FAQs follows the Markdown format, read 
                 <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
               for formatting options</p>
           </div>
@@ -508,7 +534,7 @@
           </div>
           
           <div class="flex col-span-2 justify-end gap-4 mt-8">
-              <button type="button" @click="goBack" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition">
+              <button type="button" @click="goBack" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition cursor-pointer">
                 CANCEL
               </button>
               <button type="submit" class="px-8 py-3 bg-maurealty-blue text-white font-bold rounded-full shadow-md hover:bg-opacity-90 hover:bg-[#045fa3] active:bg-white active:text-maurealty-blue border border-maurealty-blue transition flex items-center gap-2 cursor-pointer">
@@ -530,7 +556,7 @@ import { listingsService } from '@/services/listingsServices';
 import { authService } from '@/services/authService'; // just for getting agent_ID
 
 // maps stuff
-import { MapIcon, UploadIcon, XIcon } from 'lucide-vue-next';
+import { MapIcon, PlusIcon, UploadIcon, XIcon } from 'lucide-vue-next';
 import MapInteractive from '@/components/listings/MapInteractive.vue';
 const displayMaps = ref(false);
 
@@ -558,11 +584,18 @@ function toggleDescriptionMarkdown() {
 }
 
 // for the FAQ stuff
+import questions from '@/assets/questions.json'
 const displayFAQMarkdown = ref(false);
+const displayQuestions = ref(false);
 
 function toggleFAQMarkdown() {
   displayFAQMarkdown.value = !displayFAQMarkdown.value;
   console.log("FAQ Markdown display status: " + displayFAQMarkdown.value);
+}
+
+function toggleQuestions() {
+  displayQuestions.value = !displayQuestions.value;
+  console.log("Question display status: " + displayQuestions.value);
 }
 
 // Combine all interfaces for the form state
@@ -708,7 +741,7 @@ const form = ref<Partial<PropertyForm>>({
   description: '',
   status: 'active',
   dev_ID: null,
-  faq: '# FREQUENTLY ASKED QUESTIONS\n\n',
+  faq: '',
   fact_sheet: '',
 
   // House and Lot Defaults
@@ -947,7 +980,8 @@ const saveProperty = async () => {
         latitude: form.value.lat,
         description: form.value.description || 'No description provided.',
         status: form.value.status,
-        dev_ID: form.value.dev_ID
+        dev_ID: form.value.dev_ID,
+        faq: form.value.faq
       };
       let specificData = {};
 
@@ -1057,6 +1091,15 @@ const compiledDescriptionMarkdown = computed(() => {
 const compiledFAQMarkdown = computed(() => {
   return compileMarkdown(form.value.faq)
 });
+
+// to add a selected question into the faq
+function addQuestion(question: string) {
+  if (form.value.faq) {
+    form.value.faq += `\n\n`;
+  }
+
+  form.value.faq += `### ${question}\n- `
+}
 
 // goes back to previous page
 function goBack() {
