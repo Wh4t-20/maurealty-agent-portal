@@ -16,7 +16,7 @@
       <p class="text-xl text-maurealty-blue truncate font-semibold tracking-tight ">{{ details.listing_title }}</p>
       
       <span class="block bg-maurealty-green break-all font-normal text-lg text-white px-3 rounded-full tracking-wider mr-2 mt-0.5">
-        ₱ {{ formattedPrice }}
+          {{ formattedPrice }}
       </span>
       
       <div class="flex items-center gap-1 text-black mt-2">
@@ -37,10 +37,11 @@ import { type Property, formattedPropertyType }  from '@/assets/classes/listings
 import placeholder from '@/assets/images/default_placeholder.png'
 import { MapPin } from 'lucide-vue-next'
 
+import { formatPrice } from '@/utils/conversion.ts';
+
 const props = defineProps<{ details: Property }>()
 
 // Cache formatters for better performance  
-const numberFormatter = new Intl.NumberFormat('en-US')
 const dateFormatter = new Intl.DateTimeFormat('en-US')
 
 function propertyTypeColor(type: string) {
@@ -64,7 +65,7 @@ function propertyTypeColor(type: string) {
 
 // Computed properties for formatted display values
 const displayType = computed(() => formattedPropertyType(props.details.property_type))
-const formattedPrice = computed(() => numberFormatter.format(props.details.price))
+const formattedPrice = computed(() => formatPrice(props.details.price))
 const formattedDate = computed(() => dateFormatter.format(props.details.created_at))
 
 // Returns the database image URL if it exists, otherwise uses the local fallback
