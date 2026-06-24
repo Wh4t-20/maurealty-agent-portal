@@ -71,11 +71,15 @@
                 />
               </div>
               <span 
-                  @click="showAmortization = true" 
-                  class="text-sm text-[#990000] cursor-pointer hover:underline transition-colors"
+                  @click="openAmortization" 
+                  
+                  class="text-sm text-[#64748b] cursor-pointer hover:underline transition-colors"
                 >
                   View Amortization Schedule
               </span>
+              <p v-if="errorMessage" class="mt-2 text-xs text-[#64748b] font-bold animate-pulse text-center">
+                {{ errorMessage }}
+              </p>
               <p class="text-xs text-center text-gray-400 mt-2 ">*Estimated Monthly Payment</p>
             </div>
 
@@ -110,7 +114,20 @@ import amortSched from '@/components/accounting/amortSched.vue'
 
 const calcMode = ref('Loan')
 const showAmortization = ref(false)
+const errorMessage = ref('')
 
+const openAmortization = () => {
+  if (!mortPrice.value || mortPrice.value <= 0 || !mortYears.value || mortYears.value <= 0 || !mortInterest.value || mortInterest.value <= 0) {
+    errorMessage.value = 'Please enter a valid Loan Price, Interest Rate, and Term to view the schedule.'
+    
+    //clears after 3s
+    setTimeout(() => { errorMessage.value = '' }, 3000)
+    return
+  }
+  
+  errorMessage.value = ''
+  showAmortization.value = true
+}
 
 // Formatting Tool
 const formatCurrency = (val: number) => {
