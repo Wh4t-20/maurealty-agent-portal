@@ -226,12 +226,14 @@ const filteredProperties = computed(() => {
 
   const min = Number(priceMin.value)
   if (priceMin.value !== "" && !Number.isNaN(min)) {
-    result = result.filter(p => p.price >= min)
+    const dbMin = convertPriceToPHP(min);
+    result = result.filter(p => p.price >= dbMin)
   }
 
   const max = Number(priceMax.value)
   if (priceMax.value !== "" && !Number.isNaN(max)) {
-    result = result.filter(p => p.price <= max)
+    const dbMax = convertPriceToPHP(max);
+    result = result.filter(p => p.price <= dbMax)
   }
 
   return result
