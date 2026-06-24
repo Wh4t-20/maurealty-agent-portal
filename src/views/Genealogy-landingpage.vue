@@ -45,20 +45,21 @@
           <div class="bg-[#C8DDF64A] p-4 rounded-xl shadow border-l-4 border-blue-500">
             Total Agents<br><b>300</b>
           </div>
-          <div class="bg-[#C8DDF64A] p-4 rounded-xl border-l-4 border-blue-500 shadow">
+          <div class="bg-[#c8ddf6b7] p-4 rounded-xl border-l-4 border-blue-500 shadow">
             Team Leaders<br><b>50</b>
           </div>
-          <div class="bg-[#C8DDF64A] p-4 rounded-xl border-l-4 border-blue-500 shadow">
+          <div class="bg-[#c8ddf6b7] p-4 rounded-xl border-l-4 border-blue-500 shadow">
             Active Teams<br><b>60</b>
           </div>
-          <div class="bg-[#C8DDF64A] p-4 rounded-xl border-l-4 border-blue-500 shadow">
+          <div class="bg-[#c8ddf6b7] p-4 rounded-xl border-l-4 border-blue-500 shadow">
             New This Month<br><b>0</b>
           </div>
         </div>
   
         <!-- CONTENT -->
+        <section class="custom-scrollbar h-full overflow-y-auto">
         <div class="grid grid-cols-2 gap-6">
-  
+          
           <!-- TOP TEAM -->
           <div class="bg-white p-8 rounded-xl shadow">
             <h2 class="font-bold mb-4">TOP PERFORMING TEAM</h2>
@@ -76,7 +77,7 @@
               </div>
             </div>
           </div>
-  
+          
           <!-- RECENT -->
           <div class="bg-white p-8 rounded-xl shadow">
             <h2 class="font-bold mb-4">RECENTLY ADDED</h2>
@@ -94,13 +95,17 @@
               </div>
             </div>
           </div>
-  
+        
         </div>
+      </section>
   
       </div>
+    <Gen /> 
     </div>
   </template>
-<script lang="ts">
+<script setup lang ="ts">
+
+import Gen  from '@/components/genealogymodal.vue'
 </script>
 
 
