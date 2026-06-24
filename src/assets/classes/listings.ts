@@ -7,11 +7,15 @@ export interface Property {
     price: number;
     commission: number;
     location: string;
+    lng: number;
+    lat: number;
     description: string;
     created_at: Date;
-    is_active: boolean;
+    status: string;
     developer_name: string;
     image_url?: string;
+    faq: string;
+    fact_sheet?: string;
 }
 
 // lot only interface
@@ -67,4 +71,21 @@ export interface Images {
     image_url: string;
     display_order: number;
     created_at: number;
+}
+
+export function formattedPropertyType (type: string) {
+  if (type === 'house_and_lot')
+    return 'House and Lot'
+  else if (type === 'lot_only')
+    return 'Lot Only'
+  else if (type === 'condominium')
+    return 'Condominium'
+  else if (type === 'memorial')
+    return 'Memorial'
+  else if (type === 'clubshare')
+    return 'Clubshare'
+  else if (type === 'golfshare')
+    return 'Golfshare'
+  else
+    return 'N/A'
 }

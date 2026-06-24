@@ -10,7 +10,7 @@
         </ListboxButton>
 
         <transition
-          enter-active-class="transition duration-100 ease-out"
+            enter-active-class="transition duration-100 ease-out"
             enter-from-class="transform scale-95 opacity-0"
             enter-to-class="transform scale-100 opacity-100"
             leave-active-class="transition duration-75 ease-out"
@@ -53,8 +53,15 @@
 // https://headlessui.com/v1/vue/listbox
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import { ChevronDown } from 'lucide-vue-next';
+import { computed } from 'vue'
 
 import { ref } from 'vue'
-const props = defineProps<{ choices: string[] }>()
-let currentChoice = ref(props.choices[0] || "None")
+const props = defineProps<{ choices: string[], modelValue: string }>()
+
+const emit = defineEmits(['update:modelValue'])
+
+const currentChoice = computed({
+  get: () => props.modelValue,
+  set: (value) => emit('update:modelValue', value)
+})
 </script>

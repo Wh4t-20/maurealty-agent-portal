@@ -1,29 +1,62 @@
 <template>
-  <div class="login-container">
-    <div class="login-header">
-      <img src="@/assets/images/maureal.png"></img>
-    </div>
-
-    <div class="login-form">
-      <h3>LOGIN PORTAL</h3>
+  <div 
+    class="min-h-screen w-screen m-0 p-6 box-border flex items-center justify-center bg-cover bg-center bg-no-repeat font-[Arial,sans-serif]"
+    :style="{ backgroundImage: `linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.6) 30%, rgba(255, 255, 255, 0.1) 100%), linear-gradient(0deg, rgba(0, 77, 122, 0.9) 0%, rgba(0, 77, 122, 0.6) 80%, rgba(0, 77, 122, 0.1) 100%), url('/src/assets/images/LoginFormBG.png')` }"
+  >
+    <div class="w-full flex flex-col items-center -mt-30">
       
-      <div class="input-group">
-        <input type="text" v-model="username" placeholder="Username">
+      <div class="flex justify-center items-center">
+        <img 
+          src="@/assets/images/maureal.png" 
+          alt="Maurealty Logo" 
+          class="w-105 max-w-full h-auto object-contain max-[480px]:w-37.5" 
+        />
       </div>
 
-      <div class="input-group">
-        <input type="password" v-model="password" placeholder="Password">
-      </div>
+      <div class="w-full max-w-105 bg-white/80 rounded-2xl p-[32px_28px] box-border shadow-[0_20px_50px_rgba(0,0,0,0.25)] max-[480px]:p-[24px_18px] max-[480px]:rounded-xl">
+        
+        <form @submit.prevent="handleLogin">
+          <h1 class="text-center m-0 mb-6 text-[1.6rem] font-bold text-[#111827] max-[480px]:text-[1.35rem]">LOGIN PORTAL</h1>
 
-      <button class="signin-btn" @click="handleLogin">Sign In</button>
+          <div class="mb-4">
+            <input
+              type="text"
+              v-model="email"
+              placeholder="Email"
+              autocomplete="email"
+              class="w-full p-[13px_14px] border border-[#d1d5db] rounded-[10px] box-border text-[1rem] text-[#111827] bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-[#27ae60] focus:shadow-[0_0_0_3px_rgba(39,174,96,0.15)]"
+            />
+          </div>
 
-      <div class="remember-me">
-        <input type="checkbox" v-model="rememberMe">
-        <label>Remember username</label>
-      </div>
+          <div class="mb-4">
+            <input
+              type="password"
+              v-model="password"
+              placeholder="Password"
+              autocomplete="current-password"
+              class="w-full p-[13px_14px] border border-[#d1d5db] rounded-[10px] box-border text-[1rem] text-[#111827] bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-[#27ae60] focus:shadow-[0_0_0_3px_rgba(39,174,96,0.15)]"
+            />
+          </div>
 
-      <div class="privacy-notice">
-        <a href="#">Data Privacy Act</a>
+          <p v-if="errorMessage" class="text-red-500 text-sm mb-3 text-center">{{ errorMessage }}</p>
+
+          <button 
+            type="submit" 
+            :disabled="isLoading"
+            class="w-full p-3.25 mt-1 border-none rounded-[10px] bg-[#27ae60] text-white text-[1rem] font-semibold cursor-pointer transition-[background,transform] duration-200 hover:bg-[#219150] hover:-translate-y-px disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {{ isLoading ? 'Signing In...' : 'Sign In' }}
+          </button>
+
+          <div class="flex items-center gap-2 mt-4 text-[#4b5563] text-[0.95rem]">
+            <input id="rememberMe" type="checkbox" v-model="rememberMe" />
+            <label for="rememberMe">Remember Email</label>
+          </div>
+
+          <div class="text-center mt-4.5 text-[0.9rem]">
+            <a href="#" class="text-[#27ae60] no-underline hover:underline">Data Privacy Act</a>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -32,114 +65,38 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { supabase } from '../supabaseClient'
 
 const router = useRouter()
-const username = ref('')
+
+const email = ref('')
 const password = ref('')
 const rememberMe = ref(false)
+const errorMessage = ref('')
+const isLoading = ref(false)
 
-const handleLogin = () => {
-  // Login logic here
-  router.push('/dashboard')
+const handleLogin = async () => {
+  errorMessage.value = ''
+  isLoading.value = true
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.value,
+      password: password.value,
+    })
+
+    if (error) {
+      errorMessage.value = error.message
+      return
+    }
+
+    if (data.user) {
+      router.push('/listings')
+    }
+  } catch (err: any) {
+    errorMessage.value = 'An unexpected error occurred.'
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
-
-<style scoped>
-.login-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: white;
-  font-family: 'Arial', sans-serif;
-}
-
-.login-header {
-  text-align: center;
-  height: 300px;
-  width: 300px;
-  margin-bottom: -200px;
-}
-
-.subtitle {
-  font-size: 0.9rem;
-  opacity: 0.8;
-}
-
-.login-form {
-  background: white;/*rgba(255, 255, 255, 0.1);*/
-  padding: 2.5rem;
-  border-radius: 5px;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  width: 300px;
-  height: 350px;
-  max-width: 90%;
-}
-
-.login-form h3 {
-  text-align: center;
-  margin-top: -20px;
-  margin-bottom: 10px;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: black;
-}
-
-.input-group {
-  margin-bottom: 1rem;
-  color: gray;
-  border: solid, gray;
-  border-radius: 10px;
-  width: 250px;
-  display: flex;
-  margin-left: -16px;
-}
-
-.input-group input {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.9);
-  font-size: 1rem;
-}
-
-.remember-me {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-  color: gray;
-  padding: 20px;
-  margin-left: -25px;
-}
-
-.signin-btn {
-  padding: 12px;
-  background: #27ae60;
-  color: white;
-  border: solid, gray;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 1;
-  cursor: pointer;
-  transition: transform 0.2s;
-  width: 250px;
-  margin-left: -16px;
-}
-
-.signin-btn:hover {
-  transform: translateY(-2px);
-}
-
-.privacy-notice {
-  text-align: center;
-  margin-top: -40px;
-  font-size: 0.9rem;
-  opacity: 0.7;
-  color: gray;
-}
-</style>
