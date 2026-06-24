@@ -21,6 +21,8 @@
     "@tailwindcss/vite": "^4.1.18",
     "chart.js": "^4.5.1",
     "dompurify": "^3.4.8",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide": "^0.563.0",
     "lucide-vue-next": "^0.563.0",
     "mapbox-gl": "^3.24.0",

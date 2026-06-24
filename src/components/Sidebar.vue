@@ -25,8 +25,7 @@
   
     <!-- TOP NAV -->
 
-    <div class="flex flex-col overflow-y-auto space-y-2 px-3">
-      <router-link
+    <div class="flex flex-col overflow-y-auto space-y-2 px-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">      <router-link
         v-for="item in topItems"
         :key="item.id"
         :to="item.path"

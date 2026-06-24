@@ -3,29 +3,33 @@
     
     <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky top-0 z-20">
       <div class="flex justify-between items-center w-full pb-3 mb-3">
-        <h1 class="text-3xl font-bold uppercase">Sales</h1>
+        <h1 class="text-3xl font-bold uppercase">Accounting</h1>
         <div class="flex gap-5 h-full">
           </div>
       </div>
     </header>
 
-    <main class="flex-1 p-8 md:p-10 overflow-y-auto">
+    <main class="flex-1 p-8 md:p-10 overflow-y-auto flex items-center justify-center">
       
       <div class="accounting-layout">
         
         <div class="flex flex-col gap-6">
           
-          <div class="card calculator">
+          <div class="card calculator ">
             <h2 class="card-title">CALCULATOR</h2>
 
             <div class="calc-header">
               <label class="calc-label">{{ calcMode }} Calculator:</label>
               <select v-model="calcMode" class="calc-dropdown">
                 <option value="Sales">Sales</option>
-                <option value="Mortgage">Mortgage</option>
+                <option value="Loan">Loan</option>
                 <option value="Taxes">Property Tax</option>
               </select>
             </div>
+            
+            <label class="calc-label block mb-2 text-sm text-[#64748b]">
+              {{ calcMode === 'Loan' ? 'Monthly Payment:' : calcMode === 'Sales' ? 'Net Commission' : ''  }}
+            </label>
 
             <div class="calc-display">
               <span class="peso-symbol">₱</span>
@@ -47,14 +51,10 @@
               </div>
             </div>
 
-            <div v-if="calcMode === 'Mortgage'" class="calc-inputs">
+            <div v-if="calcMode === 'Loan'" class="calc-inputs">
               <div class="input-pair">
-                <label>Property Price (₱)</label>
+                <label>Loan Price (₱)</label>
                 <input type="number" v-model.number="mortPrice" />
-              </div>
-              <div class="input-pair">
-                <label>Downpayment (%)</label>
-                <input type="number" v-model.number="mortDownPercent" />
               </div>
               <div class="input-pair">
                 <label>Interest Rate (Annual %)</label>
@@ -62,9 +62,21 @@
               </div>
               <div class="input-pair">
                 <label>Loan Term (Years)</label>
-                <input type="number" v-model.number="mortYears" />
+                <input 
+                  type="number" 
+                  v-model.number="mortYears" 
+                  min="1" 
+                  max="20" 
+                  @input="mortYears > 20 ? mortYears = 20 : mortYears" 
+                />
               </div>
-              <p class="text-xs text-center text-gray-400 mt-2">*Estimated Monthly Payment</p>
+              <span 
+                  @click="showAmortization = true" 
+                  class="text-sm text-[#990000] cursor-pointer hover:underline transition-colors"
+                >
+                  View Amortization Schedule
+              </span>
+              <p class="text-xs text-center text-gray-400 mt-2 ">*Estimated Monthly Payment</p>
             </div>
 
             <div v-if="calcMode === 'Taxes'" class="calc-inputs">
@@ -78,99 +90,27 @@
               </div>
             </div>
           </div>
-
-          <div class="card notices">
-            <h2 class="card-title red">RED FLAG NOTICES</h2>
-            <div class="notice">
-              <span class="flag">🚩</span>
-              <span class="text">Lacking Voucher</span>
-              <span class="date">09/15/2025</span>
-            </div>
-            <div class="notice">
-              <span class="flag">🚩</span>
-              <span class="text">Wrong Expenses L.</span>
-              <span class="date">09/15/2025</span>
-            </div>
-            <div class="notice">
-              <span class="flag">🚩</span>
-              <span class="text">Quota Due Coming</span>
-              <span class="date">08/15/2025</span>
-            </div>
-          </div>
         </div>
 
-        <div class="flex flex-col gap-6">
-          
-          <div class="card expenses">
-            <h2 class="card-title">MONTHLY EXPENSES</h2>
-
-            <div class="expenses-header">
-              <div class="filters">
-                <label class="text-sm font-semibold text-gray-600">Filters:</label>
-                <select class="filter-select">
-                  <option>Ascending</option>
-                  <option>Descending</option>
-                </select>
-                <select class="filter-select">
-                  <option>Type</option>
-                  <option>Fixed</option>
-                  <option>Utilities</option>
-                  <option>Taxes</option>
-                </select>
-              </div>
-              <span class="search-icon">🔍</span>
-            </div>
-
-            <div class="expense-row">
-              <span class="type">Fixed</span>
-              <span class="amount">₱ 10,000,000.00</span>
-            </div>
-            <div class="expense-row">
-              <span class="type">Utilities</span>
-              <span class="amount negative">-₱ 10,000,000.00</span>
-            </div>
-            <div class="expense-row">
-              <span class="type">Taxes</span>
-              <span class="amount negative">-₱ 9,876,543.21</span>
-            </div>
-          </div>
-
-          <div class="card checks">
-            <h2 class="card-title">CHECKS</h2>
-            <div class="list-item">110145162157 <span class="info">ⓘ</span></div>
-            <div class="list-item">103157154145 <span class="info">ⓘ</span></div>
-            <div class="list-item">103141162154 <span class="info">ⓘ</span></div>
-          </div>
-
-          <div class="card receipts">
-            <h2 class="card-title">RECEIPTS</h2>
-            <div class="list-item">
-              <span class="code">TWFltUmVhbHR5</span>
-              <span class="date">09/15/2025</span>
-              <span class="info">ⓘ</span>
-            </div>
-            <div class="list-item">
-              <span class="code">QmlsbHlfKZWU</span>
-              <span class="date">08/27/2025</span>
-              <span class="info">ⓘ</span>
-            </div>
-            <div class="list-item">
-              <span class="code">emVyby96ZXJv</span>
-              <span class="date">06/31/2025</span>
-              <span class="info">ⓘ</span>
-            </div>
-          </div>
-          
-        </div>
       </div>
     </main>
+    <amortSched 
+        v-if="showAmortization" 
+        :principal="mortPrice" 
+        :years="mortYears" 
+        :interest="mortInterest"
+        @close="showAmortization = false" 
+      />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import amortSched from '@/components/accounting/amortSched.vue'
 
-const calcMode = ref('Sales')
+const calcMode = ref('Loan')
+const showAmortization = ref(false)
+
 
 // Formatting Tool
 const formatCurrency = (val: number) => {
@@ -182,6 +122,8 @@ const totalSales = ref()
 const commRate = ref()
 const taxRate = ref()
 
+
+
 const salesTotal = computed(() => {
   const gross = totalSales.value * (commRate.value / 100)
   const tax = gross * (taxRate.value / 100)
@@ -189,13 +131,13 @@ const salesTotal = computed(() => {
 })
 
 const mortPrice = ref()
-const mortDownPercent = ref()
 const mortInterest = ref()
 const mortYears = ref()
 
 const mortTotal = computed(() => {
-  const principal = mortPrice.value * (1 - (mortDownPercent.value / 100))
-  const monthlyInterestRate = (mortInterest.value / 100) / 12
+  const principal = mortPrice.value || 0
+  const annualInterestRate = mortInterest.value
+  const monthlyInterestRate = (annualInterestRate / 100) / 12  
   const totalPayments = mortYears.value * 12
 
   if (monthlyInterestRate === 0) return principal / totalPayments
@@ -213,7 +155,7 @@ const taxTotal = computed(() => {
 
 const displayedTotal = computed(() => {
   if (calcMode.value === 'Sales') return formatCurrency(salesTotal.value)
-  if (calcMode.value === 'Mortgage') return formatCurrency(mortTotal.value)
+  if (calcMode.value === 'Loan') return formatCurrency(mortTotal.value)
   if (calcMode.value === 'Taxes') return formatCurrency(taxTotal.value)
   return '0.00'
 })
@@ -237,17 +179,18 @@ input[type=number] {
   display: grid;
   grid-template-columns: 1fr; /* Stacks on mobile */
   gap: 1.5rem;
-  max-width: 1400px;
+  max-width: 600px;
+  width: 100%;
   margin: 0 auto;
 }
 
-/* Side-by-side on larger screens */
 @media (min-width: 1024px) {
   .accounting-layout {
-    grid-template-columns: 1.3fr 1fr;
+    max-width: 900px;
+    width: 100%;
+    height: -webkit-fill-available;
   }
 }
-
 /* ============= CARDS ============= */
 .card {
   background: #fff;
