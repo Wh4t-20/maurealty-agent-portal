@@ -3,7 +3,7 @@
       class=" top-0 left-0 h-screen bg-maurealty-blue 
              flex flex-col py-6 shadow-lg
              transition-all duration-300
-             w-20 hover:w-90 group overflow-hidden sticky"
+             w-20 hover:w-90 group overflow-hidden sticky z-10"
     >
     <div class="flex flex-col items-center ">
         <img src="@/assets/images/Maurealty.png" alt="MauRealty Logo" class="w-3/5 h-auto " />

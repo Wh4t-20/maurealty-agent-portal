@@ -47,7 +47,22 @@ export interface Genealogy {
             middle_name: "Anthony",
             last_name: "Retutal",
             position: "Property Advisor",
-            children: [],
+            children: [
+              {
+                first_name: "Russell",
+                middle_name: "Lorenz",
+                last_name: "Beduyas",
+                position: "Investment Manager",
+                children: [],
+              },
+              {
+                first_name: "Russell",
+                middle_name: "Lorenz",
+                last_name: "Beduyas",
+                position: "Investment Manager",
+                children: [],
+              },
+            ],
           },
         ],
       },
