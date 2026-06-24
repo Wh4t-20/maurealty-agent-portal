@@ -843,7 +843,7 @@ const saveProperty = async () => {
         agent_ID: currentAgentId.value,
         listing_title: form.value.listing_title,
         property_type_ID: propertyTypeId,
-        price: form.value.price,
+        price: convertPriceToPHP(Number(form.value.price)) || 0,
         commission: form.value.commission,
         location: form.value.location,
         longitude: form.value.lng,
@@ -863,8 +863,8 @@ const saveProperty = async () => {
           "2_storey": form.value.two_storey, 
           townhomes: form.value.townhome,
           rowhouse: form.value.rowhouse,
-          lot_area: form.value.lot_area,
-          floor_area: form.value.floor_area,
+          lot_area: convertAreaToSqm(Number(form.value.lot_area) || 0),
+          floor_area: convertAreaToSqm(Number(form.value.floor_area) || 0),
           rooms_count: form.value.room_count, 
           toilets_count: form.value.toilet_count, 
           helper_rooms_count: form.value.helper_room_count,
@@ -877,7 +877,7 @@ const saveProperty = async () => {
           block_number: String(form.value.block_number), 
           lot_number: String(form.value.lot_number),
           phase_number: String(form.value.phase_number),
-          lot_area: form.value.area, 
+          lot_area: convertAreaToSqm(Number(form.value.area) || 0), 
           lot_class_ID: lotClassMap[form.value.class || 'Residential'] || 1
         };
       } else if (propertyTypeId === 3) { // Condominium
