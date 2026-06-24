@@ -133,7 +133,7 @@
                       <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Phase No. <b>{{ details.phase_number }}</b></span>  
                     </div>
                     <div>
-                      <span class="flex items-center-safe gap-1"><SquareDashed /> {{ formatArea(details.lot_area) }} sqm</span>
+                      <span class="flex items-center-safe gap-1"><SquareDashed /> {{ formatArea(details.lot_area) }} </span>
                     </div>
                   </div>
                   
