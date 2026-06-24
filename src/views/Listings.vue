@@ -183,6 +183,9 @@ import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 import { listingsService } from '@/services/listingsServices'
 import { developerService } from '@/services/developerService'
 
+// utiities
+import { currentCurrency, currentUnit, convertPriceToPHP, currencySymbols } from '@/utils/conversion.ts'
+
 import { ChevronDown, Plus } from 'lucide-vue-next'
 
 const properties = shallowRef<Property[]>([])
@@ -196,6 +199,9 @@ const priceMax = ref("")
 
 const selectedDeveloper = ref("None")
 const developerChoices = ref<string[]>(["None"])
+
+const currencies = ['PHP', 'USD', 'CAD', 'CNY', 'JPY'];
+const units = ['Metric', 'English'];
 
 const filteredProperties = computed(() => {
   let result = properties.value
