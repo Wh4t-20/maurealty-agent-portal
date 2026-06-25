@@ -101,11 +101,11 @@
     
               <div class="col-span-1">
                 <label class="block text-sm font-bold text-maurealty-blue mb-1">Price ({{ currentCurrency }})</label>
-                <input type="number" v-model="form.price" class="w-full border border-gray-300 bg-white rounded-lg p-3">
+                <input type="number" step="0.01" v-model="form.price" class="w-full border border-gray-300 bg-white rounded-lg p-3">
               </div>
               <div class="col-span-1">
                 <label class="block text-sm font-bold text-maurealty-blue mb-1">Commission (%)</label>
-                <input type="number" v-model="form.commission" class="w-full border border-gray-300 bg-white rounded-lg p-3">
+                <input type="number" step="any" v-model="form.commission" class="w-full border border-gray-300 bg-white rounded-lg p-3">
               </div>
 
               <div class="col-span-2">
@@ -213,15 +213,19 @@
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Lot Area</label>
-                    <input type="number" v-model="form.lot_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" step="any" v-model="form.lot_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Floor Area</label>
-                    <input type="number" v-model="form.floor_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" step="any" v-model="form.floor_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Rooms</label>
                     <input type="number" v-model="form.room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Master Bedroom Area</label>
+                    <input type="number" step="any" v-model="form.master_bedroom_area" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Toilets</label>
@@ -229,13 +233,13 @@
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Helper Rms</label>
-                    <input type="number" v-model="form.helper_room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.helper_rooms_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Driver Rms</label>
-                    <input type="number" v-model="form.driver_room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.driver_rooms_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
-                  <div class="col-span-2">
+                  <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Carpark Spaces</label>
                     <input type="number" v-model="form.carpark_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
@@ -289,7 +293,7 @@
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Area</label>
-                    <input type="number" v-model="form.area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" step="any" v-model="form.area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                 
                   <div class="cols-2 md:col-span-4">
@@ -360,6 +364,10 @@
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Carpark Count</label>
                     <input type="number" v-model="form.carpark_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Master Bedroom Area</label>
+                    <input type="number" step="any" v-model="form.master_bedroom_area" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
 
                   <div class="cols-2 md:col-span-4">
@@ -665,9 +673,10 @@ const loadProperties = async () => {
         form.value.floor_area = Number(convertArea(subTableData.floor_area).toFixed(2));
         form.value.room_count = subTableData.rooms_count; // UI: room_count, DB: rooms_count
         form.value.toilet_count = subTableData.toilets_count;
-        form.value.helper_room_count = subTableData.helper_rooms_count;
-        form.value.driver_room_count = subTableData.driver_rooms_count;
+        form.value.helper_rooms_count = subTableData.helper_rooms_count;
+        form.value.driver_rooms_count = subTableData.driver_rooms_count;
         form.value.carpark_count = subTableData.carpark_count;
+        form.value.master_bedroom_area = subTableData.master_bedroom_area;
 
       } else if (propertyType === 2) { // Lot Only
         const lotClassReverseMap: Record<number, string> = { 1: 'Residential', 2: 'Commercial', 3: 'Industrial', 4: 'Farm Lot' };
@@ -686,6 +695,7 @@ const loadProperties = async () => {
         form.value.carpark_count = subTableData.carpark_count;
         form.value.balcony_count = subTableData.balcony_count;
         form.value.bedroom_count = subTableData.bedroom_count;
+        form.value.master_bedroom_area = subTableData.master_bedroom_area;
         
         // Radio buttons
         form.value.is_studio_type = subTableData.is_studio_type;
@@ -754,9 +764,10 @@ const form = ref<Partial<PropertyForm>>({
   floor_area: 0,
   room_count: 0,
   toilet_count: 0,
-  helper_room_count: 0,
-  driver_room_count: 0,
+  helper_rooms_count: 0,
+  driver_rooms_count: 0,
   carpark_count: 0,
+  master_bedroom_area: 0,
 
   // Lot Only Defaults
   block_number: 0,
@@ -900,9 +911,10 @@ const saveProperty = async () => {
           floor_area: convertAreaToSqm(Number(form.value.floor_area) || 0),
           rooms_count: form.value.room_count, 
           toilets_count: form.value.toilet_count, 
-          helper_rooms_count: form.value.helper_room_count,
-          driver_rooms_count: form.value.driver_room_count,
-          carpark_count: form.value.carpark_count
+          helper_rooms_count: form.value.helper_rooms_count,
+          driver_rooms_count: form.value.driver_rooms_count,
+          carpark_count: form.value.carpark_count,
+          master_bedroom_area: form.value.master_bedroom_area
         };
       } else if (propertyTypeId === 2) { // Lot only
         const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
@@ -925,7 +937,8 @@ const saveProperty = async () => {
           is_garden_villa: form.value.is_garden_villa,
           is_penthouse: form.value.is_penthouse,
           balcony_count: form.value.balcony_count,
-          bedroom_count: form.value.bedroom_count
+          bedroom_count: form.value.bedroom_count,
+          master_bedroom_area: form.value.master_bedroom_area
         };
       } else if (propertyTypeId === 4) { // Memorial
         specificData = {
@@ -996,9 +1009,10 @@ const saveProperty = async () => {
           floor_area: form.value.floor_area,
           rooms_count: form.value.room_count, 
           toilets_count: form.value.toilet_count, 
-          helper_rooms_count: form.value.helper_room_count,
-          driver_rooms_count: form.value.driver_room_count,
-          carpark_count: form.value.carpark_count
+          helper_rooms_count: form.value.helper_rooms_count,
+          driver_rooms_count: form.value.driver_rooms_count,
+          carpark_count: form.value.carpark_count,
+          master_bedroom_area: form.value.master_bedroom_area
         };
       } else if (propertyTypeId === 2) { 
         const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
@@ -1021,7 +1035,8 @@ const saveProperty = async () => {
           is_garden_villa: form.value.is_garden_villa,
           is_penthouse: form.value.is_penthouse,
           balcony_count: form.value.balcony_count,
-          bedroom_count: form.value.bedroom_count
+          bedroom_count: form.value.bedroom_count,
+          master_bedroom_area: form.value.master_bedroom_area
         };
       } else if (propertyTypeId === 4) { 
         specificData = {

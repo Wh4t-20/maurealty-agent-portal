@@ -93,17 +93,18 @@
                     <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ formatArea(details.floor_area) }}</span>
                     <span class="flex items-center-safe gap-1"><Sofa /> {{ details.rooms_count }} room{{ details.rooms_count != 1 ? 's' : '' }}</span>
                     <span class="flex items-center-safe gap-1"><Toilet /> {{ details.toilets_count }} toilet{{ details.s_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1 col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
                   </div>
     
                   <span class="flex items-center-safe justify-around pr-2 mt-3">
                     <p class="flex items-center-safe gap-1" v-if="details.helper_rooms_count > 0">
                       <BrushCleaning class="size-4" /> {{ details.helper_rooms_count }} helper room{{ details.helper_rooms_count != 1 ? 's' : '' }}
                     </p>
-                    <p v-if="details.driver_room_count > 0 || details.carpark_count > 0">|</p>
+                    <p v-if="(details.driver_rooms_count > 0 && details.helper_rooms_count > 0)">|</p>
                     <p class="flex items-center-safe gap-1" v-if="details.driver_rooms_count > 0">
                       <LifeBuoy class="size-3" /> {{ details.driver_rooms_count }} driver room{{ details.driver_rooms_count != 1 ? 's' : '' }}
                     </p> 
-                    <p v-if="details.carpark_count > 0">|</p>
+                    <p v-if="(details.helper_rooms_count > 0  || details.driver_rooms_count > 0) && details.carpark_count > 0">|</p>
                     <p class="flex items-center-safe gap-1" v-if="details.carpark_count > 0">
                       <Car class="size-4" /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}
                     </p>
@@ -149,14 +150,15 @@
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue">Condominium Features</legend>
                 <main class="text-sm px-2 flex flex-col">
-                  <div class="grid grid-cols-2">
+                  <div class="grid grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><Hash /> Unit No. <b>{{ details.unit_number }}</b></span>
-                    <span class="flex items-center-safe gap-1"><BedDouble /> {{ details.bedroom_count }} bedroom{{ details.carpark_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1"><Bed /> {{ details.bedroom_count }} bedroom{{ details.carpark_count != 1 ? 's' : '' }}</span>
                     <span class="flex items-center-safe gap-1"><BookImage /> {{ details.balcony_count }} balcon{{ details.carpark_count != 1 ? 'ies' : 'y' }}</span>
                     <span class="flex items-center-safe gap-1"><Car /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1 col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
                   </div>
                   
-                  <div class="mt-2 flex gap-2">
+                  <div class="mt-4 flex gap-2">
                     <p class="font-bold text-xl text-maurealty-blue">Class:</p>
                     <p class="text-xl">{{ condoClassesMap[details.condo_class_ID] || 'N/A' }}</p>
                   </div>
@@ -243,7 +245,7 @@ import placeholder from '@/assets/images/default_placeholder.png'
 
 import { formatPrice, formatArea } from '@/utils/conversion.ts';
 
-import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink, BadgeCheck, DownloadIcon} from "lucide-vue-next";
+import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink, BadgeCheck, DownloadIcon, Bed} from "lucide-vue-next";
 
 const props = defineProps<{ 
   prop_id: number,
