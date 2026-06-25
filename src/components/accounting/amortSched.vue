@@ -1,5 +1,5 @@
 <template>
-    <div @click.self="$emit('close')" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-center items-center p-4 md:p-8 ">
+    <div @click.self="$emit('close')" class="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-center items-center p-4 md:p-8 ">
     
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden">
       
@@ -41,31 +41,31 @@
         <table class="w-full text-center border-collapse border border-gray-200">
             <thead class="sticky top-0 bg-white shadow-sm z-10 text-[#475569] text-sm font-semibold">
             <tr>
-                <th class="border-t-2 py-4 px-3 border border-gray-200 w-1/12 whitespace-normal break-words">
+                <th class="border-t-2 py-4 px-3 border border-gray-200 w-1/12 whitespace-normal wrap-break-word">
                 Month
                 </th>
                 
-                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal break-words">
+                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
                 Due Date
                 </th>
                 
-                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal break-words">
+                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
                 Monthly Payment
                 </th>
                 
-                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal break-words">
+                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
                 Interest Due
                 </th>
                 
-                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal break-words">
+                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
                 Principal Payment
                 </th>
                 
-                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal break-words">
+                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
                 Outstanding<br/>Principal Balance
                 </th>
                 
-                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-1/12 whitespace-normal break-words">
+                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-1/12 whitespace-normal wrap-break-word">
                 Days
                 </th>
             </tr>

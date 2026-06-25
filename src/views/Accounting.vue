@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full flex flex-col min-h-screen bg-[#f6f7fb]">
+  <div class="relative w-full flex flex-col min-h-screen bg-[#f6f7fb]">
     
     <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky top-0 z-20">
       <div class="flex justify-between items-center w-full pb-3 mb-3">
