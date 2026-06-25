@@ -116,9 +116,9 @@ const isAdmin = computed(() => {
     { id: 2, icon: LayoutList, path: "/listings", label: "Project Listing" },
     { id: 3, icon: Calculator, path: "/accounting", label: "Accounting" },
     { id: 9, icon: ReceiptText, path: "/sales", label: "Sales Report" },
-    { id: 4, icon: Ticket, path: "/voucher", label: "Voucher" },
-    { id: 5, icon: Mail, path: "/inbox", label: "Inbox" },
-    { id: 6, icon: Trophy, path: "/leaderboards", label: "Leaderboards" },
+    // { id: 4, icon: Ticket, path: "/voucher", label: "Voucher" },
+    // { id: 5, icon: Mail, path: "/inbox", label: "Inbox" },
+    // { id: 6, icon: Trophy, path: "/leaderboards", label: "Leaderboards" },
     { id: 7, icon: ContactRound, path: "/developerlist", label: "Developer List" },
     { id: 8, icon: SquareChartGantt, path: "/propertymanagement", label: "Property Management"},
     { id: 9, icon: Network, path: "/genealogy", label: "Genealogy" }

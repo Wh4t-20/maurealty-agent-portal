@@ -101,11 +101,11 @@
     
               <div class="col-span-1">
                 <label class="block text-sm font-bold text-maurealty-blue mb-1">Price ({{ currentCurrency }})</label>
-                <input type="number" v-model="form.price" class="w-full border border-gray-300 bg-white rounded-lg p-3">
+                <input type="number" step="0.01" v-model="form.price" class="w-full border border-gray-300 bg-white rounded-lg p-3">
               </div>
               <div class="col-span-1">
                 <label class="block text-sm font-bold text-maurealty-blue mb-1">Commission (%)</label>
-                <input type="number" v-model="form.commission" class="w-full border border-gray-300 bg-white rounded-lg p-3">
+                <input type="number" step="any" v-model="form.commission" class="w-full border border-gray-300 bg-white rounded-lg p-3">
               </div>
 
               <div class="col-span-2">
@@ -213,15 +213,19 @@
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Lot Area</label>
-                    <input type="number" v-model="form.lot_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" step="any" v-model="form.lot_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Floor Area</label>
-                    <input type="number" v-model="form.floor_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" step="any" v-model="form.floor_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Rooms</label>
                     <input type="number" v-model="form.room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Master Bedroom Area</label>
+                    <input type="number" step="any" v-model="form.master_bedroom_area" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Toilets</label>
@@ -235,7 +239,7 @@
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Driver Rms</label>
                     <input type="number" v-model="form.driver_room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
-                  <div class="col-span-2">
+                  <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Carpark Spaces</label>
                     <input type="number" v-model="form.carpark_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
@@ -289,7 +293,7 @@
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Area</label>
-                    <input type="number" v-model="form.area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" step="any" v-model="form.area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                 
                   <div class="cols-2 md:col-span-4">
@@ -668,6 +672,7 @@ const loadProperties = async () => {
         form.value.helper_room_count = subTableData.helper_rooms_count;
         form.value.driver_room_count = subTableData.driver_rooms_count;
         form.value.carpark_count = subTableData.carpark_count;
+        form.value.master_bedroom_area = subTableData.master_bedroom_area;
 
       } else if (propertyType === 2) { // Lot Only
         const lotClassReverseMap: Record<number, string> = { 1: 'Residential', 2: 'Commercial', 3: 'Industrial', 4: 'Farm Lot' };
@@ -757,6 +762,7 @@ const form = ref<Partial<PropertyForm>>({
   helper_room_count: 0,
   driver_room_count: 0,
   carpark_count: 0,
+  master_bedroom_area: 0,
 
   // Lot Only Defaults
   block_number: 0,
@@ -902,7 +908,8 @@ const saveProperty = async () => {
           toilets_count: form.value.toilet_count, 
           helper_rooms_count: form.value.helper_room_count,
           driver_rooms_count: form.value.driver_room_count,
-          carpark_count: form.value.carpark_count
+          carpark_count: form.value.carpark_count,
+          master_bedroom_area: form.value.master_bedroom_area
         };
       } else if (propertyTypeId === 2) { // Lot only
         const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
@@ -998,7 +1005,8 @@ const saveProperty = async () => {
           toilets_count: form.value.toilet_count, 
           helper_rooms_count: form.value.helper_room_count,
           driver_rooms_count: form.value.driver_room_count,
-          carpark_count: form.value.carpark_count
+          carpark_count: form.value.carpark_count,
+          master_bedroom_area: form.value.master_bedroom_area
         };
       } else if (propertyTypeId === 2) { 
         const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };

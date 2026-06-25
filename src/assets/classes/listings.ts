@@ -41,6 +41,7 @@ export interface HouseAndLot extends Property {
     helper_room_count: number;
     driver_room_count: number;
     carpark_count: number;
+    master_bedroom_area: number;
 }
 
 // condominium interface
