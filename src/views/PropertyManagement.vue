@@ -365,6 +365,10 @@
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Carpark Count</label>
                     <input type="number" v-model="form.carpark_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Master Bedroom Area</label>
+                    <input type="number" step="any" v-model="form.master_bedroom_area" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                  </div>
 
                   <div class="cols-2 md:col-span-4">
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Condominium Class</label>
@@ -691,6 +695,7 @@ const loadProperties = async () => {
         form.value.carpark_count = subTableData.carpark_count;
         form.value.balcony_count = subTableData.balcony_count;
         form.value.bedroom_count = subTableData.bedroom_count;
+        form.value.master_bedroom_area = subTableData.master_bedroom_area;
         
         // Radio buttons
         form.value.is_studio_type = subTableData.is_studio_type;
@@ -932,7 +937,8 @@ const saveProperty = async () => {
           is_garden_villa: form.value.is_garden_villa,
           is_penthouse: form.value.is_penthouse,
           balcony_count: form.value.balcony_count,
-          bedroom_count: form.value.bedroom_count
+          bedroom_count: form.value.bedroom_count,
+          master_bedroom_area: form.value.master_bedroom_area
         };
       } else if (propertyTypeId === 4) { // Memorial
         specificData = {
@@ -1029,7 +1035,8 @@ const saveProperty = async () => {
           is_garden_villa: form.value.is_garden_villa,
           is_penthouse: form.value.is_penthouse,
           balcony_count: form.value.balcony_count,
-          bedroom_count: form.value.bedroom_count
+          bedroom_count: form.value.bedroom_count,
+          master_bedroom_area: form.value.master_bedroom_area
         };
       } else if (propertyTypeId === 4) { 
         specificData = {

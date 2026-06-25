@@ -56,6 +56,7 @@ export interface Condominium extends Property {
     is_penthouse: boolean;
     balcony_count: number;
     bedroom_count: number;
+    master_bedroom_area: number;
 }
 
 // memorial interface
