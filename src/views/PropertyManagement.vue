@@ -233,11 +233,11 @@
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Helper Rms</label>
-                    <input type="number" v-model="form.helper_room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.helper_rooms_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Driver Rms</label>
-                    <input type="number" v-model="form.driver_room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.driver_rooms_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Carpark Spaces</label>
@@ -673,8 +673,8 @@ const loadProperties = async () => {
         form.value.floor_area = Number(convertArea(subTableData.floor_area).toFixed(2));
         form.value.room_count = subTableData.rooms_count; // UI: room_count, DB: rooms_count
         form.value.toilet_count = subTableData.toilets_count;
-        form.value.helper_room_count = subTableData.helper_rooms_count;
-        form.value.driver_room_count = subTableData.driver_rooms_count;
+        form.value.helper_rooms_count = subTableData.helper_rooms_count;
+        form.value.driver_rooms_count = subTableData.driver_rooms_count;
         form.value.carpark_count = subTableData.carpark_count;
         form.value.master_bedroom_area = subTableData.master_bedroom_area;
 
@@ -764,8 +764,8 @@ const form = ref<Partial<PropertyForm>>({
   floor_area: 0,
   room_count: 0,
   toilet_count: 0,
-  helper_room_count: 0,
-  driver_room_count: 0,
+  helper_rooms_count: 0,
+  driver_rooms_count: 0,
   carpark_count: 0,
   master_bedroom_area: 0,
 
@@ -911,8 +911,8 @@ const saveProperty = async () => {
           floor_area: convertAreaToSqm(Number(form.value.floor_area) || 0),
           rooms_count: form.value.room_count, 
           toilets_count: form.value.toilet_count, 
-          helper_rooms_count: form.value.helper_room_count,
-          driver_rooms_count: form.value.driver_room_count,
+          helper_rooms_count: form.value.helper_rooms_count,
+          driver_rooms_count: form.value.driver_rooms_count,
           carpark_count: form.value.carpark_count,
           master_bedroom_area: form.value.master_bedroom_area
         };
@@ -1009,8 +1009,8 @@ const saveProperty = async () => {
           floor_area: form.value.floor_area,
           rooms_count: form.value.room_count, 
           toilets_count: form.value.toilet_count, 
-          helper_rooms_count: form.value.helper_room_count,
-          driver_rooms_count: form.value.driver_room_count,
+          helper_rooms_count: form.value.helper_rooms_count,
+          driver_rooms_count: form.value.driver_rooms_count,
           carpark_count: form.value.carpark_count,
           master_bedroom_area: form.value.master_bedroom_area
         };
