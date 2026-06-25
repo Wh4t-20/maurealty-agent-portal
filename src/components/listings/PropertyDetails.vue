@@ -100,11 +100,11 @@
                     <p class="flex items-center-safe gap-1" v-if="details.helper_rooms_count > 0">
                       <BrushCleaning class="size-4" /> {{ details.helper_rooms_count }} helper room{{ details.helper_rooms_count != 1 ? 's' : '' }}
                     </p>
-                    <p v-if="details.driver_room_count > 0 || details.carpark_count > 0">|</p>
+                    <p v-if="(details.driver_rooms_count > 0 && details.helper_rooms_count > 0)">|</p>
                     <p class="flex items-center-safe gap-1" v-if="details.driver_rooms_count > 0">
                       <LifeBuoy class="size-3" /> {{ details.driver_rooms_count }} driver room{{ details.driver_rooms_count != 1 ? 's' : '' }}
                     </p> 
-                    <p v-if="details.carpark_count > 0">|</p>
+                    <p v-if="(details.helper_rooms_count > 0  || details.driver_rooms_count > 0) && details.carpark_count > 0">|</p>
                     <p class="flex items-center-safe gap-1" v-if="details.carpark_count > 0">
                       <Car class="size-4" /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}
                     </p>
