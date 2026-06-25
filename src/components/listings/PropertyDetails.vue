@@ -88,11 +88,12 @@
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue">House and Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
-                  <div class="grid grid-cols-2 gap-y-0.5">
+                  <div class="grid grid-cols-2 gap-y-0.5 grid-flow-dense">
                     <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ formatArea(details.lot_area) }}</span>
                     <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ formatArea(details.floor_area) }}</span>
                     <span class="flex items-center-safe gap-1"><Sofa /> {{ details.rooms_count }} room{{ details.rooms_count != 1 ? 's' : '' }}</span>
                     <span class="flex items-center-safe gap-1"><Toilet /> {{ details.toilets_count }} toilet{{ details.s_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1 col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
                   </div>
     
                   <span class="flex items-center-safe justify-around pr-2 mt-3">
