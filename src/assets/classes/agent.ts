@@ -20,3 +20,20 @@ export const positionMap: Record<number, string> = {
     2: 'Property Sales Supervisor',
     3: 'Investment Manager'
 }
+
+export const getAge = (birth_date: string) => {
+  if (!birth_date) return ''
+  
+  const today = new Date()
+  const birthDate = new Date(birth_date)
+  
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDifference = today.getMonth() - birthDate.getMonth()
+  
+  // if the birthday hasn't happened yet this year, subtract 1 from the age
+  if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  
+  return age
+}

@@ -35,7 +35,7 @@
         <div>
           <label class="text-maurealty-blue font-medium text-sm block">Age</label>
           <p class="w-full font-medium text-base tracking-wider">
-            {{ getAge() }}
+            {{ getAge(props.agent.birth_date) }}
           </p>
         </div>
 
@@ -95,7 +95,7 @@
 <script setup lang="ts">
 import placeholder from '@/assets/images/default_placeholder.png'
 import MauBadgeDark from '@/assets/images/MauBadgeDark.svg'
-import { type AgentProfile, positionMap } from '@/assets/classes/agent';
+import { type AgentProfile, positionMap, getAge } from '@/assets/classes/agent';
 
 const props = defineProps<{ agent: AgentProfile }>()
 
@@ -104,23 +104,6 @@ const formatDate = (dateString: string) => {
   if (!dateString) return ''
   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
   return new Date(dateString).toLocaleDateString(undefined, options)
-}
-
-const getAge = () => {
-  if (!props.agent.birth_date) return ''
-  
-  const today = new Date()
-  const birthDate = new Date(props.agent.birth_date)
-  
-  let age = today.getFullYear() - birthDate.getFullYear()
-  const monthDifference = today.getMonth() - birthDate.getMonth()
-  
-  // if the birthday hasn't happened yet this year, subtract 1 from the age
-  if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
-    age--
-  }
-  
-  return age
 }
 </script>
 

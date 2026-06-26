@@ -1,5 +1,5 @@
 <template>
-    <form @submit.prevent="" class="bg-gray-100 w-full max-w-7xl rounded-2xl shadow-md p-10 flex flex-col gap-5">
+    <form @submit.prevent="saveAgentDetails" class="bg-gray-100 w-full max-w-7xl rounded-2xl shadow-md p-10 flex flex-col gap-5">
         <div class="flex justify-items-center gap-10">
             <div class="relative flex flex-col items-center justify-center">
                 <img
@@ -137,13 +137,15 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
-import placeholder from '@/assets/images/default_placeholder.png'
-import { type AgentProfile } from '@/assets/classes/agent'
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue';
+import { agentService } from '@/services/agentService';
+import { useRouter } from 'vue-router';
+import placeholder from '@/assets/images/default_placeholder.png';
+import { type AgentProfile, getAge } from '@/assets/classes/agent';
 import { Trash2, Upload } from 'lucide-vue-next';
 
-const props = defineProps<{ agent: AgentProfile }>()
-const emits = defineEmits(['cancel'])
+const props = defineProps<{ agent: AgentProfile }>();
+const emits = defineEmits(['cancel']);
 
 const form = ref<AgentProfile>({
     agent_ID: props.agent.agent_ID,
@@ -160,7 +162,32 @@ const form = ref<AgentProfile>({
     position_ID: props.agent.position_ID,
     admin_access: props.agent.admin_access,
     profile_url: props.agent.profile_url
-})
+});
 
-const sexes: string[] = [ 'Male', 'Female', 'Non-Binary', 'Other' ]
+const sexes: string[] = [ 'Male', 'Female', 'Non-Binary', 'Other' ];
+
+const router = useRouter();
+
+const saveAgentDetails = async () => {
+    console.log('Saving new account details...');
+
+    const agentID = form.value.agent_ID
+    const agentData = {
+        first_name: form.value.first_name,
+        middle_name: form.value.middle_name,
+        last_name: form.value.last_name,
+        sex: form.value.sex,
+        birth_date: form.value.birth_date,
+        age: getAge(form.value.birth_date),
+        contact_number: form.value.contact_number,
+        email_address: form.value.email_address,
+        profile_url: form.value.profile_url
+    }
+
+    const response = await agentService.updateProfile(agentID, agentData);
+    if (response.success) {
+        console.log('Profile updated successfully!');
+        router.go(0);
+    }
+}
 </script>
