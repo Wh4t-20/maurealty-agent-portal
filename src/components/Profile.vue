@@ -24,14 +24,14 @@
 
         <div class="flex-1 space-y-3">
           <div class="mt-10">
-            <label class="text-blue-800 font-medium text-sm block">Last Name, First Name, Middle Name</label>
+            <label class="text-maurealty-blue font-medium text-sm block">Last Name, First Name, Middle Name</label>
               <span class="flex items-center gap-2.5">
               <p class="w-auto font-medium text-lg tracking-wider uppercase">
                 {{ agent.last_name }}, {{ agent.first_name }} {{ agent.middle_name || '' }}
               </p>
               <img
                 v-if="agent.admin_access"
-                :src="MauBadge" 
+                :src="MauBadgeDark" 
                 alt="Admin Access Enabled"
                 class="size-6 border-0"  
               />
@@ -40,21 +40,21 @@
 
           <div class="grid grid-cols-3 gap-5">
             <div>
-              <label class="text-blue-800 font-medium text-sm block">Sex</label>
+              <label class="text-maurealty-blue font-medium text-sm block">Sex</label>
               <p class="w-full font-medium text-base tracking-wider uppercase">
                 {{ agent.sex }}
               </p>
             </div>
 
             <div>
-              <label class="text-blue-800 font-medium text-sm block">Age</label>
+              <label class="text-maurealty-blue font-medium text-sm block">Age</label>
               <p class="w-full font-medium text-base tracking-wider">
                 {{ agent.age }}
               </p>
             </div>
 
             <div>
-              <label class="text-blue-800 font-medium text-sm block">Date of Birth</label>
+              <label class="text-maurealty-blue font-medium text-sm block">Date of Birth</label>
               <p class="w-full font-medium text-base tracking-wider uppercase">
                 {{ formatDate(agent.birth_date) }}
               </p>
@@ -62,7 +62,7 @@
           </div>
 
           <div>
-            <label class="text-blue-800 font-medium text-sm block">Address</label>
+            <label class="text-maurealty-blue font-medium text-sm block">Address</label>
             <p class="w-full font-normal text-base tracking-wider uppercase">
               {{ agent.home_address }}
             </p>
@@ -70,39 +70,39 @@
 
           <div class="grid grid-cols-3 gap-5">
             <div>
-              <label class="text-blue-800 font-medium text-sm block">Contact No.</label>
+              <label class="text-maurealty-blue font-medium text-sm block">Contact No.</label>
               <p class="w-full font-normal text-base tracking-wider uppercase">
                 {{ agent.contact_number }}
               </p>
             </div>
 
-            <div>
-              <label class="text-blue-800 font-medium text-sm block">Email Address</label>
+            <div class="col-span-2">
+              <label class="text-maurealty-blue font-medium text-sm block">Email Address</label>
               <p class="w-full font-normal text-base tracking-wider">
                 {{ agent.email_address }}
-              </p>
-            </div>
-
-            <div>
-              <label class="text-blue-800 font-medium text-sm block">Hire Date</label>
-              <p class="w-full font-normal text-base tracking-wider uppercase">
-                {{ formatDate(agent.hire_date) }}
               </p>
             </div>
           </div>
 
           <div class="grid grid-cols-3 gap-5">
             <div>
-              <label class="text-blue-800 font-medium text-sm block">Agent ID</label>
+              <label class="text-maurealty-blue font-medium text-sm block">Agent ID</label>
               <p class="w-full font-medium text-base tracking-wider uppercase">
                 {{ agent.agent_ID }}
               </p>
             </div>
 
             <div>
-              <label class="text-blue-800 font-medium text-sm block">Position</label>
+              <label class="text-maurealty-blue font-medium text-sm block">Position</label>
               <p class="w-full font-medium text-base tracking-wider uppercase">
                 {{ agent.positions?.position || 'N/A' }}
+              </p>
+            </div>
+
+            <div>
+              <label class="text-maurealty-blue font-medium text-sm block">Hire Date</label>
+              <p class="w-full font-normal text-base tracking-wider uppercase">
+                {{ formatDate(agent.hire_date) }}
               </p>
             </div>
           </div>
@@ -120,7 +120,7 @@
 import { ref, onMounted } from 'vue'
 import { agentService } from '@/services/agentService'
 import placeholder from '@/assets/images/default_placeholder.png'
-import MauBadge from '@/assets/images/MauBadge.svg'
+import MauBadgeDark from '@/assets/images/MauBadgeDark.svg'
 
 const agent = ref<any>(null)
 const isLoading = ref(true)
