@@ -13,7 +13,7 @@
     </div>
 
     <div v-else-if="agent" class="flex items-center justify-center p-6 mt-10">
-      <div class="bg-gray-100 w-full max-w-6xl rounded-2xl shadow-md p-10 flex gap-10">
+      <div class="bg-gray-100 w-full max-w-7xl rounded-2xl shadow-md p-10 flex gap-10">
         <div class="relative flex items-center justify-center">
           <img
             :src="agent.profile_url || placeholder"
@@ -23,22 +23,22 @@
         </div>
 
         <div class="flex-1 space-y-3">
-          <div class="mt-10">
-            <label class="text-maurealty-blue font-medium text-sm block">Last Name, First Name, Middle Name</label>
-              <span class="flex items-center gap-2.5">
-              <p class="w-auto font-medium text-lg tracking-wider uppercase">
-                {{ agent.last_name }}, {{ agent.first_name }} {{ agent.middle_name || '' }}
-              </p>
-              <img
-                v-if="agent.admin_access"
-                :src="MauBadgeDark" 
-                alt="Admin Access Enabled"
-                class="size-6 border-0"  
-              />
-            </span>
-          </div>          
+          <div class="mt-5 grid grid-cols-3 gap-5">
+            <div class="col-span-full">
+              <label class="text-maurealty-blue font-medium text-sm block">Last Name, First Name, Middle Name</label>
+                <span class="flex items-center gap-2.5">
+                <p class="w-auto font-medium text-lg tracking-wider uppercase">
+                  {{ agent.last_name }}, {{ agent.first_name }} {{ agent.middle_name || '' }}
+                </p>
+                <img
+                  v-if="agent.admin_access"
+                  :src="MauBadgeDark" 
+                  alt="Admin Access Enabled"
+                  class="size-6 border-0"  
+                />
+              </span>
+            </div>          
 
-          <div class="grid grid-cols-3 gap-5">
             <div>
               <label class="text-maurealty-blue font-medium text-sm block">Sex</label>
               <p class="w-full font-medium text-base tracking-wider uppercase">
@@ -59,16 +59,14 @@
                 {{ formatDate(agent.birth_date) }}
               </p>
             </div>
-          </div>
 
-          <div>
-            <label class="text-maurealty-blue font-medium text-sm block">Address</label>
-            <p class="w-full font-normal text-base tracking-wider uppercase">
-              {{ agent.home_address }}
-            </p>
-          </div>
+            <div class="col-span-full">
+              <label class="text-maurealty-blue font-medium text-sm block">Address</label>
+              <p class="w-full font-normal text-base tracking-wider uppercase">
+                {{ agent.home_address }}
+              </p>
+            </div>
 
-          <div class="grid grid-cols-3 gap-5">
             <div>
               <label class="text-maurealty-blue font-medium text-sm block">Contact No.</label>
               <p class="w-full font-normal text-base tracking-wider uppercase">
@@ -82,9 +80,7 @@
                 {{ agent.email_address }}
               </p>
             </div>
-          </div>
 
-          <div class="grid grid-cols-3 gap-5">
             <div>
               <label class="text-maurealty-blue font-medium text-sm block">Agent ID</label>
               <p class="w-full font-medium text-base tracking-wider uppercase">
