@@ -12,12 +12,7 @@ export const agentService = {
 
       const { data, error } = await supabase
         .from('agents')
-        .select(`
-          *,
-          positions (
-            position
-          )
-        `)
+        .select(`*`)
         .eq('user_id', authData.user.id)
         .single();
 

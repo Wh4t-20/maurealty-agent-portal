@@ -77,7 +77,7 @@
         <div>
           <label class="text-maurealty-blue font-medium text-sm block">Position</label>
           <p class="w-full font-medium text-base tracking-wider uppercase">
-            {{ props.agent.positions?.position || 'N/A' }}
+            {{ positionMap[props.agent.position_ID] || 'N/A' }}
           </p>
         </div>
 
@@ -95,8 +95,9 @@
 <script setup lang="ts">
 import placeholder from '@/assets/images/default_placeholder.png'
 import MauBadgeDark from '@/assets/images/MauBadgeDark.svg'
+import { type AgentProfile, positionMap } from '@/assets/classes/agent';
 
-const props = defineProps<{ agent: any }>()
+const props = defineProps<{ agent: AgentProfile }>()
 
 // Format database date strings to readable text
 const formatDate = (dateString: string) => {
