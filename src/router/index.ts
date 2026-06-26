@@ -9,10 +9,8 @@ import Accounting from '@/views/Accounting.vue'
 import SalesReport from '@/views/SalesReport.vue'
 import Login from '@/views/LoginForm.vue'
 import GenealogyLandingpage from '@/views/Genealogy-landingpage.vue'
-import Profile from '@/components/profile/Profile.vue'
-import ProfileEdit from '@/components/profile/ProfileEdit.vue'
+import Profile from '@/views/Profile.vue'
 import SharedListing from '@/views/SharedListing.vue'
-
 
 const routes: Array<RouteRecordRaw> = [
   {
