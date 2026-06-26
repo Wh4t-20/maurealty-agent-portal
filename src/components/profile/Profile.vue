@@ -12,7 +12,7 @@
       <p class="text-xl font-medium text-gray-600">Loading profile data...</p>
     </div>
 
-    <div v-else-if="agent" class="flex items-center justify-center p-6 mt-10">
+    <div v-else-if="agent" class="flex flex-col items-center justify-center gap-4 p-6 mt-10">
       <div class="bg-gray-100 w-full max-w-7xl rounded-2xl shadow-md p-10 flex gap-10">
         <div class="relative flex items-center justify-center">
           <img
@@ -104,6 +104,12 @@
           </div>
         </div>
       </div>
+
+      <div class="w-full max-w-7xl justify-items-end">
+        <button @click="handleProfileEdit" class="flex flex-col items-center py-2 px-5 w-32 rounded-2xl border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+          <span class="flex items-center-safe gap-1"><SquarePen class="size-4" /> EDIT</span>
+        </button>
+      </div>
     </div>
 
     <div v-else class="flex justify-center items-center mt-20">
@@ -117,6 +123,7 @@ import { ref, onMounted } from 'vue'
 import { agentService } from '@/services/agentService'
 import placeholder from '@/assets/images/default_placeholder.png'
 import MauBadgeDark from '@/assets/images/MauBadgeDark.svg'
+import { useRouter } from 'vue-router'
 
 const agent = ref<any>(null)
 const isLoading = ref(true)
@@ -126,6 +133,14 @@ onMounted(async () => {
   agent.value = await agentService.getCurrentAgentProfile()
   isLoading.value = false
 })
+
+const router = useRouter()
+
+const handleProfileEdit = () => {
+  router.push({
+    path: '/profile/edit',
+  });
+};
 
 // Format database date strings to readable text
 const formatDate = (dateString: string) => {

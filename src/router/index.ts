@@ -9,7 +9,8 @@ import Accounting from '@/views/Accounting.vue'
 import SalesReport from '@/views/SalesReport.vue'
 import Login from '@/views/LoginForm.vue'
 import GenealogyLandingpage from '@/views/Genealogy-landingpage.vue'
-import Profile from '@/components/Profile.vue'
+import Profile from '@/components/profile/Profile.vue'
+import ProfileEdit from '@/components/profile/ProfileEdit.vue'
 import SharedListing from '@/views/SharedListing.vue'
 
 
@@ -25,19 +26,19 @@ const routes: Array<RouteRecordRaw> = [
     path: '/dashboard',
     name: 'Dashboard',
     component: Dashboard,
-    meta: { requiresAuth: true}
+    meta: { requiresAuth: true }
   },
   {
     path: '/developerlist',
     name: 'DeveloperList',
     component: DeveloperList,
-    meta: { requiresAuth: true}
+    meta: { requiresAuth: true }
   },
   {
     path: '/listings',
     name: 'Listing',
     component: Listings,
-    meta: { requiresAuth: true}
+    meta: { requiresAuth: true }
   },
   {
     path: '/shared/listing/:token',
@@ -49,31 +50,31 @@ const routes: Array<RouteRecordRaw> = [
     path: '/propertymanagement',
     name: 'PropertyManagement',
     component: PropertyManagement,
-    meta: { requiresAuth: true}
+    meta: { requiresAuth: true }
   },
   {
     path: '/accounting',
     name: 'Accounting',
     component: Accounting,
-    meta: { requiresAuth: true}
+    meta: { requiresAuth: true }
   },
   {
     path: '/sales',
     name: 'SalesReport',
     component: SalesReport,
-    meta: { requiresAuth: true}
+    meta: { requiresAuth: true }
   },
   {
     path: '/genealogy',
     name: 'Genealogy',
     component: GenealogyLandingpage,
-    meta: { requiresAuth: true}
+    meta: { requiresAuth: true }
   },
   {
     path: '/profile',
     name: 'Profile',
     component: Profile,
-    meta: { requiresAuth: true}
+    meta: { requiresAuth: true }
   },
 ]
 
