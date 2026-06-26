@@ -124,7 +124,7 @@
         </div>
         
         <div class="w-full flex gap-4 justify-end">
-            <button type="submit" class="flex flex-col items-center py-2 px-5 w-50 rounded-2xl border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+            <button type="button" @click="$emit('cancel')" class="flex flex-col items-center py-2 px-5 w-50 rounded-2xl border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
                 <span class="flex items-center-safe gap-2"> CANCEL</span>
             </button>
 
@@ -143,6 +143,7 @@ import { type AgentProfile } from '@/assets/classes/agent'
 import { Trash2, Upload } from 'lucide-vue-next';
 
 const props = defineProps<{ agent: AgentProfile }>()
+const emits = defineEmits(['cancel'])
 
 const form = ref<AgentProfile>({
     agent_ID: props.agent.agent_ID,

@@ -24,7 +24,10 @@
             </div>
 
             <div v-else class="flex flex-col items-center justify-center">
-                <ProfileEdit :agent="agent" />
+                <ProfileEdit 
+                    :agent="agent" 
+                    @cancel="isEditing = false"
+                />
             </div>
             
         </div>
