@@ -18,7 +18,7 @@
 
                 <div class="w-full max-w-7xl justify-items-end">
                     <button @click="isEditing = true" class="flex flex-col items-center py-2 px-5 w-32 rounded-2xl border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
-                    <span class="flex items-center-safe gap-1"><SquarePen class="size-4" /> EDIT</span>
+                        <span class="flex items-center-safe gap-1"><SquarePen class="size-4" /> EDIT</span>
                     </button>
                 </div>
             </div>
