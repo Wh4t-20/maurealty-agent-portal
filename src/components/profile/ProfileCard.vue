@@ -35,7 +35,7 @@
         <div>
           <label class="text-maurealty-blue font-medium text-sm block">Age</label>
           <p class="w-full font-medium text-base tracking-wider">
-            {{ props.agent.age }}
+            {{ getAge() }}
           </p>
         </div>
 
@@ -104,6 +104,23 @@ const formatDate = (dateString: string) => {
   if (!dateString) return ''
   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
   return new Date(dateString).toLocaleDateString(undefined, options)
+}
+
+const getAge = () => {
+  if (!props.agent.birth_date) return ''
+  
+  const today = new Date()
+  const birthDate = new Date(props.agent.birth_date)
+  
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDifference = today.getMonth() - birthDate.getMonth()
+  
+  // if the birthday hasn't happened yet this year, subtract 1 from the age
+  if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+  
+  return age
 }
 </script>
 
