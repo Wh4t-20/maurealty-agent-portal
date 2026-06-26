@@ -9,7 +9,7 @@
         </header>
 
         <div v-if="isLoading" class="flex justify-center items-center mt-20">
-        <p class="text-xl font-medium text-gray-600">Loading profile data...</p>
+            <p class="text-xl font-medium text-gray-600">Loading profile data...</p>
         </div>
 
         <div v-else-if="agent" class="p-6 mt-10">
@@ -24,7 +24,7 @@
             </div>
 
             <div v-else class="flex flex-col items-center justify-center">
-                <ProfileEdit />
+                <ProfileEdit :agent="agent" />
             </div>
             
         </div>

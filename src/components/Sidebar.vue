@@ -68,6 +68,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { authService } from '@/services/authService';
 import { agentService } from '@/services/agentService';
+import { positionMap } from '@/assets/classes/agent';
 import placeholder from '@/assets/images/default_placeholder.png';
 import MauBadgeLight from '@/assets/images/MauBadgeLight.svg'
 
@@ -100,7 +101,7 @@ const agentName = computed(() => {
 
 const agentPosition = computed(() => {
   if (!agent.value) return '';
-  return agent.value.positions?.position || 'N/A';
+  return positionMap[agent.value.position_ID] || 'N/A';
 });
 
 const profileImage = computed(() => {
