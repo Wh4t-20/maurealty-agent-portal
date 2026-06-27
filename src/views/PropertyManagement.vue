@@ -49,14 +49,14 @@
                 <div v-for="(img, index) in existingImages" :key="`existing-${index}`" class="relative w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
                   <img :src="img.url" alt="Current property photo" class="object-cover size-full">
                   <span class="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">Current</span>
-                  <button type="button" @click="removeExistingImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                  <button type="button" @click="removeExistingImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold cursor-pointer">
                     ✕
                   </button>
                 </div>
 
                 <div v-for="(img, index) in imageFiles" :key="index" class="relative w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
                   <img :src="img.preview" alt="Property Preview" class="object-cover size-full">
-                  <button type="button" @click="removeImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+                  <button type="button" @click="removeImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold cursor-pointer">
                     ✕
                   </button>
                 </div>
@@ -65,12 +65,12 @@
                   type="file" 
                   multiple 
                   accept="image/*" 
-                  ref="fileInput" 
+                  ref="imageInput" 
                   class="hidden" 
-                  @change="handleFileUpload"
+                  @change="handleImageFileUpload"
                 >
                 
-                <button type="button" @click="triggerFileInput" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition">
+                <button type="button" @click="triggerImageFileInput" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition cursor-pointer">
                   <span class="text-3xl">+</span>
                   <span class="text-xs font-bold">Add Photo</span>
                 </button>
@@ -80,7 +80,7 @@
             <div>
               <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
                 <label class="block">Description</label>
-                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleDescriptionMarkdown">
+                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer" @click="toggleDescriptionMarkdown">
                     {{ (displayDescriptionMarkdown) ? "Edit" : "Preview" }}
                 </button>
               </section>
@@ -100,12 +100,12 @@
             <div class="grid grid-cols-2 gap-4">
     
               <div class="col-span-1">
-                <label class="block text-sm font-bold text-maurealty-blue mb-1">Price (₱)</label>
-                <input type="number" v-model="form.price" class="w-full border border-gray-300 bg-white rounded-lg p-3">
+                <label class="block text-sm font-bold text-maurealty-blue mb-1">Price ({{ currentCurrency }})</label>
+                <input type="number" step="0.01" v-model="form.price" class="w-full border border-gray-300 bg-white rounded-lg p-3">
               </div>
               <div class="col-span-1">
                 <label class="block text-sm font-bold text-maurealty-blue mb-1">Commission (%)</label>
-                <input type="number" v-model="form.commission" class="w-full border border-gray-300 bg-white rounded-lg p-3">
+                <input type="number" step="any" v-model="form.commission" class="w-full border border-gray-300 bg-white rounded-lg p-3">
               </div>
 
               <div class="col-span-2">
@@ -213,15 +213,19 @@
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Lot Area</label>
-                    <input type="number" v-model="form.lot_area" placeholder="sqm" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" step="any" v-model="form.lot_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Floor Area</label>
-                    <input type="number" v-model="form.floor_area" placeholder="sqm" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" step="any" v-model="form.floor_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Rooms</label>
                     <input type="number" v-model="form.room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Master Bedroom Area</label>
+                    <input type="number" step="any" v-model="form.master_bedroom_area" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Toilets</label>
@@ -229,13 +233,13 @@
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Helper Rms</label>
-                    <input type="number" v-model="form.helper_room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.helper_rooms_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Driver Rms</label>
-                    <input type="number" v-model="form.driver_room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" v-model="form.driver_rooms_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
-                  <div class="col-span-2">
+                  <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Carpark Spaces</label>
                     <input type="number" v-model="form.carpark_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
@@ -245,27 +249,27 @@
                   <p class="text-xs font-bold text-maurealty-blue mb-3 uppercase opacity-70">Property Features</p>
                   <div class="flex flex-wrap gap-x-6 gap-y-3">
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.one_storey" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.one_storey" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">One Storey</span>
                     </label>
                     
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.two_storey" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.two_storey" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Two Storey</span>
                     </label>
 
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.with_loft" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.with_loft" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">With Loft</span>
                     </label>
 
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.townhome" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.townhome" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Townhome</span>
                     </label>
 
                     <label class="flex items-center gap-2 cursor-pointer group">
-                      <input type="checkbox" v-model="form.rowhouse" class="w-4 h-4 accent-maurealty-blue rounded">
+                      <input type="checkbox" v-model="form.rowhouse" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
                       <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Rowhouse</span>
                     </label>
                   </div>
@@ -289,7 +293,7 @@
                   </div>
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Area</label>
-                    <input type="number" v-model="form.area" placeholder="sqm" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <input type="number" step="any" v-model="form.area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
                 
                   <div class="cols-2 md:col-span-4">
@@ -361,6 +365,10 @@
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Carpark Count</label>
                     <input type="number" v-model="form.carpark_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
                   </div>
+                  <div>
+                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Master Bedroom Area</label>
+                    <input type="number" step="any" v-model="form.master_bedroom_area" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                  </div>
 
                   <div class="cols-2 md:col-span-4">
                     <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Condominium Class</label>
@@ -425,7 +433,7 @@
                             type="radio" 
                             :checked="!!form[cType.field as keyof PropertyForm]" 
                             @change="setExclusively(['is_studio_type', 'is_BR_unit', 'is_villa', 'is_garden_villa', 'is_penthouse'], cType.field as keyof PropertyForm)"
-                            class="w-4 h-4 accent-maurealty-blue"
+                            class="w-4 h-4 accent-maurealty-blue cursor-pointer"
                           >
                           <span class="text-sm text-gray-700">{{ cType.label }}</span>
                         </label>
@@ -455,7 +463,7 @@
                             type="radio" 
                             :checked="!!form[mType.field as keyof PropertyForm]" 
                             @change="setExclusively(['is_urn', 'is_vault', 'is_garden', 'is_estate', 'is_family_estate', 'is_pet_memorial'], mType.field as keyof PropertyForm)"
-                            class="w-4 h-4 accent-maurealty-blue"
+                            class="w-4 h-4 accent-maurealty-blue cursor-pointer"
                           >
                           <span class="text-sm text-gray-700">{{ mType.label }}</span>
                         </label>
@@ -472,26 +480,69 @@
           <div class="col-span-full">
               <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
                 <label class="block">Frequently Asked Questions</label>
-                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors" @click="toggleFAQMarkdown">
-                    {{ (displayFAQMarkdown) ? "Edit" : "Preview" }}
-                </button>
+                <span class="flex gap-3">
+                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer" @click="toggleFAQMarkdown">
+                      {{ (displayFAQMarkdown) ? "Edit" : "Preview" }}
+                  </button>
+                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer" @click="toggleQuestions">
+                      {{ (displayQuestions) ? "Hide Questions" : "View Questions" }}
+                  </button>
+                </span>
+                
               </section>
               
-              <div v-if="!displayFAQMarkdown" class="w-full flex">
-                <textarea type="text" v-model="form.faq" placeholder="e.g. This house has amazing features!" 
-                        class="custom-scrollbar w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
-                
-              </div>
+              <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div :class="[ !displayQuestions ? 'col-span-full' : '' ]">
+                  <div v-if="!displayFAQMarkdown" class="w-full flex">
+                    <textarea type="text" v-model="form.faq" placeholder="Follow this format:&#10;### (Question Here)&#10;- (Answers here)&#10;&#10;Note: Click Preview to see the formatting" 
+                            class="custom-scrollbar w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
+                    
+                  </div>
+                  
+                  <div v-if="displayFAQMarkdown" class="prose max-w-none w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
+                </div>
+
+                <div v-if="displayQuestions" class="col-span-1 border border-gray-300 rounded-lg max-h-50 bg-gray-50 overflow-y-auto custom-scrollbar">
+                  <div v-for="(item, itemIndex) in questions.FAQs" :key="itemIndex" class="mb-3">
+                    <h1 class="w-full bg-white py-2 pl-6 mb-2 font-bold uppercase text-xl text-maurealty-blue">{{ item.type }}</h1>
+                    <div class="grid grid-cols-1 justify-items-start px-3">
+                      <button v-for="(q, qIndex) in item.questionList"
+                        type="button"
+                        :key="qIndex" 
+                        class="flex gap-2.5 items-center text-md text-gray-700 pl-4 py-1.5 hover:bg-maurealty-blue/15 hover:font-semibold hover:text-lg transition-all w-full border-gray-200 cursor-pointer"
+                        :class="(qIndex < item.questionList.length - 1) ? 'border-b' : ''"
+                        @click="addQuestion(q.question)">
+                          <PlusIcon class="size-5" /> {{ q.question }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
               
-              <div v-if="displayFAQMarkdown" class="prose max-w-none w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
-              
-              <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
+              <p class="text-sm text-gray-500 italic">Note: FAQs follows the Markdown format, read 
                 <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
               for formatting options</p>
-            </div>
+          </div>
+
+          <!-- FACT SHEET -->
+          <div class="col-span-full">
+            <input 
+              type="file" 
+              accept="application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, text/markdown, application/pdf" 
+              ref="factSheetInput" 
+              class="hidden" 
+              @change="handleFactSheetFileUpload"
+            >
+
+            <button type="button" @click="triggerFactSheetFileInput" class="size-full py-8 bg-blue-50/30 hover:bg-blue-50/70 border border-maurealty-blue/10 rounded-xl flex flex-col items-center gap-4 justify-center text-maurealty-blue cursor-pointer">
+              <UploadIcon class="size-15" :stroke-width="3"/>
+              <h3 v-if="!factSheetFile" class="italic">Upload a fact sheet</h3>
+              <h3 v-else class="font-bold text-green-600 italic">{{ factSheetFile.name }}</h3>
+            </button>
+          </div>
           
           <div class="flex col-span-2 justify-end gap-4 mt-8">
-              <button type="button" @click="goBack" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition">
+              <button type="button" @click="goBack" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition cursor-pointer">
                 CANCEL
               </button>
               <button type="submit" class="px-8 py-3 bg-maurealty-blue text-white font-bold rounded-full shadow-md hover:bg-opacity-90 hover:bg-[#045fa3] active:bg-white active:text-maurealty-blue border border-maurealty-blue transition flex items-center gap-2 cursor-pointer">
@@ -513,14 +564,20 @@ import { listingsService } from '@/services/listingsServices';
 import { authService } from '@/services/authService'; // just for getting agent_ID
 
 // maps stuff
-import { MapIcon, XIcon } from 'lucide-vue-next';
+import { MapIcon, PlusIcon, UploadIcon, XIcon } from 'lucide-vue-next';
 import MapInteractive from '@/components/listings/MapInteractive.vue';
 const displayMaps = ref(false);
+
 
 function toggleMaps() {
   displayMaps.value = !displayMaps.value;
   console.log("Map display status: " + displayMaps.value);
 }
+
+// utilities
+import { currentCurrency, currentUnit, convertPrice, convertArea, convertPriceToPHP, convertAreaToSqm } from '@/utils/conversion.ts';
+
+const unitPlaceholder = computed(() => currentUnit.value === 'English' ? 'sqft' : 'sqm');
 
 import { developerService } from '@/services/developerService'
 
@@ -535,11 +592,18 @@ function toggleDescriptionMarkdown() {
 }
 
 // for the FAQ stuff
+import questions from '@/assets/questions.json'
 const displayFAQMarkdown = ref(false);
+const displayQuestions = ref(false);
 
 function toggleFAQMarkdown() {
   displayFAQMarkdown.value = !displayFAQMarkdown.value;
   console.log("FAQ Markdown display status: " + displayFAQMarkdown.value);
+}
+
+function toggleQuestions() {
+  displayQuestions.value = !displayQuestions.value;
+  console.log("Question display status: " + displayQuestions.value);
 }
 
 // Combine all interfaces for the form state
@@ -570,7 +634,7 @@ const loadProperties = async () => {
 
       form.value.listing_title = data.listing_title;
       form.value.property_type = typeReverseMap[propertyType] || typeReverseMap[1];
-      form.value.price = data.price;
+      form.value.price = Number(convertPrice(data.price).toFixed(2));
       form.value.commission = data.commission;
       form.value.location = data.location;
       form.value.lng = data.longitude;
@@ -579,6 +643,7 @@ const loadProperties = async () => {
       form.value.status = data.status;
       form.value.dev_ID = data.dev_ID;
       form.value.faq = data.faq;
+      form.value.fact_sheet = data.fact_sheet;
 
       console.log(data.longitude, data.latitude);
       console.log("^Data | vForm\n");
@@ -604,13 +669,14 @@ const loadProperties = async () => {
         form.value.with_loft = subTableData.with_loft;
         form.value.townhome = subTableData.townhomes; // UI: townhome, DB: townhomes
         form.value.rowhouse = subTableData.rowhouse;
-        form.value.lot_area = subTableData.lot_area;
-        form.value.floor_area = subTableData.floor_area;
+        form.value.lot_area = Number(convertArea(subTableData.lot_area).toFixed(2));
+        form.value.floor_area = Number(convertArea(subTableData.floor_area).toFixed(2));
         form.value.room_count = subTableData.rooms_count; // UI: room_count, DB: rooms_count
         form.value.toilet_count = subTableData.toilets_count;
-        form.value.helper_room_count = subTableData.helper_rooms_count;
-        form.value.driver_room_count = subTableData.driver_rooms_count;
+        form.value.helper_rooms_count = subTableData.helper_rooms_count;
+        form.value.driver_rooms_count = subTableData.driver_rooms_count;
         form.value.carpark_count = subTableData.carpark_count;
+        form.value.master_bedroom_area = subTableData.master_bedroom_area;
 
       } else if (propertyType === 2) { // Lot Only
         const lotClassReverseMap: Record<number, string> = { 1: 'Residential', 2: 'Commercial', 3: 'Industrial', 4: 'Farm Lot' };
@@ -618,7 +684,7 @@ const loadProperties = async () => {
         form.value.block_number = Number(subTableData.block_number);
         form.value.lot_number = Number(subTableData.lot_number);
         form.value.phase_number = Number(subTableData.phase_number);
-        form.value.area = subTableData.lot_area; // UI: area, DB: lot_area
+        form.value.area = Number(convertArea(subTableData.lot_area).toFixed(2)); // UI: area, DB: lot_area
         form.value.class = lotClassReverseMap[subTableData.lot_class_ID] || 'Residential';
 
       } else if (propertyType === 3) { // Condominium
@@ -629,6 +695,7 @@ const loadProperties = async () => {
         form.value.carpark_count = subTableData.carpark_count;
         form.value.balcony_count = subTableData.balcony_count;
         form.value.bedroom_count = subTableData.bedroom_count;
+        form.value.master_bedroom_area = subTableData.master_bedroom_area;
         
         // Radio buttons
         form.value.is_studio_type = subTableData.is_studio_type;
@@ -684,7 +751,8 @@ const form = ref<Partial<PropertyForm>>({
   description: '',
   status: 'active',
   dev_ID: null,
-  faq: '# FREQUENTLY ASKED QUESTIONS\n\n',
+  faq: '',
+  fact_sheet: '',
 
   // House and Lot Defaults
   one_storey: true,
@@ -696,9 +764,10 @@ const form = ref<Partial<PropertyForm>>({
   floor_area: 0,
   room_count: 0,
   toilet_count: 0,
-  helper_room_count: 0,
-  driver_room_count: 0,
+  helper_rooms_count: 0,
+  driver_rooms_count: 0,
   carpark_count: 0,
+  master_bedroom_area: 0,
 
   // Lot Only Defaults
   block_number: 0,
@@ -730,13 +799,13 @@ const form = ref<Partial<PropertyForm>>({
 const imageFiles = ref<{ file: File; preview: string }[]>([]);
 const existingImages = ref<{ url: string }[]>([]);
 const removedImageUrls = ref<string[]>([]);
-const fileInput = ref<HTMLInputElement | null>(null);
+const imageInput = ref<HTMLInputElement | null>(null);
 
-const triggerFileInput = () => {
-  if (fileInput.value) fileInput.value.click();
+const triggerImageFileInput = () => {
+  if (imageInput.value) imageInput.value.click();
 };
 
-const handleFileUpload = (event: Event) => {
+const handleImageFileUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files) {
     Array.from(target.files).forEach(file => {
@@ -746,7 +815,7 @@ const handleFileUpload = (event: Event) => {
       });
     });
   }
-  if (fileInput.value) fileInput.value.value = '';
+  if (imageInput.value) imageInput.value.value = '';
 };
 
 const removeImage = (index: number) => {
@@ -762,6 +831,8 @@ const removeExistingImage = (index: number) => {
   const image = existingImages.value[index];
   if (!image) return;
   removedImageUrls.value.push(image.url);
+  console.log(`[DEBUG] Queued existing image for deletion: ${image.url}`); // debugging
+
   existingImages.value.splice(index, 1);
 };
 
@@ -769,6 +840,30 @@ const setExclusively = (group: (keyof PropertyForm)[], selectedField: keyof Prop
   group.forEach(field => {
     (form.value as any)[field] = (field === selectedField);
   });
+};
+
+// fact sheet functionality
+const factSheetFile = ref<{ file: File; name: string } | null>(null);
+const factSheetInput = ref<HTMLInputElement | null>(null);
+
+const triggerFactSheetFileInput = () => {
+  if (factSheetInput.value) factSheetInput.value.click();
+};
+
+const handleFactSheetFileUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files.length > 0) {
+    const file = target.files[0]; // Extract the single document upload
+    
+    if (file) {
+      factSheetFile.value = {
+        file: file,
+        name: file.name
+      };
+      console.log("Fact sheet staged:", file.name);
+    }
+  }
+  if (factSheetInput.value) factSheetInput.value.value = '';
 };
 
 const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial', 'Clubshare', 'Golfshare'];
@@ -792,7 +887,7 @@ const saveProperty = async () => {
         agent_ID: currentAgentId.value,
         listing_title: form.value.listing_title,
         property_type_ID: propertyTypeId,
-        price: form.value.price,
+        price: convertPriceToPHP(Number(form.value.price)) || 0,
         commission: form.value.commission,
         location: form.value.location,
         longitude: form.value.lng,
@@ -812,13 +907,14 @@ const saveProperty = async () => {
           "2_storey": form.value.two_storey, 
           townhomes: form.value.townhome,
           rowhouse: form.value.rowhouse,
-          lot_area: form.value.lot_area,
-          floor_area: form.value.floor_area,
+          lot_area: convertAreaToSqm(Number(form.value.lot_area) || 0),
+          floor_area: convertAreaToSqm(Number(form.value.floor_area) || 0),
           rooms_count: form.value.room_count, 
           toilets_count: form.value.toilet_count, 
-          helper_rooms_count: form.value.helper_room_count,
-          driver_rooms_count: form.value.driver_room_count,
-          carpark_count: form.value.carpark_count
+          helper_rooms_count: form.value.helper_rooms_count,
+          driver_rooms_count: form.value.driver_rooms_count,
+          carpark_count: form.value.carpark_count,
+          master_bedroom_area: form.value.master_bedroom_area
         };
       } else if (propertyTypeId === 2) { // Lot only
         const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
@@ -826,7 +922,7 @@ const saveProperty = async () => {
           block_number: String(form.value.block_number), 
           lot_number: String(form.value.lot_number),
           phase_number: String(form.value.phase_number),
-          lot_area: form.value.area, 
+          lot_area: convertAreaToSqm(Number(form.value.area) || 0), 
           lot_class_ID: lotClassMap[form.value.class || 'Residential'] || 1
         };
       } else if (propertyTypeId === 3) { // Condominium
@@ -841,7 +937,8 @@ const saveProperty = async () => {
           is_garden_villa: form.value.is_garden_villa,
           is_penthouse: form.value.is_penthouse,
           balcony_count: form.value.balcony_count,
-          bedroom_count: form.value.bedroom_count
+          bedroom_count: form.value.bedroom_count,
+          master_bedroom_area: form.value.master_bedroom_area
         };
       } else if (propertyTypeId === 4) { // Memorial
         specificData = {
@@ -860,6 +957,16 @@ const saveProperty = async () => {
         if (imageFiles.value.length > 0) {
           const filesToUpload = imageFiles.value.map(img => img.file);
           await listingsService.uploadPropertyImages(response.data.listing_ID, filesToUpload);
+        }
+
+        if (factSheetFile.value) {
+          console.log("[DEBUG] Uploading fact sheet for new listing...");
+          try {
+            await listingsService.uploadFactSheet(propertyId, factSheetFile.value.file);
+            console.log("[DEBUG] Fact sheet uploaded successfully.");
+          } catch (err) {
+            console.error("[DEBUG] Failed to upload fact sheet:", err);
+          }
         }
 
         router.push({ path: '/listings', query: { saved: 'created' } });
@@ -886,7 +993,8 @@ const saveProperty = async () => {
         latitude: form.value.lat,
         description: form.value.description || 'No description provided.',
         status: form.value.status,
-        dev_ID: form.value.dev_ID
+        dev_ID: form.value.dev_ID,
+        faq: form.value.faq
       };
       let specificData = {};
 
@@ -901,9 +1009,10 @@ const saveProperty = async () => {
           floor_area: form.value.floor_area,
           rooms_count: form.value.room_count, 
           toilets_count: form.value.toilet_count, 
-          helper_rooms_count: form.value.helper_room_count,
-          driver_rooms_count: form.value.driver_room_count,
-          carpark_count: form.value.carpark_count
+          helper_rooms_count: form.value.helper_rooms_count,
+          driver_rooms_count: form.value.driver_rooms_count,
+          carpark_count: form.value.carpark_count,
+          master_bedroom_area: form.value.master_bedroom_area
         };
       } else if (propertyTypeId === 2) { 
         const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
@@ -926,7 +1035,8 @@ const saveProperty = async () => {
           is_garden_villa: form.value.is_garden_villa,
           is_penthouse: form.value.is_penthouse,
           balcony_count: form.value.balcony_count,
-          bedroom_count: form.value.bedroom_count
+          bedroom_count: form.value.bedroom_count,
+          master_bedroom_area: form.value.master_bedroom_area
         };
       } else if (propertyTypeId === 4) { 
         specificData = {
@@ -938,15 +1048,43 @@ const saveProperty = async () => {
           is_pet_memorial: form.value.is_pet_memorial
         };
       }
+
       const response = await listingsService.updateListing(propertyId, mainData, specificData, propertyTypeId);
       if (response.success) {
+        // --- Image Deletion Logic ---
         if (removedImageUrls.value.length > 0) {
-          await listingsService.deleteListingImages(removedImageUrls.value);
+          console.log(`[DEBUG] Attempting to delete ${removedImageUrls.value.length} image(s)...`);
+          
+          // Deep copy array to sever reactive proxy bindings before passing to service
+          const cleanUrls = JSON.parse(JSON.stringify(removedImageUrls.value));
+          
+          try {
+            const deleteResult = await listingsService.deleteListingImages(cleanUrls);
+            if (!deleteResult.success) {
+              alert("Warning: Images were removed from storage but the database records could not be deleted. Please verify your Supabase RLS delete policy on the 'listing_images' table.");
+            } else {
+              console.log("[DEBUG] Image deletion transaction finished successfully.");
+            }
+          } catch (deleteError) {
+            console.error("[DEBUG] Image deletion threw an error:", deleteError);
+            alert("An error occurred while deleting images. Check the console.");
+          }
         }
 
         if (imageFiles.value.length > 0) {
           const filesToUpload = imageFiles.value.map(img => img.file);
           await listingsService.uploadPropertyImages(propertyId, filesToUpload);
+        }
+
+        console.log(factSheetFile.value);
+        if (factSheetFile.value) {
+          console.log("[DEBUG] Uploading fact sheet for new listing...");
+          try {
+            await listingsService.uploadFactSheet(propertyId, factSheetFile.value.file);
+            console.log("[DEBUG] Fact sheet uploaded successfully.");
+          } catch (err) {
+            console.error("[DEBUG] Failed to upload fact sheet:", err);
+          }
         }
 
         router.push({ path: '/listings', query: { saved: 'updated' } });
@@ -968,6 +1106,15 @@ const compiledDescriptionMarkdown = computed(() => {
 const compiledFAQMarkdown = computed(() => {
   return compileMarkdown(form.value.faq)
 });
+
+// to add a selected question into the faq
+function addQuestion(question: string) {
+  if (form.value.faq) {
+    form.value.faq += `\n\n`;
+  }
+
+  form.value.faq += `### ${question}\n- `
+}
 
 // goes back to previous page
 function goBack() {

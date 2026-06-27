@@ -54,7 +54,7 @@
 
           <div class="w-2/5 flex flex-col gap-2 text-gray-800 text-lg">
             <span class="inline-block bg-maurealty-green w-fit text-2xl text-white px-4 py-0.5 rounded-full tracking-wider mt-0.5">
-              ₱ {{ (details.price ?? 0).toLocaleString() }}
+               {{ formatPrice(details.price ?? 0).toLocaleString() }}
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
@@ -89,21 +89,22 @@
                 <legend class="px-2 font-semibold text-maurealty-blue">House and Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
                   <div class="grid grid-cols-2 gap-y-0.5">
-                    <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ details.lot_area }} sqm</span>
-                    <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ details.floor_area }} sqm</span>
+                    <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ formatArea(details.lot_area) }}</span>
+                    <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ formatArea(details.floor_area) }}</span>
                     <span class="flex items-center-safe gap-1"><Sofa /> {{ details.rooms_count }} room{{ details.rooms_count != 1 ? 's' : '' }}</span>
                     <span class="flex items-center-safe gap-1"><Toilet /> {{ details.toilets_count }} toilet{{ details.s_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1 col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
                   </div>
     
                   <span class="flex items-center-safe justify-around pr-2 mt-3">
                     <p class="flex items-center-safe gap-1" v-if="details.helper_rooms_count > 0">
                       <BrushCleaning class="size-4" /> {{ details.helper_rooms_count }} helper room{{ details.helper_rooms_count != 1 ? 's' : '' }}
                     </p>
-                    <p v-if="details.driver_room_count > 0 || details.carpark_count > 0">|</p>
+                    <p v-if="(details.driver_rooms_count > 0 && details.helper_rooms_count > 0)">|</p>
                     <p class="flex items-center-safe gap-1" v-if="details.driver_rooms_count > 0">
                       <LifeBuoy class="size-3" /> {{ details.driver_rooms_count }} driver room{{ details.driver_rooms_count != 1 ? 's' : '' }}
                     </p> 
-                    <p v-if="details.carpark_count > 0">|</p>
+                    <p v-if="(details.helper_rooms_count > 0  || details.driver_rooms_count > 0) && details.carpark_count > 0">|</p>
                     <p class="flex items-center-safe gap-1" v-if="details.carpark_count > 0">
                       <Car class="size-4" /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}
                     </p>
@@ -133,7 +134,7 @@
                       <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Phase No. <b>{{ details.phase_number }}</b></span>  
                     </div>
                     <div>
-                      <span class="flex items-center-safe gap-1"><SquareDashed /> {{ details.lot_area }} sqm</span>
+                      <span class="flex items-center-safe gap-1"><SquareDashed /> {{ formatArea(details.lot_area) }} </span>
                     </div>
                   </div>
                   
@@ -149,14 +150,15 @@
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue">Condominium Features</legend>
                 <main class="text-sm px-2 flex flex-col">
-                  <div class="grid grid-cols-2">
+                  <div class="grid grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><Hash /> Unit No. <b>{{ details.unit_number }}</b></span>
-                    <span class="flex items-center-safe gap-1"><BedDouble /> {{ details.bedroom_count }} bedroom{{ details.carpark_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1"><Bed /> {{ details.bedroom_count }} bedroom{{ details.carpark_count != 1 ? 's' : '' }}</span>
                     <span class="flex items-center-safe gap-1"><BookImage /> {{ details.balcony_count }} balcon{{ details.carpark_count != 1 ? 'ies' : 'y' }}</span>
                     <span class="flex items-center-safe gap-1"><Car /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1 col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
                   </div>
                   
-                  <div class="mt-2 flex gap-2">
+                  <div class="mt-4 flex gap-2">
                     <p class="font-bold text-xl text-maurealty-blue">Class:</p>
                     <p class="text-xl">{{ condoClassesMap[details.condo_class_ID] || 'N/A' }}</p>
                   </div>
@@ -186,7 +188,7 @@
         </main>
 
         <!-- FAQs -->
-        <section class="p-5 border border-maurealty-blue/20 rounded-3xl w-full mt-10">
+        <section v-if="compiledFAQMarkdown" class="p-5 border border-maurealty-blue/20 rounded-3xl w-full mt-10">
           <section class="prose" v-html="compiledFAQMarkdown" />
         </section>
         
@@ -217,11 +219,19 @@
 
           <button
             v-if="details.status !== 'sold'"
-            @click="$emit('sold', details.listing_id)" 
+            @click="$emit('sold', details.listing_id)"
             class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-green text-maurealty-green font-bold hover:bg-maurealty-green hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
           >
             <span class="flex items-center-safe gap-1"><BadgeCheck class="size-4" /> SOLD</span>
           </button>
+
+          <button
+            v-if="details.fact_sheet"
+            @click="downloadFactSheet"
+            class="flex flex-col items-center py-2 px-5 w-45 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+            <span class="flex items-center-safe gap-1"><DownloadIcon class="size-4" /> FACT SHEET</span>
+          </button>
+          
         </section>
       </div>
 
@@ -254,7 +264,9 @@ import CalculatorPanel from '@/components/calculator/CalculatorPanel.vue'
 
 import placeholder from '@/assets/images/default_placeholder.png'
 
-import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink, BadgeCheck, Calculator as CalculatorIcon} from "lucide-vue-next";
+import { formatPrice, formatArea } from '@/utils/conversion.ts';
+
+import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink, BadgeCheck, DownloadIcon, Bed, Calculator as CalculatorIcon} from "lucide-vue-next";
 
 // Toggles the calculator popup for this listing.
 const showCalc = ref(false)
@@ -333,6 +345,7 @@ const loadProperties = async () => {
         created_at: new Date(data.created_at),
         status: data.status,
         faq: data.faq,
+        fact_sheet: data.fact_sheet,
         
         agent_name: `${data.agents?.first_name || ''} ${data.agents?.last_name || ''}`.trim(),
         developer_name: data.developers?.name || 'None',
@@ -424,8 +437,53 @@ const compiledDescriptionMarkdown = computed(() => {
 
 // FAQ markdown conversion and input
 const compiledFAQMarkdown = computed(() => {
-  return compileMarkdown(details.value?.faq)
+  if (details.value.faq)
+    return compileMarkdown("# FREQUENTLY ASKED QUESTIONS\n\n" + details.value.faq);
+  else
+    return '';
 });
+
+// thank you Gemini
+const downloadFactSheet = async () => {
+  if (!details.value || !details.value.fact_sheet) return;
+
+  try {
+    // 1. Fetch the file data as a blob to bypass cross-origin browser view behaviors
+    const response = await fetch(details.value.fact_sheet);
+    if (!response.ok) throw new Error('Network response was not ok');
+    const blob = await response.blob();
+
+    // 2. Extract a filename from the end of the Supabase storage URL
+    const fileUrl = details.value.fact_sheet;
+    let fileName = fileUrl.substring(fileUrl.lastIndexOf('/') + 1) || 'fact_sheet.pdf';
+
+    // Regex to strip out "listingID-Timestamp-" prefix if present
+    const prefixRegex = /^\d+-\d+-/;
+    if (prefixRegex.test(fileName)) {
+      fileName = fileName.replace(prefixRegex, ''); 
+    }
+
+    // 3. Create a local object URL from the blob
+    const blobUrl = window.URL.createObjectURL(blob);
+    
+    // 4. Trigger the programatic download anchor click
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = fileName; // Safely assign the string name here
+    document.body.appendChild(link);
+    link.click();
+    
+    // 5. Cleanup DOM elements and memory objects
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (err: any) {
+    console.error('Error downloading file:', err.message);
+    alert('Failed to download file. Opening directly instead.');
+    
+    // Fallback: If fetch fails due to strict CORS settings, attempt a direct open
+    window.open(details.value.fact_sheet, '_blank');
+  } 
+};
 </script>
 
 <style scoped>

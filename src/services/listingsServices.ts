@@ -235,13 +235,15 @@ export const listingsService = {
     }
   },
 
-  async deleteListingImages(imageUrls: string[]) {
-    if (imageUrls.length === 0) return { success: true };
+async deleteListingImages(imageUrls: string[]) {
+    if (!imageUrls || imageUrls.length === 0) return { success: true };
+
+    // Convert any potential reactive proxy elements into clean string primitives
+    const rawUrls = Array.from(imageUrls).map(url => String(url).trim());
 
     try {
-      // Public URLs embed the in-bucket path after this marker; we need that path to remove the stored file
       const marker = '/object/public/images/';
-      const storagePaths = imageUrls
+      const storagePaths = rawUrls
         .map((url) => {
           const index = url.indexOf(marker);
           return index === -1 ? null : url.slice(index + marker.length);
@@ -249,23 +251,68 @@ export const listingsService = {
         .filter((path): path is string => path !== null);
 
       if (storagePaths.length > 0) {
-        const { error: storageError } = await supabase.storage.from('images').remove(storagePaths);
+        console.log("[DEBUG] Sending storage removal paths:", storagePaths);
+        const { data: storageData, error: storageError } = await supabase.storage.from('images').remove(storagePaths);
         if (storageError) throw storageError;
+        console.log("[DEBUG] Storage removal response data:", storageData);
       }
 
-      const { error: dbError } = await supabase
+      console.log("[DEBUG] Executing database DELETE query for URLs:", rawUrls);
+      const { data: dbData, error: dbError } = await supabase
         .from('listing_images')
         .delete()
-        .in('image_url', imageUrls);
+        .in('image_url', rawUrls)
+        .select();
 
       if (dbError) throw dbError;
 
+      if (!dbData || dbData.length === 0) {
+        console.warn("[DEBUG] Database delete returned 0 modified rows. Check your RLS policies for table listing_images.");
+        return { success: false };
+      }
+
+      console.log(`[DEBUG] Database delete successful. Removed ${dbData.length} row(s).`);
       return { success: true };
     } catch (error) {
-      console.error('Error deleting listing images:', error);
+      console.error('[DEBUG] Critical error inside deleteListingImages:', error);
       throw error;
     }
   },
+
+  // fact sheet upload
+  async uploadFactSheet(listingId: number, file: File) {
+    try {
+      const sanitizedName = file.name.replace(/\s+/g, '_');
+      const filePath = `${listingId}-${Date.now()}-${sanitizedName}`;
+
+      // upload the file to the fact_sheets bucket
+      const { error } = await supabase.storage
+        .from('fact_sheets')
+        .upload(filePath, file, { upsert: true });
+
+      if (error) throw error;
+
+      // get the public URL of the uploaded document
+      const { data: urlData } = supabase.storage
+        .from('fact_sheets')
+        .getPublicUrl(filePath);
+
+      // update the main_listings table row with this file's public URL
+      const { error: dbError } = await supabase
+        .from('main_listings')
+        .update({ fact_sheet: urlData.publicUrl })
+        .eq('listing_ID', listingId)
+        .select();
+
+      if (dbError) throw dbError;
+
+      return { success: true, url: urlData.publicUrl };
+    } catch (error) {
+      console.error("Storage upload failed:", error);
+      throw error;
+    }
+  },
+
   async updateListingStatus(listingId: number, newStatus: string) {
     try {
       const updateTo = { status: newStatus };

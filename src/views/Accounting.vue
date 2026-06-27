@@ -1,112 +1,30 @@
 <template>
-  <div class="w-full flex flex-col min-h-screen bg-[#f6f7fb]">
+  <div class="relative w-full flex flex-col min-h-screen bg-[#f6f7fb]">
     
     <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky top-0 z-20">
       <div class="flex justify-between items-center w-full pb-3 mb-3">
-        <h1 class="text-3xl font-bold uppercase">Sales</h1>
+        <h1 class="text-3xl font-bold uppercase">Accounting</h1>
         <div class="flex gap-5 h-full">
           </div>
       </div>
     </header>
 
-    <main class="flex-1 p-8 md:p-10 overflow-y-auto">
+    <main class="flex-1 p-8 md:p-10 overflow-y-auto flex items-center justify-center">
       
       <div class="accounting-layout">
         
         <div class="flex flex-col gap-6">
-          
           <CalculatorPanel />
-
-          <div class="card notices">
-            <h2 class="card-title red">RED FLAG NOTICES</h2>
-            <div class="notice">
-              <span class="flag">🚩</span>
-              <span class="text">Lacking Voucher</span>
-              <span class="date">09/15/2025</span>
-            </div>
-            <div class="notice">
-              <span class="flag">🚩</span>
-              <span class="text">Wrong Expenses L.</span>
-              <span class="date">09/15/2025</span>
-            </div>
-            <div class="notice">
-              <span class="flag">🚩</span>
-              <span class="text">Quota Due Coming</span>
-              <span class="date">08/15/2025</span>
-            </div>
-          </div>
         </div>
 
-        <div class="flex flex-col gap-6">
-          
-          <div class="card expenses">
-            <h2 class="card-title">MONTHLY EXPENSES</h2>
-
-            <div class="expenses-header">
-              <div class="filters">
-                <label class="text-sm font-semibold text-gray-600">Filters:</label>
-                <select class="filter-select">
-                  <option>Ascending</option>
-                  <option>Descending</option>
-                </select>
-                <select class="filter-select">
-                  <option>Type</option>
-                  <option>Fixed</option>
-                  <option>Utilities</option>
-                  <option>Taxes</option>
-                </select>
-              </div>
-              <span class="search-icon">🔍</span>
-            </div>
-
-            <div class="expense-row">
-              <span class="type">Fixed</span>
-              <span class="amount">₱ 10,000,000.00</span>
-            </div>
-            <div class="expense-row">
-              <span class="type">Utilities</span>
-              <span class="amount negative">-₱ 10,000,000.00</span>
-            </div>
-            <div class="expense-row">
-              <span class="type">Taxes</span>
-              <span class="amount negative">-₱ 9,876,543.21</span>
-            </div>
-          </div>
-
-          <div class="card checks">
-            <h2 class="card-title">CHECKS</h2>
-            <div class="list-item">110145162157 <span class="info">ⓘ</span></div>
-            <div class="list-item">103157154145 <span class="info">ⓘ</span></div>
-            <div class="list-item">103141162154 <span class="info">ⓘ</span></div>
-          </div>
-
-          <div class="card receipts">
-            <h2 class="card-title">RECEIPTS</h2>
-            <div class="list-item">
-              <span class="code">TWFltUmVhbHR5</span>
-              <span class="date">09/15/2025</span>
-              <span class="info">ⓘ</span>
-            </div>
-            <div class="list-item">
-              <span class="code">QmlsbHlfKZWU</span>
-              <span class="date">08/27/2025</span>
-              <span class="info">ⓘ</span>
-            </div>
-            <div class="list-item">
-              <span class="code">emVyby96ZXJv</span>
-              <span class="date">06/31/2025</span>
-              <span class="info">ⓘ</span>
-            </div>
-          </div>
-          
-        </div>
       </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-// Calculator extracted to a shared component so the listing popup can reuse it.
+// Calculator (incl. the amortization schedule) lives in the shared
+// CalculatorPanel so the listing popup can reuse it.
 import CalculatorPanel from '@/components/calculator/CalculatorPanel.vue'
 </script>
 
@@ -128,17 +46,18 @@ input[type=number] {
   display: grid;
   grid-template-columns: 1fr; /* Stacks on mobile */
   gap: 1.5rem;
-  max-width: 1400px;
+  max-width: 600px;
+  width: 100%;
   margin: 0 auto;
 }
 
-/* Side-by-side on larger screens */
 @media (min-width: 1024px) {
   .accounting-layout {
-    grid-template-columns: 1.3fr 1fr;
+    max-width: 900px;
+    width: 100%;
+    height: -webkit-fill-available;
   }
 }
-
 /* ============= CARDS ============= */
 .card {
   background: #fff;

@@ -20,7 +20,7 @@
       </div>
 
       <Transition name="expand">
-        <div v-if="isFilterVisible" class="flex items-center gap-10 pb-5">
+        <div v-if="isFilterVisible" class="flex items-center gap-10 pb-5 w-full flex-warp">
             
             <section class="listings-filter-section">
               <label for="Type-input" class="text-base">Type</label>
@@ -30,15 +30,15 @@
             <section class="listings-filter-section">
               <label for="price-range-input" class="text-base">Price Range</label>
               <div class="flex gap-4 items-center">
-                <input type="number" placeholder="₱ Min" v-model="priceMin" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+                <input type="number" :placeholder="`${currencySymbols[currentCurrency]} Min`" v-model="priceMin" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
                 <span class="font-bold -mx-2"> - </span>
-                <input type="number" placeholder="₱ Max" v-model="priceMax" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+                <input type="number" :placeholder="`${currencySymbols[currentCurrency]} Max`" v-model="priceMax" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
               </div>
             </section>
 
             <section class="listings-filter-section">
               <label for="developer-input" class="text-base">Developer</label>
-              <input id="developer-input" type="text" v-model="developerQuery" class="text-sm w-40 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+              <ListingsFilter :choices="developerChoices" v-model="selectedDeveloper" />
             </section>
 
             <section class="listings-filter-section" v-if="selectedType === 'House And Lot'">
@@ -75,6 +75,19 @@
               <label for="memorial-type-input" class="text-base">Type</label>
               <ListingsFilter :choices="memorialTypes" v-model="selectedMemorialType" />
             </section>
+
+            <div class = "flex-grow"></div>
+
+            <section class="listings-filter-section">
+              <label class="text-base text-gray-500 font-medium">Currency</label>
+              <ListingsFilter :choices="currencies" v-model="currentCurrency" />
+            </section>
+            
+            <section class="listings-filter-section">
+              <label class="text-base text-gray-500 font-medium">Units</label>
+              <ListingsFilter :choices="units" v-model="currentUnit" />
+            </section>
+
         </div>
       </Transition>
       
@@ -168,6 +181,10 @@ import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
+import { developerService } from '@/services/developerService'
+
+// utiities
+import { currentCurrency, currentUnit, convertPriceToPHP, currencySymbols } from '@/utils/conversion.ts'
 
 import { ChevronDown, Plus } from 'lucide-vue-next'
 
@@ -179,7 +196,12 @@ const selectedType = ref("None")
 const searchQuery = ref("")
 const priceMin = ref("")
 const priceMax = ref("")
-const developerQuery = ref("")
+
+const selectedDeveloper = ref("None")
+const developerChoices = ref<string[]>(["None"])
+
+const currencies = ['PHP', 'USD', 'CAD', 'CNY', 'JPY'];
+const units = ['Metric', 'English'];
 
 const filteredProperties = computed(() => {
   let result = properties.value
@@ -198,19 +220,20 @@ const filteredProperties = computed(() => {
     )
   }
 
-  const developer = developerQuery.value.trim().toLowerCase()
-  if (developer) {
-    result = result.filter(p => p.developer_name?.toLowerCase().includes(developer))
-  }
+  if (selectedDeveloper.value !== "None") {
+      result = result.filter(p => p.developer_name === selectedDeveloper.value)
+    }
 
   const min = Number(priceMin.value)
   if (priceMin.value !== "" && !Number.isNaN(min)) {
-    result = result.filter(p => p.price >= min)
+    const dbMin = convertPriceToPHP(min);
+    result = result.filter(p => p.price >= dbMin)
   }
 
   const max = Number(priceMax.value)
   if (priceMax.value !== "" && !Number.isNaN(max)) {
-    result = result.filter(p => p.price <= max)
+    const dbMax = convertPriceToPHP(max);
+    result = result.filter(p => p.price <= dbMax)
   }
 
   return result
@@ -231,7 +254,7 @@ const paginatedProperties = computed(() => {
 })
 
 // Reset to page 1 when any filter or search changes
-watch([selectedType, searchQuery, developerQuery, priceMin, priceMax], () => {
+watch([selectedType, searchQuery, selectedDeveloper, priceMin, priceMax], () => {
   currentPage.value = 1
 })
 
@@ -273,8 +296,14 @@ const showSavedNotice = () => {
   setTimeout(() => { savedNotice.value = null }, 4000)
 }
 
+const loadDeveloperChoices = async () => {
+  const names = await developerService.getDeveloperNames()
+  developerChoices.value = ["None", ...names]
+}
+
 onMounted(() => {
   loadProperties();
+  loadDeveloperChoices();
   showSavedNotice();
 })
 

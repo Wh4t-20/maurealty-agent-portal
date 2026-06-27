@@ -6,10 +6,14 @@
       <label class="calc-label">{{ calcMode }} Calculator:</label>
       <select v-model="calcMode" class="calc-dropdown">
         <option value="Sales">Sales</option>
-        <option value="Mortgage">Mortgage</option>
+        <option value="Loan">Loan</option>
         <option value="Taxes">Property Tax</option>
       </select>
     </div>
+
+    <label class="calc-label block mb-2 text-sm text-[#64748b]">
+      {{ calcMode === 'Loan' ? 'Monthly Payment:' : calcMode === 'Sales' ? 'Net Commission' : '' }}
+    </label>
 
     <div class="calc-display">
       <span class="peso-symbol">₱</span>
@@ -31,14 +35,10 @@
       </div>
     </div>
 
-    <div v-if="calcMode === 'Mortgage'" class="calc-inputs">
+    <div v-if="calcMode === 'Loan'" class="calc-inputs">
       <div class="input-pair">
-        <label>Property Price (₱)</label>
+        <label>Loan Price (₱)</label>
         <input type="number" v-model.number="mortPrice" />
-      </div>
-      <div class="input-pair">
-        <label>Downpayment (%)</label>
-        <input type="number" v-model.number="mortDownPercent" />
       </div>
       <div class="input-pair">
         <label>Interest Rate (Annual %)</label>
@@ -46,8 +46,23 @@
       </div>
       <div class="input-pair">
         <label>Loan Term (Years)</label>
-        <input type="number" v-model.number="mortYears" />
+        <input
+          type="number"
+          v-model.number="mortYears"
+          min="1"
+          max="20"
+          @input="mortYears > 20 ? mortYears = 20 : mortYears"
+        />
       </div>
+      <span
+        @click="openAmortization"
+        class="text-sm text-[#64748b] cursor-pointer hover:underline transition-colors"
+      >
+        View Amortization Schedule
+      </span>
+      <p v-if="errorMessage" class="mt-2 text-xs text-[#64748b] font-bold animate-pulse text-center">
+        {{ errorMessage }}
+      </p>
       <p class="text-xs text-center text-gray-400 mt-2">*Estimated Monthly Payment</p>
     </div>
 
@@ -61,17 +76,42 @@
         <input type="number" v-model.number="taxRatePercent" />
       </div>
     </div>
+
+    <!-- Teleported so the full-screen amortization overlay works even when this
+         panel is rendered inside a small popup. -->
+    <Teleport to="body">
+      <amortSched
+        v-if="showAmortization"
+        :principal="mortPrice"
+        :years="mortYears"
+        :interest="mortInterest"
+        @close="showAmortization = false"
+      />
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import amortSched from '@/components/accounting/amortSched.vue'
 
-// Optional: when opened from a listing, prefill the property price and default
-// to Mortgage mode (the common "what's the loan on this property" use).
+// Optional: when opened from a listing, prefill the property price. Loan is the
+// default mode (the common "what's the loan on this property" use).
 const props = defineProps<{ prefillPrice?: number }>()
 
-const calcMode = ref(props.prefillPrice != null ? 'Mortgage' : 'Sales')
+const calcMode = ref('Loan')
+const showAmortization = ref(false)
+const errorMessage = ref('')
+
+const openAmortization = () => {
+  if (!mortPrice.value || mortPrice.value <= 0 || !mortYears.value || mortYears.value <= 0 || !mortInterest.value || mortInterest.value <= 0) {
+    errorMessage.value = 'Please enter a valid Loan Price, Interest Rate, and Term to view the schedule.'
+    setTimeout(() => { errorMessage.value = '' }, 3000)
+    return
+  }
+  errorMessage.value = ''
+  showAmortization.value = true
+}
 
 // Formatting Tool
 const formatCurrency = (val: number) => {
@@ -90,13 +130,13 @@ const salesTotal = computed(() => {
 })
 
 const mortPrice = ref(props.prefillPrice)
-const mortDownPercent = ref()
 const mortInterest = ref()
 const mortYears = ref()
 
 const mortTotal = computed(() => {
-  const principal = mortPrice.value * (1 - (mortDownPercent.value / 100))
-  const monthlyInterestRate = (mortInterest.value / 100) / 12
+  const principal = mortPrice.value || 0
+  const annualInterestRate = mortInterest.value
+  const monthlyInterestRate = (annualInterestRate / 100) / 12
   const totalPayments = mortYears.value * 12
 
   if (monthlyInterestRate === 0) return principal / totalPayments
@@ -114,7 +154,7 @@ const taxTotal = computed(() => {
 
 const displayedTotal = computed(() => {
   if (calcMode.value === 'Sales') return formatCurrency(salesTotal.value)
-  if (calcMode.value === 'Mortgage') return formatCurrency(mortTotal.value)
+  if (calcMode.value === 'Loan') return formatCurrency(mortTotal.value)
   if (calcMode.value === 'Taxes') return formatCurrency(taxTotal.value)
   return '0.00'
 })

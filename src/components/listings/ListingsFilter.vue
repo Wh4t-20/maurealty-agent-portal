@@ -18,7 +18,7 @@
             leave-to-class="transform scale-95 opacity-0"
         >
           <ListboxOptions
-            class="absolute mt-1 max-h-80 w-fit min-w-full overflow-auto rounded-xl bg-background-gray py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none"
+            class="absolute z-50 mt-1 max-h-80 w-fit min-w-full overflow-auto rounded-xl bg-background-gray py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none"
           >
             <ListboxOption
               v-slot="{ active, selected }"
@@ -55,7 +55,6 @@ import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headless
 import { ChevronDown } from 'lucide-vue-next';
 import { computed } from 'vue'
 
-import { ref } from 'vue'
 const props = defineProps<{ choices: string[], modelValue: string }>()
 
 const emit = defineEmits(['update:modelValue'])

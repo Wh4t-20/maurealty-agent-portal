@@ -43,59 +43,115 @@
 
                     <hr width="100%" class="my-2 text-maurealty-blue/30">
 
-                    <div class="grid grid-cols-3 gap-x-3 w-full">
-                        <h1 class="col-span-3 block text-2xl font-bold text-maurealty-blue mb-2">Office Hours</h1>
-                        <span class="justify-items-center">
+                    <!-- DYNAMIC OFFICE HOURS SECTION -->
+                    <div class="flex flex-col gap-4 w-full">
+                        <div class="flex justify-between items-center">
+                            <h1 class="text-2xl font-bold text-maurealty-blue">Office Hours</h1>
+                            <button 
+                                type="button" 
+                                @click="addHoursSlot"
+                                class="text-sm font-semibold text-white bg-maurealty-blue hover:bg-maurealty-blue/90 px-3 py-1.5 rounded-lg transition"
+                            >
+                                + Add Schedule
+                            </button>
+                        </div>
 
-                            <label class="block text-lg font-bold text-maurealty-blue mb-1">Available Days</label>
-                            
-                            <Listbox v-model="selectedDays" multiple>
-                                <div class="relative w-full">
-                                    <ListboxButton class="relative w-full border border-gray-300 rounded-lg p-2 text-left focus:ring-2 focus:ring-maurealty-blue outline-none bg-white cursor-default">
-                                        <span class="block truncate">
-                                            {{ displayShortcuts }}
-                                        </span>
-                                        <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                            <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="none" stroke="currentColor">
-                                                <path d="M7 7l3-3 3 3m0 6l-3 3-3-3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                                            </svg>
-                                        </span>
-                                    </ListboxButton>
+                        <div 
+                            v-for="(slot, index) in officeHours" 
+                            :key="index" 
+                            class="grid grid-cols-1 md:grid-cols-3 gap-x-3 gap-y-2 items-end p-4 border border-gray-200 rounded-xl relative bg-gray-50/50"
+                        >
+                            <!-- Remove Slot Button -->
+                            <button 
+                                v-if="officeHours.length > 1"
+                                type="button" 
+                                @click="removeHoursSlot(index)"
+                                class="absolute -top-2 -right-2 bg-red-400 text-white p-1 rounded-full hover:bg-red-500 transition shadow-sm"
+                                title="Remove schedule block"
+                            >
+                                <XIcon class="size-4" stroke-width="2.5"/>
+                            </button>
 
-                                    <transition leave-active-class="transition duration-100 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
-                                        <ListboxOptions class="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm z-10">
-                                            <ListboxOption
-                                                v-slot="{ active, selected }"
-                                                v-for="day in days"
-                                                :key="day.id"
-                                                :value="day"
-                                                as="template"
-                                            >
-                                                <li :class="[active ? 'bg-maurealty-blue/10 text-maurealty-blue' : 'text-gray-900', 'relative cursor-default select-none py-2 px-4 flex items-center gap-3']">
-                                                    <input 
-                                                        type="checkbox" 
-                                                        :checked="selected" 
-                                                        class="h-4 w-4 rounded border-gray-300 text-maurealty-blue focus:ring-maurealty-blue pointer-events-none" 
-                                                    />
-                                                    <span :class="[selected ? 'font-medium text-maurealty-blue' : 'font-normal', 'block truncate']">
-                                                        {{ day.name }}
-                                                    </span>
-                                                </li>
-                                            </ListboxOption>
-                                        </ListboxOptions>
-                                    </transition>
-                                </div>
-                            </Listbox>
+                            <span class="flex flex-col">
+                                <label class="block text-base font-bold text-maurealty-blue mb-1">Available Days</label>
+                                <Listbox v-model="slot.selectedDays" multiple>
+                                    <div class="relative w-full">
+                                        <ListboxButton class="relative w-full border border-gray-300 rounded-lg p-2 text-left focus:ring-2 focus:ring-maurealty-blue outline-none bg-white cursor-default">
+                                            <span class="block truncate">
+                                                {{ displayShortcuts(slot.selectedDays) }}
+                                            </span>
+                                            <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                                <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                                                    <path d="M7 7l3-3 3 3m0 6l-3 3-3-3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                                </svg>
+                                            </span>
+                                        </ListboxButton>
 
-                        </span>
-                        <span class="justify-items-center">
-                          <label class="block text-lg font-bold text-maurealty-blue mb-1">Open Hours</label>
-                            <input type="time" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
-                        </span>
-                        <span class="justify-items-center">
-                          <label class="block text-lg font-bold text-maurealty-blue mb-1">Closed Hours</label>
-                            <input type="time" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
-                        </span>
+                                        <transition leave-active-class="transition duration-100 ease-in" leave-from-class="opacity-100" leave-to-class="opacity-0">
+                                            <ListboxOptions class="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm z-20">
+                                                <ListboxOption
+                                                    v-slot="{ active, selected }"
+                                                    v-for="day in days"
+                                                    :key="day.id"
+                                                    :value="day"
+                                                    as="template"
+                                                >
+                                                    <li :class="[active ? 'bg-maurealty-blue/10 text-maurealty-blue' : 'text-gray-900', 'relative cursor-default select-none py-2 px-4 flex items-center gap-3']">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            :checked="selected" 
+                                                            class="h-4 w-4 rounded border-gray-300 text-maurealty-blue focus:ring-maurealty-blue pointer-events-none" 
+                                                        />
+                                                        <span :class="[selected ? 'font-medium text-maurealty-blue' : 'font-normal', 'block truncate']">
+                                                            {{ day.name }}
+                                                        </span>
+                                                    </li>
+                                                </ListboxOption>
+                                            </ListboxOptions>
+                                        </transition>
+                                    </div>
+                                </Listbox>
+                            </span>
+
+                            <span class="flex flex-col">
+                                <label class="block text-base font-bold text-maurealty-blue mb-1">Open Hours</label>
+                                <span class="flex gap-1">
+                                    <input v-if="!slot.isOpenUnavailable " type="time" v-model="slot.openTime"
+                                            class="bg-white border-gray-300 focus:ring-2 focus:ring-maurealty-blue w-full border rounded-lg p-2 outline-none">
+                                    <input v-if="slot.isOpenUnavailable " type="text"
+                                            :disabled="true"
+                                            placeholder="Unavailable"
+                                            class="bg-gray-200 text-gray-600 border-gray-200 cursor-not-allowed w-full border rounded-lg p-2 outline-none select-none">
+                                        
+                                    <button type="button" @click="toggleOpenUnavailable(slot)" 
+                                            class="w-fit p-2 border rounded-lg bg-white text-gray-700 border-gray-300 hover:bg-gray-100 active:bg-maurealty-blue active:text-white  cursor-pointer"
+                                            :title="slot.isOpenUnavailable ? 'Make Available' : 'Mark Unavailable'">
+                                            <XIcon v-if="!slot.isOpenUnavailable" />
+                                            <CheckIcon v-if="slot.isOpenUnavailable" />
+                                    </button>  
+                                </span>
+                            </span>
+
+                            <span class="flex flex-col">
+                                <label class="block text-base font-bold text-maurealty-blue mb-1">Close Hours</label>
+                                <span class="flex gap-1">
+                                    <input v-if="!slot.isCloseUnavailable " type="time" v-model="slot.closeTime"
+                                            class="bg-white border-gray-300 focus:ring-2 focus:ring-maurealty-blue w-full border rounded-lg p-2 outline-none">
+                                    <input v-if="slot.isCloseUnavailable " type="text"
+                                            :disabled="true"
+                                            placeholder="Unavailable"
+                                            class="bg-gray-200 text-gray-600 border-gray-200 cursor-not-allowed w-full border rounded-lg p-2 outline-none select-none">
+                                        
+                                    <button type="button" @click="toggleCloseUnavailable(slot)" 
+                                            class="w-fit p-2 border rounded-lg bg-white text-gray-700 border-gray-300 hover:bg-gray-100 active:bg-maurealty-blue active:text-white  cursor-pointer"
+                                            :title="slot.isCloseUnavailable ? 'Make Available' : 'Mark Unavailable'">
+                                            <XIcon v-if="!slot.isCloseUnavailable" />
+                                            <CheckIcon v-if="slot.isCloseUnavailable" />
+                                    </button>  
+                                </span>
+                            </span>
+
+                        </div>
                     </div>
                 </section>
 
@@ -140,9 +196,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue';
-import { type DayOption } from '@/assets/classes/developers';
+import { type DayOption, type OfficeHourSlot, days } from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
-import { XIcon } from 'lucide-vue-next';
+import { CheckIcon, XIcon } from 'lucide-vue-next';
 
 // reminder to safeguard the non-nullable inputs pls (error message if missing part)
 
@@ -185,27 +241,44 @@ const removeImage = () => {
 
 function saveDeveloper() {
     console.log("Saving developer");
+    // office debugger
+    console.log("Saving developer details with schedules:", officeHours.value);
 }
 
-// for the days logic
-const days: DayOption[] = [
-    { id: 1, name: 'Monday', shortcut: 'Mon' },
-    { id: 2, name: 'Tuesday', shortcut: 'Tue' },
-    { id: 3, name: 'Wednesday', shortcut: 'Wed' },
-    { id: 4, name: 'Thursday', shortcut: 'Thu' },
-    { id: 5, name: 'Friday', shortcut: 'Fri' },
-    { id: 6, name: 'Saturday', shortcut: 'Sat' },
-    { id: 7, name: 'Sunday', shortcut: 'Sun' },
-]
+const officeHours = ref<OfficeHourSlot[]>([
+    { selectedDays: [], openTime: '', closeTime: '', isOpenUnavailable: false, isCloseUnavailable: false }
+]);
 
-const selectedDays = ref<DayOption[]>([]);
+const addHoursSlot = () => {
+    officeHours.value.push({ selectedDays: [], openTime: '', closeTime: '', isOpenUnavailable: false, isCloseUnavailable: false });
+};
 
-const displayShortcuts = computed(() => {
-    if (selectedDays.value.length === 0) return 'Select days';
+const removeHoursSlot = (index: number) => {
+    if (officeHours.value.length > 1) {
+        officeHours.value.splice(index, 1);
+    }
+};
+
+const toggleOpenUnavailable = (slot: OfficeHourSlot) => {
+    slot.isOpenUnavailable = !slot.isOpenUnavailable;
+    if (slot.isOpenUnavailable) {
+        slot.openTime = '';
+    }
+};
+
+const toggleCloseUnavailable = (slot: OfficeHourSlot) => {
+    slot.isCloseUnavailable = !slot.isCloseUnavailable;
+    if (slot.isCloseUnavailable) {
+        slot.closeTime = '';
+    }
+};
+
+const displayShortcuts = (selectedDaysList: DayOption[]) => {
+    if (!selectedDaysList || selectedDaysList.length === 0) return 'Select days';
     
-    const sortedDays = [...selectedDays.value].sort((a, b) => a.id - b.id);
+    const sortedDays = [...selectedDaysList].sort((a, b) => a.id - b.id);
     return sortedDays.map(day => day.shortcut).join(', ');
-});
+};
 </script>
 
 <style scoped>
