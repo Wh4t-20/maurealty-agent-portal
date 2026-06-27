@@ -22,7 +22,7 @@ export const positionMap: Record<number, string> = {
 }
 
 export const getAge = (birth_date: string) => {
-  if (!birth_date) return ''
+  if (!birth_date) return -1
   
   const today = new Date()
   const birthDate = new Date(birth_date)

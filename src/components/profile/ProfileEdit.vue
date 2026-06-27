@@ -8,19 +8,26 @@
                 class="w-80 h-80 object-cover rounded-full border-4 border-white shadow"
                 />
 
-                <div v-if="!form.profile_url" class="w-full mt-5">
-                    <button class="w-full flex flex-col items-center py-2 px-5 rounded-xl border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer">
-                        <span class="flex items-center-safe gap-1.5"><Upload class="size-4" /> UPLOAD</span>
-                    </button>
-                </div>
+                <input 
+                    type="file"  
+                    accept="image/*" 
+                    ref="fileInput" 
+                    class="hidden" 
+                    @change="handleFileUpload"
+                >
 
-                <div v-else class="w-full grid grid-cols-1 md:grid-cols-2 gap-2 mt-5">
-                    <button @click="form.profile_url=''" class="flex flex-col items-center py-2 px-5 rounded-xl border-2 border-red-600 text-red-600 font-bold hover:bg-red-600 hover:text-white transition-colors cursor-pointer">
+                <div class="w-full grid grid-cols-1 md:grid-cols-2 gap-2 mt-5">
+                    <button type="button" v-if="form.profile_url" @click="removeImage" class="flex flex-col items-center py-2 px-5 rounded-xl border-2 border-red-600 text-red-600 font-bold hover:bg-red-600 hover:text-white transition-colors cursor-pointer">
                         <span class="flex items-center-safe gap-1.5"><Trash2 class="size-4" /> DELETE</span>
                     </button>
 
-                    <button class="flex flex-col items-center py-2 px-5 rounded-xl border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer">
-                        <span class="flex items-center-safe gap-1.5"><Upload class="size-4" /> CHANGE</span>
+                    <button type="button" v-if="checkReversible()" @click="revertImage" class="flex flex-col items-center py-2 px-5 rounded-xl border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer">
+                        <span class="flex items-center-safe gap-1.5"><Undo2 class="size-4" /> REVERT</span>
+                    </button>
+
+                    <button type="button" @click="triggerFileInput" class="flex flex-col items-center py-2 px-5 rounded-xl border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer"
+                            :class="[ form.profile_url || checkReversible() ? '' : 'col-span-full' ]">
+                        <span class="flex items-center-safe gap-1.5"><Upload class="size-4" />{{ form.profile_url ? 'CHANGE' : 'UPLOAD' }}</span>
                     </button>
                 </div>
             </div>
@@ -142,7 +149,7 @@ import { agentService } from '@/services/agentService';
 import { useRouter } from 'vue-router';
 import placeholder from '@/assets/images/default_placeholder.png';
 import { type AgentProfile, getAge } from '@/assets/classes/agent';
-import { Trash2, Upload } from 'lucide-vue-next';
+import { Trash2, Undo2, Upload } from 'lucide-vue-next';
 
 const props = defineProps<{ agent: AgentProfile }>();
 const emits = defineEmits(['cancel']);
@@ -168,11 +175,64 @@ const sexes: string[] = [ 'Male', 'Female', 'Non-Binary', 'Other' ];
 
 const router = useRouter();
 
+// Image handling
+const currentImage = ref<{ file: File; preview: string }>();
+const fileInput = ref<HTMLInputElement | null>(null);
+
+const triggerFileInput = () => {
+  if (fileInput.value) fileInput.value.click();
+};
+
+const handleFileUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  
+  if (target.files && target.files.length > 0) {
+    const file = target.files[0];
+
+    if (!file) return;
+
+    if (currentImage.value) {
+        URL.revokeObjectURL(currentImage.value.preview);
+    }
+
+    const previewURL = URL.createObjectURL(file);
+
+    currentImage.value = {
+      file: file,
+      preview: previewURL
+    };
+
+    // stores temporary previewURL
+    form.value.profile_url = previewURL;
+  }
+  
+  if (fileInput.value) fileInput.value.value = '';
+};
+
+const removeImage = () => {
+  if (currentImage.value) {
+    URL.revokeObjectURL(currentImage.value.preview); 
+    currentImage.value = undefined;
+  }
+
+  form.value.profile_url = '';
+};
+
+const checkReversible = () => {
+    return ((!form.value.profile_url && props.agent.profile_url) ? true : false);
+}
+
+// brings back original pfp
+const revertImage = () => {
+    form.value.profile_url = props.agent.profile_url;
+}
+
+
 const saveAgentDetails = async () => {
     console.log('Saving new account details...');
 
     const agentID = form.value.agent_ID
-    const agentData = {
+    const agentData: Partial<AgentProfile> = {
         first_name: form.value.first_name,
         middle_name: form.value.middle_name,
         last_name: form.value.last_name,
@@ -181,13 +241,40 @@ const saveAgentDetails = async () => {
         age: getAge(form.value.birth_date),
         contact_number: form.value.contact_number,
         email_address: form.value.email_address,
-        profile_url: form.value.profile_url
     }
 
-    const response = await agentService.updateProfile(agentID, agentData);
-    if (response.success) {
-        console.log('Profile updated successfully!');
-        router.go(0);
+    try {
+        // SCENARIO 1: A new image file was uploaded
+        if (currentImage.value?.file) {
+            console.log('Uploading new image...');
+            const newUrl = await agentService.uploadProfileImage(agentID, currentImage.value.file);
+            agentData.profile_url = newUrl;
+
+            // Clean up the old image from the bucket if it existed
+            if (props.agent.profile_url) {
+                await agentService.deleteProfileImage(props.agent.profile_url);
+            }
+        } 
+        // SCENARIO 2: The image was explicitly removed by the user (no new file, but URL is empty)
+        else if (!form.value.profile_url && props.agent.profile_url) {
+            console.log('Removing old image...');
+            await agentService.deleteProfileImage(props.agent.profile_url);
+            agentData.profile_url = '';
+        } 
+        // SCENARIO 3: No changes made to the image
+        else {
+            agentData.profile_url = props.agent.profile_url;
+        }
+
+        // Save the final data to the database
+        const response = await agentService.updateProfile(agentID, agentData);
+        
+        if (response.success) {
+            console.log('Profile updated successfully!');
+            router.go(0); // refresh to see changes
+        }
+    } catch (error) {
+        console.error('Failed to update account details:', error);
     }
 }
 </script>
