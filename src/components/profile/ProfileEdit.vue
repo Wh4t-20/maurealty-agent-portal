@@ -102,7 +102,7 @@
 
                     <div class="flex flex-col gap-1">
                         <label class="text-maurealty-blue font-medium text-sm block">Date of Birth</label>
-                        <input type="date" :value="form.birth_date"
+                        <input type="date" v-model="form.birth_date"
                             class="bg-white border-gray-300 focus:ring-2 focus:ring-maurealty-blue w-full border rounded-lg p-2 outline-none">
                     </div>
 
