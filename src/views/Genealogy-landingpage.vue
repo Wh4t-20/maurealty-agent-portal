@@ -105,7 +105,7 @@
   </template>
 <script setup lang ="ts">
 
-import Gen  from '@/components/genealogymodal.vue'
+import Gen from '@/components/genealogy/genealogymodal.vue'
 </script>
 
 

@@ -14,7 +14,7 @@
       <p class="group-hover:text-xl text-0 opacity-0 group-hover:opacity-100 transition whitespace-nowrap text-white text-[clamp(0.5rem,2vw,1rem)]">
         {{ agentName }}
       </p>
-      <img v-if="isAdmin" :src="MauBadge" alt="Admin Badge" class="opacity-0 group-hover:opacity-100 size-4.75 transition whitespace-nowrap"/>
+      <img v-if="isAdmin" :src="MauBadgeLight" alt="Admin Badge" class="opacity-0 group-hover:opacity-100 size-4.75 transition whitespace-nowrap"/>
     </span>
     
 
@@ -68,8 +68,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { authService } from '@/services/authService';
 import { agentService } from '@/services/agentService';
+import { positionMap } from '@/assets/classes/agent';
 import placeholder from '@/assets/images/default_placeholder.png';
-import MauBadge from '@/assets/images/MauBadge.svg'
+import MauBadgeLight from '@/assets/images/MauBadgeLight.svg'
 
 const router = useRouter();
 const agent = ref<any>(null);
@@ -100,7 +101,7 @@ const agentName = computed(() => {
 
 const agentPosition = computed(() => {
   if (!agent.value) return '';
-  return agent.value.positions?.position || 'N/A';
+  return positionMap[agent.value.position_ID] || 'N/A';
 });
 
 const profileImage = computed(() => {
