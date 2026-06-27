@@ -40,20 +40,38 @@
     
     <!-- Developer Cards -->
     <div class="w-3/4 grid grid-cols-1 lg:grid-cols-2 mt-35 gap-6 p-4">
-      <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" />
+      <DeveloperCard
+        v-for="(developer, index) in developers"
+        :key="index"
+        :dev="developer"
+        @open-listing="openListing"
+      />
     </div>
   </div>
+
+  <!-- A clicked recent-project opens its listing detail -->
+  <PropertyDetails
+    v-if="selectedProject"
+    :prop_id="selectedProject.listing_ID"
+    :prop_type="selectedProject.property_type"
+    @closeDetails="selectedProject = null"
+  />
   </main>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
-import { type Developer } from "@/assets/classes/developers.ts";
+import { type Developer, type DeveloperProject } from "@/assets/classes/developers.ts";
 import { developerService } from "@/services/developerService";
 import DeveloperCard from "@/components/developer/developerCard.vue";
 import AddDeveloperTab from "@/components/developer/addDeveloper.vue";
+import PropertyDetails from "@/components/listings/PropertyDetails.vue";
 
 const developers = ref<Developer[]>([])
+
+// Recent-project chip click opens that listing's detail modal.
+const selectedProject = ref<DeveloperProject | null>(null)
+const openListing = (project: DeveloperProject) => { selectedProject.value = project }
 const loadDevelopers = async () => {
   try {
     const data = await developerService.getDevelopers();
