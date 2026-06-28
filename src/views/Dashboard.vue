@@ -101,11 +101,12 @@ const modalType = ref('');
 const agent_ID = ref('');
 const agent = ref<Partial<AgentProfile>>({});
 const router = useRouter();
+
 // Data
 const metrics = ref([
   { label: 'TOTAL LISTINGS', value: 'Loading', trend: 'Loading', sub: 'vs last month', type: '...' },
-  { label: 'COMMISSION (NET)', value: 'N/A', trend: '...', sub: 'Target: ...', type: '...' },
-  { label: 'TOTAL PROPERTIES SOLD', value: 'Loading', trend: '...', sub: 'Downline contrib.', type: 'positive' },
+  { label: 'TOTAL GROSS', value: 'Loading', trend: '...', sub: 'vs last month', type: '...' }, // Changed to Total Gross
+  { label: 'TOTAL PROPERTIES SOLD', value: 'Loading', trend: '...', sub: 'vs last month', type: 'positive' },
   { label: 'ACTIVE DEALS', value: '...', trend: '...', sub: 'Pending approval', type: 'neutral' }
 ]);
 
@@ -131,8 +132,15 @@ watch([selectedItem, selectedMetric, activeModal], ([item, metric, modal]) => {
   document.body.style.overflow = (item || metric || modal) ? 'hidden' : '';
 });
 
-
-
+// Helper to format large numbers into clean currency
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'PHP', // 
+    maximumFractionDigits: 0
+  }).format(value);
+};
+// adds the first and last name of the agent
 const agentName = computed(() => {
   if (agent.value.first_name && agent.value.last_name){
     return `${agent.value.first_name} ${agent.value.last_name}`;
@@ -160,78 +168,91 @@ onMounted(async () => {
         const now = new Date();
         const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
         const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-
         
-        const [
-          { count: totalCount },
-          { count: thisMonthCount },
-          { count: lastMonthCount },
-          { count: totalSold },
-          { count: thisMonthSold },
-          { count: lastMonthSold }
-        ] = await Promise.all([
-          // for the total listings
+        //fetches all the coounts
+        const responses = await Promise.all([
+        //for the total listings
           supabase.from('main_listings').select('*', { count: 'exact', head: true })
             .eq('agent_ID', agentData.agent_ID),
-          // for this months listings
+        // for this months listings
           supabase.from('main_listings').select('*', { count: 'exact', head: true })
             .eq('agent_ID', agentData.agent_ID)
             .gte('created_at', startOfThisMonth),
-          // for kast months lisitngs
+          // for last months listing
           supabase.from('main_listings').select('*', { count: 'exact', head: true })
             .eq('agent_ID', agentData.agent_ID)
             .gte('created_at', startOfLastMonth)
             .lt('created_at', startOfThisMonth),
-
-          // total sold
+          // for the sold
+          supabase.from('main_listings')
+          .select('price, created_at')
+          .eq('agent_ID', agentData.agent_ID)
+          .eq('status', 'sold'),
+          // for the total sold
           supabase.from('main_listings').select('*', { count: 'exact', head: true })
             .eq('agent_ID', agentData.agent_ID)
             .eq('status', 'sold'),
-
-          // this months sold
+          // ffor this months sold listings
           supabase.from('main_listings').select('*', { count: 'exact', head: true })
             .eq('agent_ID', agentData.agent_ID)
             .eq('status', 'sold')
             .gte('created_at', startOfThisMonth),
-
-
-          // last months sold 
+          // for last months listing
           supabase.from('main_listings').select('*', { count: 'exact', head: true })
             .eq('agent_ID', agentData.agent_ID)
             .eq('status', 'sold')
             .gte('created_at', startOfLastMonth)
-            .lt('created_at', startOfThisMonth)
+            .lt('created_at', startOfThisMonth),
+          
+          
         ]);
 
-        // note that metrics.value[0] is total listings 
+        // note that metrics.value[0] is the total listings since it is the first metric card shown in the page
         if (metrics.value[0]) {
-
-          metrics.value[0].value = (totalCount || 0).toString();
-
-          const curr = thisMonthCount || 0;
-          const prev = lastMonthCount || 0;
+          const totalCount = responses[0].count || 0;
+          const curr = responses[1].count || 0;
+          const prev = responses[2].count || 0;
           
+          metrics.value[0].value = totalCount.toString();
           if (prev === 0) {
             metrics.value[0].trend = curr > 0 ? '+100%' : '0%';
             metrics.value[0].type = curr > 0 ? 'positive' : 'neutral';
           } else {
             const percent = ((curr - prev) / prev) * 100;
-            const sign = percent > 0 ? '+' : '';
-            
-            metrics.value[0].trend = `${sign}${percent.toFixed(1)}%`;
-            
-            if (percent > 0) metrics.value[0].type = 'positive';
-            else if (percent < 0) metrics.value[0].type = 'negative';
-            else metrics.value[0].type = 'neutral';
+            metrics.value[0].trend = `${percent > 0 ? '+' : ''}${percent.toFixed(1)}%`;
+            metrics.value[0].type = percent > 0 ? 'positive' : (percent < 0 ? 'negative' : 'neutral');
           }
         }
-
-        // note that metrics.value[2] is total sold listings 
-        if (metrics.value[2]){
-          metrics.value[2].value = (totalSold || 0).toString();
-          const currSold = thisMonthSold || 0;
-          const prevSold = lastMonthSold || 0;
+    
+        const soldPricesData = responses[3].data || [];
           
+        if (soldPricesData && metrics.value[1]) {
+          let totalGross = 0;
+          let thisMonthGross = 0;
+          let lastMonthGross = 0;
+          const startThisTime = new Date(startOfThisMonth).getTime();
+          const startLastTime = new Date(startOfLastMonth).getTime();
+
+          soldPricesData.forEach((item: any) => {
+            const price = Number(item.price) || 0;
+            const createdTime = new Date(item.created_at).getTime();
+            totalGross += price;
+            if (createdTime >= startThisTime) thisMonthGross += price;
+            else if (createdTime >= startLastTime) lastMonthGross += price;
+          });
+          // note that metrics.value[1] is the total gross 
+          metrics.value[1].value = formatCurrency(totalGross);
+          const percent = lastMonthGross === 0 ? (thisMonthGross > 0 ? 100 : 0) : ((thisMonthGross - lastMonthGross) / lastMonthGross) * 100;
+          metrics.value[1].trend = `${percent > 0 ? '+' : ''}${percent.toFixed(1)}%`;
+          metrics.value[1].type = percent > 0 ? 'positive' : (percent < 0 ? 'negative' : 'neutral');
+        }
+        // note that metrics.value[2] is the total sold listings since it is the third metric card shown in the page
+        if (metrics.value[2]) {
+          const totalSold = responses[4].count || 0;
+          const currSold = responses[5].count || 0;
+          const prevSold = responses[6].count || 0;
+          
+          metrics.value[2].value = totalSold.toString();
           if (prevSold === 0) {
             metrics.value[2].trend = currSold > 0 ? '+100%' : '0%';
             metrics.value[2].type = currSold > 0 ? 'positive' : 'neutral';
@@ -241,16 +262,20 @@ onMounted(async () => {
             metrics.value[2].type = percent > 0 ? 'positive' : (percent < 0 ? 'negative' : 'neutral');
           }
         }
+
+        
+
+        
       }
     }
   } catch (error) {
-    console.error("Error fetching dashboard data:", error);
-    if (metrics.value[0]) metrics.value[0].value = '0'; 
-    if (metrics.value[2]) metrics.value[2].value = '0';
+    console.error(" SUPABASE ERROR fetching dashboard data:", error); 
+    // Fallbacks if data fails
+    if (metrics.value[0]) { metrics.value[0].value = '0'; metrics.value[0].trend = 'N/A'; }
+    if (metrics.value[1]) { metrics.value[1].value = '$0'; metrics.value[1].trend = 'N/A'; }
+    if (metrics.value[2]) { metrics.value[2].value = '0'; metrics.value[2].trend = 'N/A'; }
   }
 });
-
-
 
 const addListing = () => {
   router.push({ 
