@@ -1,33 +1,35 @@
 <template>
-  <div class="w-full dashboard-container">
-    <div class="main-content">
-      <div class="welcome-section">
-        <div class="header-flex">
-          <div class="header-title">
-            <h1 class="welcome-message">Welcome back, {{agentName}} </h1>
-            <p class="subtitle">Dashboard > <span class="text-blue">Senior Agent</span></p>
+  <div class="flex min-h-screen bg-[var(--color-background-gray,#f6f7fb)] w-full">
+    <div class="flex-1 flex flex-col">
+      
+      <header class="flex flex-col py-5 px-10 pb-0 w-full bg-gradient-to-r from-[#A9D6FF70] to-[#FFFFFF] shadow-md sticky top-0 z-20">
+        <div class="flex justify-between items-center w-full pb-5">
+          <div class="font-['Poppins']">
+            <h1 class="text-[30px] text-[var(--color-maurealty-blue,#0A3D62)] font-bold">Welcome back, {{ agentName }} </h1>
+            <p class="text-gray-600 mt-1">Dashboard > <span class="text-blue-600 font-medium">{{ agent.position_ID ? positionMap[agent.position_ID] : 'Wait'}}</span></p>
           </div>
-          <!-- <div class="quick-actions-top">
-            <button class="btn-action primary" @click="activeModal = 'addListing'">+ Add Listing</button>
-            <button class="btn-action secondary" @click="activeModal = 'addAgent'">+ Add Agent</button>
-            <div class="divider-v"></div>
-            <button class="btn-action calculator-btn" @click="activeModal = 'calculator'">Calculator</button>
-          </div> -->
-        </div>
-      </div>
+          <div class="flex items-center gap-3">
+            <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#0066ff] text-white hover:bg-[#0052cc]" @click="addListing">+ Add Listing</button>
+            <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#e6f4ea] text-[#1e8e3e] hover:bg-[#d4eeda]" @click="activeModal = 'addAgent'">+ Add Agent</button>
+            <div class="w-[1px] h-6 bg-[#e1e4e8] mx-1"></div>
+            <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer transition-all duration-200 ease-in-out flex items-center bg-white border border-[#dcdcdc] text-[#4a4a4a] hover:bg-[#f8f9fa] hover:border-[#bbb]" @click="activeModal = 'calculator'">Calculator</button>
+          </div>
+          </div>
+      </header>
 
-      <div class="DataTabs">
-        <div class="stats-grid">
+      <div class="p-8 md:px-10">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard 
             v-for="stat in metrics" 
             :key="stat.label" 
             :stat="stat" 
             @click="expandMetric(stat)" 
+            class="cursor-pointer hover:shadow-md transition-shadow"
           />
         </div>
 
-        <div class="dashboard-grid">
-          <div class="left-column">
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8">
+          <div class="flex flex-col gap-8">
             <SalesPerformance @open-details="openDetails(performanceData, 'performance')" />
             <RecentActivity 
               :activities="activities" 
@@ -36,7 +38,7 @@
             />
           </div>
 
-          <div class="right-column">
+          <div class="flex flex-col gap-8">
             <GenealogyCard :downline="downline" @view-full="openDetails(null, 'genealogy_full')" />
             <Reminders :reminders="reminders" @view-all="openDetails(reminders, 'reminders_all')" />
           </div>
@@ -44,34 +46,45 @@
       </div>
     </div>
 
-    <transition name="fade">
-      <div v-if="selectedItem || selectedMetric || activeModal" class="modal-overlay" @click.self="closeAll">
+    <transition 
+      enter-active-class="transition-opacity duration-300 ease-out"
+      enter-from-class="opacity-0"
+      enter-to-class="opacity-100"
+      leave-active-class="transition-opacity duration-200 ease-in"
+      leave-from-class="opacity-100"
+      leave-to-class="opacity-0"
+    >
+      <div v-if="selectedItem || selectedMetric || activeModal" class="fixed inset-0 w-full h-full bg-[#0a3d62]/70 backdrop-blur-sm flex items-center justify-center z-[9999]" @click.self="closeAll">
         
-        <div v-if="activeModal" class="modal-content">
-          <button class="close-x" @click="activeModal = null">✕</button>
+        <div v-if="activeModal" class="bg-white rounded-[24px] relative p-6 w-full max-w-lg shadow-xl">
+          <button class="absolute top-4 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold" @click="activeModal = null">✕</button>
           <AddListing v-if="activeModal === 'addListing'" />
           <AddAgent v-if="activeModal === 'addAgent'" />
           <Calculator v-if="activeModal === 'calculator'" />
         </div> 
 
-        <div v-else-if="selectedMetric" class="modal-content analytics-modal">
-          <button class="close-x" @click="selectedMetric = null">✕</button>
-          <div class="modal-header-detail">
-            <h2 class="modal-title">{{ selectedMetric.label }} Analysis</h2>
+        <div v-else-if="selectedMetric" class="bg-white rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl">
+          <button class="absolute top-4 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold" @click="selectedMetric = null">✕</button>
+          <div class="border-b pb-4 mb-4">
+            <h2 class="text-2xl font-bold text-gray-800">{{ selectedMetric.label }} Analysis</h2>
           </div>
           </div>
 
-        <div v-else-if="selectedItem" class="modal-content detail-modal">
-           <button class="close-x" @click="closeAll">✕</button>
+        <div v-else-if="selectedItem" class="bg-white rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl">
+           <button class="absolute top-4 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold" @click="closeAll">✕</button>
            </div>
+
       </div>
     </transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue';
-import { supabase } from '@/supabaseClient'
+import { ref, watch, onMounted, computed } from 'vue';
+import { supabase } from '@/supabaseClient';
+import { type AgentProfile, positionMap } from '@/assets/classes/agent';
+import { useRoute, useRouter } from 'vue-router'
+
 // Component Imports
 import StatCard from '@/components/dashboard/DashboardStatCard.vue';
 import SalesPerformance from '@/components/dashboard/SalesPerfromance.vue';
@@ -85,23 +98,23 @@ import Calculator from '@/components/dashboard/Calculator.vue';
 // State
 const selectedItem = ref<any>(null);
 const selectedMetric = ref<any>(null);
-const activeModal = ref<string | null>(null); // For forms
+const activeModal = ref<string | null>(null);
 const modalType = ref('');
 const agent_ID = ref('');
-const agentName = ref ('');
-
-// Data (Keep original structure)
+const agent = ref<Partial<AgentProfile>>({});
+const router = useRouter();
+// Data
 const metrics = ref([
-  { label: 'TOTAL LISTINGS', value: '42', trend: '+12%', sub: 'vs last month', type: 'positive' },
+  { label: 'TOTAL LISTINGS', value: '...', trend: '+12%', sub: 'vs last month', type: 'positive' },
   { label: 'COMMISSION (NET)', value: '$38,420', trend: '85%', sub: 'Target: $45k', type: 'positive' },
   { label: 'TEAM SALES', value: '$1.2M', trend: '+5.4%', sub: 'Downline contrib.', type: 'positive' },
   { label: 'ACTIVE DEALS', value: '8', trend: '3', sub: 'Pending approval', type: 'neutral' }
 ]);
 
 const performanceData = ref({ title: "Performance Data", id: "perf-1" });
-const activities = ref([/* same as your original array */]);
-const reminders = ref([/* same as your original array */]);
-const downline = ref([/* same as your original array */]);
+const activities = ref([]);
+const reminders = ref([]);
+const downline = ref([]);
 
 // Handlers
 const expandMetric = (stat: any) => { selectedMetric.value = stat; };
@@ -119,123 +132,41 @@ const closeAll = () => {
 watch([selectedItem, selectedMetric, activeModal], ([item, metric, modal]) => {
   document.body.style.overflow = (item || metric || modal) ? 'hidden' : '';
 });
+
+// Functionalities
 onMounted(async () => {
   try {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
-      const authId = user.id
-
       const { data, error } = await supabase
         .from('agents')
-        .select('agent_ID, first_name, last_name')
-        .eq('user_id', authId)
-        .single()
+        .select('agent_ID, first_name, last_name, position_ID')
+        .eq('user_id', user.id) 
+        .single();
 
-      if (error) throw error
-
+      if (error) throw error;
       if (data) {
-        agentName.value = `${data.first_name} ${data.last_name}`
-        agent_ID.value = String(data.agent_ID) 
+        agent.value = data;
       }
-    } else {
-      agentName.value = 'Guest'
-      agent_ID.value = 'N/A'
     }
-
   } catch (error) {
-    console.error("Error fetching agent profile:", error)
-    agentName.value = "Unknown Agent"
+    console.error("Error fetching agent profile:", error);
   }
-})
+});
+
+const agentName = computed(() => {
+  if (agent.value.first_name && agent.value.last_name){
+    return `${agent.value.first_name} ${agent.value.last_name}`;
+  }
+  return 'Guest';
+});
+
+const addListing = () => {
+  router.push({ 
+    path: '/propertymanagement',
+    query:{
+    } 
+  })
+}
 </script>
-
-<style scoped>
-@import "@/style.css";
-
-.dashboard-container { display: flex; min-height: 100vh; background: var(--color-background-gray); }
-.main-content { flex: 1; display: flex; flex-direction: column; }
-.welcome-section { background: white; padding: 1.5rem 2.5rem; border-bottom: 1px solid #e1e4e8; }
-.header-flex { display: flex; justify-content: space-between; align-items: center; }
-.DataTabs { padding: 2rem 2.5rem; }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-.dashboard-grid { display: grid; grid-template-columns: 1fr 340px; gap: 2rem; }
-.left-column { display: flex; flex-direction: column; gap: 2rem; }
-.mt-8 { margin-top: 2rem; }
-
-.welcome-message {
-  font-size: 30px;
-  color: var(--color-maurealty-blue);
-  font-weight: bold;
-}
-
-.header-title {
-  font: Poppins;
-}
-
-/* Modal Styles */
-.modal-overlay { 
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-  background: rgba(10, 61, 98, 0.7); backdrop-filter: blur(8px); 
-  display: flex; align-items: center; justify-content: center; z-index: 9999;
-}
-.modal-content { background: white; border-radius: 24px; position: relative; }
-
-/* Container for the buttons */
-.quick-actions-top {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-/* Base button styles */
-.btn-action {
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 0.9rem;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-}
-
-/* 1. Add Listing (Blue) */
-.btn-action.primary {
-  background-color: #0066ff;
-  color: white;
-}
-.btn-action.primary:hover {
-  background-color: #0052cc;
-}
-
-/* 2. Add Agent (Light Green) */
-.btn-action.secondary {
-  background-color: #e6f4ea;
-  color: #1e8e3e;
-}
-.btn-action.secondary:hover {
-  background-color: #d4eeda;
-}
-
-/* 3. Calculator (White/Bordered) */
-.btn-action.calculator-btn {
-  background: white;
-  border: 1px solid #dcdcdc;
-  color: #4a4a4a;
-}
-.btn-action.calculator-btn:hover {
-  background: #f8f9fa;
-  border-color: #bbb;
-}
-
-/* Vertical Divider */
-.divider-v {
-  width: 1px;
-  height: 24px;
-  background-color: #e1e4e8;
-  margin: 0 4px;
-}
-
-</style>
