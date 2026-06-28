@@ -58,7 +58,6 @@
         
         <div v-if="activeModal" class="bg-white rounded-[24px] relative p-6 w-full max-w-lg shadow-xl">
           <button class="absolute top-4 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold" @click="activeModal = null">✕</button>
-          <AddListing v-if="activeModal === 'addListing'" />
           <AddAgent v-if="activeModal === 'addAgent'" />
           <Calculator v-if="activeModal === 'calculator'" />
         </div> 
@@ -83,7 +82,7 @@
 import { ref, watch, onMounted, computed } from 'vue';
 import { supabase } from '@/supabaseClient';
 import { type AgentProfile, positionMap } from '@/assets/classes/agent';
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 // Component Imports
 import StatCard from '@/components/dashboard/DashboardStatCard.vue';
@@ -91,7 +90,6 @@ import SalesPerformance from '@/components/dashboard/SalesPerfromance.vue';
 import RecentActivity from '@/components/dashboard/RecentActivity.vue';
 import GenealogyCard from '@/components/dashboard/GenealogyCard.vue';
 import Reminders from '@/components/dashboard/Reminders.vue';
-import AddListing from '@/components/dashboard/AddListing.vue';
 import AddAgent from '@/components/dashboard/AddAgent.vue';
 import Calculator from '@/components/dashboard/Calculator.vue';
 
@@ -105,10 +103,10 @@ const agent = ref<Partial<AgentProfile>>({});
 const router = useRouter();
 // Data
 const metrics = ref([
-  { label: 'TOTAL LISTINGS', value: '...', trend: '+12%', sub: 'vs last month', type: 'positive' },
-  { label: 'COMMISSION (NET)', value: '$38,420', trend: '85%', sub: 'Target: $45k', type: 'positive' },
-  { label: 'TEAM SALES', value: '$1.2M', trend: '+5.4%', sub: 'Downline contrib.', type: 'positive' },
-  { label: 'ACTIVE DEALS', value: '8', trend: '3', sub: 'Pending approval', type: 'neutral' }
+  { label: 'TOTAL LISTINGS', value: 'Loading', trend: 'Loading', sub: 'vs last month', type: '...' },
+  { label: 'COMMISSION (NET)', value: 'N/A', trend: '...', sub: 'Target: ...', type: '...' },
+  { label: 'TOTAL PROPERTIES SOLD', value: 'Loading', trend: '...', sub: 'Downline contrib.', type: 'positive' },
+  { label: 'ACTIVE DEALS', value: '...', trend: '...', sub: 'Pending approval', type: 'neutral' }
 ]);
 
 const performanceData = ref({ title: "Performance Data", id: "perf-1" });
@@ -133,27 +131,15 @@ watch([selectedItem, selectedMetric, activeModal], ([item, metric, modal]) => {
   document.body.style.overflow = (item || metric || modal) ? 'hidden' : '';
 });
 
-// Functionalities
-onMounted(async () => {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (user) {
-      const { data, error } = await supabase
-        .from('agents')
-        .select('agent_ID, first_name, last_name, position_ID')
-        .eq('user_id', user.id) 
-        .single();
-
-      if (error) throw error;
-      if (data) {
-        agent.value = data;
-      }
-    }
-  } catch (error) {
-    console.error("Error fetching agent profile:", error);
+const calculateTrend = (current: number, previous: number) => {
+  if (previous === 0) {
+    return current > 0 ? '+100%' : '0%'; 
   }
-});
+  const percentage = ((current - previous) / previous) * 100;
+  
+  const sign = percentage > 0 ? '+' : '';
+  return `${sign}${percentage.toFixed(1)}%`;
+};
 
 const agentName = computed(() => {
   if (agent.value.first_name && agent.value.last_name){
@@ -161,6 +147,118 @@ const agentName = computed(() => {
   }
   return 'Guest';
 });
+
+// Functionalities
+onMounted(async () => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: agentData, error: agentError } = await supabase
+        .from('agents')
+        .select('agent_ID, first_name, last_name, position_ID')
+        .eq('user_id', user.id) 
+        .single();
+
+      if (agentError) throw agentError;
+      
+      if (agentData) {
+        agent.value = agentData;
+
+        const now = new Date();
+        const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+
+        
+        const [
+          { count: totalCount },
+          { count: thisMonthCount },
+          { count: lastMonthCount },
+          { count: totalSold },
+          { count: thisMonthSold },
+          { count: lastMonthSold }
+        ] = await Promise.all([
+          // for the total listings
+          supabase.from('main_listings').select('*', { count: 'exact', head: true })
+            .eq('agent_ID', agentData.agent_ID),
+          // for this months listings
+          supabase.from('main_listings').select('*', { count: 'exact', head: true })
+            .eq('agent_ID', agentData.agent_ID)
+            .gte('created_at', startOfThisMonth),
+          // for kast months lisitngs
+          supabase.from('main_listings').select('*', { count: 'exact', head: true })
+            .eq('agent_ID', agentData.agent_ID)
+            .gte('created_at', startOfLastMonth)
+            .lt('created_at', startOfThisMonth),
+
+          // total sold
+          supabase.from('main_listings').select('*', { count: 'exact', head: true })
+            .eq('agent_ID', agentData.agent_ID)
+            .eq('status', 'sold'),
+
+          // this months sold
+          supabase.from('main_listings').select('*', { count: 'exact', head: true })
+            .eq('agent_ID', agentData.agent_ID)
+            .eq('status', 'sold')
+            .gte('created_at', startOfThisMonth),
+
+
+          // last months sold 
+          supabase.from('main_listings').select('*', { count: 'exact', head: true })
+            .eq('agent_ID', agentData.agent_ID)
+            .eq('status', 'sold')
+            .gte('created_at', startOfLastMonth)
+            .lt('created_at', startOfThisMonth)
+        ]);
+
+        // note that metrics.value[0] is total listings 
+        if (metrics.value[0]) {
+
+          metrics.value[0].value = (totalCount || 0).toString();
+
+          const curr = thisMonthCount || 0;
+          const prev = lastMonthCount || 0;
+          
+          if (prev === 0) {
+            metrics.value[0].trend = curr > 0 ? '+100%' : '0%';
+            metrics.value[0].type = curr > 0 ? 'positive' : 'neutral';
+          } else {
+            const percent = ((curr - prev) / prev) * 100;
+            const sign = percent > 0 ? '+' : '';
+            
+            metrics.value[0].trend = `${sign}${percent.toFixed(1)}%`;
+            
+            if (percent > 0) metrics.value[0].type = 'positive';
+            else if (percent < 0) metrics.value[0].type = 'negative';
+            else metrics.value[0].type = 'neutral';
+          }
+        }
+
+        // note that metrics.value[2] is total sold listings 
+        if (metrics.value[2]){
+          metrics.value[2].value = (totalSold || 0).toString();
+          const currSold = thisMonthSold || 0;
+          const prevSold = lastMonthSold || 0;
+          
+          if (prevSold === 0) {
+            metrics.value[2].trend = currSold > 0 ? '+100%' : '0%';
+            metrics.value[2].type = currSold > 0 ? 'positive' : 'neutral';
+          } else {
+            const percent = ((currSold - prevSold) / prevSold) * 100;
+            metrics.value[2].trend = `${percent > 0 ? '+' : ''}${percent.toFixed(1)}%`;
+            metrics.value[2].type = percent > 0 ? 'positive' : (percent < 0 ? 'negative' : 'neutral');
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
+    if (metrics.value[0]) metrics.value[0].value = '0'; 
+    if (metrics.value[2]) metrics.value[2].value = '0';
+  }
+});
+
+
 
 const addListing = () => {
   router.push({ 
