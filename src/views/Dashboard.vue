@@ -131,15 +131,7 @@ watch([selectedItem, selectedMetric, activeModal], ([item, metric, modal]) => {
   document.body.style.overflow = (item || metric || modal) ? 'hidden' : '';
 });
 
-const calculateTrend = (current: number, previous: number) => {
-  if (previous === 0) {
-    return current > 0 ? '+100%' : '0%'; 
-  }
-  const percentage = ((current - previous) / previous) * 100;
-  
-  const sign = percentage > 0 ? '+' : '';
-  return `${sign}${percentage.toFixed(1)}%`;
-};
+
 
 const agentName = computed(() => {
   if (agent.value.first_name && agent.value.last_name){
