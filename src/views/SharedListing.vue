@@ -73,7 +73,7 @@
           </span>
 
           <section class="w-full h-64 rounded-xl overflow-hidden border border-gray-200">
-            <MapHolder :target-location="{ lng: details.longitude, lat: details.latitude }" />
+            <MapHolder :target-location="{ lng: details.longitude, lat: details.latitude }" :listing-id="details.listing_ID" />
           </section>
 
           <span class="flex items-center gap-1.5">
