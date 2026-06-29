@@ -167,6 +167,37 @@ export const genealogyService = {
     };
   },
 
+  // Flat agent list, for dropdowns (e.g. picking an upline).
+  async getAgents(): Promise<GenealogyAgent[]> {
+    const { data, error } = await supabase.from('agents').select(AGENT_FIELDS);
+    if (error) {
+      console.error('Error fetching agents:', error);
+      throw error;
+    }
+    return (data || []).map((row: any) => toAgent(row, new Map()));
+  },
+
+  // Most-recently-hired agents, for the landing "Recently Added" list.
+  async getRecentAgents(limit = 5): Promise<(GenealogyAgent & { hire_date: string | null })[]> {
+    const { data, error } = await supabase
+      .from('agents')
+      .select(`${AGENT_FIELDS}, hire_date`)
+      .order('hire_date', { ascending: false, nullsFirst: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('Error fetching recent agents:', error);
+      throw error;
+    }
+
+    // positions are resolved lazily here; the table is usually empty so the UI
+    // falls back to positionMap anyway.
+    return (data || []).map((row: any) => ({
+      ...toAgent(row, new Map()),
+      hire_date: row.hire_date,
+    }));
+  },
+
   // Create an agent record and (optionally) attach it under an upline. The agent
   // is created WITHOUT a login (user_id null) — logins are provisioned later via
   // Supabase invite, which can't be done from the client. Admin-only in practice.
