@@ -1,8 +1,11 @@
 import { ref } from 'vue';
 
+import { useSettings } from './useSettings';
+const { configs } = useSettings();
+
 // Global reactive state for user preferences
-export const currentCurrency = ref('PHP');
-export const currentUnit = ref('Metric');
+export const currentCurrency = ref(configs.userDefaultCurrency);
+export const currentUnit = ref(configs.userDefaultAreaUnit);
 
 // Approximate exchange rates relative to PHP (1 PHP = X Foreign Currency)
 const exchangeRates: Record<string, number> = {

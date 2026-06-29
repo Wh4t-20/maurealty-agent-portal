@@ -64,7 +64,7 @@
                 <button type="button" @click="goBack" class="px-4 py-1.5 border border-maurealty-blue text-maurealty-blue font-bold rounded-xl hover:bg-gray-100 transition cursor-pointer">
                     CANCEL
                 </button>
-                <button type="submit" class="px-4 py-1.5 bg-maurealty-blue text-white font-bold rounded-xl shadow-md hover:bg-opacity-90 hover:bg-[#045fa3] active:bg-white active:text-maurealty-blue border border-maurealty-blue transition flex items-center gap-2 cursor-pointer">
+                <button type="button" @click="saveCurrentSettings" class="px-4 py-1.5 bg-maurealty-blue text-white font-bold rounded-xl shadow-md hover:bg-opacity-90 hover:bg-[#045fa3] active:bg-white active:text-maurealty-blue border border-maurealty-blue transition flex items-center gap-2 cursor-pointer">
                     <span>★</span> SAVE SETTINGS
                 </button>
             </div>
@@ -73,17 +73,39 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted } from 'vue';
 import { currencySymbols, areaUnits } from '@/utils/conversion';
 import ConfigDropdown from '@/components/settings/configDropdown.vue';
 import ConfigToggleSlider from '@/components/settings/configToggleSlider.vue';
 import { useSettings } from '@/utils/useSettings';
+import { agentService } from '@/services/agentService';
 
 const { configs, updateSetting } = useSettings();
 
 onMounted(async () => {
     console.log(configs);
 });
+
+const saveCurrentSettings = async () => {
+    try {
+        const agentID = await agentService.getCurrentAgentID();
+
+        if (!agentID) {
+            console.error('Error fetching agent id');
+        }
+
+        const response = await agentService.updateConfigs(agentID, configs);
+        if (!response.success) {
+            console.error('Could not update Configs');
+        }
+
+        console.log('Settings updated successfully!');
+    } catch (error) {
+      console.error('Failed to save current settings:', error);
+      return null;
+    }
+    
+}
 
 // goes back to previous page
 function goBack() {
