@@ -53,21 +53,25 @@
                 <button type="submit" class="px-4 py-1.5 bg-maurealty-blue text-white font-bold rounded-xl shadow-md hover:bg-opacity-90 hover:bg-[#045fa3] active:bg-white active:text-maurealty-blue border border-maurealty-blue transition flex items-center gap-2 cursor-pointer">
                     <span>★</span> SAVE SETTINGS
                 </button>
-          </div>
+            </div>
         </main>
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import userSettings from '@/assets/userSettings.json';
+import { onMounted, ref } from 'vue';
 import { currencySymbols, areaUnits } from '@/utils/conversion';
 import ConfigDropdown from '@/components/settings/configDropdown.vue';
 import ConfigToggleSlider from '@/components/settings/configToggleSlider.vue';
+import { useSettings } from '@/utils/useSettings';
 
-const configs = ref<any>(userSettings.configs);
+const { configs, updateSetting } = useSettings();
 
-    // goes back to previous page
+onMounted(async () => {
+    console.log(configs);
+});
+
+// goes back to previous page
 function goBack() {
   window.history.back()
 }
