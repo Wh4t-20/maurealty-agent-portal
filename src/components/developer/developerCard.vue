@@ -26,11 +26,21 @@
 
 			<div class="mt-4 flex flex-col items-start">
 				<h1 class="font-semibold">Available Office Hours</h1>
-				<span class="text-lg p-2 pl-4 bg-gray-200 rounded-2xl w-full">
-					<span v-if="dev.days" class="flex items-center gap-2"> <CalendarCheck2Icon class="size-4.5" /> {{ dev.days }} </span>
-					<span v-if="dev.hours" class="flex items-center gap-2"> <ClockIcon class="size-4.5" /> {{ dev.hours }} </span>
-					<span v-if="!dev.days && !dev.hours" class="flex items-center gap-2"> <CalendarOffIcon class="text-red-700 size-4.5" /> Office Hours not provided </span>
-				</span>
+				<div class="text-lg p-2 pl-4 bg-gray-200 rounded-2xl w-full flex flex-col gap-2">
+					<div v-for="(slot, index) in dev.OfficeHours" :key="`${slot.openTime}-${slot.closeTime}-${index}`" class="flex items-center gap-2">
+						<CalendarCheck2Icon class="size-4.5 shrink-0" />
+						<span class="flex flex-wrap items-center gap-1">
+							<span>{{ formatDays(slot.selectedDays) }}</span>
+							<span v-if="slot.openTime && !slot.isOpenUnavailable">• {{ slot.openTime }}</span>
+							<span v-if="slot.closeTime && !slot.isCloseUnavailable">- {{ slot.closeTime }}</span>
+							<span v-else-if="slot.isOpenUnavailable || slot.isCloseUnavailable">• Unavailable</span>
+						</span>
+					</div>
+					<div v-if="!dev.OfficeHours?.length" class="flex items-center gap-2">
+						<CalendarOffIcon class="text-red-700 size-4.5" />
+						<span>Office Hours not provided</span>
+					</div>
+				</div>
 			</div>
 		</div>
 
@@ -45,13 +55,13 @@
 
 		<!-- buttons -->
 		<div class="flex gap-2 items-end justify-end">
-			<button class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px]  border border-red-600 text-red-600 rounded-[5px] px-4 py-2 hover:bg-red-100 flex items-center gap-2 justify-center" >
+			<button @click="handleDelete" class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px]  border border-red-600 text-red-600 rounded-[5px] px-4 py-2 hover:bg-red-100 flex items-center gap-2 justify-center" >
 				Delete
 			</button>
-			<button class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px]  border border-[#B4AFAF] rounded-[5px] px-4 py-2 hover:bg-gray-100 flex items-center gap-2 justify-center" >
+			<button @click="handleEdit" class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px]  border border-[#B4AFAF] rounded-[5px] px-4 py-2 hover:bg-gray-100 flex items-center gap-2 justify-center" >
 				Edit
 			</button>
-			<button class="text-[clamp(0.75rem,2vw,1rem)] w-max-[121px] md:h-9 md:w-30.25 bg-maurealty-blue text-white rounded-[5px] px-4 py-2 hover:bg-[#045fa3] flex items-center gap-2 justify-center">
+			<button @click="handleContact" class="text-[clamp(0.75rem,2vw,1rem)] w-max-[121px] md:h-9 md:w-30.25 bg-maurealty-blue text-white rounded-[5px] px-4 py-2 hover:bg-[#045fa3] flex items-center gap-2 justify-center">
 				Contact
 			</button>
 		</div>
@@ -59,11 +69,24 @@
 </template>
 
 <script setup lang="ts">
-import { type Developer } from '@/assets/classes/developers';
+import { type DayOption, type Developer } from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
-import { PhoneIcon, MailIcon, MapPinIcon, CalendarCheck2Icon, CalendarOffIcon, ClockIcon } from 'lucide-vue-next';
+import { PhoneIcon, MailIcon, MapPinIcon, CalendarCheck2Icon, CalendarOffIcon } from 'lucide-vue-next';
 
-const props = defineProps<{ dev: Developer }>()
+const props = defineProps<{ dev: Developer}>()
+const emit = defineEmits<{
+	(event: 'deleteDeveloper', devId: Developer): void;
+	(event: 'editDeveloper', developer: Developer): void;
+	(event: 'contactDeveloper', devId: number | undefined): void;
+}>();
 
-console.log("Dev_ID: " + props.dev.dev_ID + "\nImg_Url: " + props.dev.image_url + "\nName: " + props.dev.name + "\nPhone: " + props.dev.phone + "\nEmail: " + props.dev.email + "\nLocation: " + props.dev.location + "\nHours: " + props.dev.hours);
+const handleDelete = () => emit('deleteDeveloper', props.dev)
+const handleEdit = () => emit('editDeveloper', props.dev)
+const handleContact = () => emit('contactDeveloper', props.dev.dev_ID)
+
+const formatDays = (days: DayOption[] = []) => {
+	return days.map((day) => day.shortcut || day.name).join(', ');
+}
+
+console.log("Dev_ID: " + props.dev.dev_ID + "\nImg_Url: " + props.dev.image_url + "\nName: " + props.dev.name + "\nPhone: " + props.dev.phone + "\nEmail: " + props.dev.email + "\nLocation: " + props.dev.location + "\nHours: " + props.dev.OfficeHours);
 </script>

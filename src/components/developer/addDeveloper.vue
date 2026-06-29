@@ -19,12 +19,12 @@
                 <section class="flex flex-col gap-4">
                     <div class="flex items-center gap-5 w-full">
                         <label class="block text-2xl font-bold text-maurealty-blue mb-1">Name:</label>
-                        <input type="text" placeholder="e.g. MauRealty Developer" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
+                        <input v-model="form.name" type="text" placeholder="e.g. MauRealty Developer" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
                     </div>
 
                     <div class="flex items-center gap-5 w-full">
                         <label class="block text-2xl font-bold text-maurealty-blue mb-1">Location:</label>
-                        <input type="text" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
+                        <input v-model="form.location" type="text" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
                     </div>
 
                     <hr width="100%" class="my-2 text-maurealty-blue/30">
@@ -33,11 +33,11 @@
                         <h1 class="col-span-2 block text-2xl font-bold text-maurealty-blue mb-2">Contact details</h1>
                         <span class="justify-items-center">
                           <label class="block text-lg font-bold text-maurealty-blue mb-1">Phone No.</label>
-                            <input type="text" placeholder="(+63)900-000-0000" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
+                            <input v-model="form.phone" type="text" placeholder="(+63)900-000-0000" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
                         </span>
                         <span class="justify-items-center">
                           <label class="block text-lg font-bold text-maurealty-blue mb-1">Email</label>
-                            <input type="email" placeholder="developer@email.com" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
+                            <input v-model="form.email" type="email" placeholder="developer@email.com" class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
                         </span>
                     </div>
 
@@ -194,18 +194,50 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch} from 'vue';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue';
 import { type DayOption, type OfficeHourSlot, days } from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
 import { CheckIcon, XIcon } from 'lucide-vue-next';
+import { developerService, reformatHours } from '@/services/developerService';
+import { type Developer } from '@/assets/classes/developers';
 
 // reminder to safeguard the non-nullable inputs pls (error message if missing part)
 
 // taken from Property Management 
 // Image Handling Logic
+const props = defineProps<{ dev?: Developer }>()
+const editMode = ref(false);
+const oldDev = ref<Partial<Developer>>({});
+const form = ref<Partial<Developer>>({});
 const currentImage = ref<{ file: File; preview: string }>();
 const fileInput = ref<HTMLInputElement | null>(null);
+const oldOfficeHours = ref<OfficeHourSlot[]>([]);
+const officeHours = ref<OfficeHourSlot[]>([
+    { selectedDays: [], openTime: '', closeTime: '', isOpenUnavailable: false, isCloseUnavailable: false }
+]);
+watch(() => props.dev, (newDev) => {
+        if (newDev) {
+        editMode.value = true;
+        oldDev.value = { ...newDev };
+        form.value = newDev;
+        currentImage.value = { file: null as any, preview: newDev.image_url };
+        officeHours.value = newDev.OfficeHours;
+        if (newDev.OfficeHours && newDev.OfficeHours.length > 0) {
+            
+            oldOfficeHours.value = JSON.parse(JSON.stringify(newDev.OfficeHours));
+        } else {
+            const defaultSlot = { selectedDays: [], openTime: '', closeTime: '', isOpenUnavailable: false, isCloseUnavailable: false };
+            oldOfficeHours.value = [JSON.parse(JSON.stringify(defaultSlot))];
+        }
+    } else {
+        editMode.value = false;
+        form.value = {};
+        currentImage.value = undefined;
+    }
+}, { immediate: true })
+
+
 
 const triggerFileInput = () => {
   if (fileInput.value) fileInput.value.click();
@@ -239,15 +271,41 @@ const removeImage = () => {
   }
 };
 
-function saveDeveloper() {
-    console.log("Saving developer");
-    // office debugger
-    console.log("Saving developer details with schedules:", officeHours.value);
+async function saveDeveloper() {
+    const payload: Developer = {
+        dev_ID: form.value.dev_ID ?? -1, // Placeholder, will be replaced after creation
+        image_url: form.value.image_url ?? '',  
+        name: form.value.name ?? '',
+        phone: form.value.phone ?? '',
+        email: form.value.email ?? '',
+        location: form.value.location ?? '',
+        OfficeHours: officeHours.value ?? []
+    };
+    
+    
+    if (oldDev.value !== undefined && oldDev.value !== payload && editMode.value) {
+        await developerService.updateDeveloper(payload, oldOfficeHours.value);
+        console.log("Updated Developer ID: ", payload.dev_ID);
+        return;
+    }
+    else if (oldDev.value !== undefined && oldDev.value === payload && editMode.value) {
+        console.error("No change detected. Developer not updated.");
+        return;
+    }
+    else{
+        const devID = await developerService.addDeveloper(payload);
+        console.log("New Developer ID: ", devID);
+
+        let imageUrl = '';
+        if (currentImage.value && currentImage.value.file) {
+            imageUrl = await developerService.uploadImage(devID,currentImage.value.file);
+            await developerService.updateDeveloper({ ...payload, dev_ID: devID, image_url: imageUrl }, oldOfficeHours.value); //second parameter is kinda irrelevant for adding new dev, but its genuinely needed to track if office hours has been changed from editing in edit mode
+        }
+    }
+    
 }
 
-const officeHours = ref<OfficeHourSlot[]>([
-    { selectedDays: [], openTime: '', closeTime: '', isOpenUnavailable: false, isCloseUnavailable: false }
-]);
+
 
 const addHoursSlot = () => {
     officeHours.value.push({ selectedDays: [], openTime: '', closeTime: '', isOpenUnavailable: false, isCloseUnavailable: false });

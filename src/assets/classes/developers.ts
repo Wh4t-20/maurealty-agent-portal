@@ -6,8 +6,7 @@ export interface Developer {
     phone: string;
     email: string;
     location: string;
-    days: string | null; // could be date tho Im not sure if itll output like Monday - Friday
-    hours: string | null;
+    OfficeHours: OfficeHourSlot[] | []; // Optional property for office hours
 }
 
 export interface DayOption {
