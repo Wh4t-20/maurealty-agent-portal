@@ -1,0 +1,8 @@
+{
+    "configs": {
+        "userDefaultCurrency": "PHP",
+        "userDefaultAreaUnit": "Metric",
+        "disableAnimations": false,
+        "darkThemeEnabled": false
+    }
+}

@@ -14,6 +14,7 @@ body {
     --color-maurealty-blue: #044677;
     --color-maurealty-green: #33b058;
     --color-background-gray: #ECF1F5;
+    --color-sidebar-hover: #031E319D;
 }
 
 @utility sidebar-choice {
@@ -30,4 +31,9 @@ body {
 
 ::-webkit-scrollbar-thumb {
   @apply bg-gray-500 dark:bg-maurealty-blue;
+}
+
+.disable-animations * {
+  transition: none !important;
+  animation: none !important;
 }
