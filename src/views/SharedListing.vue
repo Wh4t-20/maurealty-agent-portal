@@ -173,13 +173,15 @@ import { useRoute } from 'vue-router';
 import { getSharedListing } from '@/services/shareService';
 import { formattedPropertyType } from '@/assets/classes/listings';
 import { compileMarkdown } from '@/services/listingsServices';
+import { formatPrice, formatArea } from '@/utils/conversion.ts';
+import placeholder from '@/assets/images/default_placeholder.png';
 
 import MapHolder from '@/components/listings/MapHolder.vue';
 
-import { 
-  Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, 
-  LandPlot, SquareDashed, Sofa, Toilet, Car, CircleSmall, BedDouble, 
-  BookImage, Hash 
+import {
+  Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight,
+  LandPlot, SquareDashed, Sofa, Toilet, Car, CircleSmall, BedDouble,
+  BookImage, Hash, BrushCleaning, LifeBuoy, Check
 } from "lucide-vue-next";
 
 const route = useRoute();
@@ -241,7 +243,7 @@ const loadListing = async () => {
       lot_only: Array.isArray(mainListing.lot_only) ? mainListing.lot_only[0] : mainListing.lot_only,
       condominium: Array.isArray(mainListing.condominium) ? mainListing.condominium[0] : mainListing.condominium,
       memorial: Array.isArray(mainListing.memorial) ? mainListing.memorial[0] : mainListing.memorial,
-      
+
       property_type: typeMap[mainListing.property_type_ID] || 'unknown',
 
       agent_name: mainListing.agents ? `${mainListing.agents.first_name} ${mainListing.agents.last_name}` : 'Unknown Agent',
@@ -283,8 +285,16 @@ onMounted(() => {
   loadListing();
 });
 
-// description markdown conversion and input
+// description markdown conversion
 const compiledMarkdown = computed(() => {
   return compileMarkdown(details.value?.description)
+});
+
+// FAQ markdown conversion (commission is intentionally never shown on shared links)
+const compiledFAQMarkdown = computed(() => {
+  if (details.value?.faq) {
+    return compileMarkdown("# FREQUENTLY ASKED QUESTIONS\n\n" + details.value.faq)
+  }
+  return ''
 });
 </script>
