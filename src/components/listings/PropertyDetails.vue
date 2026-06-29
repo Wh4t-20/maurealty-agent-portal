@@ -92,20 +92,20 @@
                     <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ formatArea(details.lot_area) }}</span>
                     <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ formatArea(details.floor_area) }}</span>
                     <span class="flex items-center-safe gap-1"><Sofa /> {{ details.rooms_count }} room{{ details.rooms_count != 1 ? 's' : '' }}</span>
-                    <span class="flex items-center-safe gap-1"><Toilet /> {{ details.toilets_count }} toilet{{ details.s_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1"><Toilet /> {{ details.toilets_count }} toilet{{ details.toilets_count != 1 ? 's' : '' }}</span>
                     <span class="flex items-center-safe gap-1 col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
                   </div>
     
                   <span class="flex items-center-safe justify-around pr-2 mt-3">
-                    <p class="flex items-center-safe gap-1" v-if="details.helper_rooms_count > 0">
+                    <p class="flex items-center-safe gap-1" v-if="details.helper_rooms_count >= 0">
                       <BrushCleaning class="size-4" /> {{ details.helper_rooms_count }} helper room{{ details.helper_rooms_count != 1 ? 's' : '' }}
                     </p>
-                    <p v-if="(details.driver_rooms_count > 0 && details.helper_rooms_count > 0)">|</p>
-                    <p class="flex items-center-safe gap-1" v-if="details.driver_rooms_count > 0">
+                    <p v-if="(details.driver_rooms_count >= 0 && details.helper_rooms_count >= 0)">|</p>
+                    <p class="flex items-center-safe gap-1" v-if="details.driver_rooms_count >= 0">
                       <LifeBuoy class="size-3" /> {{ details.driver_rooms_count }} driver room{{ details.driver_rooms_count != 1 ? 's' : '' }}
                     </p> 
-                    <p v-if="(details.helper_rooms_count > 0  || details.driver_rooms_count > 0) && details.carpark_count > 0">|</p>
-                    <p class="flex items-center-safe gap-1" v-if="details.carpark_count > 0">
+                    <p v-if="(details.helper_rooms_count >= 0  || details.driver_rooms_count >= 0) && details.carpark_count >= 0">|</p>
+                    <p class="flex items-center-safe gap-1" v-if="details.carpark_count >= 0">
                       <Car class="size-4" /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}
                     </p>
                    </span> 
