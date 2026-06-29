@@ -82,7 +82,7 @@
     <Teleport to="body">
       <amortSched
         v-if="showAmortization"
-        :principal="mortPrice"
+        :principal="mortPrice ?? 0"
         :years="mortYears"
         :interest="mortInterest"
         @close="showAmortization = false"
