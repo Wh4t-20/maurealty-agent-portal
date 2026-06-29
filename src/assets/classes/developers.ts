@@ -1,3 +1,10 @@
+// A recent listing/project by a developer, shown as a chip on the card.
+export interface DeveloperProject {
+    listing_ID: number;
+    listing_title: string;
+    property_type: string;
+}
+
 // developer list interface
 export interface Developer {
     dev_ID: number;
@@ -8,6 +15,7 @@ export interface Developer {
     location: string;
     days: string | null; // could be date tho Im not sure if itll output like Monday - Friday
     hours: string | null;
+    projects: DeveloperProject[]; // recent listings by this developer
 }
 
 export interface DayOption {

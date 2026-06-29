@@ -14,15 +14,16 @@ const formatToAMPM = (timeStr: any): string => { // Helper function to format ti
 
 export const developerService = {
     async getDevelopers(): Promise<Developer[]> {
+        // Embed each developer's listings in one query (avoids an N+1 per card).
         const { data, error } = await supabase
             .from('developers')
-            .select('*');
+            .select('*, main_listings(listing_ID, listing_title, created_at, status, property_type(property_type))');
         if (error || !data) {
             console.error('Fetch error:', error);
             return [];
         }
         var developers: Developer[] = data.map((item:any): Developer => ({
-            
+
             dev_ID: item.dev_ID,
             image_url: item.profile_url,
             name: item.name,
@@ -30,7 +31,17 @@ export const developerService = {
             email: item.contact_email,
             location: item.location,
             days: (item.available_days) ? `${item.available_days} `: null,
-            hours: (item.open_hours && item.close_hours) ? `${formatToAMPM(item.open_hours)} - ${formatToAMPM(item.close_hours)}` : null
+            hours: (item.open_hours && item.close_hours) ? `${formatToAMPM(item.open_hours)} - ${formatToAMPM(item.close_hours)}` : null,
+            projects: (item.main_listings || [])
+                // Recent real projects only — skip drafts.
+                .filter((l: any) => l.status !== 'draft')
+                .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .slice(0, 3)
+                .map((l: any) => ({
+                    listing_ID: l.listing_ID,
+                    listing_title: l.listing_title || 'Untitled Listing',
+                    property_type: l.property_type?.property_type || 'Unknown',
+                }))
         }));
 
         return developers;
