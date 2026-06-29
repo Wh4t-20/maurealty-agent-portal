@@ -163,6 +163,20 @@
           <div><dt class="text-gray-500">Client</dt><dd class="font-medium text-maurealty-blue">{{ selectedSale.client_name }}</dd></div>
           <div><dt class="text-gray-500">Project</dt><dd class="font-medium">{{ selectedSale.listing_title }}</dd></div>
           <div v-if="isAdmin"><dt class="text-gray-500">Agent</dt><dd>{{ selectedSale.agent_name || '—' }}</dd></div>
+          <div v-if="isAdmin" class="col-span-2">
+            <dt class="text-gray-500">Upline</dt>
+            <dd>
+              <span v-if="uplineLoading" class="text-gray-400">Loading…</span>
+              <span v-else-if="upline.length === 0">—</span>
+              <span v-else>
+                <template v-for="(u, i) in upline" :key="u.agent_ID"
+                  ><span class="font-medium">{{ u.first_name }} {{ u.last_name }}</span
+                  ><span v-if="uplinePosition(u)" class="text-gray-500"> ({{ uplinePosition(u) }})</span
+                  ><span v-if="i < upline.length - 1" class="text-gray-400"> → </span
+                ></template>
+              </span>
+            </dd>
+          </div>
           <div><dt class="text-gray-500">Reservation Date</dt><dd>{{ formatDate(selectedSale.reservation_date) }}</dd></div>
           <div><dt class="text-gray-500">Contract Price</dt><dd>{{ formatPeso(selectedSale.total_contract_price) }}</dd></div>
           <div><dt class="text-gray-500">Sale #</dt><dd>{{ selectedSale.agent_sale_seq ?? '—' }}</dd></div>
@@ -186,6 +200,8 @@ import { ref, shallowRef, computed, onMounted, watch } from 'vue'
 import { ClipboardList, Plus } from 'lucide-vue-next'
 import { salesService, type Sale } from '@/services/salesService'
 import { authService } from '@/services/authService'
+import { genealogyService, type GenealogyAgent } from '@/services/genealogyService'
+import { positionMap } from '@/assets/classes/agent'
 import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 
 const sales = shallowRef<Sale[]>([])
@@ -243,6 +259,30 @@ async function confirmDelete(sale: Sale) {
     console.error('Failed to delete sale:', e)
     alert('Something went wrong deleting the sale.')
   }
+}
+
+// Upline of the selected sale's agent (admin only — hierarchy is sensitive).
+// Two levels = supervisor + manager, per the Commission Releasing doc.
+const upline = ref<GenealogyAgent[]>([])
+const uplineLoading = ref(false)
+
+watch(selectedSale, async (sale) => {
+  upline.value = []
+  if (!sale || !isAdmin.value) return
+  uplineLoading.value = true
+  try {
+    upline.value = await genealogyService.getUplineChain(sale.agent_ID, 2)
+  } catch (e) {
+    console.error('Failed to load upline:', e)
+  } finally {
+    uplineLoading.value = false
+  }
+})
+
+function uplinePosition(u: GenealogyAgent): string {
+  if (u.position) return u.position
+  if (u.position_ID != null) return positionMap[u.position_ID] ?? ''
+  return ''
 }
 
 // Admin agent dropdown: unique agents present in the loaded sales.
