@@ -14,168 +14,18 @@
       <div class="accounting-layout">
         
         <div class="flex flex-col gap-6">
-          
-          <div class="card calculator ">
-            <h2 class="card-title">CALCULATOR</h2>
-
-            <div class="calc-header">
-              <label class="calc-label">{{ calcMode }} Calculator:</label>
-              <select v-model="calcMode" class="calc-dropdown">
-                <option value="Sales">Sales</option>
-                <option value="Loan">Loan</option>
-                <option value="Taxes">Property Tax</option>
-              </select>
-            </div>
-            
-            <label class="calc-label block mb-2 text-sm text-[#64748b]">
-              {{ calcMode === 'Loan' ? 'Monthly Payment:' : calcMode === 'Sales' ? 'Net Commission' : ''  }}
-            </label>
-
-            <div class="calc-display">
-              <span class="peso-symbol">₱</span>
-              <input type="text" class="calc-input large" :value="displayedTotal" readonly />
-            </div>
-
-            <div v-if="calcMode === 'Sales'" class="calc-inputs">
-              <div class="input-pair">
-                <label>Gross Profit (₱)</label>
-                <input type="number" v-model.number="totalSales" />
-              </div>
-              <div class="input-pair">
-                <label>Net Commission Rate (%)</label>
-                <input type="number" v-model.number="commRate" />
-              </div>
-              <div class="input-pair">
-                <label>Commission Tax (%)</label>
-                <input type="number" v-model.number="taxRate" />
-              </div>
-            </div>
-
-            <div v-if="calcMode === 'Loan'" class="calc-inputs">
-              <div class="input-pair">
-                <label>Loan Price (₱)</label>
-                <input type="number" v-model.number="mortPrice" />
-              </div>
-              <div class="input-pair">
-                <label>Interest Rate (Annual %)</label>
-                <input type="number" v-model.number="mortInterest" />
-              </div>
-              <div class="input-pair">
-                <label>Loan Term (Years)</label>
-                <input 
-                  type="number" 
-                  v-model.number="mortYears" 
-                  min="1" 
-                  max="20" 
-                  @input="mortYears > 20 ? mortYears = 20 : mortYears" 
-                />
-              </div>
-              <span 
-                  @click="openAmortization" 
-                  
-                  class="text-sm text-[#64748b] cursor-pointer hover:underline transition-colors"
-                >
-                  View Amortization Schedule
-              </span>
-              <p v-if="errorMessage" class="mt-2 text-xs text-[#64748b] font-bold animate-pulse text-center">
-                {{ errorMessage }}
-              </p>
-              <p class="text-xs text-center text-gray-400 mt-2 ">*Estimated Monthly Payment</p>
-            </div>
-
-            <div v-if="calcMode === 'Taxes'" class="calc-inputs">
-              <div class="input-pair">
-                <label>Property Value (₱)</label>
-                <input type="number" v-model.number="taxValue" />
-              </div>
-              <div class="input-pair">
-                <label>Tax Rate (%)</label>
-                <input type="number" v-model.number="taxRatePercent" />
-              </div>
-            </div>
-          </div>
+          <CalculatorPanel />
         </div>
 
       </div>
     </main>
-    <amortSched 
-        v-if="showAmortization" 
-        :principal="mortPrice" 
-        :years="mortYears" 
-        :interest="mortInterest"
-        @close="showAmortization = false" 
-      />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import amortSched from '@/components/accounting/amortSched.vue'
-
-const calcMode = ref('Loan')
-const showAmortization = ref(false)
-const errorMessage = ref('')
-
-const openAmortization = () => {
-  if (!mortPrice.value || mortPrice.value <= 0 || !mortYears.value || mortYears.value <= 0 || !mortInterest.value || mortInterest.value <= 0) {
-    errorMessage.value = 'Please enter a valid Loan Price, Interest Rate, and Term to view the schedule.'
-    
-    //clears after 3s
-    setTimeout(() => { errorMessage.value = '' }, 3000)
-    return
-  }
-  
-  errorMessage.value = ''
-  showAmortization.value = true
-}
-
-// Formatting Tool
-const formatCurrency = (val: number) => {
-  if (isNaN(val) || !isFinite(val)) return '0.00'
-  return val.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-const totalSales = ref()
-const commRate = ref()
-const taxRate = ref()
-
-
-
-const salesTotal = computed(() => {
-  const gross = totalSales.value * (commRate.value / 100)
-  const tax = gross * (taxRate.value / 100)
-  return gross - tax 
-})
-
-const mortPrice = ref()
-const mortInterest = ref()
-const mortYears = ref()
-
-const mortTotal = computed(() => {
-  const principal = mortPrice.value || 0
-  const annualInterestRate = mortInterest.value
-  const monthlyInterestRate = (annualInterestRate / 100) / 12  
-  const totalPayments = mortYears.value * 12
-
-  if (monthlyInterestRate === 0) return principal / totalPayments
-
-  const monthly = principal * ((monthlyInterestRate * Math.pow(1 + monthlyInterestRate, totalPayments)) / (Math.pow(1 + monthlyInterestRate, totalPayments) - 1))
-  return monthly
-})
-
-const taxValue = ref()
-const taxRatePercent = ref() 
-
-const taxTotal = computed(() => {
-  return taxValue.value * (taxRatePercent.value / 100)
-})
-
-const displayedTotal = computed(() => {
-  if (calcMode.value === 'Sales') return formatCurrency(salesTotal.value)
-  if (calcMode.value === 'Loan') return formatCurrency(mortTotal.value)
-  if (calcMode.value === 'Taxes') return formatCurrency(taxTotal.value)
-  return '0.00'
-})
+// Calculator (incl. the amortization schedule) lives in the shared
+// CalculatorPanel so the listing popup can reuse it.
+import CalculatorPanel from '@/components/calculator/CalculatorPanel.vue'
 </script>
 
 <style scoped>
