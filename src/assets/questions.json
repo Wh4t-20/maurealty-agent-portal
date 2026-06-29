@@ -3,8 +3,13 @@
         {
             "type": "General",
             "questionList": [
-                { "question": "How many square meters?" },
-                { "question": "How many feet meters?" }
+                { "question": "How old are the roof, HVAC, and water heater?" },
+                { "question": "What exactly is included in the sale?" },
+                { "question": "Is this property pet-friendly?" },
+                { "question": "Are there any restrictions on what I can do with the property?" },
+                { "question": "What do the average utility bills look like?" },
+                { "question": "What are some important locations near the property?" },
+                { "question": "What are the measurements of the rooms?" }
             ]
             
         },
@@ -13,6 +18,31 @@
             "questionList": [
                 { "question": "How many houses?" },
                 { "question": "How many hise?" }
+            ]
+        },
+        {
+            "type": "Lot Only",
+            "questionList": [
+                { "question": "How much is the price per square meter/foot?" },
+                { "question": "Is this lot net of taxes?" },
+                { "question": "Is this lot titled or tax declared?" },
+                { "question": "What is the zonal value of the property?" }
+            ]
+        },
+        {
+            "type": "Condominium",
+            "questionList": [
+                { "question": "How much is the total contract price?" },
+                { "question": "What are the terms of payment?" },
+                { "question": "What are the condominium's association dues?" },
+                { "question": "What is the property's unit turnover timeline?" },
+                { "question": "Are there hidden charges?" },
+                { "question": "Is parking included in the unit price?" },
+                { "question": "Can I used the amenities for free?" },
+                { "question": "Can I rent out my unit?" },
+                { "question": "Can I renovate or alter the unit?" },
+                { "question": "Who handles pest control in the property?" },
+                { "question": "Is this RFO or pre-selling?" }
             ]
         }
     ]

@@ -67,6 +67,8 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../supabaseClient'
 
+import defaultSettings from '@/assets/defaultSettings.json'
+
 const router = useRouter()
 
 const email = ref('')
@@ -90,7 +92,30 @@ const handleLogin = async () => {
       return
     }
 
+    console.log("Logging in...")
+
     if (data.user) {
+      // for getting the config settings from Supabase 
+      const { data: userConfigs, error: configError } = await supabase
+        .from('agents') 
+        .select('configs')
+        .eq('user_id', data.user.id)
+        .single();
+
+      // decide which settings to use
+      let finalConfigs;
+      if (configError || !userConfigs) {
+        console.warn('Could not fetch user settings, applying defaults.');
+        finalConfigs = defaultSettings.configs;
+      } else {
+        console.log('Fetch successful! Applying configs into local storage!');
+        // Merge fetched configs with defaults to ensure no keys are missing
+        finalConfigs = { ...defaultSettings.configs, ...(userConfigs?.configs || {}) };
+      }
+
+      // store the configuration in localStorage for global app access
+      localStorage.setItem('app_user_settings', JSON.stringify(finalConfigs));
+
       router.push('/listings')
     }
   } catch (err: any) {

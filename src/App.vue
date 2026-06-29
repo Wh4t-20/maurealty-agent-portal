@@ -13,6 +13,21 @@ import { useRoute } from 'vue-router';
 import Sidebar from './components/Sidebar.vue';
 
 const route = useRoute();
+
+// for graphic settings
+import { watchEffect } from 'vue';
+import { useSettings } from '@/utils/useSettings';
+
+const { configs } = useSettings();
+
+// watches for changes and toggle a class on the body element
+watchEffect(() => {
+  if (configs.disableAnimations) {
+    document.body.classList.add('disable-animations');
+  } else {
+    document.body.classList.remove('disable-animations');
+  }
+});
 </script>
 
 <style>

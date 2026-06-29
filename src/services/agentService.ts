@@ -28,6 +28,33 @@ export const agentService = {
     }
   },
 
+  // just in case functions with ID alone are needed
+  async getCurrentAgentID() {
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !authData?.user) {
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from('agents')
+        .select(`agent_ID`)
+        .eq('user_id', authData.user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching agent id:', error);
+        return null;
+      }
+
+      return data.agent_ID;
+    } catch (error) {
+      console.error('Unexpected error fetching id:', error);
+      return null;
+    }
+  },
+
   async updateProfile(agentId: number, agentData: any) {
     try {
       const { data: mainData, error: mainError } = await supabase
@@ -105,6 +132,29 @@ export const agentService = {
     } catch (error) {
       console.error('Error deleting old image:', error);
       // We usually don't throw here so a failed deletion doesn't block the profile save
+    }
+  },
+
+  async updateConfigs(agentId: number, configData: any) {
+    try {
+      const { data: updateData, error: updateError } = await supabase
+        .from('agents')
+        .update({ configs: configData })
+        .eq('agent_ID', agentId)
+        .select();
+
+        if (updateError) throw updateError;
+
+        // Detects if RLS blocked the update
+        if (!updateData || updateData.length === 0) {
+          console.error('Update Settings failed silently. Zero rows modified in agents.');
+          return { success: false };
+        }
+        
+        return { success: true };
+    } catch (error) {
+      console.error('Error in saving user\'s settings:', error);
+      throw error;
     }
   }
 };

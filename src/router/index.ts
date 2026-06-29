@@ -11,6 +11,7 @@ import Login from '@/views/LoginForm.vue'
 import GenealogyLandingpage from '@/views/Genealogy-landingpage.vue'
 import Profile from '@/views/Profile.vue'
 import SharedListing from '@/views/SharedListing.vue'
+import Settings from '@/views/Settings.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -74,6 +75,12 @@ const routes: Array<RouteRecordRaw> = [
     component: Profile,
     meta: { requiresAuth: true }
   },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: Settings,
+    meta: { requiresAuth: true }
+  }
 ]
 
 const router = createRouter({

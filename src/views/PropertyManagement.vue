@@ -494,15 +494,15 @@
               <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div :class="[ !displayQuestions ? 'col-span-full' : '' ]">
                   <div v-if="!displayFAQMarkdown" class="w-full flex">
-                    <textarea type="text" v-model="form.faq" placeholder="Follow this format:&#10;### (Question Here)&#10;- (Answers here)&#10;&#10;Note: Click Preview to see the formatting" 
-                            class="custom-scrollbar w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
+                    <textarea type="text" v-model="form.faq" placeholder="Follow this format:&#10;### (Question Here; click 'View Questions' for some examples or make up your own)&#10;- (Answers here)&#10;&#10;Note: Click Preview to see the formatting" 
+                            class="custom-scrollbar w-full h-auto min-h-70 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
                     
                   </div>
                   
                   <div v-if="displayFAQMarkdown" class="prose max-w-none w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
                 </div>
 
-                <div v-if="displayQuestions" class="col-span-1 border border-gray-300 rounded-lg max-h-50 bg-gray-50 overflow-y-auto custom-scrollbar">
+                <div v-if="displayQuestions" class="col-span-1 border border-gray-300 rounded-lg max-h-70 bg-gray-50 overflow-y-auto custom-scrollbar">
                   <div v-for="(item, itemIndex) in questions.FAQs" :key="itemIndex" class="mb-3">
                     <h1 class="w-full bg-white py-2 pl-6 mb-2 font-bold uppercase text-xl text-maurealty-blue">{{ item.type }}</h1>
                     <div class="grid grid-cols-1 justify-items-start px-3">
@@ -536,7 +536,7 @@
 
             <button type="button" @click="triggerFactSheetFileInput" class="size-full py-8 bg-blue-50/30 hover:bg-blue-50/70 border border-maurealty-blue/10 rounded-xl flex flex-col items-center gap-4 justify-center text-maurealty-blue cursor-pointer">
               <UploadIcon class="size-15" :stroke-width="3"/>
-              <h3 v-if="!factSheetFile" class="italic">Upload a fact sheet</h3>
+              <h3 v-if="!factSheetFile" class="italic">Upload a fact sheet (optional)</h3>
               <h3 v-else class="font-bold text-green-600 italic">{{ factSheetFile.name }}</h3>
             </button>
           </div>
