@@ -17,7 +17,11 @@
                     <div class="text-lg flex items-center gap-4">
                         <span class="whitespace-nowrap">Default Currency:</span>
                         <div class="w-auto"> 
-                            <ConfigDropdown :choices="Object.keys(currencySymbols)" v-model="configs.userDefaultCurrency" />
+                            <ConfigDropdown 
+                                :choices="Object.keys(currencySymbols)" 
+                                :modelValue="configs.userDefaultCurrency"
+                                @update:modelValue="(val) => updateSetting('userDefaultCurrency', val)" 
+                            />
                         </div>
                         <span class="whitespace-nowrap"> ({{ currencySymbols[configs.userDefaultCurrency] }}) </span>
                     </div>
@@ -25,7 +29,11 @@
                     <div class="text-lg flex items-center gap-4">
                         <span class="whitespace-nowrap">Default Unit:</span>
                         <div class="w-auto"> 
-                            <ConfigDropdown :choices="Object.keys(areaUnits)" v-model="configs.userDefaultAreaUnit" />
+                            <ConfigDropdown 
+                                :choices="Object.keys(areaUnits)" 
+                                :modelValue="configs.userDefaultAreaUnit" 
+                                @update:modelValue="(val) => updateSetting('userDefaultAreaUnit', val)" 
+                            />
                         </div>
                         <span class="whitespace-nowrap"> ({{ areaUnits[configs.userDefaultAreaUnit] }}) </span>
                     </div>
@@ -36,12 +44,18 @@
                     
                     <div class="text-lg flex items-center gap-4">
                         <span class="whitespace-nowrap">Disable Animations:</span>
-                        <ConfigToggleSlider v-model="configs.disableAnimations" />
+                        <ConfigToggleSlider 
+                            :modelValue="configs.disableAnimations"
+                            @update:modelValue="(val) => updateSetting('disableAnimations', val)" 
+                        />
                     </div>
 
                     <div class="text-lg flex items-center gap-4">
                         <span class="whitespace-nowrap">Enable Dark Mode:</span>
-                        <ConfigToggleSlider v-model="configs.darkThemeEnabled" />
+                        <ConfigToggleSlider 
+                            :modelValue="configs.darkThemeEnabled"
+                            @update:modelValue="(val) => updateSetting('darkThemeEnabled', val)" 
+                        />
                     </div>
                 </section>
             </div>

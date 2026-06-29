@@ -1,7 +1,7 @@
 <template>
     <label class="relative inline-flex items-center cursor-pointer select-none">
         <!-- Hidden Checkbox Input -->
-        <input type="checkbox" class="peer sr-only" id="toggle-switch" v-model="currentChoice" />
+        <input type="checkbox" class="peer sr-only" v-model="currentChoice" />
         
         <!-- Toggle Background Track -->
         <div class="w-11 h-6 bg-gray-200 rounded-full transition-colors duration-300 ease-in-out peer-checked:bg-maurealty-blue peer-focus:ring-2 peer-focus:ring-blue-200"></div>
