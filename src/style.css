@@ -32,3 +32,8 @@ body {
 ::-webkit-scrollbar-thumb {
   @apply bg-gray-500 dark:bg-maurealty-blue;
 }
+
+.disable-animations * {
+  transition: none !important;
+  animation: none !important;
+}
