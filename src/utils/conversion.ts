@@ -23,6 +23,11 @@ export const currencySymbols: Record<string, string> = {
 
 export const SQM_TO_SQFT = 10.7639;
 
+export const areaUnits: Record<string, string> = {
+  'Metric': 'sqm',
+  'English': 'sqft'
+}
+
 // --- Display Formatters (For Reading) ---
 export const convertPrice = (priceInPHP: number) => {
   const rate = exchangeRates[currentCurrency.value] || 1;
