@@ -42,7 +42,7 @@ export const developerService = {
     async getDevelopers(): Promise<Developer[]> {
         const { data, error } = await supabase
             .from('developers')
-            .select('dev_ID, profile_url, name, contact_number, contact_email, location, opening_days(day, open_hours, close_hours)');
+            .select('dev_ID, profile_url, name, contact_number, contact_email, location, opening_days(day, open_hours, close_hours),  main_listings(listing_ID, listing_title, created_at, status, property_type(property_type))');
             console.log('Fetched developers:', data);
         if (error || !data) {
             console.error('Fetch error:', error);
@@ -66,6 +66,16 @@ export const developerService = {
                     closeTime: day.close_hours,
                 };
             }),
+            projects: (item.main_listings || [])
+                // Recent real projects only — skip drafts.
+                .filter((l: any) => l.status !== 'draft')
+                .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .slice(0, 3)
+                .map((l: any) => ({
+                    listing_ID: l.listing_ID,
+                    listing_title: l.listing_title || 'Untitled Listing',
+                    property_type: l.property_type?.property_type || 'Unknown',
+                }))
         })); 
         developers.forEach(dev => { 
             var newOfficeHours: OfficeHourSlot[] = [];
@@ -92,6 +102,24 @@ export const developerService = {
         });
 
         return developers;
+    },
+        async getDeveloperNames(): Promise<string[]> {
+        try {
+        const { data, error } = await supabase
+            .from('developers')
+            .select('name')
+            .order('name');
+
+        if (error) {
+            console.error('Error fetching developer names:', error);
+            return [];
+        }
+
+        return data.map(dev => dev.name);
+        } catch (error) {
+        console.error('Unexpected error fetching developer names:', error);
+        return [];
+        }
     },
     async addDeveloper(developer: Developer): Promise<any> {
         const { data: inserted, error } = await supabase

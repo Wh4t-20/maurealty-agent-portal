@@ -13,7 +13,7 @@ export interface Developer {
     email: string;
     location: string;
     OfficeHours: OfficeHourSlot[] | []; // Optional property for office hours
-    projects: DeveloperProject[];
+    projects: DeveloperProject[] | [];
 }
 
 export interface DayOption {

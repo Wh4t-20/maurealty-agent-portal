@@ -219,11 +219,11 @@ const officeHours = ref<OfficeHourSlot[]>([
 watch(() => props.dev, (newDev) => {
         if (newDev) {
         editMode.value = true;
-        oldDev.value = { ...newDev };
+        oldDev.value = { ...newDev }; //this is for comparing if the dev has been changed or not in edit mode when saving
         form.value = newDev;
         currentImage.value = { file: null as any, preview: newDev.image_url };
         officeHours.value = newDev.OfficeHours;
-        if (newDev.OfficeHours && newDev.OfficeHours.length > 0) {
+        if (newDev.OfficeHours && newDev.OfficeHours.length > 0) { //change in office hours is checked separately from the rest
             
             oldOfficeHours.value = JSON.parse(JSON.stringify(newDev.OfficeHours));
         } else {
@@ -280,7 +280,7 @@ async function saveDeveloper() {
         email: form.value.email ?? '',
         location: form.value.location ?? '',
         OfficeHours: officeHours.value ?? [],
-        projects: [] // Ensure projects is included in the payload
+        projects: form.value.projects ?? [] // Ensure projects is included in the payload
     };
     
     
