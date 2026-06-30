@@ -4,7 +4,7 @@
         <input type="checkbox" class="peer sr-only" v-model="currentChoice" />
         
         <!-- Toggle Background Track -->
-        <div class="w-11 h-6 bg-gray-200 rounded-full transition-colors duration-300 ease-in-out peer-checked:bg-maurealty-blue peer-focus:ring-2 peer-focus:ring-blue-200"></div>
+        <div class="w-11 h-6 bg-gray-200 dark:bg-gray-800 rounded-full transition-colors duration-300 ease-in-out peer-checked:bg-maurealty-blue peer-focus:ring-2 peer-focus:ring-blue-200"></div>
         
         <!-- Sliding Handle Knob -->
         <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-300 ease-in-out peer-checked:translate-x-5"></div>

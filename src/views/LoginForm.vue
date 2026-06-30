@@ -1,7 +1,6 @@
 <template>
   <div 
-    class="min-h-screen w-screen m-0 p-6 box-border flex items-center justify-center bg-cover bg-center bg-no-repeat font-[Arial,sans-serif]"
-    :style="{ backgroundImage: `linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.6) 30%, rgba(255, 255, 255, 0.1) 100%), linear-gradient(0deg, rgba(0, 77, 122, 0.9) 0%, rgba(0, 77, 122, 0.6) 80%, rgba(0, 77, 122, 0.1) 100%), url('/src/assets/images/LoginFormBG.png')` }"
+    class="min-h-screen w-screen m-0 p-6 box-border flex items-center justify-center bg-cover bg-center bg-no-repeat font-[Arial,sans-serif] login-bg bg-cover bg-center"
   >
     <div class="w-full flex flex-col items-center -mt-30">
       
@@ -125,3 +124,23 @@ const handleLogin = async () => {
   }
 }
 </script>
+
+<style scoped>
+/* Light Mode (Default) */
+.login-bg {
+  background-image: 
+    linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.6) 30%, rgba(255, 255, 255, 0.1) 100%), 
+    linear-gradient(0deg, rgba(0, 77, 122, 0.9) 0%, rgba(0, 77, 122, 0.6) 80%, rgba(0, 77, 122, 0.1) 100%), 
+    url('/src/assets/images/LoginFormBG.png');
+}
+
+/* Dark Mode */
+.dark .login-bg {
+  background-image: 
+    /* Swapped white for dark gray (Tailwind's gray-900) */
+    linear-gradient(180deg, rgba(17, 24, 39, 0.95) 0%, rgba(17, 24, 39, 0.8) 30%, rgba(17, 24, 39, 0.2) 100%), 
+    /* Darkened the blue tone */
+    linear-gradient(0deg, rgba(0, 30, 55, 0.95) 0%, rgba(0, 30, 55, 0.8) 80%, rgba(0, 30, 55, 0.2) 100%), 
+    url('/src/assets/images/LoginFormBG.png');
+}
+</style>
