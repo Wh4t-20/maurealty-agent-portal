@@ -40,6 +40,7 @@ const dayGetter = (dayName: string): DayOption | undefined => {
 };
 export const developerService = {
     async getDevelopers(): Promise<Developer[]> {
+        // Embed each developer's listings in one query (avoids an N+1 per card).
         const { data, error } = await supabase
             .from('developers')
             .select('dev_ID, profile_url, name, contact_number, contact_email, location, opening_days(day, open_hours, close_hours),  main_listings(listing_ID, listing_title, created_at, status, property_type(property_type))');

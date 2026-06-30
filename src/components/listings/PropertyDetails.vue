@@ -54,7 +54,7 @@
 
           <div class="w-2/5 flex flex-col gap-2 text-gray-800 text-lg">
             <span class="inline-block bg-maurealty-green w-fit text-2xl text-white px-4 py-0.5 rounded-full tracking-wider mt-0.5">
-              ₱ {{ (details.price ?? 0).toLocaleString() }}
+               {{ formatPrice(details.price ?? 0).toLocaleString() }}
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
@@ -68,7 +68,7 @@
             </span>
 
             <section class="w-full h-64 rounded-xl overflow-hidden border border-gray-200">
-              <MapHolder :target-location="{ lng: details.lng, lat: details.lat }" />
+              <MapHolder :target-location="{ lng: details.lng, lat: details.lat }" :listing-id="details.listing_id" />
             </section>
 
             <span class="flex items-center gap-1.5">
@@ -89,22 +89,23 @@
                 <legend class="px-2 font-semibold text-maurealty-blue">House and Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
                   <div class="grid grid-cols-2 gap-y-0.5">
-                    <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ details.lot_area }} sqm</span>
-                    <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ details.floor_area }} sqm</span>
+                    <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ formatArea(details.lot_area) }}</span>
+                    <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ formatArea(details.floor_area) }}</span>
                     <span class="flex items-center-safe gap-1"><Sofa /> {{ details.rooms_count }} room{{ details.rooms_count != 1 ? 's' : '' }}</span>
-                    <span class="flex items-center-safe gap-1"><Toilet /> {{ details.toilets_count }} toilet{{ details.s_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1"><Toilet /> {{ details.toilets_count }} toilet{{ details.toilets_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1 col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
                   </div>
     
                   <span class="flex items-center-safe justify-around pr-2 mt-3">
-                    <p class="flex items-center-safe gap-1" v-if="details.helper_rooms_count > 0">
+                    <p class="flex items-center-safe gap-1" v-if="details.helper_rooms_count >= 0">
                       <BrushCleaning class="size-4" /> {{ details.helper_rooms_count }} helper room{{ details.helper_rooms_count != 1 ? 's' : '' }}
                     </p>
-                    <p v-if="details.driver_room_count > 0 || details.carpark_count > 0">|</p>
-                    <p class="flex items-center-safe gap-1" v-if="details.driver_rooms_count > 0">
+                    <p v-if="(details.driver_rooms_count >= 0 && details.helper_rooms_count >= 0)">|</p>
+                    <p class="flex items-center-safe gap-1" v-if="details.driver_rooms_count >= 0">
                       <LifeBuoy class="size-3" /> {{ details.driver_rooms_count }} driver room{{ details.driver_rooms_count != 1 ? 's' : '' }}
                     </p> 
-                    <p v-if="details.carpark_count > 0">|</p>
-                    <p class="flex items-center-safe gap-1" v-if="details.carpark_count > 0">
+                    <p v-if="(details.helper_rooms_count >= 0  || details.driver_rooms_count >= 0) && details.carpark_count >= 0">|</p>
+                    <p class="flex items-center-safe gap-1" v-if="details.carpark_count >= 0">
                       <Car class="size-4" /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}
                     </p>
                    </span> 
@@ -133,7 +134,7 @@
                       <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Phase No. <b>{{ details.phase_number }}</b></span>  
                     </div>
                     <div>
-                      <span class="flex items-center-safe gap-1"><SquareDashed /> {{ details.lot_area }} sqm</span>
+                      <span class="flex items-center-safe gap-1"><SquareDashed /> {{ formatArea(details.lot_area) }} </span>
                     </div>
                   </div>
                   
@@ -149,14 +150,15 @@
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue">Condominium Features</legend>
                 <main class="text-sm px-2 flex flex-col">
-                  <div class="grid grid-cols-2">
+                  <div class="grid grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><Hash /> Unit No. <b>{{ details.unit_number }}</b></span>
-                    <span class="flex items-center-safe gap-1"><BedDouble /> {{ details.bedroom_count }} bedroom{{ details.carpark_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1"><Bed /> {{ details.bedroom_count }} bedroom{{ details.carpark_count != 1 ? 's' : '' }}</span>
                     <span class="flex items-center-safe gap-1"><BookImage /> {{ details.balcony_count }} balcon{{ details.carpark_count != 1 ? 'ies' : 'y' }}</span>
                     <span class="flex items-center-safe gap-1"><Car /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1 col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
                   </div>
                   
-                  <div class="mt-2 flex gap-2">
+                  <div class="mt-4 flex gap-2">
                     <p class="font-bold text-xl text-maurealty-blue">Class:</p>
                     <p class="text-xl">{{ condoClassesMap[details.condo_class_ID] || 'N/A' }}</p>
                   </div>
@@ -207,16 +209,25 @@
           >
             <span class="flex items-center-safe gap-1"><ExternalLink class="size-4" /> SHARE</span>
           </button>
-          <button 
-            v-if="details.status !== 'sold'" 
-            @click="$emit('sold', details.listing_id)" 
+
+          <button
+            @click="showCalc = true"
+            class="flex flex-col items-center justify-center py-2 px-6 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold whitespace-nowrap hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
+          >
+            <span class="flex items-center gap-1.5"><CalculatorIcon class="size-4 shrink-0" /> CALCULATOR</span>
+          </button>
+
+          <button
+            v-if="details.status !== 'sold'"
+            @click="$emit('sold', details.listing_id)"
             class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-green text-maurealty-green font-bold hover:bg-maurealty-green hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
           >
             <span class="flex items-center-safe gap-1"><BadgeCheck class="size-4" /> SOLD</span>
           </button>
 
           <button
-            v-if="!details.fact_sheet"
+            v-if="details.fact_sheet"
+            @click="downloadFactSheet"
             class="flex flex-col items-center py-2 px-5 w-45 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><DownloadIcon class="size-4" /> FACT SHEET</span>
           </button>
@@ -228,6 +239,18 @@
         <div class="animate-spin rounded-full h-12 w-12 border-b-3 border-maurealty-blue mb-4"></div>
         <p class="text-maurealty-blue font-semibold">Loading property...</p>
       </div>
+
+      <!-- CALCULATOR POPUP: reuses the accounting calculator, prefilled with this listing's price -->
+      <div
+        v-if="showCalc"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,61,98,0.7)] backdrop-blur-sm p-4"
+        @click.self="showCalc = false"
+      >
+        <div class="w-full max-w-md relative">
+          <button class="absolute -top-3 -right-3 z-10 size-8 rounded-full bg-white shadow-md text-gray-500 hover:text-gray-800 cursor-pointer" @click="showCalc = false">✕</button>
+          <CalculatorPanel :prefill-price="details?.price ?? undefined" />
+        </div>
+      </div>
   </div>
 </template>
 
@@ -237,10 +260,16 @@ import { formattedPropertyType } from '@/assets/classes/listings'
 import { listingsService, compileMarkdown } from '@/services/listingsServices' 
 import { generateShareLink } from '@/services/shareService'
 import MapHolder from './MapHolder.vue'
+import CalculatorPanel from '@/components/calculator/CalculatorPanel.vue'
 
 import placeholder from '@/assets/images/default_placeholder.png'
 
-import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink, BadgeCheck, DownloadIcon} from "lucide-vue-next";
+import { formatPrice, formatArea } from '@/utils/conversion.ts';
+
+import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink, BadgeCheck, DownloadIcon, Bed, Calculator as CalculatorIcon} from "lucide-vue-next";
+
+// Toggles the calculator popup for this listing.
+const showCalc = ref(false)
 
 const props = defineProps<{ 
   prop_id: number,
@@ -408,7 +437,10 @@ const compiledDescriptionMarkdown = computed(() => {
 
 // FAQ markdown conversion and input
 const compiledFAQMarkdown = computed(() => {
-  return compileMarkdown(details.value?.faq)
+  if (details.value.faq)
+    return compileMarkdown("# FREQUENTLY ASKED QUESTIONS\n\n" + details.value.faq);
+  else
+    return '';
 });
 
 // thank you Gemini

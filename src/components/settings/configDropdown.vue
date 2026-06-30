@@ -1,12 +1,16 @@
 <template>
-    <div>
+    <div class="w-full">
     <Listbox v-model="currentChoice">
       <div class="relative w-fit">
         <ListboxButton
-          class="text-sm w-fit flex items-center-safe gap-4 min-w-25 py-0.5 pl-5 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue"
+            class="relative w-full cursor-pointer rounded-lg border border-gray-300 bg-white py-2 pl-3 pr-10 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all"
         >
-          <span class="block truncate">{{ currentChoice }}</span>
-          <ChevronDown class="size-4" />
+            <span class="block truncate text-gray-700">{{ currentChoice }}</span>
+            <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </span>
         </ListboxButton>
 
         <transition
@@ -30,7 +34,7 @@
               <li
                 :class="[
                   active ? 'bg-[#3b6c96] text-white' : 'text-maurealty-blue',
-                  'relative cursor-default select-none py-2 pl-5 pr-4 transition-colors duration-175 whitespace-nowrap',
+                  'relative cursor-pointer select-none py-2 pl-5 pr-4 transition-colors duration-175 whitespace-nowrap',
                 ]"
               >
                 <span
@@ -52,7 +56,6 @@
 <script setup lang="ts">
 // https://headlessui.com/v1/vue/listbox
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
-import { ChevronDown } from 'lucide-vue-next';
 import { computed } from 'vue'
 
 const props = defineProps<{ choices: string[], modelValue: string }>()

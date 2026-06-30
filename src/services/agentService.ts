@@ -12,12 +12,7 @@ export const agentService = {
 
       const { data, error } = await supabase
         .from('agents')
-        .select(`
-          *,
-          positions (
-            position
-          )
-        `)
+        .select(`*`)
         .eq('user_id', authData.user.id)
         .single();
 
@@ -30,6 +25,136 @@ export const agentService = {
     } catch (error) {
       console.error('Unexpected error fetching profile:', error);
       return null;
+    }
+  },
+
+  // just in case functions with ID alone are needed
+  async getCurrentAgentID() {
+    try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !authData?.user) {
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from('agents')
+        .select(`agent_ID`)
+        .eq('user_id', authData.user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching agent id:', error);
+        return null;
+      }
+
+      return data.agent_ID;
+    } catch (error) {
+      console.error('Unexpected error fetching id:', error);
+      return null;
+    }
+  },
+
+  async updateProfile(agentId: number, agentData: any) {
+    try {
+      const { data: mainData, error: mainError } = await supabase
+        .from('agents')
+        .update(agentData)
+        .eq('agent_ID', agentId)
+        .select(); // Returns modified rows (do not ERASE so that we can catch RLS blocks)
+
+        if (mainError) throw mainError;
+
+        // Detects if RLS blocked the update
+        if (!mainData || mainData.length === 0) {
+          console.error('Update failed silently. Zero rows modified in agents.');
+          return { success: false };
+        }
+
+        return { success: true };
+    } catch (error) {
+      console.error('Error in updating profile:', error);
+      throw error;
+    }
+  },
+
+  async uploadProfileImage(agentId: number, file: File) {
+    try {
+      // create a unique, safe file name
+      const fileExt = file.name.split('.').pop() || 'bin';
+      const fileName = `${agentId}-${Date.now()}.${fileExt}`;
+      
+      const filePath = `agents/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      if (!data.publicUrl) {
+        throw new Error('Failed to retrieve public URL');
+      }
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      throw error;
+    }
+  },
+
+  async deleteProfileImage(fileUrl: string) {
+    try {
+      if (!fileUrl) return;
+      
+      // Supabase public URLs look like: 
+      // https://[project].supabase.co/storage/v1/object/public/images/agents/filename.jpg
+      // We need to extract the 'agents/filename.jpg' part to delete it from the 'images' bucket.
+      const pathParts = fileUrl.split('/images/');
+      const filePath = pathParts.length > 1 ? pathParts[1] : null;
+
+      if (!filePath) {
+        console.warn('Could not extract file path from URL:', fileUrl);
+        return;
+      }
+
+      const { error } = await supabase.storage
+        .from('images')
+        .remove([filePath]);
+
+      if (error) throw error;
+      
+      console.log('Old profile image deleted successfully');
+    } catch (error) {
+      console.error('Error deleting old image:', error);
+      // We usually don't throw here so a failed deletion doesn't block the profile save
+    }
+  },
+
+  async updateConfigs(agentId: number, configData: any) {
+    try {
+      const { data: updateData, error: updateError } = await supabase
+        .from('agents')
+        .update({ configs: configData })
+        .eq('agent_ID', agentId)
+        .select();
+
+        if (updateError) throw updateError;
+
+        // Detects if RLS blocked the update
+        if (!updateData || updateData.length === 0) {
+          console.error('Update Settings failed silently. Zero rows modified in agents.');
+          return { success: false };
+        }
+        
+        return { success: true };
+    } catch (error) {
+      console.error('Error in saving user\'s settings:', error);
+      throw error;
     }
   }
 };

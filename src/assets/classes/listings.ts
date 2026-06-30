@@ -38,9 +38,10 @@ export interface HouseAndLot extends Property {
     floor_area: number;
     room_count: number;
     toilet_count: number;
-    helper_room_count: number;
-    driver_room_count: number;
+    helper_rooms_count: number;
+    driver_rooms_count: number;
     carpark_count: number;
+    master_bedroom_area: number;
 }
 
 // condominium interface
@@ -55,6 +56,7 @@ export interface Condominium extends Property {
     is_penthouse: boolean;
     balcony_count: number;
     bedroom_count: number;
+    master_bedroom_area: number;
 }
 
 // memorial interface
