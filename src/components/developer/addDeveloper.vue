@@ -7,7 +7,7 @@
                     ADD NEW DEVELOPER
                 </h1>
 
-                <button class="absolute top-0 right-0 p-3 rounded-full hover:bg-gray-200/40 transition-colors cursor-pointer" @click="$emit('closeAddDeveloper')">
+                <button class="absolute top-0 right-0 p-3 rounded-full hover:bg-gray-200/40 transition-colors cursor-pointer" @click="$emit('close-add-developer')">
                     <XIcon class="size-6" stroke-width="3"/>
                 </button>
 
@@ -194,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch} from 'vue';
+import { ref, computed, watch, onMounted} from 'vue';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue';
 import { type DayOption, type OfficeHourSlot, days } from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
@@ -206,6 +206,7 @@ import { type Developer } from '@/assets/classes/developers';
 
 // taken from Property Management 
 // Image Handling Logic
+
 const props = defineProps<{ dev?: Developer }>()
 const editMode = ref(false);
 const oldDev = ref<Partial<Developer>>({});
@@ -236,7 +237,6 @@ watch(() => props.dev, (newDev) => {
         currentImage.value = undefined;
     }
 }, { immediate: true })
-
 
 
 const triggerFileInput = () => {
@@ -287,6 +287,15 @@ async function saveDeveloper() {
     if (oldDev.value !== undefined && oldDev.value !== payload && editMode.value) {
         await developerService.updateDeveloper(payload, oldOfficeHours.value);
         console.log("Updated Developer ID: ", payload.dev_ID);
+        form.value = {
+            dev_ID: -1,
+            image_url: '',
+            name: '',
+            phone: '',
+            email: '',
+            OfficeHours: [],
+            projects: []
+        }
         return;
     }
     else if (oldDev.value !== undefined && oldDev.value === payload && editMode.value) {

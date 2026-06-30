@@ -103,7 +103,7 @@ export const developerService = {
 
         return developers;
     },
-        async getDeveloperNames(): Promise<string[]> {
+    async getDeveloperNames(): Promise<string[]> {
         try {
         const { data, error } = await supabase
             .from('developers')
@@ -150,8 +150,8 @@ export const developerService = {
             console.log('Office hours data to insert:', officeHoursData);
             const { data: insertedHours, error: officeHoursError } = await supabase
                 .from('opening_days')
-                .insert(officeHoursData); //SOMEHOW 0 COLUMN GETS CALLED WHEN INSERTING INTO OPENING DAYS AND I DONT KNOW WHY
-                //I SHOULD TRY CONSOLE LOGGING OFFICE HOURS DATA TO SEE IF IT IS BEING FORMATTED CORRECTLY
+                .insert(officeHoursData); 
+               
             if (officeHoursError) {
                 console.error('Error adding office hours:', officeHoursError);
             }
