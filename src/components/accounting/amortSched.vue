@@ -1,33 +1,33 @@
 <template>
-    <div @click.self="$emit('close')" class="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex justify-center items-center p-4 md:p-8 ">
+    <div @click.self="$emit('close')" class="absolute inset-0 bg-black/40 dark:bg-black/30 backdrop-blur-sm z-50 flex justify-center items-center p-4 md:p-8 ">
     
-        <div class="bg-white rounded-lg shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden">
+        <div class="bg-white dark:bg-black rounded-lg shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden">
       
-        <div class="flex items-center gap-3 p-5 border-b border-gray-100 bg-white">
+        <div class="flex items-center gap-3 p-5 border-b border-gray-100 bg-white dark:bg-black">
         
-            <h2 class="text-xl font-medium text-[#475569]">Amortization Schedule</h2>
+            <h2 class="text-xl font-medium text-[#475569] dark:text-[#B7DADA]">Amortization Schedule</h2>
             <button @click="$emit('close')" class="ml-auto text-gray-400 hover:text-red-500 text-3xl leading-none transition  cursor-pointer ">&times;</button>
         </div>
 
         <div class="p-6 pb-4 flex flex-col gap-2">
-            <p class="text-[#475569] text-sm">Loan Amount: <span class="font-medium text-[#1e2a5a]">₱{{ formatCurrency(principal) }}</span></p>
-            <p class="text-[#475569] text-sm">Loan Tenor (in years): <span class="font-medium text-[#1e2a5a]">{{ years }}</span></p>
+            <p class="text-[#475569] dark:text-[#B7DADA] text-sm">Loan Amount: <span class="font-medium text-[#1e2a5a] dark:text-maurealty-light-blue">₱{{ formatCurrency(principal) }}</span></p>
+            <p class="text-[#475569] dark:text-[#B7DADA] text-sm">Loan Tenor (in years): <span class="font-medium text-[#1e2a5a] dark:text-maurealty-light-blue">{{ years }}</span></p>
             
             <div class="mt-1">
                 <button 
                     @click="exportToPDF" 
-                    class="text-sm text-[#DC143C] underline cursor-pointer hover:text-[#003d82] transition-colors bg-transparent border-none p-0"
+                    class="text-sm text-[#DC143C] underline cursor-pointer hover:text-[#003d82] dark:hover:text-[#247ce0] transition-colors bg-transparent border-none p-0"
                 >
                     Export PDF
                 </button>
             </div>
 
             <div class="flex justify-between items-end mt-4">
-            <h3 class="text-2xl font-normal text-[#b91c1c]">Monthly Payment: ₱{{ formatCurrency(standardMonthlyPayment) }}</h3>
+            <h3 class="text-2xl font-normal text-[#b91c1c] dark:text-[#ed2c2c]">Monthly Payment: ₱{{ formatCurrency(standardMonthlyPayment) }}</h3>
             
             <div class="flex flex-col items-end">
                 <label class="text-xs text-gray-500 mb-1">Number of Months</label>
-                <select v-model="itemsPerPage" @change="currentPage = 1" class="border border-gray-300 rounded p-1.5 text-sm outline-none cursor-pointer w-24 bg-white text-[#475569]">
+                <select v-model="itemsPerPage" @change="currentPage = 1" class="border border-gray-300 rounded p-1.5 text-sm outline-none cursor-pointer w-24 bg-white dark:bg-black text-[#475569] dark:text-[#B7DADA]">
                 <option :value="12">12</option>
                 <option :value="24">24</option>
                 <option :value="36">36</option>
@@ -39,7 +39,7 @@
 
     <div class="overflow-y-auto flex-1 px-6 pb-6">
         <table class="w-full text-center border-collapse border border-gray-200">
-            <thead class="sticky top-0 bg-white shadow-sm z-10 text-[#475569] text-sm font-semibold">
+            <thead class="sticky top-0 bg-white dark:bg-black shadow-sm z-10 text-[#475569] dark:text-[#B7DADA] text-sm font-semibold">
             <tr>
                 <th class="border-t-2 py-4 px-3 border border-gray-200 w-1/12 whitespace-normal wrap-break-word">
                 Month
@@ -70,7 +70,7 @@
                 </th>
             </tr>
             </thead>
-          <tbody class="text-sm text-[#475569]">
+          <tbody class="text-sm text-[#475569] dark:text-[#B7DADA]">
             <tr v-for="row in paginatedSchedule" :key="row.month">
               <td class="py-3 px-3 border border-gray-200 w-1/12">{{ row.month }}</td>
               
@@ -78,7 +78,7 @@
               
               <td class="hidden md:table-cell py-3 px-3 border border-gray-200 w-2/12">₱{{ formatCurrency(row.payment) }}</td>
               
-              <td class="hidden md:table-cell py-3 px-3 border border-gray-200 w-2/12 text-[#b91c1c]">₱{{ formatCurrency(row.interestPaid) }}</td>
+              <td class="hidden md:table-cell py-3 px-3 border border-gray-200 w-2/12 text-[#b91c1c] dark:text-[#ed2c2c]">₱{{ formatCurrency(row.interestPaid) }}</td>
               
               <td class="hidden md:table-cell py-3 px-3 border border-gray-200 w-2/12">₱{{ formatCurrency(row.principalPaid) }}</td>
               
@@ -90,13 +90,13 @@
         </table>
       </div>
 
-      <div class="flex justify-between items-center p-6 bg-white border-t border-gray-100 text-sm text-[#475569]">
+      <div class="flex justify-between items-center p-6 bg-white dark:bg-black border-t border-gray-100 text-sm text-[#475569] dark:text-[#B7DADA]">
         <p>Page: {{ currentPage }} of {{ totalPages }}</p>
         <div class="flex gap-4">
-          <button @click="currentPage = 1" :disabled="currentPage === 1" class="hover:text-red-600 disabled:opacity-30 disabled:hover:text-[#475569] transition">&lt; First</button>
-          <button @click="currentPage--" :disabled="currentPage === 1" class="hover:text-red-600 disabled:opacity-30 disabled:hover:text-[#475569] transition">&lt; Previous</button>
-          <button @click="currentPage++" :disabled="currentPage === totalPages" class="text-red-600 font-medium hover:text-red-800 disabled:opacity-30 disabled:text-[#475569] transition">Next &gt;</button>
-          <button @click="currentPage = totalPages" :disabled="currentPage === totalPages" class="text-red-600 font-medium hover:text-red-800 disabled:opacity-30 disabled:text-[#475569] transition">Last &gt;</button>
+          <button @click="currentPage = 1" :disabled="currentPage === 1" class="hover:text-red-600 disabled:opacity-30 disabled:hover:text-[#475569] disabled:hover:dark:text-[#B7DADA] transition">&lt; First</button>
+          <button @click="currentPage--" :disabled="currentPage === 1" class="hover:text-red-600 disabled:opacity-30 disabled:hover:text-[#475569] disabled:hover:dark:text-[#B7DADA] transition">&lt; Previous</button>
+          <button @click="currentPage++" :disabled="currentPage === totalPages" class="text-red-600 font-medium hover:text-red-800 disabled:opacity-30 disabled:text-[#475569] disabled:hover:dark:text-[#B7DADA] transition">Next &gt;</button>
+          <button @click="currentPage = totalPages" :disabled="currentPage === totalPages" class="text-red-600 font-medium hover:text-red-800 disabled:opacity-30 disabled:text-[#475569] disabled:hover:dark:text-[#B7DADA] transition">Last &gt;</button>
         </div>
       </div>
 

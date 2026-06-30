@@ -1,92 +1,132 @@
 <template>
-  <div class="card calculator">
-    <h2 class="card-title">CALCULATOR</h2>
+  <div class="p-6 bg-white border border-blue-200/20 shadow-sm rounded-xl dark:bg-black dark:border-gray-800">
+    <h2 class="mb-4 text-lg font-extrabold tracking-wide text-[#1e2a5a] dark:text-gray-100">
+      CALCULATOR
+    </h2>
 
-    <div class="calc-header">
-      <label class="calc-label">{{ calcMode }} Calculator:</label>
-      <select v-model="calcMode" class="calc-dropdown">
+    <div class="flex items-center justify-between mb-5">
+      <label class="font-bold text-slate-800 dark:text-gray-200">{{ calcMode }} Calculator:</label>
+      <select 
+        v-model="calcMode" 
+        class="px-2.5 py-1.5 bg-white border border-gray-300 rounded-md outline-none cursor-pointer dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100 focus:border-[#1e2a5a] dark:focus:border-blue-500 transition-colors"
+      >
         <option value="Sales">Sales</option>
         <option value="Loan">Loan</option>
         <option value="Taxes">Property Tax</option>
       </select>
     </div>
 
-    <label class="calc-label block mb-2 text-sm text-[#64748b]">
+    <label class="block mb-2 text-sm text-slate-500 dark:text-slate-300">
       {{ calcMode === 'Loan' ? 'Monthly Payment:' : calcMode === 'Sales' ? 'Net Commission' : '' }}
     </label>
 
-    <div class="calc-display">
-      <span class="peso-symbol">₱</span>
-      <input type="text" class="calc-input large" :value="displayedTotal" readonly />
+    <div class="relative mb-6">
+      <span class="absolute text-2xl font-extrabold -translate-y-1/2 left-4 top-1/2 text-[#1e2a5a] dark:text-gray-100">₱</span>
+      <input 
+        type="text" 
+        class="w-full py-4 pl-10 pr-4 text-3xl font-extrabold text-right border-2 border-gray-200 rounded-lg outline-none bg-slate-50 text-[#1e2a5a] dark:bg-gray-900 dark:border-gray-800 dark:text-gray-100" 
+        :value="displayedTotal" 
+        readonly 
+      />
     </div>
 
-    <div v-if="calcMode === 'Sales'" class="calc-inputs">
-      <div class="input-pair">
-        <label>Gross Profit (₱)</label>
-        <input type="number" v-model.number="totalSales" />
+    <div v-if="calcMode === 'Sales'">
+      <div class="mb-4">
+        <label class="block mb-1.5 text-sm font-semibold text-slate-500 dark:text-slate-300">Gross Profit (₱)</label>
+        <input 
+          type="number" 
+          v-model.number="totalSales" 
+          class="w-full px-3.5 py-2.5 font-medium border rounded-lg outline-none bg-slate-50 border-slate-200 text-slate-700 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-200 focus:border-[#1e2a5a] dark:focus:border-blue-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+        />
       </div>
-      <div class="input-pair">
-        <label>Net Commission Rate (%)</label>
-        <input type="number" v-model.number="commRate" />
+      <div class="mb-4">
+        <label class="block mb-1.5 text-sm font-semibold text-slate-500 dark:text-slate-300">Net Commission Rate (%)</label>
+        <input 
+          type="number" 
+          v-model.number="commRate" 
+          class="w-full px-3.5 py-2.5 font-medium border rounded-lg outline-none bg-slate-50 border-slate-200 text-slate-700 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-200 focus:border-[#1e2a5a] dark:focus:border-blue-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+        />
       </div>
-      <div class="input-pair">
-        <label>Commission Tax (%)</label>
-        <input type="number" v-model.number="taxRate" />
+      <div class="mb-4">
+        <label class="block mb-1.5 text-sm font-semibold text-slate-500 dark:text-slate-300">Commission Tax (%)</label>
+        <input 
+          type="number" 
+          v-model.number="taxRate" 
+          class="w-full px-3.5 py-2.5 font-medium border rounded-lg outline-none bg-slate-50 border-slate-200 text-slate-700 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-200 focus:border-[#1e2a5a] dark:focus:border-blue-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+        />
       </div>
     </div>
 
-    <div v-if="calcMode === 'Loan'" class="calc-inputs">
-      <div class="input-pair">
-        <label>Loan Price (₱)</label>
-        <input type="number" v-model.number="mortPrice" />
+    <div v-if="calcMode === 'Loan'">
+      <div class="mb-4">
+        <label class="block mb-1.5 text-sm font-semibold text-slate-500 dark:text-slate-300">Loan Price (₱)</label>
+        <input 
+          type="number" 
+          v-model.number="mortPrice" 
+          class="w-full px-3.5 py-2.5 font-medium border rounded-lg outline-none bg-slate-50 border-slate-200 text-slate-700 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-200 focus:border-[#1e2a5a] dark:focus:border-blue-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+        />
       </div>
-      <div class="input-pair">
-        <label>Interest Rate (Annual %)</label>
-        <input type="number" v-model.number="mortInterest" />
+      <div class="mb-4">
+        <label class="block mb-1.5 text-sm font-semibold text-slate-500 dark:text-slate-300">Interest Rate (Annual %)</label>
+        <input 
+          type="number" 
+          v-model.number="mortInterest" 
+          class="w-full px-3.5 py-2.5 font-medium border rounded-lg outline-none bg-slate-50 border-slate-200 text-slate-700 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-200 focus:border-[#1e2a5a] dark:focus:border-blue-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+        />
       </div>
-      <div class="input-pair">
-        <label>Loan Term (Years)</label>
+      <div class="mb-4">
+        <label class="block mb-1.5 text-sm font-semibold text-slate-500 dark:text-slate-300">Loan Term (Years)</label>
         <input
           type="number"
           v-model.number="mortYears"
           min="1"
           max="20"
           @input="mortYears > 20 ? mortYears = 20 : mortYears"
+          class="w-full px-3.5 py-2.5 font-medium border rounded-lg outline-none bg-slate-50 border-slate-200 text-slate-700 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-200 focus:border-[#1e2a5a] dark:focus:border-blue-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
       </div>
       <span
         @click="openAmortization"
-        class="text-sm text-[#64748b] cursor-pointer hover:underline transition-colors"
+        class="text-sm cursor-pointer text-slate-500 dark:text-slate-300 hover:underline transition-colors"
       >
         View Amortization Schedule
       </span>
-      <p v-if="errorMessage" class="mt-2 text-xs text-[#64748b] font-bold animate-pulse text-center">
+      <p v-if="errorMessage" class="mt-2 text-xs font-bold text-center animate-pulse text-slate-500 dark:text-slate-300">
         {{ errorMessage }}
       </p>
-      <p class="text-xs text-center text-gray-400 mt-2">*Estimated Monthly Payment</p>
+      <p class="mt-2 text-xs text-center text-gray-400 dark:text-gray-500">*Estimated Monthly Payment</p>
     </div>
 
-    <div v-if="calcMode === 'Taxes'" class="calc-inputs">
-      <div class="input-pair">
-        <label>Property Value (₱)</label>
-        <input type="number" v-model.number="taxValue" />
+    <div v-if="calcMode === 'Taxes'">
+      <div class="mb-4">
+        <label class="block mb-1.5 text-sm font-semibold text-slate-500 dark:text-slate-300">Property Value (₱)</label>
+        <input 
+          type="number" 
+          v-model.number="taxValue" 
+          class="w-full px-3.5 py-2.5 font-medium border rounded-lg outline-none bg-slate-50 border-slate-200 text-slate-700 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-200 focus:border-[#1e2a5a] dark:focus:border-blue-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+        />
       </div>
-      <div class="input-pair">
-        <label>Tax Rate (%)</label>
-        <input type="number" v-model.number="taxRatePercent" />
+      <div class="mb-4">
+        <label class="block mb-1.5 text-sm font-semibold text-slate-500 dark:text-slate-300">Tax Rate (%)</label>
+        <input 
+          type="number" 
+          v-model.number="taxRatePercent" 
+          class="w-full px-3.5 py-2.5 font-medium border rounded-lg outline-none bg-slate-50 border-slate-200 text-slate-700 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-200 focus:border-[#1e2a5a] dark:focus:border-blue-500 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+        />
       </div>
     </div>
 
-    <!-- Teleported so the full-screen amortization overlay works even when this
-         panel is rendered inside a small popup. -->
     <Teleport to="body">
-      <amortSched
-        v-if="showAmortization"
-        :principal="mortPrice ?? 0"
-        :years="mortYears"
-        :interest="mortInterest"
-        @close="showAmortization = false"
-      />
+      <div>
+        <amortSched
+          v-if="showAmortization"
+          :principal="mortPrice ?? 0"
+          :years="mortYears"
+          :interest="mortInterest"
+          @close="showAmortization = false"
+        />
+      </div>
+      
     </Teleport>
   </div>
 </template>
@@ -159,109 +199,3 @@ const displayedTotal = computed(() => {
   return '0.00'
 })
 </script>
-
-<style scoped>
-/* Chrome, Safari, Edge, Opera fixes for input[type=number] */
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  appearance: none;
-  margin: 0;
-}
-input[type=number] {
-  appearance: textfield;
-  -moz-appearance: textfield;
-}
-
-.card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  padding: 1.5rem;
-  border: 1px solid rgba(169, 214, 255, 0.2);
-}
-
-.card-title {
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: #1e2a5a;
-  margin-bottom: 1rem;
-  letter-spacing: 0.5px;
-}
-
-.calculator .calc-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.2rem;
-}
-
-.calc-label {
-  font-weight: 700;
-  color: #2c3e50;
-}
-
-.calc-dropdown {
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  padding: 6px 10px;
-  background: white;
-  outline: none;
-  cursor: pointer;
-}
-
-.calc-dropdown:focus {
-  border-color: #1e2a5a;
-}
-
-.calc-display {
-  position: relative;
-  margin-bottom: 1.5rem;
-}
-
-.peso-symbol {
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #1e2a5a;
-  font-weight: 800;
-  font-size: 1.4rem;
-}
-
-.calc-input.large {
-  width: 100%;
-  font-size: 1.8rem;
-  font-weight: 800;
-  color: #1e2a5a;
-  padding: 1rem 1rem 1rem 2.5rem;
-  border: 2px solid #e1e4e8;
-  background: #f8fafc;
-  border-radius: 10px;
-  text-align: right;
-  outline: none;
-}
-
-.calc-inputs .input-pair {
-  margin-bottom: 1rem;
-}
-
-.input-pair label {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 0.4rem;
-}
-
-.input-pair input {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #334155;
-  font-weight: 500;
-  outline: none;
-}
-</style>

@@ -1,10 +1,10 @@
 <template>
-  <div class="relative w-full flex flex-col min-h-screen bg-background-gray">
+  <div class="relative w-full flex flex-col min-h-screen bg-background-gray dark:bg-background-dark-gray">
 
-    <header class="flex flex-col py-5 px-10 pb-3 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky top-0 z-20">
+    <header class="flex flex-col py-5 px-10 pb-3 w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black text-maurealty-blue dark:text-white shadow-md sticky top-0 z-20">
       <div class="flex items-baseline gap-3">
         <h1 class="text-3xl font-bold">ACCOUNTING</h1>
-        <span class="text-sm font-medium text-maurealty-blue/70">Calculators</span>
+        <span class="text-sm font-medium text-maurealty-blue/70 dark:text-white/70">Calculators</span>
       </div>
     </header>
 
