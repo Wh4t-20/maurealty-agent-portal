@@ -13,10 +13,10 @@
         />
       </div>
 
-      <div class="w-full max-w-105 bg-white/80 rounded-2xl p-[32px_28px] box-border shadow-[0_20px_50px_rgba(0,0,0,0.25)] max-[480px]:p-[24px_18px] max-[480px]:rounded-xl">
+      <div class="w-full max-w-105 bg-white/80 dark:bg-black/80 rounded-2xl p-[32px_28px] box-border shadow-[0_20px_50px_rgba(0,0,0,0.25)] max-[480px]:p-[24px_18px] max-[480px]:rounded-xl">
         
         <form @submit.prevent="handleLogin">
-          <h1 class="text-center m-0 mb-6 text-[1.6rem] font-bold text-[#111827] max-[480px]:text-[1.35rem]">LOGIN PORTAL</h1>
+          <h1 class="text-center m-0 mb-6 text-[1.6rem] font-bold text-[#111827] dark:text-white max-[480px]:text-[1.35rem]">LOGIN PORTAL</h1>
 
           <div class="mb-4">
             <input
@@ -24,7 +24,7 @@
               v-model="email"
               placeholder="Email"
               autocomplete="email"
-              class="w-full p-[13px_14px] border border-[#d1d5db] rounded-[10px] box-border text-[1rem] text-[#111827] bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-[#27ae60] focus:shadow-[0_0_0_3px_rgba(39,174,96,0.15)]"
+              class="w-full p-[13px_14px] border border-[#d1d5db] rounded-[10px] box-border text-[1rem] text-[#111827] dark:text-white bg-white dark:bg-black outline-none transition-[border-color,box-shadow] duration-200 focus:border-[#27ae60] focus:shadow-[0_0_0_3px_rgba(39,174,96,0.15)]"
             />
           </div>
 
@@ -34,7 +34,7 @@
               v-model="password"
               placeholder="Password"
               autocomplete="current-password"
-              class="w-full p-[13px_14px] border border-[#d1d5db] rounded-[10px] box-border text-[1rem] text-[#111827] bg-white outline-none transition-[border-color,box-shadow] duration-200 focus:border-[#27ae60] focus:shadow-[0_0_0_3px_rgba(39,174,96,0.15)]"
+              class="w-full p-[13px_14px] border border-[#d1d5db] rounded-[10px] box-border text-[1rem] text-[#111827] dark:text-white bg-white dark:bg-black outline-none transition-[border-color,box-shadow] duration-200 focus:border-[#27ae60] focus:shadow-[0_0_0_3px_rgba(39,174,96,0.15)]"
             />
           </div>
 
@@ -116,7 +116,7 @@ const handleLogin = async () => {
       // store the configuration in localStorage for global app access
       localStorage.setItem('app_user_settings', JSON.stringify(finalConfigs));
 
-      router.push('/listings')
+      router.push('/dashboard')
     }
   } catch (err: any) {
     errorMessage.value = 'An unexpected error occurred.'

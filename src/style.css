@@ -14,8 +14,11 @@ body {
     --color-maurealty-blue: #044677;
     --color-maurealty-green: #33b058;
     --color-background-gray: #ECF1F5;
+    --color-background-dark-gray: #191B1D;
     --color-sidebar-hover: #031E319D;
 }
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @utility sidebar-choice {
     @apply p-3.5 pl-6 w-full transition hover:bg-[#ffffff2A];

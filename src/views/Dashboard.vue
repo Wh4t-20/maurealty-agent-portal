@@ -1,17 +1,17 @@
 <template>
-  <div class="flex min-h-screen bg-[var(--color-background-gray,#f6f7fb)] w-full">
+  <div class="flex min-h-screen bg-background-gray dark:bg-background-dark-gray w-full">
     <div class="flex-1 flex flex-col">
       
-      <header class="flex flex-col py-5 px-10 pb-0 w-full bg-gradient-to-r from-[#A9D6FF70] to-[#FFFFFF] shadow-md sticky top-0 z-20">
+      <header class="flex flex-col py-5 px-10 pb-0 w-full bg-gradient-to-r from-[#A9D6FF70] dark:from-maurealty-blue to-[#FFFFFF] dark:to-black shadow-md sticky top-0 z-20">
         <div class="flex justify-between items-center w-full pb-5">
           <div class="font-['Poppins']">
-            <h1 class="text-[30px] text-[var(--color-maurealty-blue,#0A3D62)] font-bold">Welcome back, {{ agentName }} </h1>
+            <h1 class="text-[30px] text-[var(--color-maurealty-blue,#0A3D62)] dark:text-[#b3d7ff] font-bold">Welcome back, {{ agentName }} </h1>
             <p class="text-gray-600 mt-1">Dashboard > <span class="text-blue-600 font-medium">{{ agent.position_ID ? positionMap[agent.position_ID] : 'Wait'}}</span></p>
           </div>
           <div class="flex items-center gap-3">
             <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#0066ff] text-white hover:bg-[#0052cc]" @click="addListing">+ Add Listing</button>
             <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#e6f4ea] text-[#1e8e3e] hover:bg-[#d4eeda]" @click="activeModal = 'addAgent'">+ Add Agent</button>
-            <div class="w-[1px] h-6 bg-[#e1e4e8] mx-1"></div>
+            <div class="w-px h-6 bg-[#e1e4e8] mx-1"></div>
             <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer transition-all duration-200 ease-in-out flex items-center bg-white border border-[#dcdcdc] text-[#4a4a4a] hover:bg-[#f8f9fa] hover:border-[#bbb]" @click="activeModal = 'calculator'">Calculator</button>
           </div>
           </div>
@@ -56,20 +56,20 @@
     >
       <div v-if="selectedItem || selectedMetric || activeModal" class="fixed inset-0 w-full h-full bg-[#0a3d62]/70 backdrop-blur-sm flex items-center justify-center z-[9999]" @click.self="closeAll">
         
-        <div v-if="activeModal" class="bg-white rounded-[24px] relative p-6 w-full max-w-lg shadow-xl">
+        <div v-if="activeModal" class="bg-white dark:bg-black rounded-[24px] relative p-6 w-full max-w-lg shadow-xl">
           <button class="absolute top-4 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold" @click="activeModal = null">✕</button>
           <AddAgent v-if="activeModal === 'addAgent'" />
           <Calculator v-if="activeModal === 'calculator'" />
         </div> 
 
-        <div v-else-if="selectedMetric" class="bg-white rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl">
+        <div v-else-if="selectedMetric" class="bg-white dark:bg-black rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl">
           <button class="absolute top-4 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold" @click="selectedMetric = null">✕</button>
           <div class="border-b pb-4 mb-4">
             <h2 class="text-2xl font-bold text-gray-800">{{ selectedMetric.label }} Analysis</h2>
           </div>
           </div>
 
-        <div v-else-if="selectedItem" class="bg-white rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl">
+        <div v-else-if="selectedItem" class="bg-white dark:bg-black rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl">
            <button class="absolute top-4 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold" @click="closeAll">✕</button>
            </div>
 
