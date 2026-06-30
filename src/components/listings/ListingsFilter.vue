@@ -3,7 +3,7 @@
     <Listbox v-model="currentChoice">
       <div class="relative w-fit">
         <ListboxButton
-          class="text-sm w-fit flex items-center-safe gap-4 min-w-25 py-0.5 pl-5 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue"
+          class="text-sm w-fit flex items-center-safe gap-4 min-w-25 py-0.5 pl-5 rounded-md bg-background-gray dark:bg-background-dark-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue"
         >
           <span class="block truncate">{{ currentChoice }}</span>
           <ChevronDown class="size-4" />
@@ -18,7 +18,7 @@
             leave-to-class="transform scale-95 opacity-0"
         >
           <ListboxOptions
-            class="absolute z-50 mt-1 max-h-80 w-fit min-w-full overflow-auto rounded-xl bg-background-gray py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none"
+            class="absolute z-50 mt-1 max-h-80 w-fit min-w-full overflow-auto rounded-xl bg-background-gray dark:bg-background-dark-gray py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none"
           >
             <ListboxOption
               v-slot="{ active, selected }"
@@ -29,7 +29,7 @@
             >
               <li
                 :class="[
-                  active ? 'bg-[#3b6c96] text-white' : 'text-maurealty-blue',
+                  active ? 'bg-[#3b6c96] dark:bg-[#153b58] text-white' : 'text-maurealty-blue dark:text-maurealty-light-blue',
                   'relative cursor-default select-none py-2 pl-5 pr-4 transition-colors duration-175 whitespace-nowrap',
                 ]"
               >

@@ -22,10 +22,20 @@ const { configs } = useSettings();
 
 // watches for changes and toggle a class on the body element
 watchEffect(() => {
+  // Animation settings
   if (configs.disableAnimations) {
     document.body.classList.add('disable-animations');
   } else {
     document.body.classList.remove('disable-animations');
+  }
+
+  // Dark Theme settings
+  if (configs.darkThemeEnabled) {
+    document.documentElement.classList.add('dark');
+    localStorage.theme = 'dark'; // syncing with local storage
+  } else {
+    document.documentElement.classList.remove('dark');
+    localStorage.theme = 'light'; 
   }
 });
 </script>

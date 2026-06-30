@@ -1,15 +1,15 @@
 <template>
-    <div class="min-h-screen bg-gray-200">
-        <header class="w-full bg-linear-to-r from-[#A9D6FF70] to-white shadow-md sticky top-0 z-20">
+    <div class="min-h-screen bg-background-gray dark:bg-background-dark-gray">
+        <header class="w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black shadow-md sticky top-0 z-20">
             <div class="flex justify-between items-center px-10 py-10">
-            <h1 class="text-3xl font-bold text-maurealty-blue">
+            <h1 class="text-3xl font-bold text-maurealty-blue dark:text-white">
                 PROFILE
             </h1>
             </div>
         </header>
 
         <div v-if="isLoading" class="flex justify-center items-center mt-20">
-            <p class="text-xl font-medium text-gray-600">Loading profile data...</p>
+            <p class="text-xl font-medium text-gray-600 dark:text-gray-400">Loading profile data...</p>
         </div>
 
         <div v-else-if="agent" class="p-6 mt-10">
@@ -17,7 +17,7 @@
                 <ProfileCard :agent="agent" />
 
                 <div class="w-full max-w-7xl justify-items-end">
-                    <button @click="isEditing = true" class="flex flex-col items-center py-2 px-5 w-32 rounded-2xl border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+                    <button @click="isEditing = true" class="flex flex-col items-center py-2 px-5 w-32 rounded-2xl border-2 border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
                         <span class="flex items-center-safe gap-1"><SquarePen class="size-4" /> EDIT</span>
                     </button>
                 </div>

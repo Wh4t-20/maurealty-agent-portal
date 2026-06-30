@@ -5,27 +5,27 @@
             alt="House"
             loading="lazy"
 
-        class="w-full aspect-square object-cover rounded-lg border border-gray-300" 
+        class="w-full aspect-square object-cover rounded-lg border border-gray-300 dark:border-gray-800" 
         />
     <span :class="['absolute top-3 right-3 text-sm font-light text-white px-3 py-1 rounded-full tracking-wider shadow-md',propertyTypeColor(details.property_type)]">
       {{ displayType }}
     </span>
     </div>
     
-    <div class="flex flex-col h-full z-1 -mt-10 w-9/10 p-3 px-5  rounded-lg bg-white border border-gray-300 shadow-md/30 ">
-      <p class="text-xl text-maurealty-blue truncate font-semibold tracking-tight ">{{ details.listing_title }}</p>
+    <div class="flex flex-col h-full z-1 -mt-10 w-9/10 p-3 px-5  rounded-lg bg-white dark:bg-black border border-gray-300 dark:border-gray-800 shadow-md/30 ">
+      <p class="text-xl text-maurealty-blue dark:text-maurealty-light-blue truncate font-semibold tracking-tight ">{{ details.listing_title }}</p>
       
       <span class="block bg-maurealty-green break-all font-normal text-lg text-white px-3 rounded-full tracking-wider mr-2 mt-0.5">
           {{ formattedPrice }}
       </span>
       
-      <div class="flex items-center gap-1 text-black mt-2">
+      <div class="flex items-center gap-1 text-black dark:text-white mt-2">
         <MapPin class="w-4 h-4" />
         <span class="text-sm truncate">
             {{ details.location }}
         </span>
       </div>
-      <p class="tracking-wide mb-0 truncate">{{ details.developer_name }}</p>
+      <p class="tracking-wide mb-0 text-black dark:text-white truncate">{{ details.developer_name }}</p>
       <p class=" text-sm text-gray-500 mt-auto">Created at: {{ formattedDate }}</p>
     </div>
   </div>

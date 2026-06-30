@@ -1,13 +1,13 @@
 <template>
-  <div class="w-full h-screen bg-background-gray flex flex-col items-center overflow-hidden">
+  <div class="w-full h-screen bg-background-gray dark:bg-background-dark-gray flex flex-col items-center overflow-hidden">
     <Transition name="toast">
-      <div v-if="savedNotice" class="fixed top-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-white border border-maurealty-green/40 shadow-lg px-5 py-3">
+      <div v-if="savedNotice" class="fixed top-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-maurealty-green/40 dark:border-maurealty-green/60 shadow-lg px-5 py-3">
         <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-green text-white text-sm font-bold">✓</span>
-        <p class="text-sm font-medium text-gray-700">{{ savedNotice }}</p>
+        <p class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ savedNotice }}</p>
       </div>
     </Transition>
 
-    <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky z-20">
+    <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black text-maurealty-blue dark:text-white shadow-md sticky z-20">
       <div class="flex justify-between items-center w-full pb-3 mb-3">
         <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
         <div class="flex gap-5 h-full">
@@ -15,7 +15,7 @@
             <Plus class="size-4" /> Add Listing
           </button>
           <input id="search" type="text" name="search" placeholder="Search" v-model="searchQuery"
-            class="block min-w-0 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 rounded-sm focus:outline-none sm:text-sm/6" />
+            class="block min-w-0 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 dark:placeholder:text-gray-400 border border-blue-950 dark:border-blue-50 rounded-sm focus:outline-none sm:text-sm/6" />
         </div>
       </div>
 
@@ -30,9 +30,9 @@
             <section class="listings-filter-section">
               <label for="price-range-input" class="text-base">Price Range</label>
               <div class="flex gap-4 items-center">
-                <input type="number" :placeholder="`${currencySymbols[currentCurrency]} Min`" v-model="priceMin" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+                <input type="number" :placeholder="`${currencySymbols[currentCurrency]} Min`" v-model="priceMin" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray dark:bg-background-dark-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
                 <span class="font-bold -mx-2"> - </span>
-                <input type="number" :placeholder="`${currencySymbols[currentCurrency]} Max`" v-model="priceMax" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+                <input type="number" :placeholder="`${currencySymbols[currentCurrency]} Max`" v-model="priceMax" class="text-sm w-27 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray dark:bg-background-dark-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
               </div>
             </section>
 
@@ -43,22 +43,22 @@
 
             <section class="listings-filter-section" v-if="selectedType === 'House And Lot'">
               <label for="room-input" class="text-base">Rooms</label>
-              <input id="room-input" type="number" placeholder="0" class="text-sm w-15 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+              <input id="room-input" type="number" placeholder="0" class="text-sm w-15 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray dark:bg-background-dark-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
             </section>
 
             <section class="listings-filter-section" v-if="selectedType === 'Condominium'">
               <label for="bedroom-input" class="text-base">Bedrooms</label>
-              <input id="bedroom-input" type="number" placeholder="0" class="text-sm w-15 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+              <input id="bedroom-input" type="number" placeholder="0" class="text-sm w-15 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray dark:bg-background-dark-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
             </section>
 
             <section class="listings-filter-section" v-if="selectedType === 'House And Lot' || selectedType === 'Condominium'">
               <label for="bathroom-input" class="text-base">Bathrooms</label>
-              <input id="bathroom-input" type="number" placeholder="0" class="text-sm w-15 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+              <input id="bathroom-input" type="number" placeholder="0" class="text-sm w-15 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray dark:bg-background-dark-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
             </section>
 
             <section class="listings-filter-section" v-if="selectedType === 'House And Lot' || selectedType === 'Lot Only'">
               <label for="area-input" class="text-base">Lot Area</label>
-              <input id="area-input" type="number" placeholder="sqm" class="text-sm w-15 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
+              <input id="area-input" type="number" placeholder="sqm" class="text-sm w-15 py-0.5 pl-3.5 pr-1 rounded-md bg-background-gray dark:bg-background-dark-gray shadow-md/30 focus:outline-2 focus:outline-maurealty-blue" />
             </section>
 
             <section class="listings-filter-section" v-if="selectedType === 'Condominium'">
@@ -76,15 +76,15 @@
               <ListingsFilter :choices="memorialTypes" v-model="selectedMemorialType" />
             </section>
 
-            <div class = "flex-grow"></div>
+            <div class = "grow"></div>
 
             <section class="listings-filter-section">
-              <label class="text-base text-gray-500 font-medium">Currency</label>
+              <label class="text-base text-gray-500 dark:text-gray-300 font-medium">Currency</label>
               <ListingsFilter :choices="currencies" v-model="currentCurrency" />
             </section>
             
             <section class="listings-filter-section">
-              <label class="text-base text-gray-500 font-medium">Units</label>
+              <label class="text-base text-gray-500 dark:text-gray-300 font-medium">Units</label>
               <ListingsFilter :choices="units" v-model="currentUnit" />
             </section>
 
@@ -93,7 +93,7 @@
       
       <button 
         @click="toggleFilter"
-        class="absolute -bottom-7.5 right-20 px-5 pb-1.5 pt-0 w-fit text-sm font-medium bg-white hover:bg-maurealty-blue hover:text-white rounded-b-full transition-colors cursor-pointer"
+        class="absolute -bottom-7.5 right-20 px-5 pb-1.5 pt-0 w-fit text-sm font-medium bg-white dark:bg-black hover:bg-maurealty-blue hover:text-white rounded-b-full transition-colors cursor-pointer"
       >
         <ChevronDown :class="{'rotate-180': isFilterVisible}" class="size-6 transition-transform duration-300" />
       </button>
@@ -139,15 +139,15 @@
             <button 
               @click="currentPage--" 
               :disabled="currentPage === 1"
-              class="px-4 py-1 border border-maurealty-blue text-maurealty-blue rounded hover:bg-maurealty-blue hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-maurealty-blue cursor-pointer disabled:cursor-not-allowed"
+              class="px-4 py-1 border border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue rounded hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-maurealty-blue dark:disabled:hover:text-maurealty-light-blue cursor-pointer disabled:cursor-not-allowed"
             >
               <
             </button>
-            <span class="text-sm font-medium text-maurealty-blue">Page {{ currentPage }} of {{ totalPages }}</span>
+            <span class="text-sm font-medium text-maurealty-blue dark:text-maurealty-light-blue">Page {{ currentPage }} of {{ totalPages }}</span>
             <button 
               @click="currentPage++" 
               :disabled="currentPage >= totalPages || totalPages === 0"
-              class="px-4 py-1 border border-maurealty-blue text-maurealty-blue rounded hover:bg-maurealty-blue hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-maurealty-blue cursor-pointer disabled:cursor-not-allowed"
+              class="px-4 py-1 border border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue rounded hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-maurealty-blue dark:disabled:hover:text-maurealty-light-blue cursor-pointer disabled:cursor-not-allowed"
             >
               >
             </button>

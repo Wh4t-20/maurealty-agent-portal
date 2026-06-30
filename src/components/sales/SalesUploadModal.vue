@@ -1,11 +1,11 @@
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(10,61,98,0.7)] backdrop-blur-sm p-4" @click.self="$emit('close')">
-    <div class="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl">
+  <div class="absolute inset-0 z-50 flex items-center justify-center bg-[rgba(10,61,98,0.7)] dark:bg-[rgba(17,38,53,0.7)] backdrop-blur-sm p-4" @click.self="$emit('close')">
+    <div class="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-black rounded-2xl shadow-2xl">
 
       <!-- HEADER -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
-        <h2 class="text-xl font-bold text-maurealty-blue">{{ editSale ? 'Edit Sale' : lockedListing ? 'Confirm Sale' : 'Upload Sale' }}</h2>
-        <button class="text-gray-400 hover:text-gray-700 text-xl leading-none cursor-pointer" @click="$emit('close')">✕</button>
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-900 sticky top-0 bg-white dark:bg-black rounded-t-2xl">
+        <h2 class="text-xl font-bold text-maurealty-blue dark:text-maurealty-light-blue">{{ editSale ? 'Edit Sale' : lockedListing ? 'Confirm Sale' : 'Upload Sale' }}</h2>
+        <button class="text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 text-xl leading-none cursor-pointer" @click="$emit('close')">✕</button>
       </div>
 
       <!-- FORM -->
@@ -13,14 +13,14 @@
 
         <!-- Property (full width) -->
         <div class="sm:col-span-2 flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-600">Property <span class="text-red-500">*</span></label>
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Property <span class="text-red-500">*</span></label>
           <!-- Sold flow: property is fixed, shown read-only. Manual flow: dropdown. -->
           <input
             v-if="propertyLocked"
             type="text"
             :value="lockedTitle"
             readonly
-            :class="[inputClass, 'bg-gray-100 cursor-not-allowed']"
+            :class="[inputClass, 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed']"
           />
           <select v-else v-model="form.listing_ID" required :class="inputClass">
             <option :value="null" disabled>Select a property…</option>
@@ -29,42 +29,42 @@
         </div>
 
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-600">Client (Buyer) <span class="text-red-500">*</span></label>
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Client (Buyer) <span class="text-red-500">*</span></label>
           <input v-model.trim="form.client_name" type="text" required :class="inputClass" placeholder="Full name" />
         </div>
 
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-600">Reservation Date <span class="text-red-500">*</span></label>
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Reservation Date <span class="text-red-500">*</span></label>
           <input v-model="form.reservation_date" type="date" required :class="inputClass" />
         </div>
 
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-600">Total Contract Price (₱) <span class="text-red-500">*</span></label>
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Total Contract Price (₱) <span class="text-red-500">*</span></label>
           <input v-model.number="form.total_contract_price" type="number" min="0" step="0.01" required :class="inputClass" placeholder="0.00" />
         </div>
 
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-600">Sale # (this agent)</label>
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Sale # (this agent)</label>
           <input v-model.number="form.agent_sale_seq" type="number" min="0" :class="inputClass" placeholder="e.g. 3" />
         </div>
 
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-600">Gross Commission (₱)</label>
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Gross Commission (₱)</label>
           <input v-model.number="form.gross_commission" type="number" min="0" step="0.01" :class="inputClass" placeholder="0.00" />
         </div>
 
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-600">Net Commission (₱)</label>
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Net Commission (₱)</label>
           <input v-model.number="form.net_commission" type="number" min="0" step="0.01" :class="inputClass" placeholder="0.00" />
         </div>
 
         <div class="flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-600">Voucher Series</label>
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Voucher Series</label>
           <input v-model.trim="form.voucher_series" type="text" :class="inputClass" placeholder="VCH-0001" />
         </div>
 
         <div class="sm:col-span-2 flex flex-col gap-1">
-          <label class="text-sm font-medium text-gray-600">Remarks</label>
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Remarks</label>
           <input v-model.trim="form.remarks" type="text" :class="inputClass" placeholder="e.g. third equity" />
         </div>
 
@@ -73,7 +73,7 @@
 
         <!-- ACTIONS -->
         <div class="sm:col-span-2 flex justify-end gap-3 pt-2">
-          <button type="button" class="px-5 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer" @click="$emit('close')">Cancel</button>
+          <button type="button" class="px-5 py-2 rounded-lg border border-gray-300 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer" @click="$emit('close')">Cancel</button>
           <button type="submit" :disabled="saving" class="px-5 py-2 rounded-lg bg-maurealty-blue text-white hover:opacity-80 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
             {{ saving ? 'Saving…' : 'Save Sale' }}
           </button>
@@ -106,7 +106,7 @@ const lockedTitle = props.lockedListing?.title ?? props.editSale?.listing_title 
 const propertyLocked = !!props.lockedListing || !!props.editSale
 
 const inputClass =
-  'py-2 px-3 rounded-md border border-gray-300 bg-white focus:outline-2 focus:outline-maurealty-blue text-sm'
+  'py-2 px-3 rounded-md border border-gray-300 bg-white dark:bg-black dark:text-white focus:outline-2 focus:outline-maurealty-blue text-sm dark:[color-scheme:dark]'
 
 const listings = ref<Property[]>([])
 const saving = ref(false)

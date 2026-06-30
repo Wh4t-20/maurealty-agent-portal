@@ -1,13 +1,27 @@
 <template>
-  <div class="notifications-card mt-4 hover-animate clickable" @click="$emit('view-all')">
-    <h3 class="card-title">REMINDERS</h3>
+  <div 
+    class="p-6 mt-4 transition-all duration-300 ease-in-out bg-white shadow-sm cursor-pointer rounded-2xl dark:bg-black hover:-translate-y-1.5 hover:shadow-xl" 
+    @click="$emit('view-all')"
+  >
+    <h3 class="mb-4 text-sm font-bold tracking-wide text-gray-900 dark:text-gray-100">
+      REMINDERS
+    </h3>
     
-    <div v-for="(rem, index) in reminders.slice(0, 3)" :key="index" 
-         class="notif-pill" :class="{ urgent: rem.urgent }">
+    <div 
+      v-for="(rem, index) in reminders.slice(0, 3)" 
+      :key="index" 
+      class="px-3 py-2.5 mb-2 text-xs transition-colors duration-200 rounded-lg"
+      :class="rem.urgent 
+        ? 'bg-red-50 text-red-600 font-medium border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50' 
+        : 'bg-gray-50 text-gray-600 border border-transparent dark:bg-gray-800 dark:text-gray-300'"
+    >
       {{ rem.text }}
     </div>
 
-    <div v-if="reminders.length > 3" class="notif-pill stack-pill">
+    <div 
+      v-if="reminders.length > 3" 
+      class="px-3 py-2.5 mb-2 text-xs text-center text-gray-500 bg-transparent border border-gray-300 border-dashed rounded-lg dark:text-gray-400 dark:border-gray-700"
+    >
       + {{ reminders.length - 3 }} more tasks...
     </div>
   </div>
@@ -17,51 +31,3 @@
 defineProps<{ reminders: any[] }>();
 defineEmits(['view-all']);
 </script>
-
-<style scoped>
-.notifications-card { 
-  background: white; 
-  padding: 1.25rem; 
-  border-radius: 16px; 
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-}
-
-.card-title { 
-  font-size: 0.85rem; 
-  color: #1a1a1a; 
-  margin-bottom: 1rem; 
-  letter-spacing: 0.5px;
-}
-
-.notif-pill { 
-  padding: 10px 12px; 
-  background: #f8f9fa; /* Light grey */
-  border-radius: 8px; 
-  font-size: 0.8rem; 
-  margin-bottom: 8px; 
-  color: #4a5568;
-  transition: background 0.2s;
-}
-
-/* Urgent style matching the screenshot (Red/Pinkish) */
-.notif-pill.urgent { 
-  background: #fff5f5; 
-  color: #e53e3e; 
-  font-weight: 500;
-  border: 1px solid #fed7d7;
-}
-
-.stack-pill {
-  background: transparent;
-  color: #718096;
-  text-align: center;
-  border: 1px dashed #cbd5e0;
-  font-size: 0.75rem;
-}
-
-.clickable { cursor: pointer; }
-.hover-animate:hover { transform: translateY(-2px); transition: 0.2s; }
-
-.notifications-card { background: white; padding: 1.5rem; border-radius: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); cursor: pointer; transition: all 0.3s ease;}
-.notifications-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.08); }
-</style>

@@ -1,6 +1,6 @@
 <template>
   <aside
-    class=" top-0 left-0 h-screen bg-maurealty-blue 
+    class=" top-0 left-0 h-screen bg-maurealty-blue dark:bg-[#031a2b]
             flex flex-col py-6 shadow-lg
             transition-all duration-300
             w-20 hover:w-90 group overflow-hidden sticky"
@@ -30,7 +30,7 @@
         :key="item.id"
         :to="item.path"
         class="flex items-center  text-white text-[clamp(0.5rem,2vw,1rem)] font-light
-                p-3 rounded-lg hover:bg-sidebar-hover transition"
+                p-3 rounded-lg hover:bg-sidebar-hover dark:hover:bg-[#05365b] transition"
       >
         <component :is="item.icon" class="w-6 h-5 shrink-0 " :stroke-width="1"  />
         <!-- LABEL -->
@@ -43,12 +43,12 @@
       </router-link>
     </div>
 
-    <!-- LOGOUT -->
+    <!-- SETTINGS & LOGOUT -->
     <div class="mt-auto px-3">
       <div class="w-full flex flex-col justify-items-start">
         <router-link to="/settings"
           class="flex items-center text-white
-                  p-3 rounded-lg hover:bg-sidebar-hover transition cursor-pointer group"
+                  p-3 rounded-lg hover:bg-sidebar-hover dark:hover:bg-[#05365b] transition cursor-pointer group"
         >
           <Settings class="w-7 h-7 shrink-0" :stroke-width="1"/>
 
@@ -63,7 +63,7 @@
         <button
           @click="handleLogout"
           class="flex items-center text-white
-                  p-3 rounded-lg hover:bg-sidebar-hover transition cursor-pointer group"
+                  p-3 rounded-lg hover:bg-sidebar-hover dark:hover:bg-[#05365b] transition cursor-pointer group"
         >
           <LogOut class="w-7 h-7 shrink-0" :stroke-width="1"/>
 

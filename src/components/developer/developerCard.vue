@@ -1,18 +1,18 @@
 <template>
-	<div class="bg-white p-6 rounded-[15px] shadow-lg w-full hover:shadow-[0_10px_15px_rgba(2,5,5.1,0.3)] transition-shadow">
+	<div class="bg-white dark:bg-black p-6 rounded-[15px] shadow-lg w-full hover:shadow-[0_10px_15px_rgba(2,5,5.1,0.3)] transition-shadow">
 
 		<!-- Profile -->
 		<div class="flex items-center gap-4 mb-4 ">
 
 			<img :src="dev.image_url || placeholder" class="w-16 h-16 rounded-full object-cover"/>
 			<div>
-				<h2 class="font-bold text-2xl">{{ dev.name }}</h2>
+				<h2 class="font-bold text-2xl dark:text-white">{{ dev.name }}</h2>
 				<span class="bg-[#41BE0126] text-[#41BE01] text-xs font-semibold px-2 py-1 rounded">Active</span>
 			</div>
 		</div>
 
 		<!-- Contact info -->
-		<div class="mt-5 break-all text-[clamp(1rem,1vw,1.5rem)] flex flex-col px-1 gap-2 mb-4 text-gray-700">
+		<div class="mt-5 break-all text-[clamp(1rem,1vw,1.5rem)] flex flex-col px-1 gap-2 mb-4 text-gray-700 dark:text-gray-300">
 			
 			<div class="grid grid-cols-1 lg:grid-cols-2">
 				<h1 class="font-semibold col-span-full">Contact Details</h1>
@@ -26,7 +26,7 @@
 
 			<div class="mt-4 flex flex-col items-start">
 				<h1 class="font-semibold">Available Office Hours</h1>
-				<div class="text-lg p-2 pl-4 bg-gray-200 rounded-2xl w-full flex flex-col gap-2">
+				<div class="text-lg p-2 pl-4 bg-gray-200 dark:bg-gray-800 rounded-2xl w-full flex flex-col gap-2">
 					<div v-for="(slot, index) in dev.OfficeHours" :key="`${slot.openTime}-${slot.closeTime}-${index}`" class="flex items-center gap-2">
 						<CalendarCheck2Icon class="size-4.5 shrink-0" />
 						<span class="flex flex-wrap items-center gap-1">
@@ -46,7 +46,7 @@
 
 		<!-- Recent Projects -->
 		<div class="mb-4">
-		<p class="font-semibold text-sm mb-1">Recent Projects</p>
+		<p class="font-semibold text-sm mb-1 dark:text-gray-300">Recent Projects</p>
 		<div v-if="dev.projects && dev.projects.length" class="flex gap-2 flex-wrap">
 			<button
 				v-for="project in dev.projects"
@@ -63,10 +63,10 @@
 
 		<!-- buttons -->
 		<div class="flex gap-2 items-end justify-end">
-			<button @click="handleDelete" class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px]  border border-red-600 text-red-600 rounded-[5px] px-4 py-2 hover:bg-red-100 flex items-center gap-2 justify-center" >
+			<button @click="handleDelete" class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px]  border border-red-600 text-red-600 rounded-[5px] px-4 py-2 hover:bg-red-100 dark:hover:bg-red-950 flex items-center gap-2 justify-center" >
 				Delete
 			</button>
-			<button @click="handleEdit" class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px]  border border-[#B4AFAF] rounded-[5px] px-4 py-2 hover:bg-gray-100 flex items-center gap-2 justify-center" >
+			<button @click="handleEdit" class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px] dark:text-[#B4AFAF] border border-[#B4AFAF] rounded-[5px] px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 justify-center" >
 				Edit
 			</button>
 			<button @click="handleContact" class="text-[clamp(0.75rem,2vw,1rem)] w-max-[121px] md:h-9 md:w-30.25 bg-maurealty-blue text-white rounded-[5px] px-4 py-2 hover:bg-[#045fa3] flex items-center gap-2 justify-center">

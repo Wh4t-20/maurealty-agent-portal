@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full h-screen bg-background-gray flex flex-col overflow-hidden p-10">
-    <main class="relative custom-scrollbar size-full bg-white border border-maurealty-blue/25 rounded-2xl shadow-lg py-7 px-10 overflow-y-scroll">
+  <div class="w-full h-screen bg-background-gray dark:bg-background-dark-gray flex flex-col overflow-hidden p-10">
+    <main class="relative custom-scrollbar size-full bg-white dark:bg-black dark:bg-black border border-maurealty-blue/25 rounded-2xl shadow-lg py-7 px-10 overflow-y-scroll">
       <transition
       enter-active-class="transition duration-200 ease-out"
       enter-from-class="opacity-0 scale-95"
@@ -9,7 +9,7 @@
       leave-from-class="opacity-100 scale-100"
       leave-to-class="opacity-0 scale-95"
       >
-        <div v-if="displayMaps" class="absolute inset-0 z-50 bg-white overflow-hidden rounded-2xl">
+        <div v-if="displayMaps" class="absolute inset-0 z-50 bg-white dark:bg-black dark:bg-black overflow-hidden rounded-2xl">
           
           <button 
             @click="toggleMaps" 
@@ -27,11 +27,11 @@
       </transition>
       
       <header class="relative">
-          <h1 class="text-4xl max-w-19/20 font-extrabold text-maurealty-blue mb-4 ml-5">
+          <h1 class="text-4xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-white mb-4 ml-5">
             PROPERTY MANAGEMENT
           </h1>
 
-          <hr width="100%" class="mb-4 text-maurealty-blue/30">
+          <hr width="100%" class="mb-4 text-maurealty-blue/30 dark:text-maurealty-light-blue/30">
       </header>
 
       <div>
@@ -39,14 +39,14 @@
         
           <div class="space-y-6">
             <div>
-              <label class="block text-sm font-bold text-maurealty-blue mb-1">Title</label>
-              <input type="text" v-model="form.listing_title" placeholder="e.g. Luxurious Home" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none">
+              <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Title</label>
+              <input type="text" v-model="form.listing_title" placeholder="e.g. Luxurious Home" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue dark:focus:ring-maurealty-light-blue outline-none">
             </div>
 
-            <div class="border-2 border-dashed border-maurealty-blue/20 rounded-2xl p-6 bg-gray-50">
+            <div class="border-2 border-dashed border-maurealty-blue/20 dark:border-maurealty-light-blue/20 rounded-2xl p-6 bg-gray-50 dark:bg-gray-950">
               <div class="flex flex-wrap gap-4 mb-4">
 
-                <div v-for="(img, index) in existingImages" :key="`existing-${index}`" class="relative w-32 h-32 bg-gray-200 rounded-xl overflow-hidden shadow-sm group">
+                <div v-for="(img, index) in existingImages" :key="`existing-${index}`" class="relative w-32 h-32 bg-gray-200 dark:bg-gray-700 rounded-xl overflow-hidden shadow-sm group">
                   <img :src="img.url" alt="Current property photo" class="object-cover size-full">
                   <span class="absolute bottom-1 left-1 bg-black/60 text-white text-[10px] font-medium px-1.5 py-0.5 rounded">Current</span>
                   <button type="button" @click="removeExistingImage(index)" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity font-bold cursor-pointer">
@@ -70,7 +70,7 @@
                   @change="handleImageFileUpload"
                 >
                 
-                <button type="button" @click="triggerImageFileInput" class="w-32 h-32 border-2 border-maurealty-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue hover:bg-maurealty-blue/5 transition cursor-pointer">
+                <button type="button" @click="triggerImageFileInput" class="w-32 h-32 border-2 border-maurealty-blue dark:border-maurealty-light-blue flex flex-col items-center justify-center rounded-xl text-maurealty-blue dark:text-white hover:bg-maurealty-blue/5 dark:hover:bg-maurealty-light-blue/5 transition cursor-pointer">
                   <span class="text-3xl">+</span>
                   <span class="text-xs font-bold">Add Photo</span>
                 </button>
@@ -78,17 +78,17 @@
             </div>
 
             <div>
-              <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
+              <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue dark:text-white mb-2">
                 <label class="block">Description</label>
-                <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer" @click="toggleDescriptionMarkdown">
+                <button type="button" class="py-1 px-2.5 border border-maurealty-blue dark:border-maurealty-light-blue rounded-xl hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue transition-colors cursor-pointer" @click="toggleDescriptionMarkdown">
                     {{ (displayDescriptionMarkdown) ? "Edit" : "Preview" }}
                 </button>
               </section>
               
               <textarea type="text" v-if="!displayDescriptionMarkdown" v-model="form.description" placeholder="e.g. This house has amazing features!" 
-                        class="custom-scrollbar w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
+                        class="custom-scrollbar w-full h-auto min-h-40 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
               
-              <div v-if="displayDescriptionMarkdown" class="prose max-w-none w-full h-auto min-h-40 border border-gray-300 rounded-lg p-3" v-html="compiledDescriptionMarkdown"></div>
+              <div v-if="displayDescriptionMarkdown" class="prose max-w-none w-full h-auto min-h-40 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg p-3" v-html="compiledDescriptionMarkdown"></div>
               
               <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
                 <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
@@ -96,33 +96,33 @@
             </div>
           </div>
 
-          <div class="bg-blue-50/30 border border-maurealty-blue/10 rounded-2xl p-8">
+          <div class="bg-blue-50/30 dark:bg-maurealty-light-blue/15 border border-maurealty-blue/10 rounded-2xl p-8">
             <div class="grid grid-cols-2 gap-4">
     
               <div class="col-span-1">
-                <label class="block text-sm font-bold text-maurealty-blue mb-1">Price ({{ currentCurrency }})</label>
-                <input type="number" step="0.01" v-model="form.price" class="w-full border border-gray-300 bg-white rounded-lg p-3">
+                <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Price ({{ currentCurrency }})</label>
+                <input type="number" step="0.01" v-model="form.price" class="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 bg-white dark:bg-black dark:bg-black dark:text-white rounded-lg p-3">
               </div>
               <div class="col-span-1">
-                <label class="block text-sm font-bold text-maurealty-blue mb-1">Commission (%)</label>
-                <input type="number" step="any" v-model="form.commission" class="w-full border border-gray-300 bg-white rounded-lg p-3">
+                <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Commission (%)</label>
+                <input type="number" step="any" v-model="form.commission" class="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 bg-white dark:bg-black dark:bg-black dark:text-white rounded-lg p-3">
               </div>
 
               <div class="col-span-2">
-                <label class="block text-sm font-bold text-maurealty-blue mb-1">Location</label>
+                <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Location</label>
                 <span class="w-full flex gap-2">
-                  <input type="text" v-model="form.location" placeholder="Street, City, Province" class="w-full border border-gray-300 bg-white rounded-lg p-3">
-                  <button type="button" class="border border-gray-300 bg-white hover:bg-gray-100 cursor-pointer rounded-lg p-3" @click="toggleMaps"><MapIcon /></button>
+                  <input type="text" v-model="form.location" placeholder="Street, City, Province" class="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-black dark:bg-black dark:text-white rounded-lg p-3">
+                  <button type="button" class="border border-gray-300 dark:border-gray-700 bg-white dark:bg-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-900 cursor-pointer rounded-lg p-3" @click="toggleMaps"><MapIcon /></button>
                 </span>
               </div>
 
               <div class="col-span-2">
-              <label class="block text-sm font-bold text-maurealty-blue mb-1">Developer</label>
+              <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Developer</label>
               
               <Listbox v-model="form.dev_ID">
                 <div class="relative">
-                  <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 bg-white p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
-                    <span class="block truncate text-gray-700">
+                  <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black dark:text-white p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
+                    <span class="block truncate text-gray-700 dark:text-gray-300">
                       {{ developersList.find(d => d.dev_ID === form.dev_ID)?.name || 'None' }}
                     </span>
                     <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
@@ -137,7 +137,7 @@
                     leave-from-class="opacity-100"
                     leave-to-class="opacity-0"
                   >
-                    <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
+                    <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white dark:bg-black dark:bg-black py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
                       <ListboxOption
                         v-slot="{ active, selected }"
                         v-for="dev in developersList"
@@ -147,7 +147,7 @@
                       >
                         <li
                           :class="[
-                            active ? 'bg-maurealty-blue/10 text-maurealty-blue' : 'text-gray-900',
+                            active ? 'bg-maurealty-blue/10 dark:bg-maurealty-light-blue/10 text-maurealty-blue dark:text-maurealty-light-blue' : 'text-gray-900 dark:text-gray-200',
                             'relative cursor-default select-none py-2 pl-4 pr-4 transition-colors',
                           ]"
                         >
@@ -163,13 +163,13 @@
             </div>
 
               <div class="col-span-2">
-                <label class="block text-sm font-bold text-maurealty-blue mb-1">Property Type</label>
+                <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Property Type</label>
                 
                 <Listbox v-model="form.property_type">
                   <div class="relative">
 
-                    <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 bg-white p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
-                      <span class="block truncate text-gray-700">{{ form.property_type }}</span>
+                    <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black dark:text-white p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
+                      <span class="block truncate text-gray-700 dark:text-gray-300">{{ form.property_type }}</span>
                       <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                         <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                           <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -182,7 +182,7 @@
                       leave-from-class="opacity-100"
                       leave-to-class="opacity-0"
                     >
-                      <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
+                      <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white dark:bg-black py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
                         <ListboxOption
                           v-slot="{ active, selected }"
                           v-for="choice in types"
@@ -192,7 +192,7 @@
                         >
                           <li
                             :class="[
-                              active ? 'bg-maurealty-blue/10 text-maurealty-blue' : 'text-gray-900',
+                              active ? 'bg-maurealty-blue/10 dark:bg-maurealty-light-blue/10 text-maurealty-blue dark:text-maurealty-light-blue' : 'text-gray-900 dark:text-gray-200',
                               'relative cursor-default select-none py-2 pl-4 pr-4 transition-colors',
                             ]"
                           >
@@ -212,65 +212,65 @@
               <template v-if="form.property_type === 'House And Lot'">
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Lot Area</label>
-                    <input type="number" step="any" v-model="form.lot_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Lot Area</label>
+                    <input type="number" step="any" v-model="form.lot_area" :placeholder="unitPlaceholder" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Floor Area</label>
-                    <input type="number" step="any" v-model="form.floor_area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Floor Area</label>
+                    <input type="number" step="any" v-model="form.floor_area" :placeholder="unitPlaceholder" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Rooms</label>
-                    <input type="number" v-model="form.room_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Rooms</label>
+                    <input type="number" v-model="form.room_count" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Master Bedroom Area</label>
-                    <input type="number" step="any" v-model="form.master_bedroom_area" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Master Bedroom Area</label>
+                    <input type="number" step="any" v-model="form.master_bedroom_area" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Toilets</label>
-                    <input type="number" v-model="form.toilet_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Toilets</label>
+                    <input type="number" v-model="form.toilet_count" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Helper Rms</label>
-                    <input type="number" v-model="form.helper_rooms_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Helper Rms</label>
+                    <input type="number" v-model="form.helper_rooms_count" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Driver Rms</label>
-                    <input type="number" v-model="form.driver_rooms_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Driver Rms</label>
+                    <input type="number" v-model="form.driver_rooms_count" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Carpark Spaces</label>
-                    <input type="number" v-model="form.carpark_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Carpark Spaces</label>
+                    <input type="number" v-model="form.carpark_count" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                 </div>
 
-                <div class="col-span-2 bg-white border border-gray-200 rounded-xl p-4 mt-2">
-                  <p class="text-xs font-bold text-maurealty-blue mb-3 uppercase opacity-70">Property Features</p>
+                <div class="col-span-2 bg-white dark:bg-black border border-gray-200 rounded-xl p-4 mt-2">
+                  <p class="text-xs font-bold text-maurealty-blue dark:text-white mb-3 uppercase opacity-70">Property Features</p>
                   <div class="flex flex-wrap gap-x-6 gap-y-3">
                     <label class="flex items-center gap-2 cursor-pointer group">
                       <input type="checkbox" v-model="form.one_storey" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
-                      <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">One Storey</span>
+                      <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-maurealty-blue dark:group-hover:text-maurealty-light-blue transition">One Storey</span>
                     </label>
                     
                     <label class="flex items-center gap-2 cursor-pointer group">
                       <input type="checkbox" v-model="form.two_storey" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
-                      <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Two Storey</span>
+                      <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-maurealty-blue dark:group-hover:text-maurealty-light-blue transition">Two Storey</span>
                     </label>
 
                     <label class="flex items-center gap-2 cursor-pointer group">
                       <input type="checkbox" v-model="form.with_loft" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
-                      <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">With Loft</span>
+                      <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-maurealty-blue dark:group-hover:text-maurealty-light-blue transition">With Loft</span>
                     </label>
 
                     <label class="flex items-center gap-2 cursor-pointer group">
                       <input type="checkbox" v-model="form.townhome" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
-                      <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Townhome</span>
+                      <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-maurealty-blue dark:group-hover:text-maurealty-light-blue transition">Townhome</span>
                     </label>
 
                     <label class="flex items-center gap-2 cursor-pointer group">
                       <input type="checkbox" v-model="form.rowhouse" class="w-4 h-4 accent-maurealty-blue rounded cursor-pointer">
-                      <span class="text-sm text-gray-700 group-hover:text-maurealty-blue transition">Rowhouse</span>
+                      <span class="text-sm text-gray-700 dark:text-gray-300 group-hover:text-maurealty-blue dark:group-hover:text-maurealty-light-blue transition">Rowhouse</span>
                     </label>
                   </div>
                 </div>
@@ -280,30 +280,30 @@
               <template v-if="form.property_type === 'Lot Only'">
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Block No.</label>
-                    <input type="number" v-model="form.block_number" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Block No.</label>
+                    <input type="number" v-model="form.block_number" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Lot No.</label>
-                    <input type="number" v-model="form.lot_number" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Lot No.</label>
+                    <input type="number" v-model="form.lot_number" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Phase No.</label>
-                    <input type="number" v-model="form.phase_number" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Phase No.</label>
+                    <input type="number" v-model="form.phase_number" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Area</label>
-                    <input type="number" step="any" v-model="form.area" :placeholder="unitPlaceholder" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Area</label>
+                    <input type="number" step="any" v-model="form.area" :placeholder="unitPlaceholder" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                 
                   <div class="cols-2 md:col-span-4">
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Lot Class</label>
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Lot Class</label>
                     
                     <Listbox v-model="form.class">
                       <div class="relative">
 
-                        <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 bg-white p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
-                          <span class="block truncate text-gray-700">{{ form.class }}</span>
+                        <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
+                          <span class="block truncate text-gray-700 dark:text-gray-300">{{ form.class }}</span>
                           <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                             <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                               <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -316,7 +316,7 @@
                           leave-from-class="opacity-100"
                           leave-to-class="opacity-0"
                         >
-                          <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
+                          <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white dark:bg-black py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
                             <ListboxOption
                               v-slot="{ active, selected }"
                               v-for="lotclass in lotClasses"
@@ -326,7 +326,7 @@
                             >
                               <li
                                 :class="[
-                                  active ? 'bg-maurealty-blue/10 text-maurealty-blue' : 'text-gray-900',
+                                  active ? 'bg-maurealty-blue/10 dark:bg-maurealty-light-blue/10 text-maurealty-blue dark:text-maurealty-light-blue' : 'text-gray-900 dark:text-gray-200',
                                   'relative cursor-default select-none py-2 pl-4 pr-4 transition-colors',
                                 ]"
                               >
@@ -350,34 +350,34 @@
               <template v-if="form.property_type === 'Condominium'">
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Unit No.</label>
-                    <input type="number" v-model="form.unit_number" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Unit No.</label>
+                    <input type="number" v-model="form.unit_number" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Bedroom Count</label>
-                    <input type="number" v-model="form.bedroom_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Bedroom Count</label>
+                    <input type="number" v-model="form.bedroom_count" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Balcony Count</label>
-                    <input type="number" v-model="form.balcony_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Balcony Count</label>
+                    <input type="number" v-model="form.balcony_count" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Carpark Count</label>
-                    <input type="number" v-model="form.carpark_count" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Carpark Count</label>
+                    <input type="number" v-model="form.carpark_count" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                   <div>
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Master Bedroom Area</label>
-                    <input type="number" step="any" v-model="form.master_bedroom_area" class="w-full border border-gray-300 bg-white rounded-lg p-2 text-sm">
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Master Bedroom Area</label>
+                    <input type="number" step="any" v-model="form.master_bedroom_area" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
 
                   <div class="cols-2 md:col-span-4">
-                    <label class="block text-xs font-bold text-maurealty-blue mb-1 uppercase opacity-70">Condominium Class</label>
+                    <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Condominium Class</label>
                     
                     <Listbox v-model="form.class">
                       <div class="relative">
 
-                        <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 bg-white p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
-                          <span class="block truncate text-gray-700">{{ form.class }}</span>
+                        <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
+                          <span class="block truncate text-gray-700 dark:text-gray-300">{{ form.class }}</span>
                           <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
                             <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                               <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -390,7 +390,7 @@
                           leave-from-class="opacity-100"
                           leave-to-class="opacity-0"
                         >
-                          <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
+                          <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white dark:bg-black py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
                             <ListboxOption
                               v-slot="{ active, selected }"
                               v-for="condoclass in condoClasses"
@@ -400,7 +400,7 @@
                             >
                               <li
                                 :class="[
-                                  active ? 'bg-maurealty-blue/10 text-maurealty-blue' : 'text-gray-900',
+                                  active ? 'bg-maurealty-blue/10 dark:bg-maurealty-light-blue/10 text-maurealty-blue dark:text-maurealty-light-blue' : 'text-gray-900 dark:text-gray-200',
                                   'relative cursor-default select-none py-2 pl-4 pr-4 transition-colors',
                                 ]"
                               >
@@ -416,8 +416,8 @@
                     </Listbox>
                   </div>
 
-                  <div class="cols-2 md:col-span-4 bg-white border border-gray-200 rounded-xl p-4 mt-2">
-                      <p class="text-xs font-bold text-maurealty-blue mb-3 uppercase opacity-70">Condominium Type</p>
+                  <div class="cols-2 md:col-span-4 bg-white dark:bg-black border border-gray-200 rounded-xl p-4 mt-2">
+                      <p class="text-xs font-bold text-maurealty-blue dark:text-white mb-3 uppercase opacity-70">Condominium Type</p>
                       
                       <div class="flex flex-wrap gap-x-6 gap-y-3">
                         <label v-for="cType in ([
@@ -435,7 +435,7 @@
                             @change="setExclusively(['is_studio_type', 'is_BR_unit', 'is_villa', 'is_garden_villa', 'is_penthouse'], cType.field as keyof PropertyForm)"
                             class="w-4 h-4 accent-maurealty-blue cursor-pointer"
                           >
-                          <span class="text-sm text-gray-700">{{ cType.label }}</span>
+                          <span class="text-sm text-gray-700 dark:text-gray-300">{{ cType.label }}</span>
                         </label>
                       </div>
                   </div>
@@ -445,8 +445,8 @@
 
               <template v-if="form.property_type === 'Memorial'">
                 <div class="col-span-2 border-t border-maurealty-blue/10 pt-4 mt-2">
-                  <div class="cols-6 bg-white border border-gray-200 rounded-xl p-4 mt-2">
-                      <p class="text-xs font-bold text-maurealty-blue mb-3 uppercase opacity-70">Memorial Type</p>
+                  <div class="cols-6 bg-white dark:bg-black border border-gray-200 rounded-xl p-4 mt-2">
+                      <p class="text-xs font-bold text-maurealty-blue dark:text-white mb-3 uppercase opacity-70">Memorial Type</p>
 
                       <div class="flex flex-wrap gap-x-6 gap-y-3">
                         <label v-for="mType in ([
@@ -465,7 +465,7 @@
                             @change="setExclusively(['is_urn', 'is_vault', 'is_garden', 'is_estate', 'is_family_estate', 'is_pet_memorial'], mType.field as keyof PropertyForm)"
                             class="w-4 h-4 accent-maurealty-blue cursor-pointer"
                           >
-                          <span class="text-sm text-gray-700">{{ mType.label }}</span>
+                          <span class="text-sm text-gray-700 dark:text-gray-300">{{ mType.label }}</span>
                         </label>
                     </div>
                   </div>
@@ -478,13 +478,13 @@
           </div>
 
           <div class="col-span-full">
-              <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue mb-2">
+              <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue dark:text-white mb-2">
                 <label class="block">Frequently Asked Questions</label>
                 <span class="flex gap-3">
-                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer" @click="toggleFAQMarkdown">
+                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue dark:border-maurealty-light-blue rounded-xl hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue transition-colors cursor-pointer" @click="toggleFAQMarkdown">
                       {{ (displayFAQMarkdown) ? "Edit" : "Preview" }}
                   </button>
-                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue rounded-xl hover:bg-maurealty-blue hover:text-white transition-colors cursor-pointer" @click="toggleQuestions">
+                  <button type="button" class="py-1 px-2.5 border border-maurealty-blue dark:border-maurealty-light-blue rounded-xl hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue transition-colors cursor-pointer" @click="toggleQuestions">
                       {{ (displayQuestions) ? "Hide Questions" : "View Questions" }}
                   </button>
                 </span>
@@ -495,21 +495,21 @@
                 <div :class="[ !displayQuestions ? 'col-span-full' : '' ]">
                   <div v-if="!displayFAQMarkdown" class="w-full flex">
                     <textarea type="text" v-model="form.faq" placeholder="Follow this format:&#10;### (Question Here; click 'View Questions' for some examples or make up your own)&#10;- (Answers here)&#10;&#10;Note: Click Preview to see the formatting" 
-                            class="custom-scrollbar w-full h-auto min-h-70 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
+                            class="custom-scrollbar w-full dark:text-white h-auto min-h-70 border border-gray-300 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
                     
                   </div>
                   
-                  <div v-if="displayFAQMarkdown" class="prose max-w-none w-full h-auto min-h-50 border border-gray-300 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
+                  <div v-if="displayFAQMarkdown" class="prose dark:text-white max-w-none w-full h-auto min-h-70 border border-gray-300 dark:border-gray-700 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
                 </div>
 
-                <div v-if="displayQuestions" class="col-span-1 border border-gray-300 rounded-lg max-h-70 bg-gray-50 overflow-y-auto custom-scrollbar">
+                <div v-if="displayQuestions" class="col-span-1 border border-gray-300 dark:border-gray-700 rounded-lg max-h-70 bg-gray-50 dark:bg-gray-900 overflow-y-auto custom-scrollbar">
                   <div v-for="(item, itemIndex) in questions.FAQs" :key="itemIndex" class="mb-3">
-                    <h1 class="w-full bg-white py-2 pl-6 mb-2 font-bold uppercase text-xl text-maurealty-blue">{{ item.type }}</h1>
+                    <h1 class="w-full bg-white dark:bg-black pt-2 pl-6 pb-4 font-bold uppercase text-xl text-maurealty-blue dark:text-maurealty-light-blue">{{ item.type }}</h1>
                     <div class="grid grid-cols-1 justify-items-start px-3">
                       <button v-for="(q, qIndex) in item.questionList"
                         type="button"
                         :key="qIndex" 
-                        class="flex gap-2.5 items-center text-md text-gray-700 pl-4 py-1.5 hover:bg-maurealty-blue/15 hover:font-semibold hover:text-lg transition-all w-full border-gray-200 cursor-pointer"
+                        class="flex gap-2.5 items-center text-md text-gray-700 dark:text-gray-300 pl-4 py-1.5 hover:bg-maurealty-blue/15 dark:hover:bg-maurealty-light-blue/15 hover:font-semibold hover:text-lg transition-all w-full border-gray-200 dark:border-gray-800 cursor-pointer"
                         :class="(qIndex < item.questionList.length - 1) ? 'border-b' : ''"
                         @click="addQuestion(q.question)">
                           <PlusIcon class="size-5" /> {{ q.question }}
@@ -534,7 +534,7 @@
               @change="handleFactSheetFileUpload"
             >
 
-            <button type="button" @click="triggerFactSheetFileInput" class="size-full py-8 bg-blue-50/30 hover:bg-blue-50/70 border border-maurealty-blue/10 rounded-xl flex flex-col items-center gap-4 justify-center text-maurealty-blue cursor-pointer">
+            <button type="button" @click="triggerFactSheetFileInput" class="size-full py-8 bg-blue-50/30 hover:bg-blue-50/50 border border-maurealty-blue/10 rounded-xl flex flex-col items-center gap-4 justify-center text-maurealty-blue dark:text-white cursor-pointer">
               <UploadIcon class="size-15" :stroke-width="3"/>
               <h3 v-if="!factSheetFile" class="italic">Upload a fact sheet (optional)</h3>
               <h3 v-else class="font-bold text-green-600 italic">{{ factSheetFile.name }}</h3>
@@ -542,10 +542,10 @@
           </div>
           
           <div class="flex col-span-2 justify-end gap-4 mt-8">
-              <button type="button" @click="goBack" class="px-8 py-3 border border-maurealty-blue text-maurealty-blue font-bold rounded-full hover:bg-gray-100 transition cursor-pointer">
+              <button type="button" @click="goBack" class="px-8 py-3 border border-maurealty-blue dark:border-white text-maurealty-blue dark:text-white font-bold rounded-full hover:bg-gray-100 dark:hover:bg-maurealty-blue/40 transition cursor-pointer">
                 CANCEL
               </button>
-              <button type="submit" class="px-8 py-3 bg-maurealty-blue text-white font-bold rounded-full shadow-md hover:bg-opacity-90 hover:bg-[#045fa3] active:bg-white active:text-maurealty-blue border border-maurealty-blue transition flex items-center gap-2 cursor-pointer">
+              <button type="submit" class="px-8 py-3 bg-maurealty-blue dark:bg-maurealty-light-blue text-white dark:text-maurealty-blue font-bold rounded-full shadow-md hover:bg-opacity-90 hover:bg-[#045fa3] dark:hover:bg-[#9dcef3] active:bg-white dark:active:bg-maurealty-blue active:text-maurealty-blue dark:active:text-white border border-maurealty-blue transition flex items-center gap-2 cursor-pointer">
                 <span>★</span> SAVE PROPERTY
               </button>
           </div>

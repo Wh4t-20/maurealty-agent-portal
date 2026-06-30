@@ -1,16 +1,16 @@
 <template>
-    <div class="min-h-screen w-full bg-[#F3F3F3] pt-8 flex flex-col items-center">
+    <div class="min-h-screen w-full bg-background-gray dark:bg-background-dark-gray pt-8 flex flex-col items-center">
 
       <!-- MAIN CONTAINER -->
       <div class="w-full max-w-[1100px] px-4">
 
         <!-- HEADER -->
         <div class="flex items-center justify-between h-[110px] px-6 mb-6
-                    bg-gradient-to-r from-[#A9D6FF70] to-[#FFFFFF]
+                    bg-gradient-to-r from-[#A9D6FF70] dark:from-[#031a2b] to-[#FFFFFF] dark:to-black
                     shadow-[0_10px_15px_rgba(0,0,0,0.15)] rounded-[12px]">
 
           <!-- TITLE -->
-          <h1 class="text-[clamp(1.2rem,2vw,2rem)] font-extrabold text-[#07407B]">
+          <h1 class="text-[clamp(1.2rem,2vw,2rem)] font-extrabold text-[#07407B] dark:text-white">
             GENEALOGY
           </h1>
 
@@ -20,7 +20,7 @@
               type="text"
               v-model="search"
               placeholder="Search Agent"
-              class="w-full rounded-[10px] border border-[#1C1E76] px-3 py-2
+              class="w-full rounded-[10px] border border-[#1C1E76] dark:border-maurealty-light-blue dark:text-white px-3 py-2
                      text-[clamp(0.7rem,1vw,1rem)]
                      focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -45,16 +45,16 @@
 
         <!-- STATS -->
         <div class="grid grid-cols-4 gap-4 mb-6">
-          <div class="bg-[#C8DDF64A] p-4 rounded-xl shadow border-l-4 border-blue-500">
+          <div class="bg-[#C8DDF64A] dark:bg-[#1b3c64b7] dark:text-white p-4 rounded-xl shadow border-l-4 border-blue-500 dark:border-blue-900">
             Total Agents<br><b>{{ stats.totalAgents }}</b>
           </div>
-          <div class="bg-[#c8ddf6b7] p-4 rounded-xl border-l-4 border-blue-500 shadow">
+          <div class="bg-[#c8ddf6b7] dark:bg-[#1c2b3db7] dark:text-white p-4 rounded-xl border-l-4 border-blue-500 dark:border-blue-900 shadow">
             Team Leaders<br><b>{{ stats.teamLeaders }}</b>
           </div>
-          <div class="bg-[#c8ddf6b7] p-4 rounded-xl border-l-4 border-blue-500 shadow">
+          <div class="bg-[#c8ddf6b7] dark:bg-[#1c2b3db7] dark:text-white p-4 rounded-xl border-l-4 border-blue-500 dark:border-blue-900 shadow">
             Active Teams<br><b>{{ stats.activeTeams }}</b>
           </div>
-          <div class="bg-[#c8ddf6b7] p-4 rounded-xl border-l-4 border-blue-500 shadow">
+          <div class="bg-[#c8ddf6b7] dark:bg-[#1c2b3db7] dark:text-white p-4 rounded-xl border-l-4 border-blue-500 dark:border-blue-900 shadow">
             New This Month<br><b>{{ stats.newThisMonth }}</b>
           </div>
         </div>
@@ -64,35 +64,35 @@
         <div class="grid grid-cols-2 gap-6">
 
           <!-- TEAMS -->
-          <div class="bg-white p-8 rounded-xl shadow">
+          <div class="bg-white dark:bg-black dark:text-white p-8 rounded-xl shadow">
             <h2 class="font-bold mb-4">TEAMS</h2>
 
-            <p v-if="!loading && teams.length === 0" class="text-sm text-gray-500">No teams yet.</p>
+            <p v-if="!loading && teams.length === 0" class="text-sm text-gray-500 dark:text-gray-400">No teams yet.</p>
 
             <div v-for="team in filteredTeams" :key="team.agent_ID"
-                 class="flex justify-between p-3 bg-[#C8DDF64A] rounded mb-2">
+                 class="flex justify-between p-3 bg-[#C8DDF64A] dark:bg-[#5e77954a] rounded mb-2">
               <div>
                 {{ team.name }}'s Team<br>
-                <span class="text-sm text-gray-500">{{ team.members }} member{{ team.members === 1 ? '' : 's' }}</span>
+                <span class="text-sm text-gray-500 dark:text-gray-400">{{ team.members }} member{{ team.members === 1 ? '' : 's' }}</span>
               </div>
             </div>
           </div>
 
           <!-- RECENT -->
-          <div class="bg-white p-8 rounded-xl shadow">
+          <div class="bg-white dark:bg-black dark:text-white p-8 rounded-xl shadow">
             <h2 class="font-bold mb-4">RECENTLY ADDED</h2>
 
-            <p v-if="!loading && recent.length === 0" class="text-sm text-gray-500">No agents yet.</p>
+            <p v-if="!loading && recent.length === 0" class="text-sm text-gray-500 dark:text-gray-400">No agents yet.</p>
 
             <div v-for="a in filteredRecent" :key="a.agent_ID"
-                 class="flex justify-between p-3 bg-[#C8DDF64A] rounded mb-2">
+                 class="flex justify-between p-3 bg-[#C8DDF64A] dark:bg-[#5e77954a] rounded mb-2">
               <div>
                 {{ a.first_name }} {{ a.last_name }}<br>
-                <span class="text-sm text-gray-500">{{ positionLabel(a) }}</span>
+                <span class="text-sm text-gray-500 dark:text-gray-400">{{ positionLabel(a) }}</span>
               </div>
 
               <div class="text-right">
-                <div class="text-sm text-gray-500">{{ formatHire(a.hire_date) }}</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400">{{ formatHire(a.hire_date) }}</div>
               </div>
             </div>
           </div>
@@ -100,21 +100,21 @@
         </div>
 
         <!-- MANAGE AGENTS -->
-        <div class="bg-white p-8 rounded-xl shadow mt-6">
+        <div class="bg-white dark:bg-black dark:text-white p-8 rounded-xl shadow mt-6">
           <h2 class="font-bold mb-4">MANAGE AGENTS</h2>
 
-          <p v-if="!loading && allAgents.length === 0" class="text-sm text-gray-500">No agents yet.</p>
+          <p v-if="!loading && allAgents.length === 0" class="text-sm text-gray-500 dark:text-gray-400">No agents yet.</p>
           <p v-if="deleteError" class="text-red-600 text-xs mb-3">{{ deleteError }}</p>
 
           <div v-for="a in filteredAll" :key="a.agent_ID"
-               class="flex items-center justify-between p-3 bg-[#C8DDF64A] rounded mb-2">
+               class="flex items-center justify-between p-3 bg-[#C8DDF64A] dark:bg-[#5e77954a] rounded mb-2">
             <div>
               {{ a.first_name }} {{ a.last_name }}<br>
-              <span class="text-sm text-gray-500">{{ positionLabel(a) }}</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">{{ positionLabel(a) }}</span>
             </div>
             <div class="flex items-center gap-2">
               <button @click="openEdit(a.agent_ID)"
-                      class="px-3 py-1 rounded-lg border border-[#07407B] text-[#07407B] text-sm hover:bg-[#07407B] hover:text-white transition cursor-pointer">
+                      class="px-3 py-1 rounded-lg border border-[#07407B] text-[#07407B] dark:border-maurealty-light-blue dark:text-maurealty-light-blue text-sm hover:bg-[#07407B] dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue transition cursor-pointer">
                 Edit
               </button>
               <button @click="confirmDelete(a)" :disabled="deletingId === a.agent_ID"
