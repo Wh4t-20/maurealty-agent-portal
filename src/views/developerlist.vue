@@ -12,19 +12,19 @@
       <AddDeveloperTab  v-if="showAddDeveloper" @close-add-developer="showAddDeveloper = false; devToEdit = null" :dev = "devToEdit? devToEdit : undefined"/>
   </transition>
   
-  <div class="relative w-full bg-background-gray pt-8 flex flex-col items-center flex-1 overflow-y-auto">
+  <div class="relative w-full bg-background-gray dark:bg-background-dark-gray pt-8 flex flex-col items-center flex-1 overflow-y-auto">
 
     <!--Header I think mas better if ma component ni sya-->
     <!-- Better component iff we will use the same exact design for every page -->
-    <header class="fixed z-5 pl-9 flex items-center w-auto h-30 bg-linear-to-r from-[#CEE5F9] to-[#FFFFFF] shadow-[0_10px_15px_rgba(0,0,0,0.3)] rounded-lg">
+    <header class="fixed z-5 pl-9 flex items-center w-auto h-30 bg-linear-to-r from-[#CEE5F9] dark:from-[#031a2b] to-[#FFFFFF] dark:to-black shadow-[0_10px_15px_rgba(0,0,0,0.3)] rounded-lg">
   
-      <h1 class="text-[clamp(1rem,2vw,2rem)] font-extrabold text-[#07407B]">
+      <h1 class="text-[clamp(1rem,2vw,2rem)] font-extrabold text-[#07407B] dark:text-white">
         DEVELOPERS
       </h1>
 
       <!-- Search -->
       <div class=" flex-1 ml-4 md:ml-20 lg:ml-62.5 max-w-87.5">
-        <input type="text"placeholder="Search Developer" class=" text-[clamp(0.5rem,2vw,1rem)] w-full rounded-[10px] border border-[#1C1E76] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-maurealty-blue"/>
+        <input type="text"placeholder="Search Developer" class=" text-[clamp(0.5rem,2vw,1rem)] w-full rounded-[10px] border border-[#1C1E76] dark:border-white dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-maurealty-blue dark:focus:ring-maurealty-light-blue"/>
       </div>
 
       <!-- Button -->
