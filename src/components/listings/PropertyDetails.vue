@@ -1,24 +1,24 @@
 <template>
 <div class="absolute inset-0 z-10 flex items-center justify-center bg-black/10 backdrop-blur-sm">
-  <div v-if="details" class="custom-scrollbar bg-white w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 px-10 py-7 overflow-y-auto">
+  <div v-if="details" class="custom-scrollbar bg-white dark:bg-black w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-900 px-10 py-7 overflow-y-auto">
         <header class="relative mb-4">
-          <h1 class="text-3xl max-w-19/20 font-extrabold text-maurealty-blue">
+          <h1 class="text-3xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-maurealty-light-blue dark:text-maurealty-light-blue">
             {{ details.listing_title || 'Untitled Listing' }}
           </h1>
 
-          <button class="absolute top-0 right-0 p-3 rounded-full hover:bg-gray-200/40 transition-colors cursor-pointer" @click="$emit('closeDetails')">
+          <button class="absolute top-0 right-0 p-3 rounded-full text-black dark:text-white hover:bg-gray-200/40 dark:hover:bg-gray-200/20 transition-colors cursor-pointer" @click="$emit('closeDetails')">
             <XIcon class="size-5" stroke-width="3"/>
           </button>
         </header>
 
-        <hr width="100%" class="mb-4 text-maurealty-blue/30">
+        <hr width="100%" class="mb-4 text-maurealty-blue dark:text-maurealty-light-blue/30 dark:text-maurealty-light-blue/30">
 
         <main class="flex gap-12 mx-4">
           
           <div class="grow w-3/5 flex flex-col gap-6">
             
             <div class="relative flex gap-4 items-center">
-              <div class="relative grow aspect-video rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
+              <div class="relative grow aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-mist-800 shadow-sm">
                 <img 
                   :src="activeImage || placeholder"
                   alt="Property Main View" 
@@ -27,13 +27,13 @@
               </div>
 
               <button 
-                class="absolute left-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue cursor-pointer"
+                class="absolute left-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black dark:text-white text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue dark:text-maurealty-light-blue cursor-pointer"
                 @click="updateImage(currentImageIndex - 1)">
                 <ChevronLeft stroke-width=2.75 />
               </button>
 
               <button 
-                class="absolute right-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue cursor-pointer"
+                class="absolute right-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black dark:text-white text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue dark:text-maurealty-light-blue cursor-pointer"
                 @click="updateImage(currentImageIndex + 1)">
                 <ChevronRight stroke-width=2.75 />
               </button>
@@ -46,38 +46,38 @@
                 :src="thumb" 
                 @click="updateImage(index)"
                 alt="Property thumbnail" 
-                class="w-32 h-24 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-maurealty-blue"
+                class="w-32 h-24 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-maurealty-blue dark:hover:ring-maurealty-light-blue"
                 :class="[index == currentImageIndex ? 'opacity-50' : '']"
               />
             </div>
           </div>
 
-          <div class="w-2/5 flex flex-col gap-2 text-gray-800 text-lg">
+          <div class="w-2/5 flex flex-col gap-2 text-gray-800 dark:text-gray-200 text-lg">
             <span class="inline-block bg-maurealty-green w-fit text-2xl text-white px-4 py-0.5 rounded-full tracking-wider mt-0.5">
                {{ formatPrice(details.price ?? 0).toLocaleString() }}
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
-              <Building2Icon class="size-6" color="#000000" />
+              <Building2Icon class="size-6 text-black dark:text-white" />
               {{ formattedPropertyType(details.property_type) }}
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
-              <MapPinIcon class="size-6" color="#000000" />
+              <MapPinIcon class="size-6 text-black dark:text-white" />
               {{ details.location }}
             </span>
 
-            <section class="w-full h-64 rounded-xl overflow-hidden border border-gray-200">
+            <section class="w-full h-64 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
               <MapHolder :target-location="{ lng: details.lng, lat: details.lat }" :listing-id="details.listing_id" />
             </section>
 
             <span class="flex items-center gap-1.5">
-              <UserStarIcon class="size-6" color="#000000" />
+              <UserStarIcon class="size-6 text-black dark:text-white" />
               <p>{{ details.agent_name || 'N/A' }}</p>
-              <p class="italic text-gray-700">- {{ details.commission }}% Commision</p>
+              <p class="italic text-gray-700 dark:text-gray-300/70">- {{ details.commission }}% Commision</p>
             </span>
             
-            <p class="text-sm text-gray-500">Created on: {{ details.created_at.toLocaleDateString() }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Created on: {{ details.created_at.toLocaleDateString() }}</p>
 
             <span class="flex items-center-safe mt-2 text-xl">
               <p class="font-semibold">Developed by:</p>
@@ -85,8 +85,8 @@
             </span>
             
             <template v-if="details.property_type === 'house_and_lot'">
-              <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
-                <legend class="px-2 font-semibold text-maurealty-blue">House and Lot Features</legend>
+              <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full">
+                <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">House and Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
                   <div class="grid grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ formatArea(details.lot_area) }}</span>
@@ -124,8 +124,8 @@
             </template>
 
             <template v-if="details.property_type === 'lot_only'">
-              <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
-                <legend class="px-2 font-semibold text-maurealty-blue">Lot Features</legend>
+              <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full">
+                <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
                   <div class="grid grid-cols-2">
                     <div>
@@ -139,7 +139,7 @@
                   </div>
                   
                   <div class="mt-2 pb-2 flex gap-2">
-                    <p class="font-bold text-xl text-maurealty-blue">Class:</p>
+                    <p class="font-bold text-xl text-maurealty-blue dark:text-maurealty-light-blue">Class:</p>
                     <p class="text-xl">{{ lotClassesMap[details.lot_class_ID] || 'N/A' }}</p>
                   </div>
                 </main>
@@ -147,8 +147,8 @@
             </template>
 
             <template v-if="details.property_type === 'condominium'">
-              <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
-                <legend class="px-2 font-semibold text-maurealty-blue">Condominium Features</legend>
+              <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full">
+                <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">Condominium Features</legend>
                 <main class="text-sm px-2 flex flex-col">
                   <div class="grid grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><Hash /> Unit No. <b>{{ details.unit_number }}</b></span>
@@ -159,11 +159,11 @@
                   </div>
                   
                   <div class="mt-4 flex gap-2">
-                    <p class="font-bold text-xl text-maurealty-blue">Class:</p>
+                    <p class="font-bold text-xl text-maurealty-blue dark:text-maurealty-light-blue">Class:</p>
                     <p class="text-xl">{{ condoClassesMap[details.condo_class_ID] || 'N/A' }}</p>
                   </div>
                   <div class="pb-2 flex gap-2">
-                    <p class="font-bold text-xl text-maurealty-blue">Type:</p>
+                    <p class="font-bold text-xl text-maurealty-blue dark:text-maurealty-light-blue">Type:</p>
                     <p class="text-xl">{{ getCondoType() }}</p>
                   </div>
                 </main>
@@ -171,11 +171,11 @@
             </template>
 
             <template v-if="details.property_type === 'memorial'">
-              <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full">
-                <legend class="px-2 font-semibold text-maurealty-blue">Memorial Features</legend>
+              <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full">
+                <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">Memorial Features</legend>
                 <main class="text-sm px-2 flex flex-col">
                   <div class="pb-2 flex gap-2">
-                    <p class="font-bold text-xl text-maurealty-blue">Type:</p>
+                    <p class="font-bold text-xl text-maurealty-blue dark:text-maurealty-light-blue">Type:</p>
                     <p class="text-xl">{{ getMemorialType() }}</p>
                   </div>
                 </main>
@@ -183,17 +183,17 @@
             </template>
 
             <!-- Description section -->
-            <section class="mt-2 prose" v-html="compiledDescriptionMarkdown" />
+            <section class="mt-2 prose text-black dark:text-white" v-html="compiledDescriptionMarkdown" />
           </div>
         </main>
 
         <!-- FAQs -->
-        <section v-if="compiledFAQMarkdown" class="p-5 border border-maurealty-blue/20 rounded-3xl w-full mt-10">
-          <section class="prose" v-html="compiledFAQMarkdown" />
+        <section v-if="compiledFAQMarkdown" class="p-5 border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-3xl w-full mt-10">
+          <section class="prose text-black dark:text-white" v-html="compiledFAQMarkdown" />
         </section>
         
         <section class="w-full flex mt-4 px-3 gap-4">
-          <button @click="$emit('edit', details)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+          <button @click="$emit('edit', details)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><SquarePen class="size-4" /> EDIT</span>
           </button>
 
@@ -204,7 +204,7 @@
           <button 
             @click="handleShare" 
             :disabled="isShareCooldown"
-            class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             :class="!isShareCooldown ? 'hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75' : ''"
           >
             <span class="flex items-center-safe gap-1"><ExternalLink class="size-4" /> SHARE</span>
@@ -212,7 +212,7 @@
 
           <button
             @click="showCalc = true"
-            class="flex flex-col items-center justify-center py-2 px-6 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold whitespace-nowrap hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
+            class="flex flex-col items-center justify-center py-2 px-6 rounded-full border-2 border-maurealty-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold whitespace-nowrap hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
           >
             <span class="flex items-center gap-1.5"><CalculatorIcon class="size-4 shrink-0" /> CALCULATOR</span>
           </button>
@@ -228,16 +228,16 @@
           <button
             v-if="details.fact_sheet"
             @click="downloadFactSheet"
-            class="flex flex-col items-center py-2 px-5 w-45 rounded-full border-2 border-maurealty-blue text-maurealty-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+            class="flex flex-col items-center py-2 px-5 w-45 rounded-full border-2 border-maurealty-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><DownloadIcon class="size-4" /> FACT SHEET</span>
           </button>
           
         </section>
       </div>
 
-      <div v-else class="bg-white w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 flex flex-col items-center justify-center">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-3 border-maurealty-blue mb-4"></div>
-        <p class="text-maurealty-blue font-semibold">Loading property...</p>
+      <div v-else class="bg-white dark:bg-black w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-900 flex flex-col items-center justify-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-3 border-maurealty-blue dark:border-maurealty-light-blue mb-4"></div>
+        <p class="text-maurealty-blue dark:text-maurealty-light-blue font-semibold">Loading property...</p>
       </div>
 
       <!-- CALCULATOR POPUP: reuses the accounting calculator, prefilled with this listing's price -->
@@ -247,7 +247,7 @@
         @click.self="showCalc = false"
       >
         <div class="w-full max-w-md relative">
-          <button class="absolute -top-3 -right-3 z-10 size-8 rounded-full bg-white shadow-md text-gray-500 hover:text-gray-800 cursor-pointer" @click="showCalc = false">✕</button>
+          <button class="absolute -top-3 -right-3 z-10 size-8 rounded-full bg-white dark:bg-black shadow-md text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer" @click="showCalc = false">✕</button>
           <CalculatorPanel :prefill-price="details?.price ?? undefined" />
         </div>
       </div>

@@ -2,10 +2,10 @@
   <div class="flex min-h-screen bg-background-gray dark:bg-background-dark-gray w-full">
     <div class="flex-1 flex flex-col">
       
-      <header class="flex flex-col py-5 px-10 pb-0 w-full bg-gradient-to-r from-[#A9D6FF70] dark:from-[#06294470] to-[#FFFFFF] dark:to-black shadow-md sticky top-0 z-20">
+      <header class="flex flex-col py-5 px-10 pb-0 w-full bg-gradient-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black shadow-md sticky top-0 z-20">
         <div class="flex justify-between items-center w-full pb-5">
           <div class="font-['Poppins']">
-            <h1 class="text-[30px] text-[var(--color-maurealty-blue,#0A3D62)] dark:text-[#b3d7ff] font-bold">Welcome back, {{ agentName }} </h1>
+            <h1 class="text-[30px] text-[var(--color-maurealty-blue,#0A3D62)] dark:text-white font-bold">Welcome back, {{ agentName }} </h1>
             <p class="text-gray-600 dark:text-gray-300 mt-1">Dashboard > <span class="text-blue-600 dark:text-blue-300 font-medium">{{ agent.position_ID ? positionMap[agent.position_ID] : 'Wait'}}</span></p>
           </div>
           <div class="flex items-center gap-3">
@@ -57,20 +57,20 @@
       <div v-if="selectedItem || selectedMetric || activeModal" class="fixed inset-0 w-full h-full bg-[#0a3d62]/70 backdrop-blur-sm flex items-center justify-center z-[9999]" @click.self="closeAll">
         
         <div v-if="activeModal" class="bg-white dark:bg-black rounded-[24px] relative p-6 w-full max-w-lg shadow-xl">
-          <button class="absolute top-4 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold" @click="activeModal = null">✕</button>
+          <button class="absolute top-4 right-5 text-gray-400 dark:text-gray-700 hover:text-gray-700 dark:hover:text-gray-400 text-xl font-bold" @click="activeModal = null">✕</button>
           <AddAgent v-if="activeModal === 'addAgent'" />
           <Calculator v-if="activeModal === 'calculator'" />
         </div> 
 
         <div v-else-if="selectedMetric" class="bg-white dark:bg-black rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl">
-          <button class="absolute top-4 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold" @click="selectedMetric = null">✕</button>
+          <button class="absolute top-4 right-5 text-gray-400 dark:text-gray-700 hover:text-gray-700 dark:hover:text-gray-400 text-xl font-bold" @click="selectedMetric = null">✕</button>
           <div class="border-b pb-4 mb-4">
-            <h2 class="text-2xl font-bold text-gray-800">{{ selectedMetric.label }} Analysis</h2>
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">{{ selectedMetric.label }} Analysis</h2>
           </div>
           </div>
 
         <div v-else-if="selectedItem" class="bg-white dark:bg-black rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl">
-           <button class="absolute top-4 right-5 text-gray-400 hover:text-gray-700 text-xl font-bold" @click="closeAll">✕</button>
+           <button class="absolute top-4 right-5 text-gray-400 dark:text-gray-700 hover:text-gray-700 dark:hover:text-gray-400 text-xl font-bold" @click="closeAll">✕</button>
            </div>
 
       </div>
