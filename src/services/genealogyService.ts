@@ -47,6 +47,28 @@ interface Edge {
   downline_agent_ID: number;
 }
 
+// The full editable agent record, for the edit form (prefill) and updates.
+export interface AgentDetail {
+  agent_ID: number;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  sex: string;
+  birth_date: string;
+  hire_date: string;
+  contact_number: string;
+  email_address: string;
+  home_address: string;
+  position_ID: number | null;
+  admin_access: boolean;
+  age: number;
+  profile_url: string | null;
+}
+
+const AGENT_DETAIL_FIELDS =
+  'agent_ID, first_name, middle_name, last_name, sex, birth_date, hire_date, ' +
+  'contact_number, email_address, home_address, position_ID, admin_access, age, profile_url';
+
 const AGENT_FIELDS = 'agent_ID, first_name, middle_name, last_name, position_ID, profile_url';
 
 // Fetch all agents + edges + the position lookup in parallel. Shared by the
@@ -232,5 +254,124 @@ export const genealogyService = {
     }
 
     return { success: true, agent_ID: newId };
+  },
+
+  // Full record for the edit form (prefill).
+  async getAgentById(id: number): Promise<AgentDetail> {
+    const { data, error } = await supabase
+      .from('agents')
+      .select(AGENT_DETAIL_FIELDS)
+      .eq('agent_ID', id)
+      .single();
+    if (error) throw error;
+    return data as unknown as AgentDetail;
+  },
+
+  // Patch an existing agent's fields. Does NOT touch user_id / configs / upline;
+  // upline changes go through setUpline so the genealogy edge stays consistent.
+  async updateAgent(id: number, patch: Record<string, any>): Promise<void> {
+    const { error } = await supabase.from('agents').update(patch).eq('agent_ID', id);
+    if (error) throw error;
+  },
+
+  // Re-point an agent's upline edge. Passing null detaches it (agent becomes a
+  // team root). Guards against self-parenting and against creating a cycle
+  // (you can't put an agent under one of its own descendants).
+  async setUpline(downlineId: number, uplineId: number | null): Promise<void> {
+    if (uplineId === downlineId) throw new Error('An agent cannot be its own upline.');
+
+    if (uplineId != null) {
+      // Cycle guard: the proposed upline must not sit in the downline's subtree.
+      const { edges } = await fetchGraph();
+      const childrenOf = new Map<number, number[]>();
+      for (const e of edges) {
+        const arr = childrenOf.get(e.upline_agent_ID) ?? [];
+        arr.push(e.downline_agent_ID);
+        childrenOf.set(e.upline_agent_ID, arr);
+      }
+      const stack = [downlineId];
+      const seen = new Set<number>();
+      while (stack.length) {
+        const n = stack.pop()!;
+        if (n === uplineId) throw new Error('That agent is below this one — would create a loop.');
+        if (seen.has(n)) continue;
+        seen.add(n);
+        for (const c of childrenOf.get(n) ?? []) stack.push(c);
+      }
+    }
+
+    // Replace the single existing upline edge (downline is UNIQUE).
+    const { error: delErr } = await supabase
+      .from('genealogy')
+      .delete()
+      .eq('downline_agent_ID', downlineId);
+    if (delErr) throw delErr;
+
+    if (uplineId != null) {
+      const { error: insErr } = await supabase
+        .from('genealogy')
+        .insert([{ upline_agent_ID: uplineId, downline_agent_ID: downlineId }]);
+      if (insErr) throw insErr;
+    }
+  },
+
+  // Count financial/listing rows that would block a hard delete.
+  async getAgentReferences(id: number): Promise<{ sales: number; listings: number; shared: number }> {
+    const [salesRes, listingsRes, sharedRes] = await Promise.all([
+      supabase.from('sales').select('sale_ID', { count: 'exact', head: true }).eq('agent_ID', id),
+      supabase.from('main_listings').select('listing_ID', { count: 'exact', head: true }).eq('agent_ID', id),
+      supabase.from('shared_listings').select('*', { count: 'exact', head: true }).eq('agent_ID', id),
+    ]);
+    return {
+      sales: salesRes.count ?? 0,
+      listings: listingsRes.count ?? 0,
+      shared: sharedRes.count ?? 0,
+    };
+  },
+
+  // Hard-delete an agent. BLOCKS if the agent has sales or listings (preserve the
+  // financial/listing paper trail — archive instead, long term). Downlines are
+  // reassigned to the deleted agent's own upline (subtree stays connected); if it
+  // had no upline they become team roots. Then the agent's own edges are removed.
+  async deleteAgent(id: number): Promise<void> {
+    const refs = await this.getAgentReferences(id);
+    if (refs.sales > 0 || refs.listings > 0 || refs.shared > 0) {
+      const parts = [];
+      if (refs.sales) parts.push(`${refs.sales} sale(s)`);
+      if (refs.listings) parts.push(`${refs.listings} listing(s)`);
+      if (refs.shared) parts.push(`${refs.shared} shared link(s)`);
+      throw new Error(`Cannot delete: agent has ${parts.join(', ')}. Reassign or archive first.`);
+    }
+
+    // Find this agent's upline (the new parent for its downlines).
+    const { data: upRows, error: upErr } = await supabase
+      .from('genealogy')
+      .select('upline_agent_ID')
+      .eq('downline_agent_ID', id)
+      .maybeSingle();
+    if (upErr) throw upErr;
+    const grandUpline = upRows?.upline_agent_ID ?? null;
+
+    // Reassign or detach this agent's direct downlines.
+    if (grandUpline != null) {
+      const { error } = await supabase
+        .from('genealogy')
+        .update({ upline_agent_ID: grandUpline })
+        .eq('upline_agent_ID', id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from('genealogy').delete().eq('upline_agent_ID', id);
+      if (error) throw error;
+    }
+
+    // Remove the agent's own upline edge, then the agent row.
+    const { error: selfEdgeErr } = await supabase
+      .from('genealogy')
+      .delete()
+      .eq('downline_agent_ID', id);
+    if (selfEdgeErr) throw selfEdgeErr;
+
+    const { error: delErr } = await supabase.from('agents').delete().eq('agent_ID', id);
+    if (delErr) throw delErr;
   },
 };

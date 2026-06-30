@@ -15,10 +15,18 @@ export interface AgentProfile {
     profile_url: string;
 }
 
+// Sales sponsorship ladder, derived from the MRB Sales Flow + Commission Releasing
+// docs (base selling agent -> upline override tiers). PROVISIONAL — pending client
+// confirmation at the next meeting; the TL-vs-Supervisor ordering is the open question.
+// Operational roles (Sales Coordinator, IT, Messenger, Accounting, Finance, Audit) are
+// job functions, NOT genealogy ranks (no tree override), so they are intentionally excluded.
+// This map is the live source of truth while the DB `positions` table is empty;
+// genealogyService prefers the DB value and falls back here.
 export const positionMap: Record<number, string> = {
-    1: 'Property Sales Specialist',
-    2: 'Property Sales Supervisor',
-    3: 'Investment Manager'
+    1: 'Property Sales Specialist', // selling agent — earns 60/70/80% by rank
+    2: 'Team Leader',               // leads a team
+    3: 'Supervisor',                // upline override tier ("Upline Supervisor")
+    4: 'Manager'                    // upline override tier ("Upline Manager")
 }
 
 export const getAge = (birth_date: string) => {

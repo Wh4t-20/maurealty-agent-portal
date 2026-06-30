@@ -5,7 +5,7 @@
 
         <!-- HEADER -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 class="text-xl font-bold text-[#07407B]">Add Agent</h2>
+          <h2 class="text-xl font-bold text-[#07407B]">{{ isEdit ? 'Edit Agent' : 'Add Agent' }}</h2>
           <button class="text-gray-400 hover:text-gray-700 text-xl leading-none cursor-pointer" @click="emit('close')">✕</button>
         </div>
 
@@ -79,7 +79,7 @@
         <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
           <button type="button" @click="emit('close')" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer">Cancel</button>
           <button type="button" @click="save" :disabled="saving" class="px-4 py-2 rounded-lg bg-[#07407B] text-white hover:opacity-80 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-            {{ saving ? 'Saving…' : 'Add Agent' }}
+            {{ saving ? 'Saving…' : (isEdit ? 'Save Changes' : 'Add Agent') }}
           </button>
         </div>
       </div>
@@ -89,10 +89,15 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { genealogyService, type GenealogyAgent } from '@/services/genealogyService'
+import { genealogyService, type GenealogyAgent, type AgentDetail } from '@/services/genealogyService'
 import { positionMap, getAge } from '@/assets/classes/agent'
+import defaultSettings from '@/assets/defaultSettings.json'
 
+// `agent` present = edit mode (prefill + update); absent = add mode.
+const props = defineProps<{ agent?: AgentDetail | null }>()
 const emit = defineEmits<{ (e: 'close'): void; (e: 'saved'): void }>()
+
+const isEdit = computed(() => props.agent != null)
 
 const today = new Date().toISOString().slice(0, 10)
 
@@ -111,18 +116,45 @@ const form = ref({
 })
 
 const uplineId = ref<number | null>(null)
+const originalUplineId = ref<number | null>(null) // to detect upline changes on edit
 const agents = ref<GenealogyAgent[]>([])
 const saving = ref(false)
 const error = ref('')
 
-// Any existing agent can be an upline.
-const uplineOptions = computed(() => agents.value)
+// Any existing agent can be an upline, except the agent being edited (no self-parent).
+const uplineOptions = computed(() =>
+  isEdit.value ? agents.value.filter((a) => a.agent_ID !== props.agent!.agent_ID) : agents.value,
+)
 
 onMounted(async () => {
   try {
     agents.value = await genealogyService.getAgents()
   } catch {
     // non-fatal: dropdown just stays empty (first agent has no possible upline anyway)
+  }
+
+  if (props.agent) {
+    const a = props.agent
+    form.value = {
+      first_name: a.first_name,
+      middle_name: a.middle_name ?? '',
+      last_name: a.last_name,
+      sex: a.sex,
+      birth_date: a.birth_date,
+      hire_date: a.hire_date,
+      contact_number: a.contact_number,
+      email_address: a.email_address,
+      home_address: a.home_address,
+      position_ID: a.position_ID,
+      admin_access: a.admin_access,
+    }
+    try {
+      const chain = await genealogyService.getUplineChain(a.agent_ID, 1)
+      uplineId.value = chain[0]?.agent_ID ?? null
+    } catch {
+      uplineId.value = null
+    }
+    originalUplineId.value = uplineId.value
   }
 })
 
@@ -135,17 +167,30 @@ async function save() {
 
   saving.value = true
   try {
-    const payload = {
-      ...form.value,
-      middle_name: form.value.middle_name || null,
-      age: getAge(form.value.birth_date), // derived; agents.age is NOT NULL
-      user_id: null, // login attached later via Supabase invite
+    if (isEdit.value) {
+      const patch = {
+        ...form.value,
+        middle_name: form.value.middle_name || null,
+        age: getAge(form.value.birth_date), // keep age consistent with birth_date
+      }
+      await genealogyService.updateAgent(props.agent!.agent_ID, patch)
+      if (uplineId.value !== originalUplineId.value) {
+        await genealogyService.setUpline(props.agent!.agent_ID, uplineId.value)
+      }
+    } else {
+      const payload = {
+        ...form.value,
+        middle_name: form.value.middle_name || null,
+        age: getAge(form.value.birth_date), // derived; agents.age is NOT NULL
+        user_id: null, // login attached later via Supabase invite
+        configs: defaultSettings.configs, // agents.configs is NOT NULL with no default
+      }
+      await genealogyService.addAgent(payload, uplineId.value ?? undefined)
     }
-    await genealogyService.addAgent(payload, uplineId.value ?? undefined)
     emit('saved')
   } catch (e: any) {
-    console.error('Add agent failed:', e)
-    error.value = e?.message || 'Failed to add agent. You may not have permission.'
+    console.error(isEdit.value ? 'Edit agent failed:' : 'Add agent failed:', e)
+    error.value = e?.message || 'Failed to save agent. You may not have permission.'
   } finally {
     saving.value = false
   }

@@ -29,7 +29,7 @@
           <!-- ACTIONS -->
           <div class="flex items-center gap-4">
             <button
-              @click="showAdd = true"
+              @click="openAdd"
               class="flex items-center gap-2 bg-[#07407B] text-white
                      px-4 py-2 rounded-[10px] hover:bg-blue-700 text-sm cursor-pointer">
               <span class="text-lg">+</span>
@@ -98,13 +98,40 @@
           </div>
 
         </div>
+
+        <!-- MANAGE AGENTS -->
+        <div class="bg-white p-8 rounded-xl shadow mt-6">
+          <h2 class="font-bold mb-4">MANAGE AGENTS</h2>
+
+          <p v-if="!loading && allAgents.length === 0" class="text-sm text-gray-500">No agents yet.</p>
+          <p v-if="deleteError" class="text-red-600 text-xs mb-3">{{ deleteError }}</p>
+
+          <div v-for="a in filteredAll" :key="a.agent_ID"
+               class="flex items-center justify-between p-3 bg-[#C8DDF64A] rounded mb-2">
+            <div>
+              {{ a.first_name }} {{ a.last_name }}<br>
+              <span class="text-sm text-gray-500">{{ positionLabel(a) }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button @click="openEdit(a.agent_ID)"
+                      class="px-3 py-1 rounded-lg border border-[#07407B] text-[#07407B] text-sm hover:bg-[#07407B] hover:text-white transition cursor-pointer">
+                Edit
+              </button>
+              <button @click="confirmDelete(a)" :disabled="deletingId === a.agent_ID"
+                      class="px-3 py-1 rounded-lg border border-red-500 text-red-600 text-sm hover:bg-red-500 hover:text-white transition cursor-pointer disabled:opacity-50">
+                {{ deletingId === a.agent_ID ? 'Deleting…' : 'Delete' }}
+              </button>
+            </div>
+          </div>
+        </div>
+
       </section>
 
       </div>
 
     <Gen :key="reloadKey" />
 
-    <AddAgentModal v-if="showAdd" @close="showAdd = false" @saved="onSaved" />
+    <AddAgentModal v-if="showModal" :agent="editing" @close="closeModal" @saved="onSaved" />
     </div>
   </template>
 
@@ -112,16 +139,20 @@
 import { ref, computed, onMounted } from 'vue'
 import Gen from '@/components/genealogy/genealogymodal.vue'
 import AddAgentModal from '@/components/genealogy/AddAgentModal.vue'
-import { genealogyService, type GenealogyStats, type GenealogyAgent, type GenealogyNode } from '@/services/genealogyService'
+import { genealogyService, type GenealogyStats, type GenealogyAgent, type GenealogyNode, type AgentDetail } from '@/services/genealogyService'
 import { positionMap } from '@/assets/classes/agent'
 
 const stats = ref<GenealogyStats>({ totalAgents: 0, teamLeaders: 0, activeTeams: 0, newThisMonth: 0 })
 const recent = ref<(GenealogyAgent & { hire_date: string | null })[]>([])
 const teams = ref<{ agent_ID: number; name: string; members: number }[]>([])
+const allAgents = ref<GenealogyAgent[]>([])
 const loading = ref(true)
 const search = ref('')
-const showAdd = ref(false)
-const reloadKey = ref(0) // bump to remount the tree after an add
+const showModal = ref(false)
+const editing = ref<AgentDetail | null>(null) // null = add mode, set = edit mode
+const deletingId = ref<number | null>(null)
+const deleteError = ref('')
+const reloadKey = ref(0) // bump to remount the tree after a change
 
 // Count a root's whole subtree (incl. itself) = team size.
 function countMembers(node: GenealogyNode): number {
@@ -151,16 +182,25 @@ const filteredRecent = computed(() => {
     : recent.value
 })
 
+const filteredAll = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  return q
+    ? allAgents.value.filter(a => `${a.first_name} ${a.last_name}`.toLowerCase().includes(q))
+    : allAgents.value
+})
+
 async function load() {
   loading.value = true
   try {
-    const [s, r, tree] = await Promise.all([
+    const [s, r, tree, all] = await Promise.all([
       genealogyService.getStats(),
       genealogyService.getRecentAgents(5),
       genealogyService.getTree(),
+      genealogyService.getAgents(),
     ])
     stats.value = s
     recent.value = r
+    allAgents.value = all
     teams.value = tree.map(root => ({
       agent_ID: root.agent_ID,
       name: `${root.first_name} ${root.last_name}`,
@@ -173,9 +213,46 @@ async function load() {
   }
 }
 
+function openAdd() {
+  editing.value = null
+  showModal.value = true
+}
+
+async function openEdit(id: number) {
+  deleteError.value = ''
+  try {
+    editing.value = await genealogyService.getAgentById(id)
+    showModal.value = true
+  } catch (e) {
+    console.error('Failed to load agent for edit:', e)
+    deleteError.value = 'Could not open that agent for editing.'
+  }
+}
+
+function closeModal() {
+  showModal.value = false
+  editing.value = null
+}
+
+async function confirmDelete(a: GenealogyAgent) {
+  deleteError.value = ''
+  if (!window.confirm(`Delete ${a.first_name} ${a.last_name}? Their downlines move up to their upline. This cannot be undone.`)) return
+  deletingId.value = a.agent_ID
+  try {
+    await genealogyService.deleteAgent(a.agent_ID)
+    reloadKey.value++ // remount the tree so it reflects the removal
+    await load()
+  } catch (e: any) {
+    console.error('Delete agent failed:', e)
+    deleteError.value = e?.message || 'Failed to delete agent.'
+  } finally {
+    deletingId.value = null
+  }
+}
+
 function onSaved() {
-  showAdd.value = false
-  reloadKey.value++ // remount the tree so the new agent appears
+  closeModal()
+  reloadKey.value++ // remount the tree so the change appears
   load()
 }
 
