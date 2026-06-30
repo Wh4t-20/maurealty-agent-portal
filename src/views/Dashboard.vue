@@ -2,17 +2,17 @@
   <div class="flex min-h-screen bg-background-gray dark:bg-background-dark-gray w-full">
     <div class="flex-1 flex flex-col">
       
-      <header class="flex flex-col py-5 px-10 pb-0 w-full bg-gradient-to-r from-[#A9D6FF70] dark:from-maurealty-blue to-[#FFFFFF] dark:to-black shadow-md sticky top-0 z-20">
+      <header class="flex flex-col py-5 px-10 pb-0 w-full bg-gradient-to-r from-[#A9D6FF70] dark:from-[#06294470] to-[#FFFFFF] dark:to-black shadow-md sticky top-0 z-20">
         <div class="flex justify-between items-center w-full pb-5">
           <div class="font-['Poppins']">
             <h1 class="text-[30px] text-[var(--color-maurealty-blue,#0A3D62)] dark:text-[#b3d7ff] font-bold">Welcome back, {{ agentName }} </h1>
-            <p class="text-gray-600 mt-1">Dashboard > <span class="text-blue-600 font-medium">{{ agent.position_ID ? positionMap[agent.position_ID] : 'Wait'}}</span></p>
+            <p class="text-gray-600 dark:text-gray-300 mt-1">Dashboard > <span class="text-blue-600 dark:text-blue-300 font-medium">{{ agent.position_ID ? positionMap[agent.position_ID] : 'Wait'}}</span></p>
           </div>
           <div class="flex items-center gap-3">
-            <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#0066ff] text-white hover:bg-[#0052cc]" @click="addListing">+ Add Listing</button>
-            <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#e6f4ea] text-[#1e8e3e] hover:bg-[#d4eeda]" @click="activeModal = 'addAgent'">+ Add Agent</button>
+            <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#0066ff] dark:bg-[#0052cc] text-white hover:bg-[#0052cc] dark:hover:bg-[#0066ff]" @click="addListing">+ Add Listing</button>
+            <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#e6f4ea] dark:bg-[#1e2821] text-[#1e8e3e] dark:text-green-500 hover:bg-[#d4eeda] dark:hover:bg-[#385440]" @click="activeModal = 'addAgent'">+ Add Agent</button>
             <div class="w-px h-6 bg-[#e1e4e8] mx-1"></div>
-            <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer transition-all duration-200 ease-in-out flex items-center bg-white border border-[#dcdcdc] text-[#4a4a4a] hover:bg-[#f8f9fa] hover:border-[#bbb]" @click="activeModal = 'calculator'">Calculator</button>
+            <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer transition-all duration-200 ease-in-out flex items-center bg-white dark:bg-background-dark-gray border border-[#dcdcdc] dark:border-[#2d2d2d] text-[#4a4a4a] dark:text-white hover:bg-[#f8f9fa] dark:hover:bg-[#303030] hover:border-[#bbb] dark:hover:border-[#494949]" @click="activeModal = 'calculator'">Calculator</button>
           </div>
           </div>
       </header>
