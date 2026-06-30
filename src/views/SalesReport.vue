@@ -1,20 +1,20 @@
 <template>
-  <div class="w-full h-screen bg-background-gray flex flex-col items-center overflow-hidden">
+  <div class="w-full h-screen bg-background-gray dark:bg-background-dark-gray flex flex-col items-center overflow-hidden">
 
     <!-- TOAST -->
     <Transition name="toast">
-      <div v-if="toast" class="fixed top-6 right-6 z-[60] flex items-center gap-3 rounded-lg bg-white border border-maurealty-green/40 shadow-lg px-5 py-3">
+      <div v-if="toast" class="fixed top-6 right-6 z-[60] flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-maurealty-green/40 shadow-lg px-5 py-3">
         <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-green text-white text-sm font-bold">✓</span>
         <p class="text-sm font-medium text-gray-700">{{ toast }}</p>
       </div>
     </Transition>
 
     <!-- HEADER -->
-    <header class="flex flex-col py-5 px-10 pb-3 w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] text-maurealty-blue shadow-md sticky top-0 z-20">
+    <header class="flex flex-col py-5 px-10 pb-3 w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black text-maurealty-blue dark:text-white shadow-md sticky top-0 z-20">
       <div class="flex justify-between items-center w-full">
         <div class="flex items-baseline gap-3">
           <h1 class="text-3xl font-bold">SALES REPORT</h1>
-          <span class="text-sm font-medium text-maurealty-blue/70">
+          <span class="text-sm font-medium text-maurealty-blue/70 dark:text-white/70">
             {{ isAdmin ? 'All agents' : 'Your sales' }}
           </span>
         </div>
@@ -22,7 +22,7 @@
           <button
             @click="exportCsv"
             :disabled="filteredSales.length === 0"
-            class="flex items-center gap-1 border border-maurealty-blue text-maurealty-blue text-md px-4 py-1.5 rounded-full cursor-pointer hover:bg-maurealty-blue hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-maurealty-blue"
+            class="flex items-center gap-1 border border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue text-md px-4 py-1.5 rounded-full cursor-pointer hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-maurealty-blue"
           >
             <Download class="size-4" /> Export
           </button>
@@ -35,7 +35,7 @@
           <input
             id="search" type="text" name="search" placeholder="Search client / project / voucher"
             v-model="searchQuery"
-            class="block min-w-72 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 rounded-sm focus:outline-none sm:text-sm/6"
+            class="block min-w-72 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 dark:border-blue-50 rounded-sm focus:outline-none sm:text-sm/6"
           />
         </div>
       </div>
@@ -43,16 +43,16 @@
       <!-- FILTERS -->
       <div class="flex flex-wrap items-end gap-4 mt-3">
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-maurealty-blue/70">From</label>
-          <input type="date" v-model="dateFrom" class="py-1 px-2 text-sm rounded-md bg-white/70 border border-maurealty-blue/30 focus:outline-2 focus:outline-maurealty-blue" />
+          <label class="text-xs font-medium text-maurealty-blue/70 dark:text-white/70">From</label>
+          <input type="date" v-model="dateFrom" class="py-1 px-2 text-sm rounded-md bg-white dark:bg-black/70 border border-maurealty-blue/30 dark:border-maurealty-light-blue/30 focus:outline-2 focus:outline-maurealty-blue dark:focus:outline-maurealty-light-blue" />
         </div>
         <div class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-maurealty-blue/70">To</label>
-          <input type="date" v-model="dateTo" class="py-1 px-2 text-sm rounded-md bg-white/70 border border-maurealty-blue/30 focus:outline-2 focus:outline-maurealty-blue" />
+          <label class="text-xs font-medium text-maurealty-blue/70 dark:text-white/70">To</label>
+          <input type="date" v-model="dateTo" class="py-1 px-2 text-sm rounded-md bg-white dark:bg-black/70 border border-maurealty-blue/30 dark:border-maurealty-light-blue/30 focus:outline-2 focus:outline-maurealty-blue dark:focus:outline-maurealty-light-blue" />
         </div>
         <div v-if="isAdmin" class="flex flex-col gap-1">
-          <label class="text-xs font-medium text-maurealty-blue/70">Agent</label>
-          <select v-model="agentFilter" class="py-1 px-2 text-sm rounded-md bg-white/70 border border-maurealty-blue/30 focus:outline-2 focus:outline-maurealty-blue">
+          <label class="text-xs font-medium text-maurealty-blue/70 dark:text-white/70">Agent</label>
+          <select v-model="agentFilter" class="py-1 px-2 text-sm rounded-md bg-white dark:bg-black/70 border border-maurealty-blue/30 dark:border-maurealty-light-blue/30 focus:outline-2 focus:outline-maurealty-blue dark:focus:outline-maurealty-light-blue">
             <option :value="null">All agents</option>
             <option v-for="a in agentOptions" :key="a.id" :value="a.id">{{ a.name }}</option>
           </select>
@@ -64,21 +64,21 @@
 
       <!-- SUMMARY STRIP -->
       <div class="flex flex-wrap gap-4 mt-4">
-        <div class="flex flex-col min-w-40 rounded-xl bg-white border border-[#A9D6FF]/40 shadow-[0_4px_6px_rgba(0,0,0,0.05)] px-5 py-3">
-          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Sales</span>
-          <span class="text-xl font-extrabold text-maurealty-blue">{{ totals.count }}</span>
+        <div class="flex flex-col min-w-40 rounded-xl bg-white dark:bg-black border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] px-5 py-3">
+          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Sales</span>
+          <span class="text-xl font-extrabold text-maurealty-blue dark:text-white">{{ totals.count }}</span>
         </div>
-        <div class="flex flex-col min-w-40 rounded-xl bg-white border border-[#A9D6FF]/40 shadow-[0_4px_6px_rgba(0,0,0,0.05)] px-5 py-3">
-          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total Contract Price</span>
-          <span class="text-xl font-extrabold text-maurealty-blue">{{ formatPeso(totals.tcp) }}</span>
+        <div class="flex flex-col min-w-40 rounded-xl bg-white dark:bg-black border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] px-5 py-3">
+          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Contract Price</span>
+          <span class="text-xl font-extrabold text-maurealty-blue dark:text-white">{{ formatPeso(totals.tcp) }}</span>
         </div>
-        <div class="flex flex-col min-w-40 rounded-xl bg-white border border-[#A9D6FF]/40 shadow-[0_4px_6px_rgba(0,0,0,0.05)] px-5 py-3">
-          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Gross Commission</span>
-          <span class="text-xl font-extrabold text-maurealty-blue">{{ formatPeso(totals.gross) }}</span>
+        <div class="flex flex-col min-w-40 rounded-xl bg-white dark:bg-black border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] px-5 py-3">
+          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Gross Commission</span>
+          <span class="text-xl font-extrabold text-maurealty-blue dark:text-white">{{ formatPeso(totals.gross) }}</span>
         </div>
-        <div class="flex flex-col min-w-40 rounded-xl bg-white border border-[#A9D6FF]/40 shadow-[0_4px_6px_rgba(0,0,0,0.05)] px-5 py-3">
-          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">Net Commission</span>
-          <span class="text-xl font-extrabold text-maurealty-blue">{{ formatPeso(totals.net) }}</span>
+        <div class="flex flex-col min-w-40 rounded-xl bg-white dark:bg-black border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] px-5 py-3">
+          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Net Commission</span>
+          <span class="text-xl font-extrabold text-maurealty-blue dark:text-white">{{ formatPeso(totals.net) }}</span>
         </div>
       </div>
     </header>
@@ -89,7 +89,7 @@
         <div class="p-10 flex flex-col min-h-full">
 
           <!-- LOADING -->
-          <div v-if="loading" class="flex-1 flex items-center justify-center text-maurealty-blue/60">
+          <div v-if="loading" class="flex-1 flex items-center justify-center text-maurealty-blue/60 dark:text-maurealty-light-blue/60">
             Loading sales…
           </div>
 
@@ -97,26 +97,26 @@
           <div v-else-if="filteredSales.length === 0" class="flex-1 flex flex-col items-center justify-center text-center text-gray-500 gap-2">
             <ClipboardList class="size-10 opacity-40" />
             <p class="font-medium">{{ hasActiveFilters ? 'No sales match your filters.' : 'No sales recorded yet.' }}</p>
-            <button v-if="hasActiveFilters" @click="clearFilters" class="text-sm text-maurealty-blue underline hover:opacity-70 cursor-pointer">Clear filters</button>
+            <button v-if="hasActiveFilters" @click="clearFilters" class="text-sm text-maurealty-blue dark:text-white underline hover:opacity-70 cursor-pointer">Clear filters</button>
           </div>
 
           <!-- TABLE -->
-          <div v-else class="bg-white rounded-xl border border-[#A9D6FF]/40 shadow-[0_4px_6px_rgba(0,0,0,0.05)] max-h-[calc(100vh-19rem)] overflow-auto">
+          <div v-else class="bg-white dark:bg-black rounded-xl border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] max-h-[calc(100vh-19rem)] overflow-auto">
             <table class="w-full min-w-[720px] text-sm text-left">
-              <thead class="bg-maurealty-blue text-white sticky top-0 z-10">
+              <thead class="bg-maurealty-blue dark:bg-[#072339] text-white sticky top-0 z-10">
                 <tr>
-                  <th class="px-4 py-3 font-semibold cursor-pointer select-none hover:bg-white/10 transition-colors" @click="setSort('reservation_date')">
+                  <th class="px-4 py-3 font-semibold cursor-pointer select-none hover:bg-white dark:hover:bg-[#1da2d6]/20 transition-colors" @click="setSort('reservation_date')">
                     <span class="inline-flex items-center gap-1">Date <component :is="sortIcon('reservation_date')" class="size-4" :class="sortKey==='reservation_date' ? 'text-amber-300' : 'opacity-70'" /></span>
                   </th>
-                  <th class="px-4 py-3 font-semibold cursor-pointer select-none hover:bg-white/10 transition-colors" @click="setSort('client_name')">
+                  <th class="px-4 py-3 font-semibold cursor-pointer select-none hover:bg-white dark:hover:bg-[#1da2d6]/20 transition-colors" @click="setSort('client_name')">
                     <span class="inline-flex items-center gap-1">Client <component :is="sortIcon('client_name')" class="size-4" :class="sortKey==='client_name' ? 'text-amber-300' : 'opacity-70'" /></span>
                   </th>
                   <th class="px-4 py-3 font-semibold">Project</th>
                   <th v-if="isAdmin" class="px-4 py-3 font-semibold">Agent</th>
-                  <th class="px-4 py-3 font-semibold text-right cursor-pointer select-none hover:bg-white/10 transition-colors" @click="setSort('total_contract_price')">
+                  <th class="px-4 py-3 font-semibold text-right cursor-pointer select-none hover:bg-white dark:hover:bg-[#1da2d6]/20 transition-colors" @click="setSort('total_contract_price')">
                     <span class="inline-flex items-center gap-1">Contract Price <component :is="sortIcon('total_contract_price')" class="size-4" :class="sortKey==='total_contract_price' ? 'text-amber-300' : 'opacity-70'" /></span>
                   </th>
-                  <th class="px-4 py-3 font-semibold text-right cursor-pointer select-none hover:bg-white/10 transition-colors" @click="setSort('gross_commission')">
+                  <th class="px-4 py-3 font-semibold text-right cursor-pointer select-none hover:bg-white dark:hover:bg-[#1da2d6]/20 transition-colors" @click="setSort('gross_commission')">
                     <span class="inline-flex items-center gap-1">Gross Comm. <component :is="sortIcon('gross_commission')" class="size-4" :class="sortKey==='gross_commission' ? 'text-amber-300' : 'opacity-70'" /></span>
                   </th>
                   <th class="px-4 py-3 font-semibold text-right">Net Comm.</th>
@@ -128,11 +128,11 @@
                 <tr
                   v-for="sale in paginatedSales"
                   :key="sale.sale_ID"
-                  class="group border-b border-gray-100 last:border-0 hover:bg-background-gray/60 transition-colors cursor-pointer"
+                  class="group border-b border-gray-100 last:border-0 hover:bg-background-gray/60 dark:hover:bg-background-dark-gray/80 transition-colors cursor-pointer"
                   @click="selectedSale = sale"
                 >
-                  <td class="px-4 py-3 whitespace-nowrap">{{ formatDate(sale.reservation_date) }}</td>
-                  <td class="px-4 py-3 font-medium text-maurealty-blue">
+                  <td class="px-4 py-3 whitespace-nowrap dark:text-white">{{ formatDate(sale.reservation_date) }}</td>
+                  <td class="px-4 py-3 font-medium text-maurealty-blue dark:text-white">
                     <span class="inline-flex items-center gap-1.5">
                       <span v-if="isFlagged(sale)" class="relative inline-flex items-center group/flag">
                         <AlertTriangle class="size-3.5 text-amber-500 shrink-0" />
@@ -144,18 +144,18 @@
                       {{ sale.client_name }}
                     </span>
                   </td>
-                  <td class="px-4 py-3">{{ sale.listing_title }}</td>
-                  <td v-if="isAdmin" class="px-4 py-3">{{ sale.agent_name || '—' }}</td>
-                  <td class="px-4 py-3 text-right whitespace-nowrap">{{ formatPeso(sale.total_contract_price) }}</td>
-                  <td class="px-4 py-3 text-right whitespace-nowrap">{{ sale.gross_commission != null ? formatPeso(sale.gross_commission) : '—' }}</td>
-                  <td class="px-4 py-3 text-right whitespace-nowrap">{{ sale.net_commission != null ? formatPeso(sale.net_commission) : '—' }}</td>
-                  <td class="px-4 py-3 text-center">{{ sale.agent_sale_seq ?? '—' }}</td>
+                  <td class="px-4 py-3 dark:text-white">{{ sale.listing_title }}</td>
+                  <td v-if="isAdmin" class="px-4 py-3 dark:text-white">{{ sale.agent_name || '—' }}</td>
+                  <td class="px-4 py-3 text-right whitespace-nowrap dark:text-white">{{ formatPeso(sale.total_contract_price) }}</td>
+                  <td class="px-4 py-3 text-right whitespace-nowrap dark:text-white">{{ sale.gross_commission != null ? formatPeso(sale.gross_commission) : '—' }}</td>
+                  <td class="px-4 py-3 text-right whitespace-nowrap dark:text-white">{{ sale.net_commission != null ? formatPeso(sale.net_commission) : '—' }}</td>
+                  <td class="px-4 py-3 text-center dark:text-white">{{ sale.agent_sale_seq ?? '—' }}</td>
                   <td class="px-2 py-3">
                     <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button @click.stop="openEdit(sale)" title="Edit" class="p-1.5 rounded-md text-maurealty-blue hover:bg-maurealty-blue/10 cursor-pointer">
+                      <button @click.stop="openEdit(sale)" title="Edit" class="p-1.5 rounded-md text-maurealty-blue dark:text-maurealty-light-blue hover:bg-maurealty-blue/10 dark:hover:bg-maurealty-light-blue/10 cursor-pointer">
                         <Pencil class="size-4" />
                       </button>
-                      <button @click.stop="confirmDelete(sale)" title="Delete" class="p-1.5 rounded-md text-red-600 hover:bg-red-50 cursor-pointer">
+                      <button @click.stop="confirmDelete(sale)" title="Delete" class="p-1.5 rounded-md text-red-600 hover:bg-red-50 dark:hover:bg-red-950 cursor-pointer">
                         <Trash2 class="size-4" />
                       </button>
                     </div>
@@ -170,15 +170,15 @@
             <button
               @click="currentPage--"
               :disabled="currentPage === 1"
-              class="px-4 py-1 border border-maurealty-blue text-maurealty-blue rounded hover:bg-maurealty-blue hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-maurealty-blue cursor-pointer disabled:cursor-not-allowed"
+              class="px-4 py-1 border border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue rounded hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-maurealty-blue dark:disabled:hover:text-maurealty-light-blue cursor-pointer disabled:cursor-not-allowed"
             >
               &lt;
             </button>
-            <span class="text-sm font-medium text-maurealty-blue">Page {{ currentPage }} of {{ totalPages }}</span>
+            <span class="text-sm font-medium text-maurealty-blue dark:text-maurealty-light-blue">Page {{ currentPage }} of {{ totalPages }}</span>
             <button
               @click="currentPage++"
               :disabled="currentPage >= totalPages || totalPages === 0"
-              class="px-4 py-1 border border-maurealty-blue text-maurealty-blue rounded hover:bg-maurealty-blue hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-maurealty-blue cursor-pointer disabled:cursor-not-allowed"
+              class="px-4 py-1 border border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue rounded hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-maurealty-blue dark:disabled:hover:text-maurealty-light-blue cursor-pointer disabled:cursor-not-allowed"
             >
               &gt;
             </button>
@@ -205,41 +205,41 @@
 
     <!-- SALE DETAIL -->
     <div v-if="selectedSale" class="fixed inset-0 z-40 flex items-center justify-center bg-[rgba(10,61,98,0.7)] backdrop-blur-sm p-4" @click.self="selectedSale = null">
-      <div class="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 class="text-xl font-bold text-maurealty-blue">Sale Details</h2>
-          <button class="text-gray-400 hover:text-gray-700 text-xl leading-none cursor-pointer" @click="selectedSale = null">✕</button>
+      <div class="w-full max-w-lg bg-white dark:bg-black rounded-2xl shadow-2xl overflow-hidden">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-600">
+          <h2 class="text-xl font-bold text-maurealty-blue dark:text-white">Sale Details</h2>
+          <button class="text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 text-xl leading-none cursor-pointer" @click="selectedSale = null">✕</button>
         </div>
 
         <dl class="px-6 py-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-          <div><dt class="text-gray-500">Client</dt><dd class="font-medium text-maurealty-blue">{{ selectedSale.client_name }}</dd></div>
-          <div><dt class="text-gray-500">Project</dt><dd class="font-medium">{{ selectedSale.listing_title }}</dd></div>
-          <div v-if="isAdmin"><dt class="text-gray-500">Agent</dt><dd>{{ selectedSale.agent_name || '—' }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Client</dt><dd class="font-medium text-maurealty-blue dark:text-white">{{ selectedSale.client_name }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Project</dt><dd class="font-medium dark:text-white">{{ selectedSale.listing_title }}</dd></div>
+          <div v-if="isAdmin"><dt class="text-gray-500 dark:text-gray-400">Agent</dt><dd class="dark:text-white">{{ selectedSale.agent_name || '—' }}</dd></div>
           <div v-if="isAdmin" class="col-span-2">
-            <dt class="text-gray-500">Upline</dt>
+            <dt class="text-gray-500 dark:text-gray-400">Upline</dt>
             <dd>
-              <span v-if="uplineLoading" class="text-gray-400">Loading…</span>
-              <span v-else-if="upline.length === 0">—</span>
+              <span v-if="uplineLoading" class="text-gray-400 dark:text-gray-600">Loading…</span>
+              <span v-else-if="upline.length === 0" class="dark:text-white">—</span>
               <span v-else>
                 <template v-for="(u, i) in upline" :key="u.agent_ID"
-                  ><span class="font-medium">{{ u.first_name }} {{ u.last_name }}</span
-                  ><span v-if="uplinePosition(u)" class="text-gray-500"> ({{ uplinePosition(u) }})</span
-                  ><span v-if="i < upline.length - 1" class="text-gray-400"> → </span
+                  ><span class="font-medium dark:text-white">{{ u.first_name }} {{ u.last_name }}</span
+                  ><span v-if="uplinePosition(u)" class="text-gray-500 dark:text-gray-400"> ({{ uplinePosition(u) }})</span
+                  ><span v-if="i < upline.length - 1" class="text-gray-400 dark:text-gray-600"> → </span
                 ></template>
               </span>
             </dd>
           </div>
-          <div><dt class="text-gray-500">Reservation Date</dt><dd>{{ formatDate(selectedSale.reservation_date) }}</dd></div>
-          <div><dt class="text-gray-500">Contract Price</dt><dd>{{ formatPeso(selectedSale.total_contract_price) }}</dd></div>
-          <div><dt class="text-gray-500">Sale #</dt><dd>{{ selectedSale.agent_sale_seq ?? '—' }}</dd></div>
-          <div><dt class="text-gray-500">Gross Commission</dt><dd>{{ selectedSale.gross_commission != null ? formatPeso(selectedSale.gross_commission) : '—' }}</dd></div>
-          <div><dt class="text-gray-500">Net Commission</dt><dd>{{ selectedSale.net_commission != null ? formatPeso(selectedSale.net_commission) : '—' }}</dd></div>
-          <div><dt class="text-gray-500">Voucher</dt><dd>{{ selectedSale.voucher_series || '—' }}</dd></div>
-          <div class="col-span-2"><dt class="text-gray-500">Remarks</dt><dd>{{ selectedSale.remarks || '—' }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Reservation Date</dt><dd class="dark:text-white">{{ formatDate(selectedSale.reservation_date) }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Contract Price</dt><dd class="dark:text-white">{{ formatPeso(selectedSale.total_contract_price) }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Sale #</dt><dd class="dark:text-white">{{ selectedSale.agent_sale_seq ?? '—' }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Gross Commission</dt><dd class="dark:text-white">{{ selectedSale.gross_commission != null ? formatPeso(selectedSale.gross_commission) : '—' }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Net Commission</dt><dd class="dark:text-white">{{ selectedSale.net_commission != null ? formatPeso(selectedSale.net_commission) : '—' }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Voucher</dt><dd class="dark:text-white">{{ selectedSale.voucher_series || '—' }}</dd></div>
+          <div class="col-span-2"><dt class="text-gray-500 dark:text-gray-400">Remarks</dt><dd class="dark:text-white">{{ selectedSale.remarks || '—' }}</dd></div>
         </dl>
 
-        <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button @click="confirmDelete(selectedSale)" class="px-4 py-2 rounded-lg border border-red-300 text-red-600 hover:bg-red-50 cursor-pointer">Delete</button>
+        <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-600">
+          <button @click="confirmDelete(selectedSale)" class="px-4 py-2 rounded-lg border border-red-300 dark:border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/80 cursor-pointer">Delete</button>
           <button @click="openEdit(selectedSale)" class="px-4 py-2 rounded-lg bg-maurealty-blue text-white hover:opacity-80 transition cursor-pointer">Edit</button>
         </div>
       </div>
