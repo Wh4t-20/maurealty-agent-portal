@@ -6,6 +6,12 @@ export interface DeveloperProject {
 }
 
 // developer list interface
+export interface DeveloperProject {
+    listing_ID: number;
+    listing_title: string;
+    property_type: string;
+}
+
 export interface Developer {
     dev_ID: number;
     image_url: string;
@@ -13,9 +19,8 @@ export interface Developer {
     phone: string;
     email: string;
     location: string;
-    days: string | null; // could be date tho Im not sure if itll output like Monday - Friday
-    hours: string | null;
-    projects: DeveloperProject[]; // recent listings by this developer
+    OfficeHours: OfficeHourSlot[] | []; // Optional property for office hours
+    projects: DeveloperProject[] | [];
 }
 
 export interface DayOption {

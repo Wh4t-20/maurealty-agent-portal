@@ -9,7 +9,7 @@
         leave-from-class="transform opacity-100"
         leave-to-class="transform opacity-0"
     > 
-      <AddDeveloperTab v-if="showAddDeveloper" @close-add-developer="showAddDeveloper = false"/>
+      <AddDeveloperTab  v-if="showAddDeveloper" @close-add-developer="showAddDeveloper = false; devToEdit = null" :dev = "devToEdit? devToEdit : undefined"/>
   </transition>
   
   <div class="relative w-full bg-background-gray pt-8 flex flex-col items-center flex-1 overflow-y-auto">
@@ -40,16 +40,9 @@
     
     <!-- Developer Cards -->
     <div class="w-3/4 grid grid-cols-1 lg:grid-cols-2 mt-35 gap-6 p-4">
-      <DeveloperCard
-        v-for="(developer, index) in developers"
-        :key="index"
-        :dev="developer"
-        @open-listing="openListing"
-      />
+      <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" @edit-developer = "handleEditDeveloper" @delete-developer = "handleDeleteDeveloper" @open-listing="openListing"/>
     </div>
   </div>
-
-  <!-- A clicked recent-project opens its listing detail -->
   <PropertyDetails
     v-if="selectedProject"
     :prop_id="selectedProject.listing_ID"
@@ -61,17 +54,22 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
-import { type Developer, type DeveloperProject } from "@/assets/classes/developers.ts";
+import { type Developer, type OfficeHourSlot, type DeveloperProject } from "@/assets/classes/developers.ts";
 import { developerService } from "@/services/developerService";
 import DeveloperCard from "@/components/developer/developerCard.vue";
 import AddDeveloperTab from "@/components/developer/addDeveloper.vue";
 import PropertyDetails from "@/components/listings/PropertyDetails.vue";
 
-const developers = ref<Developer[]>([])
 
-// Recent-project chip click opens that listing's detail modal.
+const developers = ref<Developer[]>([])
+const devToEdit = ref<Developer | null>(null);
 const selectedProject = ref<DeveloperProject | null>(null)
-const openListing = (project: DeveloperProject) => { selectedProject.value = project }
+const openListing = (project: DeveloperProject) => { 
+  
+  selectedProject.value = project
+  console.log('OPENED LISTING: ', selectedProject.value, '        ', project)
+
+ }
 const loadDevelopers = async () => {
   try {
     const data = await developerService.getDevelopers();
@@ -83,7 +81,14 @@ const loadDevelopers = async () => {
 };
 
 const showAddDeveloper = ref(false);
-
+const handleEditDeveloper = (developer: Developer) => {
+  devToEdit.value = developer;
+  showAddDeveloper.value = true;
+};
+const handleDeleteDeveloper = (developer: Developer) => {
+  developerService.deleteDeveloper(developer);
+  loadDevelopers(); 
+};
 watch(showAddDeveloper, (isOpen) => {
   if (isOpen) {
     // Hide the scrollbar and prevent scrolling
@@ -92,7 +97,7 @@ watch(showAddDeveloper, (isOpen) => {
     // Restore the scrollbar when closed
     document.body.style.overflow = '';
   }
-});
+}); 
 
 onMounted(() => {
   loadDevelopers();
