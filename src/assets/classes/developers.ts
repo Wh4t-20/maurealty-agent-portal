@@ -1,4 +1,10 @@
 // developer list interface
+export interface DeveloperProject {
+    listing_ID: number;
+    listing_title: string;
+    property_type: string;
+}
+
 export interface Developer {
     dev_ID: number;
     image_url: string;
@@ -7,6 +13,7 @@ export interface Developer {
     email: string;
     location: string;
     OfficeHours: OfficeHourSlot[] | []; // Optional property for office hours
+    projects: DeveloperProject[];
 }
 
 export interface DayOption {

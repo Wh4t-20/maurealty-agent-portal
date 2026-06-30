@@ -279,7 +279,8 @@ async function saveDeveloper() {
         phone: form.value.phone ?? '',
         email: form.value.email ?? '',
         location: form.value.location ?? '',
-        OfficeHours: officeHours.value ?? []
+        OfficeHours: officeHours.value ?? [],
+        projects: [] // Ensure projects is included in the payload
     };
     
     

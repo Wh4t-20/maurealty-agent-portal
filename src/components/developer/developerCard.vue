@@ -46,11 +46,19 @@
 
 		<!-- Recent Projects -->
 		<div class="mb-4">
-		<p class="font-semibold text-sm mb-1"></p>
-		<div class="flex gap-2 flex-wrap">
-			<!-- <span v-for="(project, i) in developer.projects" :key="i" class="bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded">{{ project }}
-			</span> -->
+		<p class="font-semibold text-sm mb-1">Recent Projects</p>
+		<div v-if="dev.projects && dev.projects.length" class="flex gap-2 flex-wrap">
+			<button
+				v-for="project in dev.projects"
+				:key="project.listing_ID"
+				@click="$emit('open-listing', project)"
+				class="bg-gray-200 hover:bg-maurealty-blue hover:text-white text-gray-800 text-xs px-2 py-1 rounded transition-colors cursor-pointer"
+				:title="project.listing_title"
+			>
+				{{ project.listing_title }}
+			</button>
 		</div>
+		<p v-else class="text-xs text-gray-400 italic">No recent projects yet</p>
 		</div>
 
 		<!-- buttons -->
@@ -69,20 +77,21 @@
 </template>
 
 <script setup lang="ts">
-import { type DayOption, type Developer } from '@/assets/classes/developers';
+import { type DayOption, type Developer, type DeveloperProject 	} from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
-import { PhoneIcon, MailIcon, MapPinIcon, CalendarCheck2Icon, CalendarOffIcon } from 'lucide-vue-next';
+import { PhoneIcon, MailIcon, MapPinIcon, CalendarCheck2Icon, CalendarOffIcon, ClockIcon  } from 'lucide-vue-next';
 
 const props = defineProps<{ dev: Developer}>()
 const emit = defineEmits<{
-	(event: 'deleteDeveloper', devId: Developer): void;
-	(event: 'editDeveloper', developer: Developer): void;
-	(event: 'contactDeveloper', devId: number | undefined): void;
+	(event: 'delete-developer', devId: Developer): void;
+	(event: 'edit-developer', developer: Developer): void;
+	(event: 'contact-developer', devId: number | undefined): void;
+	(event:  'open-listing', project: DeveloperProject): void;
 }>();
 
-const handleDelete = () => emit('deleteDeveloper', props.dev)
-const handleEdit = () => emit('editDeveloper', props.dev)
-const handleContact = () => emit('contactDeveloper', props.dev.dev_ID)
+const handleDelete = () => emit('delete-developer', props.dev)
+const handleEdit = () => emit('edit-developer', props.dev)
+const handleContact = () => emit('contact-developer', props.dev.dev_ID)
 
 const formatDays = (days: DayOption[] = []) => {
 	return days.map((day) => day.shortcut || day.name).join(', ');

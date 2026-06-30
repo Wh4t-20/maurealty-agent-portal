@@ -40,7 +40,7 @@
     
     <!-- Developer Cards -->
     <div class="w-3/4 grid grid-cols-1 lg:grid-cols-2 mt-35 gap-6 p-4">
-      <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" @editDeveloper = "handleEditDeveloper" @deleteDeveloper = "handleDeleteDeveloper"/>
+      <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" @edit-developer = "handleEditDeveloper" @delete-developer = "handleDeleteDeveloper"/>
     </div>
   </div>
   </main>
