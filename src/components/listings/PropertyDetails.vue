@@ -183,13 +183,13 @@
             </template>
 
             <!-- Description section -->
-            <section class="mt-2 prose text-black dark:text-white" v-html="compiledDescriptionMarkdown" />
+            <section class="mt-2 markdownTypography text-black dark:text-white" v-html="compiledDescriptionMarkdown" />
           </div>
         </main>
 
         <!-- FAQs -->
         <section v-if="compiledFAQMarkdown" class="p-5 border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-3xl w-full mt-10">
-          <section class="prose text-black dark:text-white" v-html="compiledFAQMarkdown" />
+          <section class="markdownTypography text-black dark:text-white" v-html="compiledFAQMarkdown" />
         </section>
         
         <section class="w-full flex mt-4 px-3 gap-4">

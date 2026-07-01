@@ -29,6 +29,10 @@ body {
   @apply flex flex-col items-center;
 }
 
+@utility markdownTypography {
+  @apply prose dark:prose-invert;
+}
+
 ::-webkit-scrollbar {
   background-color: transparent;
 }

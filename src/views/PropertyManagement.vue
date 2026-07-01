@@ -88,7 +88,7 @@
               <textarea type="text" v-if="!displayDescriptionMarkdown" v-model="form.description" placeholder="e.g. This house has amazing features!" 
                         class="custom-scrollbar w-full h-auto min-h-40 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
               
-              <div v-if="displayDescriptionMarkdown" class="prose max-w-none w-full h-auto min-h-40 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg p-3" v-html="compiledDescriptionMarkdown"></div>
+              <div v-if="displayDescriptionMarkdown" class="markdownTypography max-w-none w-full h-auto min-h-40 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg p-3" v-html="compiledDescriptionMarkdown"></div>
               
               <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
                 <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
@@ -499,7 +499,7 @@
                     
                   </div>
                   
-                  <div v-if="displayFAQMarkdown" class="prose dark:text-white max-w-none w-full h-auto min-h-70 border border-gray-300 dark:border-gray-700 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
+                  <div v-if="displayFAQMarkdown" class="markdownTypography dark:text-white max-w-none w-full h-auto min-h-70 border border-gray-300 dark:border-gray-700 rounded-lg p-3" v-html="compiledFAQMarkdown"></div>
                 </div>
 
                 <div v-if="displayQuestions" class="col-span-1 border border-gray-300 dark:border-gray-700 rounded-lg max-h-70 bg-gray-50 dark:bg-gray-900 overflow-y-auto custom-scrollbar">
