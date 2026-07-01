@@ -200,13 +200,13 @@
             </template>
 
             <!-- Description -->
-            <section class="mt-2 prose max-w-none" v-html="compiledMarkdown" />
+            <section class="mt-2 markdownTypography max-w-none" v-html="compiledMarkdown" />
           </div>
         </main>
 
         <!-- FAQs -->
         <section v-if="compiledFAQMarkdown" class="p-5 border border-maurealty-blue/20 rounded-3xl w-full mt-10">
-          <section class="prose max-w-none" v-html="compiledFAQMarkdown" />
+          <section class="markdownTypography max-w-none" v-html="compiledFAQMarkdown" />
         </section>
       </div>
     </div>
