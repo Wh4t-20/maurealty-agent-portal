@@ -168,6 +168,7 @@ async function submit() {
     net_commission: form.net_commission,
     voucher_series: form.voucher_series || null,
     remarks: form.remarks || null,
+    unit_details: selectedListing.value?.is_bulk ? form.unit_det: null
   }
 
   saving.value = true
