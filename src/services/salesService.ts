@@ -48,6 +48,7 @@ const SALE_SELECT = `
   net_commission,
   remarks,
   voucher_series,
+  unit_details,
   created_at,
   agents (first_name, last_name),
   main_listings (listing_title)
@@ -67,6 +68,7 @@ function mapToSale(item: any): Sale {
     net_commission: item.net_commission,
     remarks: item.remarks,
     voucher_series: item.voucher_series,
+    unit_details: item.unit_details,
     created_at: item.created_at,
     agent_name: `${item.agents?.first_name || ''} ${item.agents?.last_name || ''}`.trim(),
     listing_title: item.main_listings?.listing_title || 'Unknown',
