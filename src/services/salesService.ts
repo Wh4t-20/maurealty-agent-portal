@@ -14,6 +14,7 @@ export interface Sale {
   net_commission: number | null;
   remarks: string | null;
   voucher_series: string | null;
+  unit_details?: Record<string,any> | null;
   created_at: string;
   agent_name: string;
   listing_title: string;
