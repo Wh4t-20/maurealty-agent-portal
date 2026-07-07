@@ -2,19 +2,15 @@
   <div class="absolute inset-0 z-50 flex items-center justify-center bg-[rgba(10,61,98,0.7)] dark:bg-[rgba(17,38,53,0.7)] backdrop-blur-sm p-4" @click.self="$emit('close')">
     <div class="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-black rounded-2xl shadow-2xl">
 
-      <!-- HEADER -->
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-900 sticky top-0 bg-white dark:bg-black rounded-t-2xl">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-900 sticky top-0 bg-white dark:bg-black rounded-t-2xl z-10">
         <h2 class="text-xl font-bold text-maurealty-blue dark:text-maurealty-light-blue">{{ editSale ? 'Edit Sale' : lockedListing ? 'Confirm Sale' : 'Upload Sale' }}</h2>
-        <button class="text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 text-xl leading-none cursor-pointer" @click="$emit('close')">✕</button>
+        <button type="button" class="text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 text-xl leading-none cursor-pointer" @click="$emit('close')">✕</button>
       </div>
 
-      <!-- FORM -->
       <form class="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4" @submit.prevent="submit">
 
-        <!-- Property (full width) -->
         <div class="sm:col-span-2 flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Property <span class="text-red-500">*</span></label>
-          <!-- Sold flow: property is fixed, shown read-only. Manual flow: dropdown. -->
           <input
             v-if="propertyLocked"
             type="text"
@@ -68,10 +64,152 @@
           <input v-model.trim="form.remarks" type="text" :class="inputClass" placeholder="e.g. third equity" />
         </div>
 
-        <!-- ERROR -->
+        <div v-if="selectedListing?.is_bulk" class="sm:col-span-2 border-t border-gray-200 dark:border-gray-800 pt-5 mt-2">
+          <h3 class="text-md font-bold text-maurealty-blue dark:text-maurealty-light-blue mb-4">Specific Unit Details (Bulk Sale)</h3>
+          
+          <div v-if="['House And Lot', 'House and Lot', 'house_and_lot'].includes(selectedListing.property_type)">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Lot Area (sqm)</label>
+                <input type="number" step="any" v-model="form.unit_details.lot_area" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Floor Area (sqm)</label>
+                <input type="number" step="any" v-model="form.unit_details.floor_area" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Rooms</label>
+                <input type="number" v-model="form.unit_details.room_count" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Master BR Area</label>
+                <input type="number" step="any" v-model="form.unit_details.master_bedroom_area" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Toilets</label>
+                <input type="number" v-model="form.unit_details.toilet_count" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Helper Rms</label>
+                <input type="number" v-model="form.unit_details.helper_rooms_count" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Driver Rms</label>
+                <input type="number" v-model="form.unit_details.driver_rooms_count" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Carpark Spaces</label>
+                <input type="number" v-model="form.unit_details.carpark_count" :class="inputClass">
+              </div>
+            </div>
+
+            <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 mt-4">
+              <p class="text-xs font-bold text-gray-500 mb-3 uppercase">Property Features</p>
+              <div class="flex flex-wrap gap-x-6 gap-y-3">
+                <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox" v-model="form.unit_details.one_storey" class="w-4 h-4 accent-maurealty-blue rounded"><span class="text-sm text-gray-700 dark:text-gray-300">One Storey</span></label>
+                <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox" v-model="form.unit_details.two_storey" class="w-4 h-4 accent-maurealty-blue rounded"><span class="text-sm text-gray-700 dark:text-gray-300">Two Storey</span></label>
+                <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox" v-model="form.unit_details.with_loft" class="w-4 h-4 accent-maurealty-blue rounded"><span class="text-sm text-gray-700 dark:text-gray-300">With Loft</span></label>
+                <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox" v-model="form.unit_details.townhome" class="w-4 h-4 accent-maurealty-blue rounded"><span class="text-sm text-gray-700 dark:text-gray-300">Townhome</span></label>
+                <label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox" v-model="form.unit_details.rowhouse" class="w-4 h-4 accent-maurealty-blue rounded"><span class="text-sm text-gray-700 dark:text-gray-300">Rowhouse</span></label>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="['Lot Only', 'Lot only', 'lot_only'].includes(selectedListing.property_type)">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Block No.</label>
+                <input type="number" v-model="form.unit_details.block_number" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Lot No.</label>
+                <input type="number" v-model="form.unit_details.lot_number" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Phase No.</label>
+                <input type="number" v-model="form.unit_details.phase_number" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Area (sqm)</label>
+                <input type="number" step="any" v-model="form.unit_details.area" :class="inputClass">
+              </div>
+              <div class="col-span-2 md:col-span-4 flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Lot Class</label>
+                <select v-model="form.unit_details.class" :class="inputClass">
+                  <option v-for="lotclass in lotClasses" :key="lotclass" :value="lotclass">{{ lotclass }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="['Condominium', 'condominium'].includes(selectedListing.property_type)">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Unit No.</label>
+                <input type="number" v-model="form.unit_details.unit_number" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Bedroom Count</label>
+                <input type="number" v-model="form.unit_details.bedroom_count" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Balcony Count</label>
+                <input type="number" v-model="form.unit_details.balcony_count" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Carpark Count</label>
+                <input type="number" v-model="form.unit_details.carpark_count" :class="inputClass">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Master BR Area</label>
+                <input type="number" step="any" v-model="form.unit_details.master_bedroom_area" :class="inputClass">
+              </div>
+              <div class="col-span-2 md:col-span-3 flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Condominium Class</label>
+                <select v-model="form.unit_details.class" :class="inputClass">
+                  <option v-for="condoclass in condoClasses" :key="condoclass" :value="condoclass">{{ condoclass }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4 mt-4">
+              <p class="text-xs font-bold text-gray-500 mb-3 uppercase">Condominium Type</p>
+              <div class="flex flex-wrap gap-x-6 gap-y-3">
+                <label v-for="cType in [
+                  { label: 'Studio', field: 'is_studio_type' },
+                  { label: 'BR Unit', field: 'is_BR_unit' },
+                  { label: 'Villa', field: 'is_villa' },
+                  { label: 'Garden Villa', field: 'is_garden_villa' },
+                  { label: 'Penthouse', field: 'is_penthouse' }
+                ]" :key="cType.field" class="flex items-center gap-2 cursor-pointer group">
+                  <input type="radio" :checked="!!form.unit_details[cType.field]" @change="setExclusively(['is_studio_type', 'is_BR_unit', 'is_villa', 'is_garden_villa', 'is_penthouse'], cType.field)" class="w-4 h-4 accent-maurealty-blue">
+                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ cType.label }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="['Memorial', 'memorial'].includes(selectedListing.property_type)">
+            <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-4">
+              <p class="text-xs font-bold text-gray-500 mb-3 uppercase">Memorial Type</p>
+              <div class="flex flex-wrap gap-x-6 gap-y-3">
+                <label v-for="mType in [
+                  { label: 'Urn', field: 'is_urn' },
+                  { label: 'Vault', field: 'is_vault' },
+                  { label: 'Garden', field: 'is_garden' },
+                  { label: 'Estate', field: 'is_estate' },
+                  { label: 'Family Estate', field: 'is_family_estate' },
+                  { label: 'Pet Memorial', field: 'is_pet_memorial' }
+                ]" :key="mType.field" class="flex items-center gap-2 cursor-pointer group">
+                  <input type="radio" :checked="!!form.unit_details[mType.field]" @change="setExclusively(['is_urn', 'is_vault', 'is_garden', 'is_estate', 'is_family_estate', 'is_pet_memorial'], mType.field)" class="w-4 h-4 accent-maurealty-blue">
+                  <span class="text-sm text-gray-700 dark:text-gray-300">{{ mType.label }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
         <p v-if="error" class="sm:col-span-2 text-sm text-red-500">{{ error }}</p>
 
-        <!-- ACTIONS -->
         <div class="sm:col-span-2 flex justify-end gap-3 pt-2">
           <button type="button" class="px-5 py-2 rounded-lg border border-gray-300 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer" @click="$emit('close')">Cancel</button>
           <button type="submit" :disabled="saving" class="px-5 py-2 rounded-lg bg-maurealty-blue text-white hover:opacity-80 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
@@ -84,7 +222,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { salesService, type Sale } from '@/services/salesService'
 import { listingsService } from '@/services/listingsServices'
 import { authService } from '@/services/authService'
@@ -99,6 +237,17 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ (e: 'close'): void; (e: 'saved'): void }>()
+
+const lotClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Farm Lot'];
+const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare'];
+
+// Helper functions for dynamic fields
+const setExclusively = (group: string[], selectedField: string) => {
+  group.forEach(field => {
+    form.unit_details[field] = (field === selectedField);
+  });
+};
+
 
 // Property field is read-only in both the Sold flow and edit (the listing of an
 // existing sale isn't changed here). Manual create uses the dropdown.
@@ -124,6 +273,12 @@ const form = reactive({
   net_commission: e?.net_commission ?? null as number | null,
   voucher_series: e?.voucher_series ?? '',
   remarks: e?.remarks ?? '',
+  unit_details: e?.unit_details ?? {} as Record<string, any>
+})
+
+// computed property to dynamically check the selected listing
+const selectedListing = computed(() => {
+  return listings.value.find(l => l.listing_id === form.listing_ID)
 })
 
 onMounted(async () => {
@@ -151,6 +306,7 @@ async function submit() {
     net_commission: form.net_commission,
     voucher_series: form.voucher_series || null,
     remarks: form.remarks || null,
+    unit_details: selectedListing.value?.is_bulk ? form.unit_det: null
   }
 
   saving.value = true

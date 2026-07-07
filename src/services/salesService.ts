@@ -14,6 +14,7 @@ export interface Sale {
   net_commission: number | null;
   remarks: string | null;
   voucher_series: string | null;
+  unit_details?: Record<string,any> | null;
   created_at: string;
   agent_name: string;
   listing_title: string;
@@ -47,6 +48,7 @@ const SALE_SELECT = `
   net_commission,
   remarks,
   voucher_series,
+  unit_details,
   created_at,
   agents (first_name, last_name),
   main_listings (listing_title)
@@ -66,6 +68,7 @@ function mapToSale(item: any): Sale {
     net_commission: item.net_commission,
     remarks: item.remarks,
     voucher_series: item.voucher_series,
+    unit_details: item.unit_details,
     created_at: item.created_at,
     agent_name: `${item.agents?.first_name || ''} ${item.agents?.last_name || ''}`.trim(),
     listing_title: item.main_listings?.listing_title || 'Unknown',

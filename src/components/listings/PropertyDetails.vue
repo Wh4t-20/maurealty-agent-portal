@@ -84,11 +84,11 @@
               <p class="ml-2.5">{{ details.developer_name }}</p>
             </span>
             
-            <template v-if="details.property_type === 'house_and_lot'">
+            <template v-if=" !details.is_bulk && details.property_type === 'house_and_lot'">
               <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">House and Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
-                  <div class="grid grid-cols-2 gap-y-0.5">
+                  <div class="grid grid-cols-2 gap-y-0.5" >
                     <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ formatArea(details.lot_area) }}</span>
                     <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ formatArea(details.floor_area) }}</span>
                     <span class="flex items-center-safe gap-1"><Sofa /> {{ details.rooms_count }} room{{ details.rooms_count != 1 ? 's' : '' }}</span>
@@ -123,7 +123,7 @@
               </fieldset>
             </template>
 
-            <template v-if="details.property_type === 'lot_only'">
+            <template v-if=" !details.is_bulk && details.property_type === 'lot_only'">
               <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
@@ -146,7 +146,7 @@
               </fieldset>
             </template>
 
-            <template v-if="details.property_type === 'condominium'">
+            <template v-if=" !details.is_bulk && details.property_type === 'condominium'">
               <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">Condominium Features</legend>
                 <main class="text-sm px-2 flex flex-col">
@@ -170,7 +170,7 @@
               </fieldset>
             </template>
 
-            <template v-if="details.property_type === 'memorial'">
+            <template v-if=" !details.is_bulk && details.property_type === 'memorial'">
               <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">Memorial Features</legend>
                 <main class="text-sm px-2 flex flex-col">
@@ -350,6 +350,7 @@ const loadProperties = async () => {
         agent_name: `${data.agents?.first_name || ''} ${data.agents?.last_name || ''}`.trim(),
         developer_name: data.developers?.name || 'None',
         property_type: data.property_type?.property_type || props.prop_type,
+        is_bulk: data.is_bulk,
         
         ...subTableData
       };

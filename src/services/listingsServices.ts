@@ -26,6 +26,7 @@ export const listingsService = {
         description,
         created_at,
         status,
+        is_bulk,
         agents (first_name, last_name),
         property_type (property_type),
         developers (name),
@@ -64,7 +65,8 @@ export const listingsService = {
       status: item.status,
       developer_name: item.developers?.name || 'None',
       image_url: thumbnailUrl, // Attach the thumbnail
-      faq: item.faq
+      faq: item.faq,
+      is_bulk: item.is_bulk || false
     };
   },
 
