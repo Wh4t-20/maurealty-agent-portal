@@ -16,6 +16,7 @@ export interface Property {
     image_url?: string;
     faq: string;
     fact_sheet?: string;
+    is_bulk?: boolean;
 }
 
 // lot only interface
