@@ -222,7 +222,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch} from 'vue'
 import { salesService, type Sale } from '@/services/salesService'
 import { listingsService } from '@/services/listingsServices'
 import { authService } from '@/services/authService'
@@ -281,6 +281,95 @@ const selectedListing = computed(() => {
   return listings.value.find(l => l.listing_id === form.listing_ID)
 })
 
+// Mapping object to safely convert string property type into integer (for getListingID() )
+const propertyTypesMap: Record<string, number> = {
+  'House And Lot': 1, 'house_and_lot': 1,
+  'Lot Only': 2, 'lot_only': 2,
+  'Condominium': 3, 'condominium': 3,
+  'Memorial': 4, 'memorial': 4
+};
+// 
+const prefilledListingId = ref<number | null>(null);
+
+watch([() => form.listing_ID, selectedListing], async ([newId, listing]) => {
+  if (props.editSale || !newId || !listing) return;
+  
+  // Prevent infinite loops or overwriting manual user edits after initial load
+  if (prefilledListingId.value === newId) return;
+
+  // 1. Auto-fill the general listing price into the Contract Price field
+  form.total_contract_price = listing.price || null;
+
+  // 2. Fetch and map specific property details to pre-fill the unit_details
+  try {
+    const typeId = propertyTypesMap[listing.property_type] || 1;
+    const fullData = await listingsService.getListingById(newId, typeId);
+    
+    if (fullData) {
+      const subTableName = [null, 'house_and_lot', 'lot_only', 'condominium', 'memorial'][typeId];
+      const subData = (subTableName && fullData[subTableName]) 
+        ? (Array.isArray(fullData[subTableName]) ? fullData[subTableName][0] : fullData[subTableName]) 
+        : fullData;
+      
+      if (subData) {
+        // Safely map all possible unit details so they pre-fill accurately
+        const mappedDetails: Record<string, any> = {
+          lot_area: subData.lot_area ?? subData.area ?? null,
+          floor_area: subData.floor_area ?? null,
+          room_count: subData.rooms_count ?? subData.room_count ?? null,
+          master_bedroom_area: subData.master_bedroom_area ?? null,
+          toilet_count: subData.toilets_count ?? subData.toilet_count ?? null,
+          helper_rooms_count: subData.helper_rooms_count ?? null,
+          driver_rooms_count: subData.driver_rooms_count ?? null,
+          carpark_count: subData.carpark_count ?? null,
+          one_storey: subData['1_storey'] ?? subData.one_storey ?? false,
+          two_storey: subData['2_storey'] ?? subData.two_storey ?? false,
+          with_loft: subData.with_loft ?? false,
+          townhome: subData.townhomes ?? subData.townhome ?? false,
+          rowhouse: subData.rowhouse ?? false,
+          
+          block_number: subData.block_number ?? null,
+          lot_number: subData.lot_number ?? null,
+          phase_number: subData.phase_number ?? null,
+          area: subData.area ?? subData.lot_area ?? null,
+          
+          unit_number: subData.unit_number ?? null,
+          bedroom_count: subData.bedroom_count ?? null,
+          balcony_count: subData.balcony_count ?? null,
+          
+          is_studio_type: subData.is_studio_type ?? false,
+          is_BR_unit: subData.is_BR_unit ?? false,
+          is_villa: subData.is_villa ?? false,
+          is_garden_villa: subData.is_garden_villa ?? false,
+          is_penthouse: subData.is_penthouse ?? false,
+          
+          is_urn: subData.is_urn ?? false,
+          is_vault: subData.is_vault ?? false,
+          is_garden: subData.is_garden ?? false,
+          is_estate: subData.is_estate ?? false,
+          is_family_estate: subData.is_family_estate ?? false,
+          is_pet_memorial: subData.is_pet_memorial ?? false,
+          class: subData.class ?? null
+        };
+
+        // Resolve relational foreign keys to plain strings for the dropdowns
+        if (subData.lot_class_ID) {
+          mappedDetails.class = lotClasses[subData.lot_class_ID - 1] || null;
+        } else if (subData.condo_class_ID) {
+          mappedDetails.class = condoClasses[subData.condo_class_ID - 1] || null;
+        }
+
+        // Reassign the mapped object to trigger Vue reactivity
+        form.unit_details = { ...mappedDetails };
+      }
+    }
+  } catch (error) {
+    console.error("Failed to fetch full listing details for pre-fill:", error);
+  }
+
+  prefilledListingId.value = newId; 
+}, { immediate: true });
+
 onMounted(async () => {
   // Locked/edit flows already have their property — no dropdown needed.
   if (propertyLocked) return
@@ -306,7 +395,7 @@ async function submit() {
     net_commission: form.net_commission,
     voucher_series: form.voucher_series || null,
     remarks: form.remarks || null,
-    unit_details: selectedListing.value?.is_bulk ? form.unit_det: null
+    unit_details: selectedListing.value?.is_bulk ? form.unit_details: null
   }
 
   saving.value = true
@@ -322,6 +411,15 @@ async function submit() {
         return
       }
       await salesService.createSale({ agent_ID: agent.agent_ID, ...payload })
+
+      // Auto-mark single listing as sold directly in the database
+      if (selectedListing.value && !selectedListing.value.is_bulk && form.listing_ID) {
+        try {
+          await listingsService.updateListingStatus(form.listing_ID, 'sold')
+        } catch (statusErr) {
+          console.error('Failed to auto-update single listing status:', statusErr)
+        }
+      }
     }
     emit('saved')
   } catch (err: any) {

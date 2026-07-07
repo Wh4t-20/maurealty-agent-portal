@@ -177,7 +177,6 @@ import { type Property }  from '@/assets/classes/listings'
 import PropertyCard from '@/components/listings/PropertyCard.vue'
 import ListingsFilter from '@/components/listings/ListingsFilter.vue'
 import PropertyDetails from '@/components/listings/PropertyDetails.vue'
-import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
@@ -377,28 +376,17 @@ const processDelete = async (id: number) => {
 // Marking sold opens the sale form pre-filled with this listing. The agent
 // confirms buyer + date there; the listing is only flipped to 'sold' AFTER the
 // sale row is saved (see onSaleSaved) so we never hide a listing with no record.
-const soldListing = ref<Property | null>(null)
-
-const markSold = (listingId: number) => {
-  const prop = properties.value.find(p => p.listing_id === listingId)
-  if (!prop) return
-  soldListing.value = prop
-  showDetails.value = false
-}
-
-// Runs after the sale is created. Now safe to mark the listing sold + hide it.
-const onSaleSaved = async () => {
-  const listingId = soldListing.value?.listing_id
-  soldListing.value = null
-  if (listingId == null) return
-
+const markSold = async (listingId: number) => {
+  if (!confirm('Are you sure you want to mark this bulk listing as sold?')) return;
+  
   try {
-    await listingsService.updateListingStatus(listingId, 'sold')
-    properties.value = properties.value.filter(p => p.listing_id !== listingId)
-    alert("Success! The property has been marked as sold.")
+    await listingsService.updateListingStatus(listingId, 'sold');
+    properties.value = properties.value.filter(p => p.listing_id !== listingId);
+    showDetails.value = false;
+    alert("Success! The bulk property has been marked as sold.");
   } catch (error) {
-    console.error("Error marking property as sold:", error)
-    alert("The sale was saved, but updating the listing status failed. Please retry.")
+    console.error("Error marking property as sold:", error);
+    alert("Failed to update the listing status. Please retry.");
   }
 }
 </script>
