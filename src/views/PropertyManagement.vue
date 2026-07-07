@@ -609,7 +609,8 @@ function toggleQuestions() {
 // Combine all interfaces for the form state
 type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & {
   listing_title?: string;
-  dev_ID: number | null  
+  dev_ID: number | null;
+  is_bulk: boolean; 
 };
 
 // Store fetched developers (for dropdown)
@@ -644,6 +645,7 @@ const loadProperties = async () => {
       form.value.dev_ID = data.dev_ID;
       form.value.faq = data.faq;
       form.value.fact_sheet = data.fact_sheet;
+      form.value.is_bulk = data.is_bulk || false;
 
       console.log(data.longitude, data.latitude);
       console.log("^Data | vForm\n");
@@ -743,6 +745,7 @@ const form = ref<Partial<PropertyForm>>({
   // Base Property Fields
   listing_title: '', 
   property_type: 'House And Lot',
+  is_bulk: false, 
   price: 0,
   commission: 0,
   location: '',
@@ -887,6 +890,7 @@ const saveProperty = async () => {
         agent_ID: currentAgentId.value,
         listing_title: form.value.listing_title,
         property_type_ID: propertyTypeId,
+        is_bulk: form.value.is_bulk,
         price: convertPriceToPHP(Number(form.value.price)) || 0,
         commission: form.value.commission,
         location: form.value.location,
@@ -986,6 +990,7 @@ const saveProperty = async () => {
       const mainData = {
         listing_title: form.value.listing_title,
         property_type_ID: propertyTypeId,
+        is_bulk: form.value.is_bulk,
         price: form.value.price,
         commission: form.value.commission,
         location: form.value.location,
