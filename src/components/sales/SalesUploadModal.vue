@@ -222,7 +222,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch} from 'vue'
 import { salesService, type Sale } from '@/services/salesService'
 import { listingsService } from '@/services/listingsServices'
 import { authService } from '@/services/authService'
@@ -281,6 +281,14 @@ const selectedListing = computed(() => {
   return listings.value.find(l => l.listing_id === form.listing_ID)
 })
 
+// Mapping object to safely convert string property type into integer (for getListingID() )
+const propertyTypesMap: Record<string, number> = {
+  'House And Lot': 1, 'house_and_lot': 1,
+  'Lot Only': 2, 'lot_only': 2,
+  'Condominium': 3, 'condominium': 3,
+  'Memorial': 4, 'memorial': 4
+};
+
 onMounted(async () => {
   // Locked/edit flows already have their property — no dropdown needed.
   if (propertyLocked) return
@@ -322,7 +330,7 @@ async function submit() {
         return
       }
       await salesService.createSale({ agent_ID: agent.agent_ID, ...payload })
-      
+
       // Auto-mark single listing as sold directly in the database
       if (selectedListing.value && !selectedListing.value.is_bulk && form.listing_ID) {
         try {
