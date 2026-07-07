@@ -84,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { salesService, type Sale } from '@/services/salesService'
 import { listingsService } from '@/services/listingsServices'
 import { authService } from '@/services/authService'
@@ -99,6 +99,17 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ (e: 'close'): void; (e: 'saved'): void }>()
+
+const lotClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Farm Lot'];
+const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare'];
+
+// Helper functions for dynamic fields
+const setExclusively = (group: string[], selectedField: string) => {
+  group.forEach(field => {
+    form.unit_details[field] = (field === selectedField);
+  });
+};
+
 
 // Property field is read-only in both the Sold flow and edit (the listing of an
 // existing sale isn't changed here). Manual create uses the dropdown.
@@ -124,6 +135,12 @@ const form = reactive({
   net_commission: e?.net_commission ?? null as number | null,
   voucher_series: e?.voucher_series ?? '',
   remarks: e?.remarks ?? '',
+  unit_details: e?.unit_details ?? {} as Record<string, any>
+})
+
+// computed property to dynamically check the selected listing
+const selectedListing = computed(() => {
+  return listings.value.find(l => l.listing_id === form.listing_ID)
 })
 
 onMounted(async () => {
