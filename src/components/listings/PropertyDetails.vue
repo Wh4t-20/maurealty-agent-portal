@@ -218,7 +218,7 @@
           </button>
 
           <button
-            v-if="details.status !== 'sold'"
+            v-if="details.status !== 'sold' && details.is_bulk"
             @click="$emit('sold', details.listing_id)"
             class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-green text-maurealty-green font-bold hover:bg-maurealty-green hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
           >
