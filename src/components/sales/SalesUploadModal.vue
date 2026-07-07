@@ -322,6 +322,15 @@ async function submit() {
         return
       }
       await salesService.createSale({ agent_ID: agent.agent_ID, ...payload })
+      
+      // Auto-mark single listing as sold directly in the database
+      if (selectedListing.value && !selectedListing.value.is_bulk && form.listing_ID) {
+        try {
+          await listingsService.updateListingStatus(form.listing_ID, 'sold')
+        } catch (statusErr) {
+          console.error('Failed to auto-update single listing status:', statusErr)
+        }
+      }
     }
     emit('saved')
   } catch (err: any) {
