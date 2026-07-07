@@ -288,6 +288,44 @@ const propertyTypesMap: Record<string, number> = {
   'Condominium': 3, 'condominium': 3,
   'Memorial': 4, 'memorial': 4
 };
+// 
+const prefilledListingId = ref<number | null>(null);
+
+watch([() => form.listing_ID, selectedListing], async ([newId, listing]) => {
+  if (props.editSale || !newId || !listing) return;
+  
+  if (prefilledListingId.value === newId) return;
+
+  if (listing.is_bulk) {
+    try {
+      const typeId = propertyTypesMap[listing.property_type] || 1;
+      const fullData = await listingsService.getListingById(newId, typeId);
+      
+      if (fullData) {
+        const subTableName = [null, 'house_and_lot', 'lot_only', 'condominium', 'memorial'][typeId];
+        
+        if (subTableName && fullData[subTableName]) {
+          const subData = Array.isArray(fullData[subTableName]) ? fullData[subTableName][0] : fullData[subTableName];
+          
+          form.unit_details = {
+            ...subData,
+            room_count: subData.rooms_count,
+            toilet_count: subData.toilets_count,
+            one_storey: subData['1_storey'],
+            two_storey: subData['2_storey'],
+            townhome: subData.townhomes
+          };
+          prefilledListingId.value = newId; 
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch full listing details for pre-fill:", error);
+    }
+  } else {
+    form.unit_details = {};
+    prefilledListingId.value = newId;
+  }
+}, { immediate: true });
 
 onMounted(async () => {
   // Locked/edit flows already have their property — no dropdown needed.
