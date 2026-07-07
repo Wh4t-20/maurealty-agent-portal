@@ -116,7 +116,7 @@
                 </span>
               </div>
 
-              <div class="col-span-2">
+            <div class="col-span-2">
               <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Developer</label>
               
               <Listbox v-model="form.dev_ID">
@@ -153,6 +153,52 @@
                         >
                           <span :class="[selected ? 'font-bold' : 'font-normal', 'block truncate']">
                             {{ dev.name }}
+                          </span>
+                        </li>
+                      </ListboxOption>
+                    </ListboxOptions>
+                  </transition>
+                </div>
+              </Listbox>
+            </div>
+
+            <div class="col-span-2">
+              <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Quantity Type</label>
+              
+              <Listbox v-model="form.is_bulk">
+                <div class="relative">
+                  <ListboxButton class="relative w-full cursor-default rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black dark:text-white p-3 text-left focus:outline-none focus:ring-2 focus:ring-maurealty-blue sm:text-sm transition-all">
+                    <span class="block truncate text-gray-700 dark:text-gray-300">
+                      {{ form.is_bulk ? 'Bulk' : 'Single' }}
+                    </span>
+                    <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                      <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                      </svg>
+                    </span>
+                  </ListboxButton>
+
+                  <transition
+                    leave-active-class="transition duration-100 ease-in"
+                    leave-from-class="opacity-100"
+                    leave-to-class="opacity-0"
+                  >
+                    <ListboxOptions class="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-lg bg-white dark:bg-black dark:bg-black py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
+                      <ListboxOption
+                        v-slot="{ active, selected }"
+                        v-for="type in [{ label: 'Single', value: false }, { label: 'Bulk', value: true }]"
+                        :key="type.label"
+                        :value="type.value"
+                        as="template"
+                      >
+                        <li
+                          :class="[
+                            active ? 'bg-maurealty-blue/10 dark:bg-maurealty-light-blue/10 text-maurealty-blue dark:text-maurealty-light-blue' : 'text-gray-900 dark:text-gray-200',
+                            'relative cursor-default select-none py-2 pl-4 pr-4 transition-colors',
+                          ]"
+                        >
+                          <span :class="[selected ? 'font-bold' : 'font-normal', 'block truncate']">
+                            {{ type.label }}
                           </span>
                         </li>
                       </ListboxOption>
@@ -208,8 +254,7 @@
                 </Listbox>
               </div>
 
-
-              <template v-if="form.property_type === 'House And Lot'">
+<template v-if="form.property_type === 'House And Lot' && !form.is_bulk">
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Lot Area</label>
@@ -277,7 +322,7 @@
               </template>
 
 
-              <template v-if="form.property_type === 'Lot Only'">
+              <template v-if="form.property_type === 'Lot Only' && !form.is_bulk">
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Block No.</label>
@@ -347,7 +392,7 @@
               </template>
 
 
-              <template v-if="form.property_type === 'Condominium'">
+              <template v-if="form.property_type === 'Condominium' && !form.is_bulk">
                 <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Unit No.</label>
@@ -443,7 +488,7 @@
               </template>
 
 
-              <template v-if="form.property_type === 'Memorial'">
+              <template v-if="form.property_type === 'Memorial' && !form.is_bulk">
                 <div class="col-span-2 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div class="cols-6 bg-white dark:bg-black border border-gray-200 rounded-xl p-4 mt-2">
                       <p class="text-xs font-bold text-maurealty-blue dark:text-white mb-3 uppercase opacity-70">Memorial Type</p>
@@ -470,8 +515,6 @@
                     </div>
                   </div>
                 </div>
-
-                
               </template>
 
             </div>
