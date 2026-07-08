@@ -113,6 +113,7 @@
                   </th>
                   <th class="px-4 py-3 font-semibold">Project</th>
                   <th v-if="isAdmin" class="px-4 py-3 font-semibold">Agent</th>
+                  <th class="px-4 py-3 font-semibold">Status</th>
                   <th class="px-4 py-3 font-semibold text-right cursor-pointer select-none hover:bg-white dark:hover:bg-[#1da2d6]/20 transition-colors" @click="setSort('total_contract_price')">
                     <span class="inline-flex items-center gap-1">Contract Price <component :is="sortIcon('total_contract_price')" class="size-4" :class="sortKey==='total_contract_price' ? 'text-amber-300' : 'opacity-70'" /></span>
                   </th>
@@ -146,12 +147,18 @@
                   </td>
                   <td class="px-4 py-3 dark:text-white">{{ sale.listing_title }}</td>
                   <td v-if="isAdmin" class="px-4 py-3 dark:text-white">{{ sale.agent_name || '—' }}</td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <span :class="['px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider border', getStatusClass(sale.status)]">
+                      {{ sale.status }}
+                    </span>
+                  </td>
                   <td class="px-4 py-3 text-right whitespace-nowrap dark:text-white">{{ formatPeso(sale.total_contract_price) }}</td>
                   <td class="px-4 py-3 text-right whitespace-nowrap dark:text-white">{{ sale.gross_commission != null ? formatPeso(sale.gross_commission) : '—' }}</td>
                   <td class="px-4 py-3 text-right whitespace-nowrap dark:text-white">{{ sale.net_commission != null ? formatPeso(sale.net_commission) : '—' }}</td>
                   <td class="px-4 py-3 text-center dark:text-white">{{ sale.agent_sale_seq ?? '—' }}</td>
+
                   <td class="px-2 py-3">
-                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" v-if="canEditSale(sale)">
                       <button @click.stop="openEdit(sale)" title="Edit" class="p-1.5 rounded-md text-maurealty-blue dark:text-maurealty-light-blue hover:bg-maurealty-blue/10 dark:hover:bg-maurealty-light-blue/10 cursor-pointer">
                         <Pencil class="size-4" />
                       </button>
