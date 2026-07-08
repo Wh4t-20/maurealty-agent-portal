@@ -374,6 +374,11 @@ watch([() => form.listing_ID, selectedListing], async ([newId, listing]) => {
 }, { immediate: true });
 
 onMounted(async () => {
+
+  // Check admin status when object mounts
+  const agent = await authService.getCurrentAgent();
+  isAdmin.value = !!agent?.admin_access;
+
   // Locked/edit flows already have their property — no dropdown needed.
   if (propertyLocked) return
   try {
@@ -398,6 +403,7 @@ async function submit() {
     net_commission: form.net_commission,
     voucher_series: form.voucher_series || null,
     remarks: form.remarks || null,
+    status: form.status,
     unit_details: selectedListing.value?.is_bulk ? form.unit_details: null
   }
 
