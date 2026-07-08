@@ -60,6 +60,16 @@
           :disabled="!isAdmin" />
         </div>
 
+        <div class="sm:col-span-2 flex flex-col gap-1" v-if="isAdmin && editSale">
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Sale Status</label>
+          <select v-model="form.status" :class="inputClass">
+            <option value="pending approval">Pending Approval</option>
+            <option value="awaiting payment">Awaiting Payment</option>
+            <option value="complete">Complete</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Voucher Series</label>
           <input v-model.trim="form.voucher_series" type="text" :class="inputClass" placeholder="VCH-0001" />
