@@ -239,19 +239,27 @@
           <div><dt class="text-gray-500 dark:text-gray-400">Reservation Date</dt><dd class="dark:text-white">{{ formatDate(selectedSale.reservation_date) }}</dd></div>
           <div><dt class="text-gray-500 dark:text-gray-400">Contract Price</dt><dd class="dark:text-white">{{ formatPeso(selectedSale.total_contract_price) }}</dd></div>
           <div><dt class="text-gray-500 dark:text-gray-400">Sale #</dt><dd class="dark:text-white">{{ selectedSale.agent_sale_seq ?? '—' }}</dd></div>
+          <div>
+            <dt class="text-gray-500 dark:text-gray-400">Status</dt>
+            <dd>
+              <span :class="['px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider border', getStatusClass(selectedSale.status)]">
+                {{ selectedSale.status }}
+              </span>
+            </dd>
+          </div>
           <div><dt class="text-gray-500 dark:text-gray-400">Gross Commission</dt><dd class="dark:text-white">{{ selectedSale.gross_commission != null ? formatPeso(selectedSale.gross_commission) : '—' }}</dd></div>
           <div><dt class="text-gray-500 dark:text-gray-400">Net Commission</dt><dd class="dark:text-white">{{ selectedSale.net_commission != null ? formatPeso(selectedSale.net_commission) : '—' }}</dd></div>
           <div><dt class="text-gray-500 dark:text-gray-400">Voucher</dt><dd class="dark:text-white">{{ selectedSale.voucher_series || '—' }}</dd></div>
           <div class="col-span-2"><dt class="text-gray-500 dark:text-gray-400">Remarks</dt><dd class="dark:text-white">{{ selectedSale.remarks || '—' }}</dd></div>
         </dl>
 
-        <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-600">
+        <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-600" v-if="canEditSale(selectedSale)">
           <button @click="confirmDelete(selectedSale)" class="px-4 py-2 rounded-lg border border-red-300 dark:border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/80 cursor-pointer">Delete</button>
           <button @click="openEdit(selectedSale)" class="px-4 py-2 rounded-lg bg-maurealty-blue text-white hover:opacity-80 transition cursor-pointer">Edit</button>
         </div>
       </div>
     </div>
-  </div>
+  </div>  
 </template>
 
 <script setup lang="ts">
