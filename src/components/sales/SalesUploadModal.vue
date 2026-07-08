@@ -273,6 +273,7 @@ const form = reactive({
   net_commission: e?.net_commission ?? null as number | null,
   voucher_series: e?.voucher_series ?? '',
   remarks: e?.remarks ?? '',
+  status: e?.status ?? 'pending approval',
   unit_details: e?.unit_details ?? {} as Record<string, any>
 })
 
@@ -289,6 +290,8 @@ const propertyTypesMap: Record<string, number> = {
   'Memorial': 4, 'memorial': 4
 };
 // 
+
+const isAdmin = ref(false); // to see if user is an admin or not and modal changes depending on it.
 const prefilledListingId = ref<number | null>(null);
 
 watch([() => form.listing_ID, selectedListing], async ([newId, listing]) => {
