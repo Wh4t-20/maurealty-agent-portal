@@ -46,18 +46,30 @@
 
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Gross Commission (₱)</label>
-          <input v-model.number="form.gross_commission" type="number" min="0" step="0.01" 
-          :class="[inputClass, !isAdmin ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-70' : '']"
-          placeholder="0.00"
-          :disabled="!isAdmin" />
+          <input 
+            v-model.number="form.gross_commission" 
+            type="number" min="0" step="0.01" 
+            :class="[
+              inputClass, 
+              !isAdmin ? 'bg-gray-200! dark:bg-gray-800/80! text-gray-400! dark:text-gray-500! border-gray-300! dark:border-gray-700! cursor-not-allowed shadow-inner' : ''
+            ]" 
+            placeholder="0.00" 
+            :disabled="!isAdmin" 
+          />
         </div>
 
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Net Commission (₱)</label>
-          <input v-model.number="form.net_commission" type="number" min="0" step="0.01" 
-          :class="[inputClass, !isAdmin ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-70' : '']"
-          placeholder="0.00"
-          :disabled="!isAdmin" />
+          <input 
+            v-model.number="form.net_commission" 
+            type="number" min="0" step="0.01" 
+            :class="[
+              inputClass, 
+              !isAdmin ? 'bg-gray-200! dark:bg-gray-800/80! text-gray-400! dark:text-gray-500!  border-gray-300! dark:border-gray-700! cursor-not-allowed shadow-inner' : ''
+            ]" 
+            placeholder="0.00" 
+            :disabled="!isAdmin" 
+          />
         </div>
 
         <div class="sm:col-span-2 flex flex-col gap-1" v-if="isAdmin && editSale">
