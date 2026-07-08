@@ -14,6 +14,7 @@ export interface Sale {
   net_commission: number | null;
   remarks: string | null;
   voucher_series: string | null;
+  status: 'pending approval' | 'awaiting payment' | 'complete' | 'cancelled';
   unit_details?: Record<string,any> | null;
   created_at: string;
   agent_name: string;
@@ -48,6 +49,7 @@ const SALE_SELECT = `
   net_commission,
   remarks,
   voucher_series,
+  status,
   unit_details,
   created_at,
   agents (first_name, last_name),
@@ -68,6 +70,7 @@ function mapToSale(item: any): Sale {
     net_commission: item.net_commission,
     remarks: item.remarks,
     voucher_series: item.voucher_series,
+    status: item.status,
     unit_details: item.unit_details,
     created_at: item.created_at,
     agent_name: `${item.agents?.first_name || ''} ${item.agents?.last_name || ''}`.trim(),

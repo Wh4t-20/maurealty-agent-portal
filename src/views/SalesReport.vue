@@ -113,6 +113,7 @@
                   </th>
                   <th class="px-4 py-3 font-semibold">Project</th>
                   <th v-if="isAdmin" class="px-4 py-3 font-semibold">Agent</th>
+                  <th class="px-4 py-3 font-semibold">Status</th>
                   <th class="px-4 py-3 font-semibold text-right cursor-pointer select-none hover:bg-white dark:hover:bg-[#1da2d6]/20 transition-colors" @click="setSort('total_contract_price')">
                     <span class="inline-flex items-center gap-1">Contract Price <component :is="sortIcon('total_contract_price')" class="size-4" :class="sortKey==='total_contract_price' ? 'text-amber-300' : 'opacity-70'" /></span>
                   </th>
@@ -146,12 +147,18 @@
                   </td>
                   <td class="px-4 py-3 dark:text-white">{{ sale.listing_title }}</td>
                   <td v-if="isAdmin" class="px-4 py-3 dark:text-white">{{ sale.agent_name || '—' }}</td>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <span :class="['px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider border', getStatusClass(sale.status)]">
+                      {{ sale.status }}
+                    </span>
+                  </td>
                   <td class="px-4 py-3 text-right whitespace-nowrap dark:text-white">{{ formatPeso(sale.total_contract_price) }}</td>
                   <td class="px-4 py-3 text-right whitespace-nowrap dark:text-white">{{ sale.gross_commission != null ? formatPeso(sale.gross_commission) : '—' }}</td>
                   <td class="px-4 py-3 text-right whitespace-nowrap dark:text-white">{{ sale.net_commission != null ? formatPeso(sale.net_commission) : '—' }}</td>
                   <td class="px-4 py-3 text-center dark:text-white">{{ sale.agent_sale_seq ?? '—' }}</td>
+
                   <td class="px-2 py-3">
-                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity" v-if="canEditSale(sale)">
                       <button @click.stop="openEdit(sale)" title="Edit" class="p-1.5 rounded-md text-maurealty-blue dark:text-maurealty-light-blue hover:bg-maurealty-blue/10 dark:hover:bg-maurealty-light-blue/10 cursor-pointer">
                         <Pencil class="size-4" />
                       </button>
@@ -232,19 +239,27 @@
           <div><dt class="text-gray-500 dark:text-gray-400">Reservation Date</dt><dd class="dark:text-white">{{ formatDate(selectedSale.reservation_date) }}</dd></div>
           <div><dt class="text-gray-500 dark:text-gray-400">Contract Price</dt><dd class="dark:text-white">{{ formatPeso(selectedSale.total_contract_price) }}</dd></div>
           <div><dt class="text-gray-500 dark:text-gray-400">Sale #</dt><dd class="dark:text-white">{{ selectedSale.agent_sale_seq ?? '—' }}</dd></div>
+          <div>
+            <dt class="text-gray-500 dark:text-gray-400">Status</dt>
+            <dd>
+              <span :class="['px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider border', getStatusClass(selectedSale.status)]">
+                {{ selectedSale.status }}
+              </span>
+            </dd>
+          </div>
           <div><dt class="text-gray-500 dark:text-gray-400">Gross Commission</dt><dd class="dark:text-white">{{ selectedSale.gross_commission != null ? formatPeso(selectedSale.gross_commission) : '—' }}</dd></div>
           <div><dt class="text-gray-500 dark:text-gray-400">Net Commission</dt><dd class="dark:text-white">{{ selectedSale.net_commission != null ? formatPeso(selectedSale.net_commission) : '—' }}</dd></div>
           <div><dt class="text-gray-500 dark:text-gray-400">Voucher</dt><dd class="dark:text-white">{{ selectedSale.voucher_series || '—' }}</dd></div>
           <div class="col-span-2"><dt class="text-gray-500 dark:text-gray-400">Remarks</dt><dd class="dark:text-white">{{ selectedSale.remarks || '—' }}</dd></div>
         </dl>
 
-        <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-600">
+        <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-600" v-if="canEditSale(selectedSale)">
           <button @click="confirmDelete(selectedSale)" class="px-4 py-2 rounded-lg border border-red-300 dark:border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/80 cursor-pointer">Delete</button>
           <button @click="openEdit(selectedSale)" class="px-4 py-2 rounded-lg bg-maurealty-blue text-white hover:opacity-80 transition cursor-pointer">Edit</button>
         </div>
       </div>
     </div>
-  </div>
+  </div>  
 </template>
 
 <script setup lang="ts">
@@ -487,6 +502,28 @@ const pesoFmt = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'P
 const formatPeso = (n: number) => pesoFmt.format(n || 0)
 const formatDate = (d: string) =>
   new Date(d).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
+
+// for checking if user can edit sale
+function canEditSale(sale: Sale) {
+  return isAdmin.value || sale.status === 'pending approval';
+}
+
+// Maps the status string to its corresponding Tailwind colored badge styling
+function getStatusClass(status: string) {
+  switch (status) {
+    case 'pending approval':
+      return 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800';
+    case 'awaiting payment':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800';
+    case 'complete':
+      return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-800';
+    case 'cancelled':
+      return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800';
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-gray-200';
+  }
+}
+
 </script>
 
 <style scoped>

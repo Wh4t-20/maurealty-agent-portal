@@ -46,12 +46,28 @@
 
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Gross Commission (₱)</label>
-          <input v-model.number="form.gross_commission" type="number" min="0" step="0.01" :class="inputClass" placeholder="0.00" />
+          <input v-model.number="form.gross_commission" type="number" min="0" step="0.01" 
+          :class="[inputClass, !isAdmin ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-70' : '']"
+          placeholder="0.00"
+          :disabled="!isAdmin" />
         </div>
 
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Net Commission (₱)</label>
-          <input v-model.number="form.net_commission" type="number" min="0" step="0.01" :class="inputClass" placeholder="0.00" />
+          <input v-model.number="form.net_commission" type="number" min="0" step="0.01" 
+          :class="[inputClass, !isAdmin ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed opacity-70' : '']"
+          placeholder="0.00"
+          :disabled="!isAdmin" />
+        </div>
+
+        <div class="sm:col-span-2 flex flex-col gap-1" v-if="isAdmin && editSale">
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Sale Status</label>
+          <select v-model="form.status" :class="inputClass">
+            <option value="pending approval">Pending Approval</option>
+            <option value="awaiting payment">Awaiting Payment</option>
+            <option value="complete">Complete</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
         </div>
 
         <div class="flex flex-col gap-1">
@@ -273,6 +289,7 @@ const form = reactive({
   net_commission: e?.net_commission ?? null as number | null,
   voucher_series: e?.voucher_series ?? '',
   remarks: e?.remarks ?? '',
+  status: e?.status ?? 'pending approval',
   unit_details: e?.unit_details ?? {} as Record<string, any>
 })
 
@@ -289,6 +306,8 @@ const propertyTypesMap: Record<string, number> = {
   'Memorial': 4, 'memorial': 4
 };
 // 
+
+const isAdmin = ref(false); // to see if user is an admin or not and modal changes depending on it.
 const prefilledListingId = ref<number | null>(null);
 
 watch([() => form.listing_ID, selectedListing], async ([newId, listing]) => {
@@ -371,6 +390,11 @@ watch([() => form.listing_ID, selectedListing], async ([newId, listing]) => {
 }, { immediate: true });
 
 onMounted(async () => {
+
+  // Check admin status when object mounts
+  const agent = await authService.getCurrentAgent();
+  isAdmin.value = !!agent?.admin_access;
+
   // Locked/edit flows already have their property — no dropdown needed.
   if (propertyLocked) return
   try {
@@ -395,6 +419,7 @@ async function submit() {
     net_commission: form.net_commission,
     voucher_series: form.voucher_series || null,
     remarks: form.remarks || null,
+    status: form.status,
     unit_details: selectedListing.value?.is_bulk ? form.unit_details: null
   }
 
