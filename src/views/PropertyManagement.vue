@@ -103,10 +103,6 @@
                 <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Price ({{ currentCurrency }})</label>
                 <input type="number" step="0.01" v-model="form.price" class="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 bg-white dark:bg-black dark:bg-black dark:text-white rounded-lg p-3">
               </div>
-              <div class="col-span-1">
-                <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Commission (%)</label>
-                <input type="number" step="any" v-model="form.commission" class="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 bg-white dark:bg-black dark:bg-black dark:text-white rounded-lg p-3">
-              </div>
 
               <div class="col-span-2">
                 <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Location</label>
@@ -679,7 +675,6 @@ const loadProperties = async () => {
       form.value.listing_title = data.listing_title;
       form.value.property_type = typeReverseMap[propertyType] || typeReverseMap[1];
       form.value.price = Number(convertPrice(data.price).toFixed(2));
-      form.value.commission = data.commission;
       form.value.location = data.location;
       form.value.lng = data.longitude;
       form.value.lat = data.latitude;
@@ -790,7 +785,6 @@ const form = ref<Partial<PropertyForm>>({
   property_type: 'House And Lot',
   is_bulk: false, 
   price: 0,
-  commission: 0,
   location: '',
   lng: 123.89315517066801,
   lat: 10.309933165401256,
@@ -935,7 +929,6 @@ const saveProperty = async () => {
         property_type_ID: propertyTypeId,
         is_bulk: form.value.is_bulk,
         price: convertPriceToPHP(Number(form.value.price)) || 0,
-        commission: form.value.commission,
         location: form.value.location,
         longitude: form.value.lng,
         latitude: form.value.lat,
@@ -1035,7 +1028,6 @@ const saveProperty = async () => {
         property_type_ID: propertyTypeId,
         is_bulk: form.value.is_bulk,
         price: form.value.price,
-        commission: form.value.commission,
         location: form.value.location,
         longitude: form.value.lng,
         latitude: form.value.lat,
