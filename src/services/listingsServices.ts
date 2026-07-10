@@ -19,6 +19,7 @@ export const listingsService = {
         listing_ID,
         listing_title,
         price,
+        max_price,
         commission,
         location,
         longitude,

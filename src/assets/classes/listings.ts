@@ -5,6 +5,7 @@ export interface Property {
     agent_name: string;
     property_type: string;
     price: number;
+    max_price: number | null;
     commission: number;
     location: string;
     lng: number;
