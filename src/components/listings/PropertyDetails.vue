@@ -74,7 +74,6 @@
             <span class="flex items-center gap-1.5">
               <UserStarIcon class="size-6 text-black dark:text-white" />
               <p>{{ details.agent_name || 'N/A' }}</p>
-              <p class="italic text-gray-700 dark:text-gray-300/70">- {{ details.commission }}% Commision</p>
             </span>
             
             <p class="text-sm text-gray-500 dark:text-gray-400">Created on: {{ details.created_at.toLocaleDateString() }}</p>
@@ -337,7 +336,6 @@ const loadProperties = async () => {
         agent_ID: data.agent_ID,
         listing_title: data.listing_title,
         price: data.price,
-        commission: data.commission,
         location: data.location,
         lng: data.longitude,
         lat: data.latitude,
