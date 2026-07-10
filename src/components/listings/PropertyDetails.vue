@@ -53,8 +53,14 @@
           </div>
 
           <div class="w-2/5 flex flex-col gap-2 text-gray-800 dark:text-gray-200 text-lg">
+            
             <span class="inline-block bg-maurealty-green w-fit text-2xl text-white px-4 py-0.5 rounded-full tracking-wider mt-0.5">
-               {{ formatPrice(details.price ?? 0).toLocaleString() }}
+               <template v-if="details.is_bulk && details.max_price">
+                 {{ formatPrice(details.price ?? 0) }} - {{ formatPrice(details.max_price) }}
+               </template>
+               <template v-else>
+                 {{ formatPrice(details.price ?? 0) }}
+               </template>
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
@@ -336,6 +342,7 @@ const loadProperties = async () => {
         agent_ID: data.agent_ID,
         listing_title: data.listing_title,
         price: data.price,
+        max_price: data.max_price,
         location: data.location,
         lng: data.longitude,
         lat: data.latitude,
