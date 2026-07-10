@@ -101,7 +101,7 @@
               <!-- Price Block-->
               <div class="col-span-1">
                 <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">
-                  {{ form.is_bulk ? 'Min Price' : 'Price' }} ({{ currentCurrency }})
+                  {{ form.is_bulk ? 'Min Price - Max Price' : 'Price' }} ({{ currentCurrency }})
                 </label>
                 <div class="flex gap-2 items-center">
                   <input type="number" step="0.01" v-model="form.price" class="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-black dark:text-white rounded-lg p-3">
