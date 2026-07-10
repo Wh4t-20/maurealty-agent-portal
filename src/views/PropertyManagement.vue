@@ -98,14 +98,19 @@
 
           <div class="bg-blue-50/30 dark:bg-maurealty-light-blue/15 border border-maurealty-blue/10 rounded-2xl p-8">
             <div class="grid grid-cols-2 gap-4">
-    
+              <!-- Price Block-->
               <div class="col-span-1">
-                <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Price ({{ currentCurrency }})</label>
-                <input type="number" step="0.01" v-model="form.price" class="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 bg-white dark:bg-black dark:bg-black dark:text-white rounded-lg p-3">
-              </div>
-              <div class="col-span-1">
-                <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Commission (%)</label>
-                <input type="number" step="any" v-model="form.commission" class="w-full border border-gray-300 dark:border-gray-700 dark:border-gray-700 bg-white dark:bg-black dark:bg-black dark:text-white rounded-lg p-3">
+                <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">
+                  {{ form.is_bulk ? 'Min Price - Max Price' : 'Price' }} ({{ currentCurrency }})
+                </label>
+                <div class="flex gap-2 items-center">
+                  <input type="number" step="0.01" v-model="form.price" class="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-black dark:text-white rounded-lg p-3">
+                  
+                  <template v-if="form.is_bulk">
+                    <span class="text-gray-500 font-bold">-</span>
+                    <input type="number" step="0.01" v-model="form.max_price" placeholder="Max" class="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-black dark:text-white rounded-lg p-3">
+                  </template>
+                </div>
               </div>
 
               <div class="col-span-2">
@@ -654,6 +659,7 @@ type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & {
   listing_title?: string;
   dev_ID: number | null;
   is_bulk: boolean; 
+  max_price?: number | null;
 };
 
 // Store fetched developers (for dropdown)
@@ -679,7 +685,7 @@ const loadProperties = async () => {
       form.value.listing_title = data.listing_title;
       form.value.property_type = typeReverseMap[propertyType] || typeReverseMap[1];
       form.value.price = Number(convertPrice(data.price).toFixed(2));
-      form.value.commission = data.commission;
+      form.value.max_price = Number(convertPrice(data.max_price).toFixed(2));
       form.value.location = data.location;
       form.value.lng = data.longitude;
       form.value.lat = data.latitude;
@@ -790,7 +796,7 @@ const form = ref<Partial<PropertyForm>>({
   property_type: 'House And Lot',
   is_bulk: false, 
   price: 0,
-  commission: 0,
+  max_price: null,
   location: '',
   lng: 123.89315517066801,
   lat: 10.309933165401256,
@@ -935,7 +941,7 @@ const saveProperty = async () => {
         property_type_ID: propertyTypeId,
         is_bulk: form.value.is_bulk,
         price: convertPriceToPHP(Number(form.value.price)) || 0,
-        commission: form.value.commission,
+        max_price: form.value.is_bulk && form.value.max_price ? convertPriceToPHP(Number(form.value.max_price)) : null,
         location: form.value.location,
         longitude: form.value.lng,
         latitude: form.value.lat,
@@ -1035,7 +1041,7 @@ const saveProperty = async () => {
         property_type_ID: propertyTypeId,
         is_bulk: form.value.is_bulk,
         price: form.value.price,
-        commission: form.value.commission,
+        max_price: form.value.is_bulk && form.value.max_price ? convertPriceToPHP(Number(form.value.max_price)) : null,
         location: form.value.location,
         longitude: form.value.lng,
         latitude: form.value.lat,

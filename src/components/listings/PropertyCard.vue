@@ -65,7 +65,16 @@ function propertyTypeColor(type: string) {
 
 // Computed properties for formatted display values
 const displayType = computed(() => formattedPropertyType(props.details.property_type))
-const formattedPrice = computed(() => formatPrice(props.details.price))
+
+const formattedPrice = computed(() => {
+  const minPrice = formatPrice(props.details.price);
+  // Return range if listing is bulk and max_price is available
+  if (props.details.is_bulk && props.details.max_price) {
+    return `${minPrice} - ${formatPrice(props.details.max_price)}`;
+  }
+  return minPrice;
+})
+
 const formattedDate = computed(() => dateFormatter.format(props.details.created_at))
 
 // Returns the database image URL if it exists, otherwise uses the local fallback

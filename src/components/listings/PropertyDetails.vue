@@ -53,8 +53,14 @@
           </div>
 
           <div class="w-2/5 flex flex-col gap-2 text-gray-800 dark:text-gray-200 text-lg">
+            
             <span class="inline-block bg-maurealty-green w-fit text-2xl text-white px-4 py-0.5 rounded-full tracking-wider mt-0.5">
-               {{ formatPrice(details.price ?? 0).toLocaleString() }}
+               <template v-if="details.is_bulk && details.max_price">
+                 {{ formatPrice(details.price ?? 0) }} - {{ formatPrice(details.max_price) }}
+               </template>
+               <template v-else>
+                 {{ formatPrice(details.price ?? 0) }}
+               </template>
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
@@ -74,7 +80,6 @@
             <span class="flex items-center gap-1.5">
               <UserStarIcon class="size-6 text-black dark:text-white" />
               <p>{{ details.agent_name || 'N/A' }}</p>
-              <p class="italic text-gray-700 dark:text-gray-300/70">- {{ details.commission }}% Commision</p>
             </span>
             
             <p class="text-sm text-gray-500 dark:text-gray-400">Created on: {{ details.created_at.toLocaleDateString() }}</p>
@@ -337,7 +342,7 @@ const loadProperties = async () => {
         agent_ID: data.agent_ID,
         listing_title: data.listing_title,
         price: data.price,
-        commission: data.commission,
+        max_price: data.max_price,
         location: data.location,
         lng: data.longitude,
         lat: data.latitude,
