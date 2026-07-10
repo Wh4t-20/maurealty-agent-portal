@@ -98,7 +98,7 @@
 
           <div class="bg-blue-50/30 dark:bg-maurealty-light-blue/15 border border-maurealty-blue/10 rounded-2xl p-8">
             <div class="grid grid-cols-2 gap-4">
-              <!-- Price Block -->
+              <!-- Price Block-->
               <div class="col-span-1">
                 <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">
                   {{ form.is_bulk ? 'Min Price' : 'Price' }} ({{ currentCurrency }})
