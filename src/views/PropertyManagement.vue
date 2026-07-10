@@ -650,6 +650,7 @@ type PropertyForm = HouseAndLot & Lot & Condominium & Memorial & {
   listing_title?: string;
   dev_ID: number | null;
   is_bulk: boolean; 
+  max_price?: number | null;
 };
 
 // Store fetched developers (for dropdown)
@@ -675,6 +676,7 @@ const loadProperties = async () => {
       form.value.listing_title = data.listing_title;
       form.value.property_type = typeReverseMap[propertyType] || typeReverseMap[1];
       form.value.price = Number(convertPrice(data.price).toFixed(2));
+      form.value.max_price = Number(convertPrice(data.max_price).toFixed(2));
       form.value.location = data.location;
       form.value.lng = data.longitude;
       form.value.lat = data.latitude;
@@ -785,6 +787,7 @@ const form = ref<Partial<PropertyForm>>({
   property_type: 'House And Lot',
   is_bulk: false, 
   price: 0,
+  max_price: null,
   location: '',
   lng: 123.89315517066801,
   lat: 10.309933165401256,

@@ -57,6 +57,7 @@ export const listingsService = {
       agent_name: `${item.agents?.first_name || ''} ${item.agents?.last_name || ''}`.trim(),
       property_type: item.property_type?.property_type || 'Unknown',
       price: item.price,
+      max_price: item.max_price,
       commission: item.commission,
       location: item.location,
       lng: item.longitude,
