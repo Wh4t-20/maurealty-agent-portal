@@ -10,7 +10,8 @@
         </div>
 
         <!-- FORM -->
-        <form class="px-6 py-4 overflow-y-auto grid grid-cols-2 gap-4 text-sm" @submit.prevent="save">
+        <!-- One column on phones, two columns on bigger screens -->
+        <form class="px-6 py-4 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm" @submit.prevent="save">
           <label class="flex flex-col gap-1">
             <span class="text-gray-500">First name *</span>
             <input v-model.trim="form.first_name" required class="form-input" />
@@ -47,7 +48,7 @@
             <span class="text-gray-500">Email *</span>
             <input type="email" v-model.trim="form.email_address" required class="form-input" />
           </label>
-          <label class="flex flex-col gap-1 col-span-2">
+          <label class="flex flex-col gap-1 sm:col-span-2">
             <span class="text-gray-500">Home address *</span>
             <input v-model.trim="form.home_address" required class="form-input" />
           </label>
@@ -67,12 +68,12 @@
               </option>
             </select>
           </label>
-          <label class="flex items-center gap-2 col-span-2">
+          <label class="flex items-center gap-2 sm:col-span-2">
             <input type="checkbox" v-model="form.admin_access" />
             <span class="text-gray-600">Grant admin access</span>
           </label>
 
-          <p v-if="error" class="col-span-2 text-red-600 text-xs">{{ error }}</p>
+          <p v-if="error" class="sm:col-span-2 text-red-600 text-xs">{{ error }}</p>
         </form>
 
         <!-- ACTIONS -->

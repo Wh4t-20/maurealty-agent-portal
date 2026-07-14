@@ -1,11 +1,12 @@
 <template>
-    <form @submit.prevent="saveAgentDetails" class="bg-gray-100 dark:bg-mist-950 w-full max-w-7xl rounded-2xl shadow-md p-10 flex flex-col gap-5">
-        <div class="flex justify-items-center gap-10">
+    <form @submit.prevent="saveAgentDetails" class="bg-gray-100 dark:bg-mist-950 w-full max-w-7xl rounded-2xl shadow-md p-5 sm:p-10 flex flex-col gap-5">
+        <!-- Photo on top for phones, photo beside the form on wide screens -->
+        <div class="flex flex-col lg:flex-row items-center lg:items-start gap-6 lg:gap-10">
             <div class="relative flex flex-col items-center justify-center">
                 <img
                 :src=" form.profile_url || placeholder"
                 alt="Profile"
-                class="w-80 h-80 object-cover rounded-full border-4 border-white shadow"
+                class="w-40 h-40 sm:w-56 sm:h-56 lg:w-80 lg:h-80 object-cover rounded-full border-4 border-white shadow"
                 />
 
                 <input 
@@ -32,12 +33,12 @@
                 </div>
             </div>
 
-            <div class="flex-1 space-y-3">
-                <div class="mt-5 grid grid-cols-3 gap-5">
+            <div class="flex-1 w-full space-y-3">
+                <div class="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-5">
                     <div class="col-span-full">
                         <label class="text-maurealty-blue dark:text-maurealty-light-blue font-bold text-xl block">FULL NAME</label>
                         
-                        <div class="grid grid-cols-3 mt-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 mt-2 gap-4">
                             <div class="flex flex-col gap-1">
                                 <label class="text-maurealty-blue dark:text-maurealty-light-blue font-medium text-sm block">First Name</label>
                                 <input type="text" v-model="form.first_name" class="w-full bg-white dark:bg-black dark:text-white border border-gray-300 rounded-lg p-3 py-1.75 focus:ring-2 focus:ring-maurealty-blue outline-none">
@@ -114,13 +115,13 @@
                     <div class="col-span-full">
                         <label class="text-maurealty-blue dark:text-maurealty-light-blue font-bold text-xl block">CONTACT DETAILS</label>
                         
-                        <div class="grid grid-cols-3 mt-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 mt-2 gap-4">
                             <div class="flex flex-col gap-1">
                                 <label class="text-maurealty-blue dark:text-maurealty-light-blue font-medium text-sm block">Contact No.</label>
                                 <input type="text" v-model="form.contact_number" class="w-full bg-white dark:bg-black dark:text-white border border-gray-300 rounded-lg p-3 py-1.75 focus:ring-2 focus:ring-maurealty-blue outline-none">
                             </div>
 
-                            <div class="flex flex-col col-span-2 gap-1">
+                            <div class="flex flex-col sm:col-span-2 gap-1">
                                 <label class="text-maurealty-blue dark:text-maurealty-light-blue font-medium text-sm block">Email Address</label>
                                 <input type="email" v-model="form.email_address" class="w-full bg-white dark:bg-black dark:text-white border border-gray-300 rounded-lg p-3 py-1.75 focus:ring-2 focus:ring-maurealty-blue outline-none">
                             </div>
@@ -130,12 +131,13 @@
             </div>
         </div>
         
-        <div class="w-full flex gap-4 justify-end">
-            <button type="button" @click="$emit('cancel')" class="flex flex-col items-center py-2 px-5 w-50 rounded-2xl border-2 border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+        <!-- Buttons stack on phones, sit side by side on bigger screens -->
+        <div class="w-full flex flex-col sm:flex-row gap-4 justify-end">
+            <button type="button" @click="$emit('cancel')" class="flex flex-col items-center py-2 px-5 w-full sm:w-50 rounded-2xl border-2 border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
                 <span class="flex items-center-safe gap-2"> CANCEL</span>
             </button>
 
-            <button type="submit" class="flex flex-col items-center py-2 px-5 w-50 rounded-2xl border-2 border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+            <button type="submit" class="flex flex-col items-center py-2 px-5 w-full sm:w-50 rounded-2xl border-2 border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
                 <span class="flex items-center-safe gap-2"><span>★</span> SAVE ACCOUNT</span>
             </button>
         </div>

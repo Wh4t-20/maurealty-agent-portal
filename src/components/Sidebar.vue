@@ -1,7 +1,8 @@
 <template>
+  <!-- Desktop sidebar. Hidden on phones since hover-to-expand doesn't work on touch screens. -->
   <aside
-    class=" top-0 left-0 h-screen bg-maurealty-blue dark:bg-[#031a2b]
-            flex flex-col py-6 shadow-lg
+    class="hidden md:flex top-0 left-0 h-screen bg-maurealty-blue dark:bg-[#031a2b]
+            flex-col py-6 shadow-lg
             transition-all duration-300
             w-20 hover:w-90 group overflow-hidden sticky"
   >
@@ -80,6 +81,38 @@
       
     </div>
   </aside>
+
+  <!-- Phone navigation. A bottom bar with the same links as the sidebar.
+       Scrolls sideways if the icons don't all fit. -->
+  <nav class="fixed bottom-0 left-0 right-0 z-50 flex md:hidden bg-maurealty-blue dark:bg-[#031a2b] border-t border-white/10 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+    <router-link
+      v-for="item in topItems"
+      :key="item.id + item.path"
+      :to="item.path"
+      class="flex flex-col items-center justify-center gap-0.5 px-4 py-2 text-white/60 hover:text-white transition-colors shrink-0"
+      active-class="text-white bg-white/10"
+    >
+      <component :is="item.icon" class="w-5 h-5" :stroke-width="1.5" />
+      <span class="text-[10px] whitespace-nowrap">{{ item.label }}</span>
+    </router-link>
+
+    <router-link
+      to="/settings"
+      class="flex flex-col items-center justify-center gap-0.5 px-4 py-2 text-white/60 hover:text-white transition-colors shrink-0"
+      active-class="text-white bg-white/10"
+    >
+      <Settings class="w-5 h-5" :stroke-width="1.5" />
+      <span class="text-[10px]">Settings</span>
+    </router-link>
+
+    <button
+      @click="handleLogout"
+      class="flex flex-col items-center justify-center gap-0.5 px-4 py-2 text-white/60 hover:text-white transition-colors shrink-0 cursor-pointer"
+    >
+      <LogOut class="w-5 h-5" :stroke-width="1.5" />
+      <span class="text-[10px]">Logout</span>
+    </button>
+  </nav>
 </template>
 
 <script lang="ts" setup>

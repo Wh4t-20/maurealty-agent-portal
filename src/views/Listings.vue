@@ -1,5 +1,11 @@
 <template>
-  <div class="w-full h-screen bg-background-gray dark:bg-background-dark-gray flex flex-col items-center overflow-hidden">
+  <!-- On phones, App.vue adds bottom padding (pb-16 = 4rem) so the bottom nav
+       doesn't cover this page. That padding sits OUTSIDE this h-screen box, so
+       without the calc() below this page would be exactly one phone-screen tall
+       PLUS 4rem, taller than the visible screen — which is what let the whole
+       page scroll instead of just the listings. Subtracting 4rem here cancels
+       that extra padding back out, so this box is exactly one screen tall again. -->
+  <div class="w-full h-[calc(100vh-4rem)] md:h-screen bg-background-gray dark:bg-background-dark-gray flex flex-col items-center overflow-hidden">
     <Transition name="toast">
       <div v-if="savedNotice" class="fixed top-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-maurealty-green/40 dark:border-maurealty-green/60 shadow-lg px-5 py-3">
         <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-green text-white text-sm font-bold">✓</span>
@@ -7,10 +13,10 @@
       </div>
     </Transition>
 
-    <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black text-maurealty-blue dark:text-white shadow-md sticky z-20">
-      <div class="flex justify-between items-center w-full pb-3 mb-3">
-        <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
-        <div class="flex gap-5 h-full">
+    <header class="flex flex-col py-5 px-4 sm:px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black text-maurealty-blue dark:text-white shadow-md sticky z-20">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full pb-3 mb-3 gap-2">
+        <h1 class="text-xl sm:text-3xl font-bold">PROJECT LISTINGS</h1>
+        <div class="flex gap-3 sm:gap-5 h-full w-full sm:w-auto">
           <button class="flex items-center gap-1 bg-maurealty-blue text-md text-white h-full px-4 rounded-full cursor-pointer hover:opacity-70 transition-opacity" @click="addListing">
             <Plus class="size-4" /> Add Listing
           </button>
@@ -20,7 +26,8 @@
       </div>
 
       <Transition name="expand">
-        <div v-if="isFilterVisible" class="flex items-center gap-10 pb-5 w-full flex-warp">
+        <!-- Filters wrap into extra rows on small screens instead of overflowing -->
+        <div v-if="isFilterVisible" class="flex flex-wrap items-start gap-4 sm:gap-8 pb-5 w-full">
             
             <section class="listings-filter-section">
               <label for="Type-input" class="text-base">Type</label>
@@ -121,9 +128,11 @@
       </transition>
 
       <section class="custom-scrollbar flex-1 overflow-y-auto">
-        <div class="p-10 flex flex-col min-h-full">
+        <div class="p-4 sm:p-10 flex flex-col min-h-full">
           
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <!-- Column count here must match the gridColumns breakpoints in the script,
+               so the "cards per page" math lines up with what's actually on screen -->
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
             <PropertyCard 
               v-for="property in paginatedProperties" 
               :key="property.listing_id" 
@@ -169,7 +178,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, computed, onMounted, watch } from 'vue'
+import { ref, shallowRef, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 // Property instance
@@ -240,20 +249,35 @@ const filteredProperties = computed(() => {
 
 // page setup
 const currentPage = ref(1)
-const itemsPerPage = 8
+
+// Watches the browser width so we know how many columns the grid is
+// currently showing (must match the grid-cols-* breakpoints in the template).
+const windowWidth = ref(window.innerWidth)
+const updateWindowWidth = () => { windowWidth.value = window.innerWidth }
+onMounted(() => window.addEventListener('resize', updateWindowWidth))
+onUnmounted(() => window.removeEventListener('resize', updateWindowWidth))
+
+const gridColumns = computed(() => {
+  if (windowWidth.value < 768) return 2   // phones
+  if (windowWidth.value < 1024) return 3  // tablets
+  return 4                                 // laptops and up
+})
+
+// Aim for about 3 rows of cards per page, however many columns currently fit.
+// On phones that's 2 columns x 3 rows = 6 listings, like the goal was.
+const itemsPerPage = computed(() => gridColumns.value * 3)
 
 // calculate total pages
-const totalPages = computed(() => Math.ceil(filteredProperties.value.length / itemsPerPage))
+const totalPages = computed(() => Math.ceil(filteredProperties.value.length / itemsPerPage.value))
 
-//  shows 8 pages 
 const paginatedProperties = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
   return filteredProperties.value.slice(start, end)
 })
 
-// Reset to page 1 when any filter or search changes
-watch([selectedType, searchQuery, selectedDeveloper, priceMin, priceMax], () => {
+// Reset to page 1 when any filter, search, or the items-per-page count changes
+watch([selectedType, searchQuery, selectedDeveloper, priceMin, priceMax, itemsPerPage], () => {
   currentPage.value = 1
 })
 
@@ -407,7 +431,8 @@ input[type=number] {
 .expand-enter-active,
 .expand-leave-active {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  max-height: 100px; /* Adjust based on your filter height */
+  /* Tall enough to fit the filters even when they wrap into several rows on phones */
+  max-height: 400px;
   opacity: 1;
 }
 

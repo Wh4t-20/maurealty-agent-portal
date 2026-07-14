@@ -1,32 +1,34 @@
 <template>
-  <div class="relative w-full max-w-150"> 
+  <!-- Compact "marketplace style" card on phones (small text, tight spacing),
+       the roomier original card on bigger screens -->
+  <div class="relative w-full max-w-150">
     <div class = "relative hover:shadow-2xl">
       <img :src="houseimg"
             alt="House"
             loading="lazy"
 
-        class="w-full aspect-square object-cover rounded-lg border border-gray-300 dark:border-gray-800" 
+        class="w-full aspect-square object-cover rounded-lg border border-gray-300 dark:border-gray-800"
         />
-    <span :class="['absolute top-3 right-3 text-sm font-light text-white px-3 py-1 rounded-full tracking-wider shadow-md',propertyTypeColor(details.property_type)]">
+    <span :class="['absolute top-1.5 right-1.5 sm:top-3 sm:right-3 text-[10px] sm:text-sm font-light text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full tracking-wider shadow-md',propertyTypeColor(details.property_type)]">
       {{ displayType }}
     </span>
     </div>
-    
-    <div class="flex flex-col h-full z-1 -mt-10 w-9/10 p-3 px-5  rounded-lg bg-white dark:bg-black border border-gray-300 dark:border-gray-800 shadow-md/30 ">
-      <p class="text-xl text-maurealty-blue dark:text-maurealty-light-blue truncate font-semibold tracking-tight ">{{ details.listing_title }}</p>
-      
-      <span class="block bg-maurealty-green break-all font-normal text-lg text-white px-3 rounded-full tracking-wider mr-2 mt-0.5">
+
+    <div class="flex flex-col h-full z-1 -mt-6 sm:-mt-10 w-9/10 p-2 px-3 sm:p-3 sm:px-5 rounded-lg bg-white dark:bg-black border border-gray-300 dark:border-gray-800 shadow-md/30 ">
+      <p class="text-sm sm:text-xl text-maurealty-blue dark:text-maurealty-light-blue truncate font-semibold tracking-tight ">{{ details.listing_title }}</p>
+
+      <span class="block bg-maurealty-green break-all font-normal text-xs sm:text-lg text-white px-2 sm:px-3 rounded-full tracking-wider mr-2 mt-0.5">
           {{ formattedPrice }}
       </span>
-      
-      <div class="flex items-center gap-1 text-black dark:text-white mt-2">
-        <MapPin class="w-4 h-4" />
-        <span class="text-sm truncate">
+
+      <div class="flex items-center gap-1 text-black dark:text-white mt-1 sm:mt-2">
+        <MapPin class="w-3 h-3 sm:w-4 sm:h-4 shrink-0" />
+        <span class="text-[10px] sm:text-sm truncate">
             {{ details.location }}
         </span>
       </div>
-      <p class="tracking-wide mb-0 text-black dark:text-white truncate">{{ details.developer_name }}</p>
-      <p class=" text-sm text-gray-500 mt-auto">Created at: {{ formattedDate }}</p>
+      <p class="hidden sm:block tracking-wide mb-0 text-black dark:text-white truncate">{{ details.developer_name }}</p>
+      <p class="hidden sm:block text-sm text-gray-500 mt-auto">Created at: {{ formattedDate }}</p>
     </div>
   </div>
 </template>

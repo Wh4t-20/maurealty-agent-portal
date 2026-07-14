@@ -2,7 +2,13 @@
   <div class="flex">
     <Sidebar v-if="!route.meta.hideSidebar" />
     
-    <div class="flex-1">
+    <!-- min-w-0 stops wide page content (like a big table) from stretching this
+         box past the browser width. Without it, a flex item never shrinks smaller
+         than its widest child, so the whole page — sidebar included — would grow
+         sideways and force a horizontal scrollbar instead of the content
+         scrolling on its own. Extra bottom padding on phones so the bottom nav
+         bar doesn't cover the page. -->
+    <div class="flex-1 min-w-0 pb-16 md:pb-0">
       <RouterView />
     </div>
   </div>
