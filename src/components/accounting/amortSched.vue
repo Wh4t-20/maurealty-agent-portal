@@ -37,35 +37,36 @@
             </div>
         </div>
 
-    <div class="overflow-y-auto flex-1 px-6 pb-6">
-        <table class="w-full text-center border-collapse border border-gray-200">
+    <!-- The table scrolls sideways on phones so no columns get cut off -->
+    <div class="overflow-y-auto overflow-x-auto flex-1 px-6 pb-6">
+        <table class="w-full min-w-[640px] text-center border-collapse border border-gray-200">
             <thead class="sticky top-0 bg-white dark:bg-black shadow-sm z-10 text-[#475569] dark:text-[#B7DADA] text-sm font-semibold">
             <tr>
                 <th class="border-t-2 py-4 px-3 border border-gray-200 w-1/12 whitespace-normal wrap-break-word">
                 Month
                 </th>
                 
-                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
+                <th class="border-t-2 py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
                 Due Date
                 </th>
                 
-                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
+                <th class="border-t-2 py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
                 Monthly Payment
                 </th>
                 
-                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
+                <th class="border-t-2 py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
                 Interest Due
                 </th>
                 
-                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
+                <th class="border-t-2 py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
                 Principal Payment
                 </th>
                 
-                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
+                <th class="border-t-2 py-4 px-3 border border-gray-200 w-2/12 whitespace-normal wrap-break-word">
                 Outstanding<br/>Principal Balance
                 </th>
                 
-                <th class="border-t-2 hidden md:table-cell py-4 px-3 border border-gray-200 w-1/12 whitespace-normal wrap-break-word">
+                <th class="border-t-2 py-4 px-3 border border-gray-200 w-1/12 whitespace-normal wrap-break-word">
                 Days
                 </th>
             </tr>
@@ -74,17 +75,17 @@
             <tr v-for="row in paginatedSchedule" :key="row.month">
               <td class="py-3 px-3 border border-gray-200 w-1/12">{{ row.month }}</td>
               
-              <td class="hidden md:table-cell py-3 px-3 border border-gray-200 w-2/12">{{ formatDate(row.date) }}</td>
+              <td class="py-3 px-3 border border-gray-200 w-2/12">{{ formatDate(row.date) }}</td>
               
-              <td class="hidden md:table-cell py-3 px-3 border border-gray-200 w-2/12">₱{{ formatCurrency(row.payment) }}</td>
+              <td class="py-3 px-3 border border-gray-200 w-2/12">₱{{ formatCurrency(row.payment) }}</td>
               
-              <td class="hidden md:table-cell py-3 px-3 border border-gray-200 w-2/12 text-[#b91c1c] dark:text-[#ed2c2c]">₱{{ formatCurrency(row.interestPaid) }}</td>
+              <td class="py-3 px-3 border border-gray-200 w-2/12 text-[#b91c1c] dark:text-[#ed2c2c]">₱{{ formatCurrency(row.interestPaid) }}</td>
               
-              <td class="hidden md:table-cell py-3 px-3 border border-gray-200 w-2/12">₱{{ formatCurrency(row.principalPaid) }}</td>
+              <td class="py-3 px-3 border border-gray-200 w-2/12">₱{{ formatCurrency(row.principalPaid) }}</td>
               
-              <td class="hidden md:table-cell py-3 px-3 border border-gray-200 w-2/12">₱{{ formatCurrency(row.balance) }}</td>
+              <td class="py-3 px-3 border border-gray-200 w-2/12">₱{{ formatCurrency(row.balance) }}</td>
               
-              <td class="hidden md:table-cell py-3 px-3 border border-gray-200 w-1/12">{{ row.days }}</td>
+              <td class="py-3 px-3 border border-gray-200 w-1/12">{{ row.days }}</td>
             </tr>
           </tbody>
         </table>

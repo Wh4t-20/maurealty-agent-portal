@@ -5,7 +5,8 @@
       <div class="w-full max-w-[1100px] px-4">
 
         <!-- HEADER -->
-        <div class="flex items-center justify-between h-[110px] px-6 mb-6
+        <!-- Header wraps into two rows on phones instead of squeezing everything into one -->
+        <div class="flex flex-wrap items-center justify-between gap-3 min-h-[110px] px-4 sm:px-6 py-4 mb-6
                     bg-gradient-to-r from-[#A9D6FF70] dark:from-[#031a2b] to-[#FFFFFF] dark:to-black
                     shadow-[0_10px_15px_rgba(0,0,0,0.15)] rounded-[12px]">
 
@@ -15,7 +16,7 @@
           </h1>
 
           <!-- SEARCH -->
-          <div class="flex-1 mx-6 max-w-[350px]">
+          <div class="flex-1 sm:mx-6 max-w-[350px] order-3 sm:order-none w-full sm:w-auto basis-full sm:basis-auto">
             <input
               type="text"
               v-model="search"
@@ -44,7 +45,7 @@
         </div>
 
         <!-- STATS -->
-        <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div class="bg-[#C8DDF64A] dark:bg-[#1b3c64b7] dark:text-white p-4 rounded-xl shadow border-l-4 border-blue-500 dark:border-blue-900">
             Total Agents<br><b>{{ stats.totalAgents }}</b>
           </div>
@@ -61,7 +62,7 @@
 
         <!-- CONTENT -->
         <section class="custom-scrollbar h-full overflow-y-auto">
-        <div class="grid grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
           <!-- TEAMS -->
           <div class="bg-white dark:bg-black dark:text-white p-8 rounded-xl shadow">
