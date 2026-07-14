@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full h-screen bg-background-gray dark:bg-background-dark-gray flex flex-col overflow-hidden p-10">
-    <main class="relative custom-scrollbar size-full bg-white dark:bg-black dark:bg-black border border-maurealty-blue/25 rounded-2xl shadow-lg py-7 px-10 overflow-y-scroll">
+  <div class="w-full h-screen bg-background-gray dark:bg-background-dark-gray flex flex-col overflow-hidden p-3 sm:p-10">
+    <main class="relative custom-scrollbar size-full bg-white dark:bg-black border border-maurealty-blue/25 rounded-2xl shadow-lg py-5 px-4 sm:py-7 sm:px-10 overflow-y-scroll">
       <transition
       enter-active-class="transition duration-200 ease-out"
       enter-from-class="opacity-0 scale-95"
@@ -27,7 +27,7 @@
       </transition>
       
       <header class="relative">
-          <h1 class="text-4xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-white mb-4 ml-5">
+          <h1 class="text-2xl sm:text-4xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-white mb-4 ml-5">
             PROPERTY MANAGEMENT
           </h1>
 
@@ -35,9 +35,13 @@
       </header>
 
       <div>
-        <form @submit.prevent="saveProperty" class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        
-          <div class="space-y-6">
+        <!-- Everything stacks in one column. Only the two main panels sit
+             side by side, and only on very wide screens. Flex is used here
+             instead of grid because it behaves more predictably on phones. -->
+        <form @submit.prevent="saveProperty" class="flex flex-col gap-10">
+
+          <div class="flex flex-col xl:flex-row gap-10">
+          <div class="space-y-6 min-w-0 xl:flex-1">
             <div>
               <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Title</label>
               <input type="text" v-model="form.listing_title" placeholder="e.g. Luxurious Home" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue dark:focus:ring-maurealty-light-blue outline-none">
@@ -96,8 +100,8 @@
             </div>
           </div>
 
-          <div class="bg-blue-50/30 dark:bg-maurealty-light-blue/15 border border-maurealty-blue/10 rounded-2xl p-8">
-            <div class="grid grid-cols-2 gap-4">
+          <div class="bg-blue-50/30 dark:bg-maurealty-light-blue/15 border border-maurealty-blue/10 rounded-2xl p-4 sm:p-8 min-w-0 xl:flex-1 xl:self-start">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <!-- Price Block-->
               <div class="col-span-1">
                 <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">
@@ -113,7 +117,7 @@
                 </div>
               </div>
 
-              <div class="col-span-2">
+              <div class="sm:col-span-2">
                 <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Location</label>
                 <span class="w-full flex gap-2">
                   <input type="text" v-model="form.location" placeholder="Street, City, Province" class="w-full border border-gray-300 dark:border-gray-700 bg-white dark:bg-black dark:bg-black dark:text-white rounded-lg p-3">
@@ -121,7 +125,7 @@
                 </span>
               </div>
 
-            <div class="col-span-2">
+            <div class="sm:col-span-2">
               <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Developer</label>
               
               <Listbox v-model="form.dev_ID">
@@ -167,7 +171,7 @@
               </Listbox>
             </div>
 
-            <div class="col-span-2">
+            <div class="sm:col-span-2">
               <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Quantity Type</label>
               
               <Listbox v-model="form.is_bulk">
@@ -213,7 +217,7 @@
               </Listbox>
             </div>
 
-              <div class="col-span-2">
+              <div class="sm:col-span-2">
                 <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-1">Property Type</label>
                 
                 <Listbox v-model="form.property_type">
@@ -260,7 +264,7 @@
               </div>
 
 <template v-if="form.property_type === 'House And Lot' && !form.is_bulk">
-                <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
+                <div class="col-span-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Lot Area</label>
                     <input type="number" step="any" v-model="form.lot_area" :placeholder="unitPlaceholder" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
@@ -295,7 +299,7 @@
                   </div>
                 </div>
 
-                <div class="col-span-2 bg-white dark:bg-black border border-gray-200 rounded-xl p-4 mt-2">
+                <div class="sm:col-span-2 bg-white dark:bg-black border border-gray-200 rounded-xl p-4 mt-2">
                   <p class="text-xs font-bold text-maurealty-blue dark:text-white mb-3 uppercase opacity-70">Property Features</p>
                   <div class="flex flex-wrap gap-x-6 gap-y-3">
                     <label class="flex items-center gap-2 cursor-pointer group">
@@ -328,7 +332,7 @@
 
 
               <template v-if="form.property_type === 'Lot Only' && !form.is_bulk">
-                <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
+                <div class="col-span-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Block No.</label>
                     <input type="number" v-model="form.block_number" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
@@ -346,7 +350,7 @@
                     <input type="number" step="any" v-model="form.area" :placeholder="unitPlaceholder" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
                 
-                  <div class="cols-2 md:col-span-4">
+                  <div class="col-span-full">
                     <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Lot Class</label>
                     
                     <Listbox v-model="form.class">
@@ -398,7 +402,7 @@
 
 
               <template v-if="form.property_type === 'Condominium' && !form.is_bulk">
-                <div class="col-span-2 grid grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
+                <div class="col-span-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div>
                     <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Unit No.</label>
                     <input type="number" v-model="form.unit_number" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
@@ -420,7 +424,7 @@
                     <input type="number" step="any" v-model="form.master_bedroom_area" class="w-full dark:text-white border border-gray-300 dark:border-gray-700 bg-white dark:bg-black rounded-lg p-2 text-sm">
                   </div>
 
-                  <div class="cols-2 md:col-span-4">
+                  <div class="col-span-full">
                     <label class="block text-xs font-bold text-maurealty-blue dark:text-white mb-1 uppercase opacity-70">Condominium Class</label>
                     
                     <Listbox v-model="form.class">
@@ -466,7 +470,7 @@
                     </Listbox>
                   </div>
 
-                  <div class="cols-2 md:col-span-4 bg-white dark:bg-black border border-gray-200 rounded-xl p-4 mt-2">
+                  <div class="col-span-full bg-white dark:bg-black border border-gray-200 rounded-xl p-4 mt-2">
                       <p class="text-xs font-bold text-maurealty-blue dark:text-white mb-3 uppercase opacity-70">Condominium Type</p>
                       
                       <div class="flex flex-wrap gap-x-6 gap-y-3">
@@ -494,7 +498,7 @@
 
 
               <template v-if="form.property_type === 'Memorial' && !form.is_bulk">
-                <div class="col-span-2 border-t border-maurealty-blue/10 pt-4 mt-2">
+                <div class="sm:col-span-2 border-t border-maurealty-blue/10 pt-4 mt-2">
                   <div class="cols-6 bg-white dark:bg-black border border-gray-200 rounded-xl p-4 mt-2">
                       <p class="text-xs font-bold text-maurealty-blue dark:text-white mb-3 uppercase opacity-70">Memorial Type</p>
 
@@ -524,8 +528,9 @@
 
             </div>
           </div>
+          </div>
 
-          <div class="col-span-full">
+          <div>
               <section class="flex items-baseline justify-between text-sm font-bold text-maurealty-blue dark:text-white mb-2">
                 <label class="block">Frequently Asked Questions</label>
                 <span class="flex gap-3">
@@ -573,7 +578,7 @@
           </div>
 
           <!-- FACT SHEET -->
-          <div class="col-span-full">
+          <div>
             <input 
               type="file" 
               accept="application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, text/markdown, application/pdf" 
@@ -589,7 +594,7 @@
             </button>
           </div>
           
-          <div class="flex col-span-2 justify-end gap-4 mt-8">
+          <div class="flex justify-end gap-4 mt-8">
               <button type="button" @click="goBack" class="px-8 py-3 border border-maurealty-blue dark:border-white text-maurealty-blue dark:text-white font-bold rounded-full hover:bg-gray-100 dark:hover:bg-maurealty-blue/40 transition cursor-pointer">
                 CANCEL
               </button>

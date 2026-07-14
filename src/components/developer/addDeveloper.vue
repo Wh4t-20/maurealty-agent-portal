@@ -1,9 +1,9 @@
 <template>
-    <div class="absolute inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm py-10">
-        
-        <div class="custom-scrollbar bg-white dark:bg-black w-10/12 max-h-full overflow-y-auto rounded-3xl border border-gray-400 dark:border-gray-800 p-10 shadow-xl">
+    <div class="absolute inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-sm p-4 sm:py-10">
+
+        <div class="custom-scrollbar bg-white dark:bg-black w-full sm:w-10/12 max-h-full overflow-y-auto rounded-3xl border border-gray-400 dark:border-gray-800 p-5 sm:p-10 shadow-xl">
             <header class="relative">
-                <h1 class="text-4xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-white mb-4 ml-5">
+                <h1 class="text-2xl sm:text-4xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-white mb-4 ml-5">
                     ADD NEW DEVELOPER
                 </h1>
 
@@ -29,8 +29,8 @@
 
                     <hr width="100%" class="my-2 text-maurealty-blue/30 dark:text-maurealty-light-blue/30">
 
-                    <div class="grid grid-cols-2 gap-x-3 w-full">
-                        <h1 class="col-span-2 block text-2xl font-bold text-maurealty-blue dark:text-white mb-2">Contact details</h1>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                        <h1 class="sm:col-span-2 block text-2xl font-bold text-maurealty-blue dark:text-white mb-2">Contact details</h1>
                         <span class="justify-items-center">
                           <label class="block text-lg font-bold text-maurealty-blue dark:text-white mb-1">Phone No.</label>
                             <input v-model="form.phone" type="text" placeholder="(+63)900-000-0000" class="w-full dark:text-white border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none">
