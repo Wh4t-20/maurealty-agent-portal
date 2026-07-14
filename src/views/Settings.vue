@@ -1,18 +1,18 @@
 <template>
-    <div class="w-full h-screen bg-background-gray dark:bg-background-dark-gray flex flex-col overflow-hidden p-10">
-        <main class="relative custom-scrollbar w-full h-auto bg-white dark:bg-black border border-maurealty-blue/25 rounded-2xl shadow-lg py-7 px-10 overflow-y-scroll">
-            
+    <div class="w-full h-screen bg-background-gray dark:bg-background-dark-gray flex flex-col overflow-hidden p-3 sm:p-10">
+        <main class="relative custom-scrollbar w-full h-auto bg-white dark:bg-black border border-maurealty-blue/25 rounded-2xl shadow-lg py-5 px-4 sm:py-7 sm:px-10 overflow-y-scroll">
+
             <header class="relative">
-                <h1 class="text-4xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-maurealty-light-blue mb-4 ml-5 uppercase">
+                <h1 class="text-2xl sm:text-4xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-maurealty-light-blue mb-4 ml-5 uppercase">
                     SETTINGS
                 </h1>
 
                 <hr width="100%" class="mb-4 text-maurealty-blue/30 dark:text-maurealty-light-blue/30">
             </header>
 
-            <div class="flex flex-col mt-10 ml-5 gap-8">
+            <div class="flex flex-col mt-6 sm:mt-10 ml-0 sm:ml-5 gap-8">
                 <section class="flex flex-col gap-2">
-                    <h1 class="text-3xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-maurealty-light-blue mb-4 uppercase">USER DEFAULTS</h1>
+                    <h1 class="text-xl sm:text-3xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-maurealty-light-blue mb-4 uppercase">USER DEFAULTS</h1>
                     
                     <div class="text-lg flex items-center gap-4 dark:text-white">
                         <span class="whitespace-nowrap">Default Currency:</span>
@@ -40,7 +40,7 @@
                 </section>
 
                 <section class="flex flex-col gap-2">
-                    <h1 class="text-3xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-maurealty-light-blue mb-4 uppercase">GRAPHICS</h1>
+                    <h1 class="text-xl sm:text-3xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-maurealty-light-blue mb-4 uppercase">GRAPHICS</h1>
                     
                     <div class="text-lg flex items-center gap-4 dark:text-white">
                         <span class="whitespace-nowrap">Disable Animations:</span>

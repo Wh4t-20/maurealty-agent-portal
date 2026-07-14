@@ -1,8 +1,9 @@
 <template>
-  <div class="p-5  w-full px-10">
+  <div class="p-5 w-full px-4 sm:px-10">
     <h1 class="text-[clamp(1.2rem,2vw,2rem)] font-extrabold text-[#07407B] dark:text-white p-5">Developer Genealogy</h1>
 
-    <div style="width: 100%; height: 600px;">
+    <!-- Capped to the screen height so the tree never spills past a phone screen -->
+    <div class="w-full h-[600px] max-h-[70vh]">
       <!-- LOADING -->
       <div v-if="loading" class="h-full flex items-center justify-center text-[#07407B]/60 dark:text-white/60">
         Loading hierarchy…
