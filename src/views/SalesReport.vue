@@ -84,9 +84,11 @@
     </header>
 
     <!-- BODY -->
-    <main class="relative flex-1 overflow-hidden flex flex-col w-full">
-      <section class="custom-scrollbar flex-1 overflow-y-auto">
-        <div class="p-4 sm:p-10 flex flex-col min-h-full">
+    <!-- min-w-0 on this chain keeps the wide table below from stretching the
+         page sideways. The table gets its own horizontal scrollbar instead. -->
+    <main class="relative flex-1 min-w-0 overflow-hidden flex flex-col w-full">
+      <section class="custom-scrollbar flex-1 min-w-0 overflow-y-auto">
+        <div class="p-4 sm:p-10 flex flex-col min-w-0 min-h-full">
 
           <!-- LOADING -->
           <div v-if="loading" class="flex-1 flex items-center justify-center text-maurealty-blue/60 dark:text-maurealty-light-blue/60">
@@ -100,8 +102,9 @@
             <button v-if="hasActiveFilters" @click="clearFilters" class="text-sm text-maurealty-blue dark:text-white underline hover:opacity-70 cursor-pointer">Clear filters</button>
           </div>
 
-          <!-- TABLE -->
-          <div v-else class="bg-white dark:bg-black rounded-xl border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] max-h-[calc(100vh-19rem)] overflow-auto">
+          <!-- TABLE: this box scrolls sideways on its own so the table's minimum
+               width never stretches the rest of the page -->
+          <div v-else class="w-full bg-white dark:bg-black rounded-xl border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] max-h-[calc(100vh-19rem)] overflow-auto">
             <table class="w-full min-w-[720px] text-sm text-left">
               <thead class="bg-maurealty-blue dark:bg-[#072339] text-white sticky top-0 z-10">
                 <tr>
