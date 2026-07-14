@@ -2,7 +2,8 @@
   <div class="flex">
     <Sidebar v-if="!route.meta.hideSidebar" />
     
-    <div class="flex-1">
+    <!-- Extra bottom padding on phones so the bottom nav bar doesn't cover the page. -->
+    <div class="flex-1 pb-16 md:pb-0">
       <RouterView />
     </div>
   </div>

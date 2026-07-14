@@ -12,35 +12,28 @@
       <AddDeveloperTab  v-if="showAddDeveloper" @close-add-developer="showAddDeveloper = false; devToEdit = null" :dev = "devToEdit? devToEdit : undefined"/>
   </transition>
   
-  <div class="relative w-full bg-background-gray dark:bg-background-dark-gray pt-8 flex flex-col items-center flex-1 overflow-y-auto">
+  <div class="relative w-full bg-background-gray dark:bg-background-dark-gray flex flex-col flex-1 overflow-hidden">
 
-    <!--Header I think mas better if ma component ni sya-->
-    <!-- Better component iff we will use the same exact design for every page -->
-    <header class="fixed z-5 pl-9 flex items-center w-auto h-30 bg-linear-to-r from-[#CEE5F9] dark:from-[#031a2b] to-[#FFFFFF] dark:to-black shadow-[0_10px_15px_rgba(0,0,0,0.3)] rounded-lg">
-  
-      <h1 class="text-[clamp(1rem,2vw,2rem)] font-extrabold text-[#07407B] dark:text-white">
-        DEVELOPERS
-      </h1>
+    <!-- Same header style as the Project Listings page so every page looks consistent -->
+    <header class="flex flex-col py-5 px-4 sm:px-10 w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black text-maurealty-blue dark:text-white shadow-md sticky top-0 z-20">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full gap-2">
+        <h1 class="text-xl sm:text-3xl font-bold">DEVELOPERS</h1>
 
-      <!-- Search -->
-      <div class=" flex-1 ml-4 md:ml-20 lg:ml-62.5 max-w-87.5">
-        <input type="text"placeholder="Search Developer" class=" text-[clamp(0.5rem,2vw,1rem)] w-full rounded-[10px] border border-[#1C1E76] dark:border-white dark:text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-maurealty-blue dark:focus:ring-maurealty-light-blue"/>
-      </div>
-
-      <!-- Button -->
-      <div class="flex items-center gap-4 pr-9 ml-4 ">
-        <button @click="showAddDeveloper = true" class="max-h-10.75 bg-maurealty-blue text-white  rounded-[10px] hover:bg-[#045fa3] flex items-center gap-2 px-[clamp(0.5rem,2vw,2.5rem)] py-[clamp(0.25rem,0.70vw,1rem)] text-[clamp(0.5rem,2vw,1rem)]">
-          <span class="text-lg">+</span> Add Developer
-        </button>
-
-        <!--
-        <img src="/src/assets/profile.png" class="w-[71px] h-[71px] rounded-full object-cover"/> -->
+        <div class="flex gap-3 sm:gap-5 w-full sm:w-auto">
+          <button @click="showAddDeveloper = true" class="flex items-center gap-1 bg-maurealty-blue text-md text-white px-4 py-1.5 rounded-full cursor-pointer hover:opacity-70 transition-opacity whitespace-nowrap">
+            <Plus class="size-4" /> Add Developer
+          </button>
+          <input type="text" placeholder="Search Developer"
+            class="block min-w-0 flex-1 sm:flex-none py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 dark:placeholder:text-gray-400 dark:text-white border border-blue-950 dark:border-blue-50 rounded-sm focus:outline-none sm:text-sm/6" />
+        </div>
       </div>
     </header>
-    
+
     <!-- Developer Cards -->
-    <div class="w-3/4 grid grid-cols-1 lg:grid-cols-2 mt-35 gap-6 p-4">
-      <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" @edit-developer = "handleEditDeveloper" @delete-developer = "handleDeleteDeveloper" @open-listing="openListing"/>
+    <div class="flex-1 overflow-y-auto">
+      <div class="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 sm:p-8">
+        <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" @edit-developer = "handleEditDeveloper" @delete-developer = "handleDeleteDeveloper" @open-listing="openListing"/>
+      </div>
     </div>
   </div>
   <PropertyDetails
@@ -59,6 +52,7 @@ import { developerService } from "@/services/developerService";
 import DeveloperCard from "@/components/developer/developerCard.vue";
 import AddDeveloperTab from "@/components/developer/addDeveloper.vue";
 import PropertyDetails from "@/components/listings/PropertyDetails.vue";
+import { Plus } from "lucide-vue-next";
 
 
 const developers = ref<Developer[]>([])
