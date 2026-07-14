@@ -1,8 +1,8 @@
 <template>
     <div class="min-h-screen bg-background-gray dark:bg-background-dark-gray">
         <header class="w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black shadow-md sticky top-0 z-20">
-            <div class="flex justify-between items-center px-10 py-10">
-            <h1 class="text-3xl font-bold text-maurealty-blue dark:text-white">
+            <div class="flex justify-between items-center px-4 sm:px-10 py-5 sm:py-10">
+            <h1 class="text-xl sm:text-3xl font-bold text-maurealty-blue dark:text-white">
                 PROFILE
             </h1>
             </div>

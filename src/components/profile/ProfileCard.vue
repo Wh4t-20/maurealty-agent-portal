@@ -1,15 +1,16 @@
 <template>
-  <div class="bg-gray-100 dark:bg-mist-950 w-full max-w-7xl rounded-2xl shadow-md p-10 flex gap-10">
+  <!-- Photo on top for phones, photo beside the details on wide screens -->
+  <div class="bg-gray-100 dark:bg-mist-950 w-full max-w-7xl rounded-2xl shadow-md p-5 sm:p-10 flex flex-col lg:flex-row items-center lg:items-start gap-6 lg:gap-10">
     <div class="relative flex items-center justify-center">
       <img
         :src="props.agent.profile_url || placeholder"
         alt="Profile"
-        class="w-80 h-80 object-cover rounded-full border-4 border-white shadow"
+        class="w-40 h-40 sm:w-56 sm:h-56 lg:w-80 lg:h-80 object-cover rounded-full border-4 border-white shadow"
       />
     </div>
 
-    <div class="flex-1 space-y-3">
-      <div class="mt-5 grid grid-cols-3 gap-5">
+    <div class="flex-1 w-full space-y-3">
+      <div class="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-5">
         <div class="col-span-full">
           <label class="text-maurealty-blue dark:text-white font-medium text-sm block">Last Name, First Name, Middle Name</label>
             <span class="flex items-center gap-2.5">
@@ -60,7 +61,7 @@
           </p>
         </div>
 
-        <div class="col-span-2">
+        <div class="sm:col-span-2">
           <label class="text-maurealty-blue dark:text-white font-medium text-sm block">Email Address</label>
           <p class="w-full dark:text-maurealty-light-blue font-normal text-base tracking-wider">
             {{ props.agent.email_address }}
