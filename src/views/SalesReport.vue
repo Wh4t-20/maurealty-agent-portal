@@ -10,15 +10,15 @@
     </Transition>
 
     <!-- HEADER -->
-    <header class="flex flex-col py-5 px-10 pb-3 w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black text-maurealty-blue dark:text-white shadow-md sticky top-0 z-20">
-      <div class="flex justify-between items-center w-full">
+    <header class="flex flex-col py-5 px-4 sm:px-10 pb-3 w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black text-maurealty-blue dark:text-white shadow-md sticky top-0 z-20">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full gap-2">
         <div class="flex items-baseline gap-3">
-          <h1 class="text-3xl font-bold">SALES REPORT</h1>
+          <h1 class="text-xl sm:text-3xl font-bold">SALES REPORT</h1>
           <span class="text-sm font-medium text-maurealty-blue/70 dark:text-white/70">
             {{ isAdmin ? 'All agents' : 'Your sales' }}
           </span>
         </div>
-        <div class="flex gap-3 items-center">
+        <div class="flex flex-wrap gap-3 items-center w-full sm:w-auto">
           <button
             @click="exportCsv"
             :disabled="filteredSales.length === 0"
@@ -35,7 +35,7 @@
           <input
             id="search" type="text" name="search" placeholder="Search client / project / voucher"
             v-model="searchQuery"
-            class="block min-w-72 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 dark:border-blue-50 rounded-sm focus:outline-none sm:text-sm/6"
+            class="block min-w-0 flex-1 sm:flex-none sm:min-w-72 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 dark:border-blue-50 rounded-sm focus:outline-none sm:text-sm/6"
           />
         </div>
       </div>
@@ -86,7 +86,7 @@
     <!-- BODY -->
     <main class="relative flex-1 overflow-hidden flex flex-col w-full">
       <section class="custom-scrollbar flex-1 overflow-y-auto">
-        <div class="p-10 flex flex-col min-h-full">
+        <div class="p-4 sm:p-10 flex flex-col min-h-full">
 
           <!-- LOADING -->
           <div v-if="loading" class="flex-1 flex items-center justify-center text-maurealty-blue/60 dark:text-maurealty-light-blue/60">
@@ -218,7 +218,7 @@
           <button class="text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 text-xl leading-none cursor-pointer" @click="selectedSale = null">✕</button>
         </div>
 
-        <dl class="px-6 py-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+        <dl class="px-6 py-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
           <div><dt class="text-gray-500 dark:text-gray-400">Client</dt><dd class="font-medium text-maurealty-blue dark:text-white">{{ selectedSale.client_name }}</dd></div>
           <div><dt class="text-gray-500 dark:text-gray-400">Project</dt><dd class="font-medium dark:text-white">{{ selectedSale.listing_title }}</dd></div>
           <div v-if="isAdmin"><dt class="text-gray-500 dark:text-gray-400">Agent</dt><dd class="dark:text-white">{{ selectedSale.agent_name || '—' }}</dd></div>
