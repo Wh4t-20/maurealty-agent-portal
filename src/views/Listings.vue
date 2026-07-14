@@ -7,10 +7,10 @@
       </div>
     </Transition>
 
-    <header class="flex flex-col py-5 px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black text-maurealty-blue dark:text-white shadow-md sticky z-20">
-      <div class="flex justify-between items-center w-full pb-3 mb-3">
-        <h1 class="text-3xl font-bold">PROJECT LISTINGS</h1>
-        <div class="flex gap-5 h-full">
+    <header class="flex flex-col py-5 px-4 sm:px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black text-maurealty-blue dark:text-white shadow-md sticky z-20">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full pb-3 mb-3 gap-2">
+        <h1 class="text-xl sm:text-3xl font-bold">PROJECT LISTINGS</h1>
+        <div class="flex gap-3 sm:gap-5 h-full w-full sm:w-auto">
           <button class="flex items-center gap-1 bg-maurealty-blue text-md text-white h-full px-4 rounded-full cursor-pointer hover:opacity-70 transition-opacity" @click="addListing">
             <Plus class="size-4" /> Add Listing
           </button>
@@ -20,7 +20,8 @@
       </div>
 
       <Transition name="expand">
-        <div v-if="isFilterVisible" class="flex items-center gap-10 pb-5 w-full flex-warp">
+        <!-- Filters wrap into extra rows on small screens instead of overflowing -->
+        <div v-if="isFilterVisible" class="flex flex-wrap items-start gap-4 sm:gap-8 pb-5 w-full">
             
             <section class="listings-filter-section">
               <label for="Type-input" class="text-base">Type</label>
@@ -121,7 +122,7 @@
       </transition>
 
       <section class="custom-scrollbar flex-1 overflow-y-auto">
-        <div class="p-10 flex flex-col min-h-full">
+        <div class="p-4 sm:p-10 flex flex-col min-h-full">
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <PropertyCard 
@@ -407,7 +408,8 @@ input[type=number] {
 .expand-enter-active,
 .expand-leave-active {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  max-height: 100px; /* Adjust based on your filter height */
+  /* Tall enough to fit the filters even when they wrap into several rows on phones */
+  max-height: 400px;
   opacity: 1;
 }
 
