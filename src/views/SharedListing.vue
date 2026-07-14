@@ -19,14 +19,14 @@
 
       <div v-else-if="details" class="bg-white w-full max-w-6xl rounded-3xl shadow-2xl border border-gray-100 px-6 md:px-10 py-7">
         <header class="relative mb-4">
-          <h1 class="text-3xl max-w-19/20 font-extrabold text-maurealty-blue">
+          <h1 class="text-2xl sm:text-3xl max-w-19/20 font-extrabold text-maurealty-blue">
             {{ details.listing_title || 'Untitled Listing' }}
           </h1>
         </header>
 
         <hr class="mb-6 border-maurealty-blue/20">
 
-        <main class="flex gap-12 mx-1 md:mx-4 flex-col lg:flex-row">
+        <main class="flex gap-6 lg:gap-12 mx-1 md:mx-4 flex-col lg:flex-row">
 
           <!-- LEFT: gallery -->
           <div class="grow lg:w-3/5 flex flex-col gap-6">
@@ -59,7 +59,7 @@
                 :src="thumb"
                 @click="updateImage(index)"
                 alt="Property thumbnail"
-                class="w-32 h-24 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-maurealty-blue"
+                class="w-20 h-14 sm:w-32 sm:h-24 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-maurealty-blue"
                 :class="[index == currentImageIndex ? 'opacity-50' : '']"
               />
             </div>
@@ -102,12 +102,12 @@
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full mt-2">
                 <legend class="px-2 font-semibold text-maurealty-blue">House and Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
-                  <div class="grid grid-cols-2 gap-y-0.5">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ formatArea(details.house_and_lot.lot_area) }}</span>
                     <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ formatArea(details.house_and_lot.floor_area) }}</span>
                     <span class="flex items-center-safe gap-1"><Sofa /> {{ details.house_and_lot.rooms_count }} room{{ details.house_and_lot.rooms_count != 1 ? 's' : '' }}</span>
                     <span class="flex items-center-safe gap-1"><Toilet /> {{ details.house_and_lot.toilets_count }} toilet{{ details.house_and_lot.toilets_count != 1 ? 's' : '' }}</span>
-                    <span class="flex items-center-safe gap-1 col-span-2" v-if="details.house_and_lot.master_bedroom_area"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.house_and_lot.master_bedroom_area) }}</span>
+                    <span class="flex items-center-safe gap-1 sm:col-span-2" v-if="details.house_and_lot.master_bedroom_area"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.house_and_lot.master_bedroom_area) }}</span>
                   </div>
 
                   <span class="flex items-center-safe justify-around pr-2 mt-3">
@@ -125,7 +125,7 @@
                   </span>
 
                   <div class="mt-3">
-                    <ul class="grid grid-cols-3">
+                    <ul class="grid grid-cols-2 sm:grid-cols-3">
                       <li v-if="details.house_and_lot['1_storey']" class="flex items-center-safe gap-1"><Check class="size-5" /> One Storey</li>
                       <li v-if="details.house_and_lot['2_storey']" class="flex items-center-safe gap-1"><Check class="size-5" /> Two Storey</li>
                       <li v-if="details.house_and_lot.with_loft" class="flex items-center-safe gap-1"><Check class="size-5" /> With Loft</li>
@@ -142,7 +142,7 @@
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full mt-2">
                 <legend class="px-2 font-semibold text-maurealty-blue">Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
-                  <div class="grid grid-cols-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-2">
                     <div>
                       <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Block No. <b>{{ details.lot_only.block_number }}</b></span>
                       <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Lot No. <b>{{ details.lot_only.lot_number }}</b></span>
@@ -166,12 +166,12 @@
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full mt-2">
                 <legend class="px-2 font-semibold text-maurealty-blue">Condominium Features</legend>
                 <main class="text-sm px-2 flex flex-col">
-                  <div class="grid grid-cols-2 gap-y-0.5">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><Hash /> Unit No. <b>{{ details.condominium.unit_number }}</b></span>
                     <span class="flex items-center-safe gap-1"><BedDouble /> {{ details.condominium.bedroom_count }} bedroom{{ details.condominium.bedroom_count != 1 ? 's' : '' }}</span>
                     <span class="flex items-center-safe gap-1"><BookImage /> {{ details.condominium.balcony_count }} balcon{{ details.condominium.balcony_count != 1 ? 'ies' : 'y' }}</span>
                     <span class="flex items-center-safe gap-1"><Car /> {{ details.condominium.carpark_count }} carpark{{ details.condominium.carpark_count != 1 ? 's' : '' }}</span>
-                    <span class="flex items-center-safe gap-1 col-span-2" v-if="details.condominium.master_bedroom_area"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.condominium.master_bedroom_area) }}</span>
+                    <span class="flex items-center-safe gap-1 sm:col-span-2" v-if="details.condominium.master_bedroom_area"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.condominium.master_bedroom_area) }}</span>
                   </div>
 
                   <div class="mt-4 flex gap-2">

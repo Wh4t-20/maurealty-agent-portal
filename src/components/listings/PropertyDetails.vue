@@ -1,8 +1,9 @@
 <template>
 <div class="absolute inset-0 z-10 flex items-center justify-center bg-black/10 backdrop-blur-sm">
-  <div v-if="details" class="custom-scrollbar bg-white dark:bg-black w-10/12 h-11/12 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-900 px-10 py-7 overflow-y-auto">
+  <!-- Full screen on phones, floating card on bigger screens -->
+  <div v-if="details" class="custom-scrollbar bg-white dark:bg-black w-full h-full sm:w-10/12 sm:h-11/12 rounded-none sm:rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-900 px-4 sm:px-10 py-4 sm:py-7 overflow-y-auto">
         <header class="relative mb-4">
-          <h1 class="text-3xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-maurealty-light-blue dark:text-maurealty-light-blue">
+          <h1 class="text-2xl sm:text-3xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-maurealty-light-blue">
             {{ details.listing_title || 'Untitled Listing' }}
           </h1>
 
@@ -13,9 +14,10 @@
 
         <hr width="100%" class="mb-4 text-maurealty-blue dark:text-maurealty-light-blue/30 dark:text-maurealty-light-blue/30">
 
-        <main class="flex gap-12 mx-4">
-          
-          <div class="grow w-3/5 flex flex-col gap-6">
+        <!-- Photos stack above the details on phones, side by side on bigger screens -->
+        <main class="flex flex-col md:flex-row gap-6 md:gap-12 mx-0 md:mx-4">
+
+          <div class="grow w-full md:w-3/5 flex flex-col gap-6">
             
             <div class="relative flex gap-4 items-center">
               <div class="relative grow aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-mist-800 shadow-sm">
@@ -46,13 +48,13 @@
                 :src="thumb" 
                 @click="updateImage(index)"
                 alt="Property thumbnail" 
-                class="w-32 h-24 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-maurealty-blue dark:hover:ring-maurealty-light-blue"
+                class="w-20 h-14 sm:w-32 sm:h-24 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-maurealty-blue dark:hover:ring-maurealty-light-blue"
                 :class="[index == currentImageIndex ? 'opacity-50' : '']"
               />
             </div>
           </div>
 
-          <div class="w-2/5 flex flex-col gap-2 text-gray-800 dark:text-gray-200 text-lg">
+          <div class="w-full md:w-2/5 flex flex-col gap-2 text-gray-800 dark:text-gray-200 text-lg">
             
             <span class="inline-block bg-maurealty-green w-fit text-2xl text-white px-4 py-0.5 rounded-full tracking-wider mt-0.5">
                <template v-if="details.is_bulk && details.max_price">
@@ -93,12 +95,12 @@
               <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">House and Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
-                  <div class="grid grid-cols-2 gap-y-0.5" >
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-0.5" >
                     <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ formatArea(details.lot_area) }}</span>
                     <span class="flex items-center-safe gap-1"><SquareDashed /> <b> Floor Area: </b> {{ formatArea(details.floor_area) }}</span>
                     <span class="flex items-center-safe gap-1"><Sofa /> {{ details.rooms_count }} room{{ details.rooms_count != 1 ? 's' : '' }}</span>
                     <span class="flex items-center-safe gap-1"><Toilet /> {{ details.toilets_count }} toilet{{ details.toilets_count != 1 ? 's' : '' }}</span>
-                    <span class="flex items-center-safe gap-1 col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
+                    <span class="flex items-center-safe gap-1 sm:col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
                   </div>
     
                   <span class="flex items-center-safe justify-around pr-2 mt-3">
@@ -116,7 +118,7 @@
                    </span> 
 
                   <div class="mt-3">
-                    <ul class="grid grid-cols-3">
+                    <ul class="grid grid-cols-2 sm:grid-cols-3">
                       <li v-if="details.one_storey" class="flex items-center-safe gap-1"><Check class="size-5" /> One Storey</li>
                       <li v-if="details.two_storey" class="flex items-center-safe gap-1"><Check class="size-5" /> Two Storey</li>
                       <li v-if="details.with_loft" class="flex items-center-safe gap-1"><Check class="size-5" /> With Loft</li>
@@ -132,7 +134,7 @@
               <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
-                  <div class="grid grid-cols-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-2">
                     <div>
                       <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Block No. <b>{{ details.block_number }}</b></span>
                       <span class="flex items-center-safe gap-1"><CircleSmall class="size-3.5" /> Lot No. <b>{{ details.lot_number }}</b></span>
@@ -155,12 +157,12 @@
               <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full">
                 <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">Condominium Features</legend>
                 <main class="text-sm px-2 flex flex-col">
-                  <div class="grid grid-cols-2 gap-y-0.5">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><Hash /> Unit No. <b>{{ details.unit_number }}</b></span>
                     <span class="flex items-center-safe gap-1"><Bed /> {{ details.bedroom_count }} bedroom{{ details.carpark_count != 1 ? 's' : '' }}</span>
                     <span class="flex items-center-safe gap-1"><BookImage /> {{ details.balcony_count }} balcon{{ details.carpark_count != 1 ? 'ies' : 'y' }}</span>
                     <span class="flex items-center-safe gap-1"><Car /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}</span>
-                    <span class="flex items-center-safe gap-1 col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
+                    <span class="flex items-center-safe gap-1 sm:col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
                   </div>
                   
                   <div class="mt-4 flex gap-2">
@@ -197,7 +199,8 @@
           <section class="markdownTypography text-black dark:text-white" v-html="compiledFAQMarkdown" />
         </section>
         
-        <section class="w-full flex mt-4 px-3 gap-4">
+        <!-- Action buttons wrap to the next line when the screen is narrow -->
+        <section class="w-full flex flex-wrap mt-4 px-3 gap-3">
           <button @click="$emit('edit', details)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><SquarePen class="size-4" /> EDIT</span>
           </button>
