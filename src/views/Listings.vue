@@ -5,6 +5,7 @@
        PLUS 4rem, taller than the visible screen — which is what let the whole
        page scroll instead of just the listings. Subtracting 4rem here cancels
        that extra padding back out, so this box is exactly one screen tall again. -->
+    
   <div class="w-full h-[calc(100vh-4rem)] md:h-screen bg-background-gray dark:bg-background-dark-gray flex flex-col items-center overflow-hidden">
     <Transition name="toast">
       <div v-if="savedNotice" class="fixed top-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-maurealty-green/40 dark:border-maurealty-green/60 shadow-lg px-5 py-3">
@@ -106,8 +107,9 @@
       </button>
       
     </header>
-
+  
   <main class="relative flex-1 overflow-hidden flex flex-col w-full">
+    
       <transition
             enter-active-class="transition duration-200 ease-out"
             enter-from-class="transform translate-y-4 scale-95 opacity-0"
@@ -122,11 +124,11 @@
           :prop_type="prop_type"
           @close-details="showDetails = false"
           @edit="handleEdit"
-          @delete="processDelete"
-          @sold="markSold"
+          @delete="triggerConfirm($event, 'delete')"
+          @sold="triggerConfirm($event, 'sold')"
         />
-      </transition>
-
+      </transition> 
+      
       <section class="custom-scrollbar flex-1 overflow-y-auto">
         <div class="p-4 sm:p-10 flex flex-col min-h-full">
           
@@ -165,7 +167,7 @@
         </div>
       </section>
     </main>
-
+    
     <!-- Sold flow: pre-filled sale form. On save, the listing is marked sold. -->
     <SalesUploadModal
       v-if="soldListing"
@@ -173,7 +175,19 @@
       @close="soldListing = null"
       @saved="onSaleSaved"
     />
-
+    <Transition name="toast">
+      <div v-if="toastConfirm.visible" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-red-500 shadow-2xl px-5 py-3">
+        <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-red text-white text-sm font-bold">!</span>
+        <div class="flex flex-col">
+          <p class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ toastConfirm.title }}</p>
+          <p class="text-xs text-gray-600 dark:text-gray-400">{{ toastConfirm.message }}</p>
+        </div>
+        <div class="flex gap-2 ml-4">
+          <button @click="toastConfirm.visible = false" class="px-3 py-1 text-xs font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 rounded hover:bg-gray-200 dark:hover:bg-gray-700 cursor-pointer">Cancel</button>
+          <button @click="confirmToastAction" class="px-3 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 cursor-pointer">Confirm</button>
+        </div>
+      </div>
+    </Transition> <!-- BROAST -->
   </div>
 </template>
 
@@ -190,6 +204,7 @@ import PropertyDetails from '@/components/listings/PropertyDetails.vue'
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
 import { developerService } from '@/services/developerService'
+import { agentService} from '@/services/agentService'
 
 // utiities
 import { currentCurrency, currentUnit, convertPriceToPHP, currencySymbols } from '@/utils/conversion.ts'
@@ -318,7 +333,38 @@ const showSavedNotice = () => {
   router.replace({ query: {} })
   setTimeout(() => { savedNotice.value = null }, 4000)
 }
+const toastConfirm = ref({
+  visible: false, // set to true for testing          
+  type: '',  
+  title: '',                    
+  message: '',
+  targetListingId: null as number | null               
+})
+const triggerConfirm = (listingId: number, actionType: string) => {
+   // grak
+  toastConfirm.value = {
+    visible: true,
+    type: actionType,
+    title: actionType === 'delete' ? 'Delete Listing?' : 'Mark as Sold?',
+    message: actionType === 'delete' 
+      ? 'This action is permanent and cannot be undone.' 
+      : 'This will mark all bulk properties in this listing as completely sold.',
+    targetListingId: listingId
+  }
+  console.log("triggerConfirm called with listingId:", listingId, "and actionType:", actionType, "Visibility is: ", toastConfirm.value.visible);
+}
+const confirmToastAction = async () => {
+  
+  if (!toastConfirm.value.targetListingId || !toastConfirm.value.type) return
 
+  if (toastConfirm.value.type === 'delete') {
+    await processDelete(toastConfirm.value.targetListingId)
+  } else if (toastConfirm.value.type === 'sold') {
+    await markSold(toastConfirm.value.targetListingId)
+  }
+  toastConfirm.value.visible = false
+  
+}
 const loadDeveloperChoices = async () => {
   const names = await developerService.getDeveloperNames()
   developerChoices.value = ["None", ...names]
@@ -368,7 +414,14 @@ const propertyTypesMap: Record<string, number> = {
   'clubshare': 5,
   'golfshare': 6
 };
-const handleEdit = (property: Property) => {
+async function handleEdit(property: Property) {
+  const currentAgentID = await agentService.getCurrentAgentID();
+  const listingAgentId = await listingsService.getAgentFromListing(property.listing_id);
+  if(currentAgentID !== listingAgentId) {
+    console.log("NOT ALLOWED TO EDIT THIS", currentAgentID,"  ", listingAgentId, ": ", currentAgentID !== listingAgentId);
+    alert("You are not authorized to edit this listing.");
+    return;
+  }
   const typeId = propertyTypesMap[property.property_type] || 1;
   router.push({
     path: '/propertymanagement',
