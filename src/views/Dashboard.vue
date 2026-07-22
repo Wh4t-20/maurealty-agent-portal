@@ -44,8 +44,8 @@
             class="cursor-pointer hover:shadow-md transition-shadow"
           />
         </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8">
+        <!-- Hid this kay samok pa tan awn -->
+        <!-- <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8"> 
           <div class="flex flex-col gap-8">
             <SalesPerformance @open-details="openDetails(performanceData, 'performance')" />
             <RecentActivity 
@@ -59,7 +59,7 @@
             <GenealogyCard :downline="downline" @view-full="openDetails(null, 'genealogy_full')" />
             <Reminders :reminders="reminders" @view-all="openDetails(reminders, 'reminders_all')" />
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
 
@@ -124,7 +124,7 @@ const metrics = ref([
   { label: 'MONTHLY LISTINGS', value: 'Loading', trend: 'Loading', sub: 'vs previous month', type: '...' },
   { label: 'MONTHLY GROSS', value: 'Loading', trend: '...', sub: 'vs previous month', type: '...' },
   { label: 'PROPERTIES SOLD', value: 'Loading', trend: '...', sub: 'vs previous month', type: 'positive' },
-  { label: 'ACTIVE DEALS', value: '...', trend: '...', sub: 'Pending approval', type: 'neutral' }
+  { label: 'RECEIVABLES', value: 'Loading', trend: '...', sub: 'Awaiting payment', type: 'neutral' }
 ]);
 
 const performanceData = ref({ title: "Performance Data", id: "perf-1" });
@@ -176,6 +176,27 @@ const getTrendType = (curr: number, prev: number) => {
   return percent > 0 ? 'positive' : (percent < 0 ? 'negative' : 'neutral');
 };
 
+const processSalesData = (data: any[]) => {
+  let stats = { gross: 0, sold: 0, receivables: 0 };
+  if (!data) return stats;
+
+  data.forEach((item) => {
+    const status = (item.status || '').toString().toLowerCase().trim();
+
+    const netCommission = Number(item.net_commission) || 0;
+
+    if (status === 'complete') {
+      stats.gross += netCommission;
+      stats.sold += 1;
+    } 
+    else if (status === 'awaiting payment') {
+      stats.receivables += netCommission;
+    }
+  });
+
+  return stats;
+};
+
 // Adds the first and last name of the agent
 const agentName = computed(() => {
   if (agent.value.first_name && agent.value.last_name){
@@ -193,55 +214,52 @@ const loadDashboardStats = async () => {
     if (selectedMonth.value) {
       const [yearStr, monthStr] = selectedMonth.value.split('-');
       const year = parseInt(yearStr);
-      const month = parseInt(monthStr); 
+      const month = parseInt(monthStr);
 
       const startOfSelected = new Date(year, month - 1, 1).toISOString();
       const endOfSelected = new Date(year, month, 1).toISOString();
       const startOfPrev = new Date(year, month - 2, 1).toISOString();
       const endOfPrev = new Date(year, month - 1, 1).toISOString();
 
-      const responses = await Promise.all([
+      const [currListingsRes, prevListingsRes, currSalesRes, prevSalesRes] = await Promise.all([
         supabase.from('main_listings').select('*', { count: 'exact', head: true })
           .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfSelected).lt('created_at', endOfSelected),
         supabase.from('main_listings').select('*', { count: 'exact', head: true })
           .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfPrev).lt('created_at', endOfPrev),
-        supabase.from('main_listings').select('price', { count: 'exact' })
-          .eq('agent_ID', agent.value.agent_ID).eq('status', 'sold').gte('created_at', startOfSelected).lt('created_at', endOfSelected),
-        supabase.from('main_listings').select('price', { count: 'exact' })
-          .eq('agent_ID', agent.value.agent_ID).eq('status', 'sold').gte('created_at', startOfPrev).lt('created_at', endOfPrev),
+        
+        supabase.from('sales').select('status, net_commission, created_at')
+          .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfSelected).lt('created_at', endOfSelected),
+        supabase.from('sales').select('status, net_commission, created_at')
+          .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfPrev).lt('created_at', endOfPrev)
       ]);
 
-      const currListings = responses[0].count || 0;
-      const prevListings = responses[1].count || 0;
-      const currSoldData = responses[2].data || [];
-      const currSoldCount = responses[2].count || 0;
-      const prevSoldData = responses[3].data || [];
-      const prevSoldCount = responses[3].count || 0;
+      const currListings = currListingsRes.count || 0;
+      const prevListings = prevListingsRes.count || 0;
 
-      const currGross = currSoldData.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
-      const prevGross = prevSoldData.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+      const currSalesStats = processSalesData(currSalesRes.data || []);
+      const prevSalesStats = processSalesData(prevSalesRes.data || []);
 
-      metrics.value[0] = { ...metrics.value[0], label: 'MONTHLY LISTINGS', sub: 'vs previous month', value: currListings.toString(), trend: calculateTrend(currListings, prevListings), type: getTrendType(currListings, prevListings) };
-      metrics.value[1] = { ...metrics.value[1], label: 'MONTHLY GROSS', sub: 'vs previous month', value: formatCurrency(currGross), trend: calculateTrend(currGross, prevGross), type: getTrendType(currGross, prevGross) };
-      metrics.value[2] = { ...metrics.value[2], label: 'PROPERTIES SOLD', sub: 'vs previous month', value: currSoldCount.toString(), trend: calculateTrend(currSoldCount, prevSoldCount), type: getTrendType(currSoldCount, prevSoldCount) };
+      // updates UI Cards for Monthly
+      metrics.value[2] = { ...metrics.value[0], label: 'MONTHLY LISTINGS', sub: 'vs previous month', value: currListings.toString(), trend: calculateTrend(currListings, prevListings), type: getTrendType(currListings, prevListings) };
+      metrics.value[0] = { ...metrics.value[1], label: 'MONTHLY GROSS', sub: 'vs previous month', value: formatCurrency(currSalesStats.gross), trend: calculateTrend(currSalesStats.gross, prevSalesStats.gross), type: getTrendType(currSalesStats.gross, prevSalesStats.gross) };
+      metrics.value[3] = { ...metrics.value[2], label: 'PROPERTIES SOLD', sub: 'vs previous month', value: currSalesStats.sold.toString(), trend: calculateTrend(currSalesStats.sold, prevSalesStats.sold), type: getTrendType(currSalesStats.sold, prevSalesStats.sold) };
+      metrics.value[1] = { ...metrics.value[3], label: 'RECEIVABLES', sub: 'Awaiting payment', value: formatCurrency(currSalesStats.receivables), trend: calculateTrend(currSalesStats.receivables, prevSalesStats.receivables), type: getTrendType(currSalesStats.receivables, prevSalesStats.receivables) };
 
     } else {
-    
-      const responses = await Promise.all([
+      const [listingsRes, salesRes] = await Promise.all([
         supabase.from('main_listings').select('*', { count: 'exact', head: true })
           .eq('agent_ID', agent.value.agent_ID),
-        supabase.from('main_listings').select('price', { count: 'exact' })
-          .eq('agent_ID', agent.value.agent_ID).eq('status', 'sold')
+        supabase.from('sales').select('status, net_commission, created_at')
+          .eq('agent_ID', agent.value.agent_ID)
       ]);
+      
+      const totalListings = listingsRes.count || 0;
+      const totalSalesStats = processSalesData(salesRes.data || []);
 
-      const totalListings = responses[0].count || 0;
-      const totalSoldData = responses[1].data || [];
-      const totalSoldCount = responses[1].count || 0;
-      const totalGross = totalSoldData.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
-
-      metrics.value[0] = { ...metrics.value[0], label: 'TOTAL LISTINGS', sub: 'All Time', value: totalListings.toString(), trend: '-', type: 'neutral' };
-      metrics.value[1] = { ...metrics.value[1], label: 'TOTAL GROSS', sub: 'All Time', value: formatCurrency(totalGross), trend: '-', type: 'neutral' };
-      metrics.value[2] = { ...metrics.value[2], label: 'TOTAL PROPERTIES SOLD', sub: 'All Time', value: totalSoldCount.toString(), trend: '-', type: 'neutral' };
+      metrics.value[2] = { ...metrics.value[2], label: 'TOTAL LISTINGS', sub: 'All Time', value: totalListings.toString(), trend: '-', type: 'neutral' };
+      metrics.value[0] = { ...metrics.value[0], label: 'TOTAL GROSS', sub: 'All Time', value: formatCurrency(totalSalesStats.gross), trend: '-', type: 'neutral' };
+      metrics.value[3] = { ...metrics.value[3], label: 'TOTAL PROPERTIES SOLD', sub: 'All Time', value: totalSalesStats.sold.toString(), trend: '-', type: 'neutral' };
+      metrics.value[1] = { ...metrics.value[1], label: 'TOTAL RECEIVABLES', sub: 'Awaiting payment', value: formatCurrency(totalSalesStats.receivables), trend: '-', type: 'neutral' };
     }
 
   } catch (error) {
@@ -249,6 +267,7 @@ const loadDashboardStats = async () => {
     if (metrics.value[0]) { metrics.value[0].value = '0'; metrics.value[0].trend = 'N/A'; }
     if (metrics.value[1]) { metrics.value[1].value = '$0'; metrics.value[1].trend = 'N/A'; }
     if (metrics.value[2]) { metrics.value[2].value = '0'; metrics.value[2].trend = 'N/A'; }
+    if (metrics.value[3]) { metrics.value[3].value = '$0'; metrics.value[3].trend = 'N/A'; }
   }
 };
 
@@ -282,10 +301,6 @@ onMounted(async () => {
 });
 
 const addListing = () => {
-  router.push({ 
-    path: '/propertymanagement',
-    query:{
-    } 
-  })
+  router.push({ path: '/propertymanagement' });
 }
 </script>
