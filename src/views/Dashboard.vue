@@ -78,10 +78,70 @@
           <AddAgent v-if="activeModal === 'addAgent'" />
         </div> 
 
-        <div v-else-if="selectedMetric" class="bg-white dark:bg-black rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl">
+        <div v-else-if="selectedMetric" class="bg-white dark:bg-black rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl flex flex-col max-h-[80vh]">
           <button class="absolute top-4 right-5 text-gray-400 dark:text-gray-700 hover:text-gray-700 dark:hover:text-gray-400 text-xl font-bold" @click="selectedMetric = null">✕</button>
-          <div class="border-b pb-4 mb-4">
+          
+          <div class="border-b border-gray-200 dark:border-gray-800 pb-4 mb-4 shrink-0">
             <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">{{ selectedMetric.label }} Analysis</h2>
+            <p class="text-gray-500 dark:text-gray-400 mt-1">Total: <span class="font-medium text-gray-900 dark:text-white">{{ selectedMetric.value }}</span></p>
+          </div>
+
+          <div class="overflow-y-auto flex-1 pr-2">
+            <table class="w-full text-left border-collapse" v-if="selectedMetric.details && selectedMetric.details.length">
+              <thead class="sticky top-0 bg-white dark:bg-black z-10">
+                <tr class="border-b border-gray-200 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400">
+                  <th class="pb-3 font-medium">Date</th>
+                  <th class="pb-3 font-medium">Title</th>
+                  <th class="pb-3 font-medium">Status</th>
+                  <th class="pb-3 font-medium text-right" v-if="selectedMetric.label.includes('GROSS') || selectedMetric.label.includes('RECEIVABLES')">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- UPDATED: Now uses paginatedDetails instead of selectedMetric.details -->
+                <tr v-for="(item, index) in paginatedDetails" :key="index" class="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                  <td class="py-3 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(item.created_at) }}</td>
+                  <td class="py-3 text-sm text-gray-700 dark:text-gray-300">{{ item.listing_title || item.main_listings?.listing_title || item.main_listings?.[0]?.listing_title }}</td>
+                  <td class="py-3 text-sm">
+                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
+                      {{ item.sales?.[0]?.status || item.sales?.status || item.status || 'N/A' }}
+                    </span>
+                  </td>
+                  <td class="py-3 text-sm text-right font-medium text-gray-900 dark:text-white" v-if="selectedMetric.label.includes('GROSS') || selectedMetric.label.includes('RECEIVABLES')">
+                    {{ formatCurrency(Number(item.net_commission) || 0) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            
+            <div v-if="totalPages > 1" class="flex justify-between items-center px-4 py-4 mt-2 border-t border-gray-100 dark:border-gray-800 sticky bottom-0 bg-white dark:bg-black">
+              <button 
+                @click="prevPage" 
+                :disabled="currentPage === 1"
+                class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                Previous
+              </button>
+              
+              <span class="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                Page {{ currentPage }} of {{ totalPages }}
+              </span>
+              
+              <button 
+                @click="nextPage" 
+                :disabled="currentPage === totalPages"
+                class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+              >
+                Next
+              </button>
+            </div>
+
+            <div v-else-if="!selectedMetric.details || !selectedMetric.details.length" class="text-center py-12 flex flex-col items-center justify-center">
+              <div class="w-16 h-16 bg-gray-50 dark:bg-gray-800/50 rounded-full flex items-center justify-center mb-3">
+                <span class="text-2xl">📋</span>
+              </div>
+              <p class="text-gray-500 dark:text-gray-400 font-medium">No records found</p>
+              <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">There is no data available for this time period.</p>
+            </div>
           </div>
         </div>
 
@@ -119,12 +179,39 @@ const router = useRouter();
 // Filter State
 const selectedMonth = ref('');
 
+const currentPage = ref(1);
+const itemsPerPage = 10;
+
+watch(selectedMetric, () => {
+  currentPage.value = 1; 
+});
+
+const totalPages = computed(() => {
+  if (!selectedMetric.value?.details) return 0;
+  return Math.ceil(selectedMetric.value.details.length / itemsPerPage);
+});
+
+const paginatedDetails = computed(() => {
+  if (!selectedMetric.value?.details) return [];
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return selectedMetric.value.details.slice(start, end);
+});
+
+const prevPage = () => {
+  if (currentPage.value > 1) currentPage.value--;
+};
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) currentPage.value++;
+};
+
 // Data
 const metrics = ref([
-  { label: 'MONTHLY LISTINGS', value: 'Loading', trend: 'Loading', sub: 'vs previous month', type: '...' },
-  { label: 'MONTHLY GROSS', value: 'Loading', trend: '...', sub: 'vs previous month', type: '...' },
-  { label: 'PROPERTIES SOLD', value: 'Loading', trend: '...', sub: 'vs previous month', type: 'positive' },
-  { label: 'RECEIVABLES', value: 'Loading', trend: '...', sub: 'Awaiting payment', type: 'neutral' }
+  { label: 'MONTHLY LISTINGS', value: 'Loading', trend: 'Loading', sub: 'vs previous month', type: '...', details: [] as any[] },
+  { label: 'MONTHLY GROSS', value: 'Loading', trend: '...', sub: 'vs previous month', type: '...', details: [] as any[] },
+  { label: 'PROPERTIES SOLD', value: 'Loading', trend: '...', sub: 'vs previous month', type: 'positive', details: [] as any[] },
+  { label: 'RECEIVABLES', value: 'Loading', trend: '...', sub: 'Awaiting payment', type: 'neutral', details: [] as any[] }
 ]);
 
 const performanceData = ref({ title: "Performance Data", id: "perf-1" });
@@ -153,6 +240,14 @@ watch([selectedItem, selectedMetric, activeModal], ([item, metric, modal]) => {
   document.body.style.overflow = (item || metric || modal) ? 'hidden' : '';
 });
 
+// Helper to format dates cleanly for the modal table
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return 'N/A';
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric', month: 'short', day: 'numeric'
+  });
+};
+
 // Helper to format large numbers into clean currency
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('en-US', {
@@ -177,22 +272,27 @@ const getTrendType = (curr: number, prev: number) => {
 };
 
 const processSalesData = (data: any[]) => {
-  let stats = { gross: 0, sold: 0, receivables: 0 };
+  let stats = { gross: 0, sold: 0, receivables: 0, grossItems: [] as any[], receivableItems: [] as any[] };
   if (!data) return stats;
 
   data.forEach((item) => {
     const status = (item.status || '').toString().toLowerCase().trim();
-
     const netCommission = Number(item.net_commission) || 0;
 
     if (status === 'complete') {
       stats.gross += netCommission;
       stats.sold += 1;
+      stats.grossItems.push(item);
     } 
-    else if (status === 'awaiting payment') {
+    else if (status === 'awaiting payment' ) {
       stats.receivables += netCommission;
+      stats.receivableItems.push(item);
     }
   });
+
+// sort items descending
+  stats.grossItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  stats.receivableItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return stats;
 };
@@ -208,7 +308,7 @@ const agentName = computed(() => {
 const loadDashboardStats = async () => {
   if (!agent.value.agent_ID) return;
 
-  metrics.value.forEach(m => { m.value = 'Loading'; m.trend = '...'; });
+  metrics.value.forEach(m => { m.value = 'Loading'; m.trend = '...'; m.details = []; });
 
   try {
     if (selectedMonth.value) {
@@ -222,14 +322,17 @@ const loadDashboardStats = async () => {
       const endOfPrev = new Date(year, month - 1, 1).toISOString();
 
       const [currListingsRes, prevListingsRes, currSalesRes, prevSalesRes] = await Promise.all([
-        supabase.from('main_listings').select('*', { count: 'exact', head: true })
-          .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfSelected).lt('created_at', endOfSelected),
+        supabase.from('main_listings').select('listing_title, created_at, sales(status)', { count: 'exact' })
+          .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfSelected).lt('created_at', endOfSelected)
+          .order('created_at', { ascending: false }),
+        
         supabase.from('main_listings').select('*', { count: 'exact', head: true })
           .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfPrev).lt('created_at', endOfPrev),
         
-        supabase.from('sales').select('status, net_commission, created_at')
+        supabase.from('sales').select('status, net_commission, created_at, main_listings(listing_title)')
           .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfSelected).lt('created_at', endOfSelected),
-        supabase.from('sales').select('status, net_commission, created_at')
+        
+        supabase.from('sales').select('status, net_commission, created_at, main_listings(listing_title')
           .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfPrev).lt('created_at', endOfPrev)
       ]);
 
@@ -240,26 +343,52 @@ const loadDashboardStats = async () => {
       const prevSalesStats = processSalesData(prevSalesRes.data || []);
 
       // updates UI Cards for Monthly
-      metrics.value[2] = { ...metrics.value[0], label: 'MONTHLY LISTINGS', sub: 'vs previous month', value: currListings.toString(), trend: calculateTrend(currListings, prevListings), type: getTrendType(currListings, prevListings) };
-      metrics.value[0] = { ...metrics.value[1], label: 'MONTHLY GROSS', sub: 'vs previous month', value: formatCurrency(currSalesStats.gross), trend: calculateTrend(currSalesStats.gross, prevSalesStats.gross), type: getTrendType(currSalesStats.gross, prevSalesStats.gross) };
-      metrics.value[3] = { ...metrics.value[2], label: 'PROPERTIES SOLD', sub: 'vs previous month', value: currSalesStats.sold.toString(), trend: calculateTrend(currSalesStats.sold, prevSalesStats.sold), type: getTrendType(currSalesStats.sold, prevSalesStats.sold) };
-      metrics.value[1] = { ...metrics.value[3], label: 'RECEIVABLES', sub: 'Awaiting payment', value: formatCurrency(currSalesStats.receivables), trend: calculateTrend(currSalesStats.receivables, prevSalesStats.receivables), type: getTrendType(currSalesStats.receivables, prevSalesStats.receivables) };
+      metrics.value[2] = { ...metrics.value[2], label: 'MONTHLY LISTINGS',
+                          sub: 'vs previous month', 
+                          value: currListings.toString(), 
+                          trend: calculateTrend(currListings, prevListings), 
+                          type: getTrendType(currListings, prevListings), 
+                          details: currListingsRes.data || [] };
+      metrics.value[0] = { ...metrics.value[0], 
+                          label: 'MONTHLY GROSS', 
+                          sub: 'vs previous month', 
+                          value: formatCurrency(currSalesStats.gross), 
+                          trend: calculateTrend(currSalesStats.gross, prevSalesStats.gross), 
+                          type: getTrendType(currSalesStats.gross, prevSalesStats.gross), 
+                          details: currSalesStats.grossItems };
+      metrics.value[3] = { ...metrics.value[3], 
+                            label: 'PROPERTIES SOLD', 
+                            sub: 'vs previous month', 
+                            value: currSalesStats.sold.toString(), 
+                            trend: calculateTrend(currSalesStats.sold, 
+                            prevSalesStats.sold), 
+                            type: getTrendType(currSalesStats.sold, prevSalesStats.sold), 
+                            details: currSalesStats.grossItems };
+      metrics.value[1] = { ...metrics.value[1], 
+                            label: 'RECEIVABLES', 
+                            sub: 'Awaiting payment', 
+                            value: formatCurrency(currSalesStats.receivables), 
+                            trend: calculateTrend(currSalesStats.receivables, 
+                            prevSalesStats.receivables), 
+                            type: getTrendType(currSalesStats.receivables, prevSalesStats.receivables), 
+                            details: currSalesStats.receivableItems };
 
     } else {
       const [listingsRes, salesRes] = await Promise.all([
-        supabase.from('main_listings').select('*', { count: 'exact', head: true })
-          .eq('agent_ID', agent.value.agent_ID),
-        supabase.from('sales').select('status, net_commission, created_at')
+        supabase.from('main_listings').select('listing_title, created_at, sales(status)', { count: 'exact' })
+          .eq('agent_ID', agent.value.agent_ID).order('created_at', { ascending: false }),
+        
+        supabase.from('sales').select('status, net_commission, created_at, main_listings(listing_title)')
           .eq('agent_ID', agent.value.agent_ID)
       ]);
       
       const totalListings = listingsRes.count || 0;
       const totalSalesStats = processSalesData(salesRes.data || []);
 
-      metrics.value[2] = { ...metrics.value[2], label: 'TOTAL LISTINGS', sub: 'All Time', value: totalListings.toString(), trend: '-', type: 'neutral' };
-      metrics.value[0] = { ...metrics.value[0], label: 'TOTAL GROSS', sub: 'All Time', value: formatCurrency(totalSalesStats.gross), trend: '-', type: 'neutral' };
-      metrics.value[3] = { ...metrics.value[3], label: 'TOTAL PROPERTIES SOLD', sub: 'All Time', value: totalSalesStats.sold.toString(), trend: '-', type: 'neutral' };
-      metrics.value[1] = { ...metrics.value[1], label: 'TOTAL RECEIVABLES', sub: 'Awaiting payment', value: formatCurrency(totalSalesStats.receivables), trend: '-', type: 'neutral' };
+      metrics.value[2] = { ...metrics.value[2], label: 'TOTAL LISTINGS', sub: 'All Time', value: totalListings.toString(), trend: '-', type: 'neutral', details: listingsRes.data || [] };
+      metrics.value[0] = { ...metrics.value[0], label: 'TOTAL GROSS', sub: 'All Time', value: formatCurrency(totalSalesStats.gross), trend: '-', type: 'neutral', details: totalSalesStats.grossItems };
+      metrics.value[3] = { ...metrics.value[3], label: 'TOTAL PROPERTIES SOLD', sub: 'All Time', value: totalSalesStats.sold.toString(), trend: '-', type: 'neutral', details: totalSalesStats.grossItems };
+      metrics.value[1] = { ...metrics.value[1], label: 'TOTAL RECEIVABLES', sub: 'Awaiting payment', value: formatCurrency(totalSalesStats.receivables), trend: '-', type: 'neutral', details: totalSalesStats.receivableItems };
     }
 
   } catch (error) {
