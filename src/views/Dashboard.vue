@@ -12,9 +12,26 @@
             <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#0066ff] dark:bg-[#0052cc] text-white hover:bg-[#0052cc] dark:hover:bg-[#0066ff]" @click="addListing">+ Add Listing</button>
             <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#e6f4ea] dark:bg-[#1e2821] text-[#1e8e3e] dark:text-green-500 hover:bg-[#d4eeda] dark:hover:bg-[#385440]" @click="activeModal = 'addAgent'">+ Add Agent</button>
             <div class="w-px h-6 bg-[#e1e4e8] mx-1"></div>
-            <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer transition-all duration-200 ease-in-out flex items-center bg-white dark:bg-background-dark-gray border border-[#dcdcdc] dark:border-[#2d2d2d] text-[#4a4a4a] dark:text-white hover:bg-[#f8f9fa] dark:hover:bg-[#303030] hover:border-[#bbb] dark:hover:border-[#494949]" @click="activeModal = 'calculator'">Calculator</button>
+            
+            <div class="flex items-center gap-1">
+              <input 
+                type="month" 
+                v-model="selectedMonth" 
+                @change="loadDashboardStats"
+                class="px-4 py-1.5 rounded-md font-medium text-[0.9rem] cursor-pointer border border-[#dcdcdc] dark:border-[#2d2d2d] bg-white dark:bg-background-dark-gray text-[#4a4a4a] dark:text-white outline-none focus:border-[#0066ff] focus:ring-1 focus:ring-[#0066ff] transition-all duration-200 ease-in-out"
+                title="Filter by month"
+              />
+              <button 
+                v-if="selectedMonth"
+                @click="clearMonthFilter"
+                class="px-2 py-1.5 rounded-md text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+                title="Clear filter and view totals"
+              >
+                ✕
+              </button>
+            </div>
           </div>
-          </div>
+        </div>
       </header>
 
       <div class="p-8 md:px-10">
@@ -59,7 +76,6 @@
         <div v-if="activeModal" class="bg-white dark:bg-black rounded-[24px] relative p-6 w-full max-w-lg shadow-xl">
           <button class="absolute top-4 right-5 text-gray-400 dark:text-gray-700 hover:text-gray-700 dark:hover:text-gray-400 text-xl font-bold" @click="activeModal = null">✕</button>
           <AddAgent v-if="activeModal === 'addAgent'" />
-          <Calculator v-if="activeModal === 'calculator'" />
         </div> 
 
         <div v-else-if="selectedMetric" class="bg-white dark:bg-black rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl">
@@ -67,11 +83,11 @@
           <div class="border-b pb-4 mb-4">
             <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">{{ selectedMetric.label }} Analysis</h2>
           </div>
-          </div>
+        </div>
 
         <div v-else-if="selectedItem" class="bg-white dark:bg-black rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl">
            <button class="absolute top-4 right-5 text-gray-400 dark:text-gray-700 hover:text-gray-700 dark:hover:text-gray-400 text-xl font-bold" @click="closeAll">✕</button>
-           </div>
+        </div>
 
       </div>
     </transition>
@@ -91,22 +107,23 @@ import RecentActivity from '@/components/dashboard/RecentActivity.vue';
 import GenealogyCard from '@/components/dashboard/GenealogyCard.vue';
 import Reminders from '@/components/dashboard/Reminders.vue';
 import AddAgent from '@/components/dashboard/AddAgent.vue';
-import Calculator from '@/components/dashboard/Calculator.vue';
 
 // State
 const selectedItem = ref<any>(null);
 const selectedMetric = ref<any>(null);
 const activeModal = ref<string | null>(null);
 const modalType = ref('');
-const agent_ID = ref('');
 const agent = ref<Partial<AgentProfile>>({});
 const router = useRouter();
 
+// Filter State
+const selectedMonth = ref('');
+
 // Data
 const metrics = ref([
-  { label: 'TOTAL LISTINGS', value: 'Loading', trend: 'Loading', sub: 'vs last month', type: '...' },
-  { label: 'TOTAL GROSS', value: 'Loading', trend: '...', sub: 'vs last month', type: '...' }, // Changed to Total Gross
-  { label: 'TOTAL PROPERTIES SOLD', value: 'Loading', trend: '...', sub: 'vs last month', type: 'positive' },
+  { label: 'MONTHLY LISTINGS', value: 'Loading', trend: 'Loading', sub: 'vs previous month', type: '...' },
+  { label: 'MONTHLY GROSS', value: 'Loading', trend: '...', sub: 'vs previous month', type: '...' },
+  { label: 'PROPERTIES SOLD', value: 'Loading', trend: '...', sub: 'vs previous month', type: 'positive' },
   { label: 'ACTIVE DEALS', value: '...', trend: '...', sub: 'Pending approval', type: 'neutral' }
 ]);
 
@@ -126,6 +143,10 @@ const closeAll = () => {
   selectedMetric.value = null;
   activeModal.value = null;
 };
+const clearMonthFilter = () => {
+  selectedMonth.value = '';
+  loadDashboardStats();
+};
 
 // Scroll Lock
 watch([selectedItem, selectedMetric, activeModal], ([item, metric, modal]) => {
@@ -136,11 +157,26 @@ watch([selectedItem, selectedMetric, activeModal], ([item, metric, modal]) => {
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'PHP', // 
+    currency: 'PHP',
     maximumFractionDigits: 0
   }).format(value);
 };
-// adds the first and last name of the agent
+
+// Calculate Trends Helper
+const calculateTrend = (curr: number, prev: number) => {
+  if (prev === 0) return curr > 0 ? '+100%' : '0%';
+  const percent = ((curr - prev) / prev) * 100;
+  return `${percent > 0 ? '+' : ''}${percent.toFixed(1)}%`;
+};
+
+// Get Trend Type Helper
+const getTrendType = (curr: number, prev: number) => {
+  if (prev === 0) return curr > 0 ? 'positive' : 'neutral';
+  const percent = ((curr - prev) / prev) * 100;
+  return percent > 0 ? 'positive' : (percent < 0 ? 'negative' : 'neutral');
+};
+
+// Adds the first and last name of the agent
 const agentName = computed(() => {
   if (agent.value.first_name && agent.value.last_name){
     return `${agent.value.first_name} ${agent.value.last_name}`;
@@ -148,7 +184,74 @@ const agentName = computed(() => {
   return 'Guest';
 });
 
-// Functionalities
+const loadDashboardStats = async () => {
+  if (!agent.value.agent_ID) return;
+
+  metrics.value.forEach(m => { m.value = 'Loading'; m.trend = '...'; });
+
+  try {
+    if (selectedMonth.value) {
+      const [yearStr, monthStr] = selectedMonth.value.split('-');
+      const year = parseInt(yearStr);
+      const month = parseInt(monthStr); 
+
+      const startOfSelected = new Date(year, month - 1, 1).toISOString();
+      const endOfSelected = new Date(year, month, 1).toISOString();
+      const startOfPrev = new Date(year, month - 2, 1).toISOString();
+      const endOfPrev = new Date(year, month - 1, 1).toISOString();
+
+      const responses = await Promise.all([
+        supabase.from('main_listings').select('*', { count: 'exact', head: true })
+          .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfSelected).lt('created_at', endOfSelected),
+        supabase.from('main_listings').select('*', { count: 'exact', head: true })
+          .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfPrev).lt('created_at', endOfPrev),
+        supabase.from('main_listings').select('price', { count: 'exact' })
+          .eq('agent_ID', agent.value.agent_ID).eq('status', 'sold').gte('created_at', startOfSelected).lt('created_at', endOfSelected),
+        supabase.from('main_listings').select('price', { count: 'exact' })
+          .eq('agent_ID', agent.value.agent_ID).eq('status', 'sold').gte('created_at', startOfPrev).lt('created_at', endOfPrev),
+      ]);
+
+      const currListings = responses[0].count || 0;
+      const prevListings = responses[1].count || 0;
+      const currSoldData = responses[2].data || [];
+      const currSoldCount = responses[2].count || 0;
+      const prevSoldData = responses[3].data || [];
+      const prevSoldCount = responses[3].count || 0;
+
+      const currGross = currSoldData.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+      const prevGross = prevSoldData.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+
+      metrics.value[0] = { ...metrics.value[0], label: 'MONTHLY LISTINGS', sub: 'vs previous month', value: currListings.toString(), trend: calculateTrend(currListings, prevListings), type: getTrendType(currListings, prevListings) };
+      metrics.value[1] = { ...metrics.value[1], label: 'MONTHLY GROSS', sub: 'vs previous month', value: formatCurrency(currGross), trend: calculateTrend(currGross, prevGross), type: getTrendType(currGross, prevGross) };
+      metrics.value[2] = { ...metrics.value[2], label: 'PROPERTIES SOLD', sub: 'vs previous month', value: currSoldCount.toString(), trend: calculateTrend(currSoldCount, prevSoldCount), type: getTrendType(currSoldCount, prevSoldCount) };
+
+    } else {
+    
+      const responses = await Promise.all([
+        supabase.from('main_listings').select('*', { count: 'exact', head: true })
+          .eq('agent_ID', agent.value.agent_ID),
+        supabase.from('main_listings').select('price', { count: 'exact' })
+          .eq('agent_ID', agent.value.agent_ID).eq('status', 'sold')
+      ]);
+
+      const totalListings = responses[0].count || 0;
+      const totalSoldData = responses[1].data || [];
+      const totalSoldCount = responses[1].count || 0;
+      const totalGross = totalSoldData.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+
+      metrics.value[0] = { ...metrics.value[0], label: 'TOTAL LISTINGS', sub: 'All Time', value: totalListings.toString(), trend: '-', type: 'neutral' };
+      metrics.value[1] = { ...metrics.value[1], label: 'TOTAL GROSS', sub: 'All Time', value: formatCurrency(totalGross), trend: '-', type: 'neutral' };
+      metrics.value[2] = { ...metrics.value[2], label: 'TOTAL PROPERTIES SOLD', sub: 'All Time', value: totalSoldCount.toString(), trend: '-', type: 'neutral' };
+    }
+
+  } catch (error) {
+    console.error("SUPABASE ERROR fetching dashboard stats:", error);
+    if (metrics.value[0]) { metrics.value[0].value = '0'; metrics.value[0].trend = 'N/A'; }
+    if (metrics.value[1]) { metrics.value[1].value = '$0'; metrics.value[1].trend = 'N/A'; }
+    if (metrics.value[2]) { metrics.value[2].value = '0'; metrics.value[2].trend = 'N/A'; }
+  }
+};
+
 onMounted(async () => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -166,114 +269,15 @@ onMounted(async () => {
         agent.value = agentData;
 
         const now = new Date();
-        const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-        
-        //fetches all the coounts
-        const responses = await Promise.all([
-        //for the total listings
-          supabase.from('main_listings').select('*', { count: 'exact', head: true })
-            .eq('agent_ID', agentData.agent_ID),
-        // for this months listings
-          supabase.from('main_listings').select('*', { count: 'exact', head: true })
-            .eq('agent_ID', agentData.agent_ID)
-            .gte('created_at', startOfThisMonth),
-          // for last months listing
-          supabase.from('main_listings').select('*', { count: 'exact', head: true })
-            .eq('agent_ID', agentData.agent_ID)
-            .gte('created_at', startOfLastMonth)
-            .lt('created_at', startOfThisMonth),
-          // for the sold
-          supabase.from('main_listings')
-          .select('price, created_at')
-          .eq('agent_ID', agentData.agent_ID)
-          .eq('status', 'sold'),
-          // for the total sold
-          supabase.from('main_listings').select('*', { count: 'exact', head: true })
-            .eq('agent_ID', agentData.agent_ID)
-            .eq('status', 'sold'),
-          // ffor this months sold listings
-          supabase.from('main_listings').select('*', { count: 'exact', head: true })
-            .eq('agent_ID', agentData.agent_ID)
-            .eq('status', 'sold')
-            .gte('created_at', startOfThisMonth),
-          // for last months listing
-          supabase.from('main_listings').select('*', { count: 'exact', head: true })
-            .eq('agent_ID', agentData.agent_ID)
-            .eq('status', 'sold')
-            .gte('created_at', startOfLastMonth)
-            .lt('created_at', startOfThisMonth),
-          
-          
-        ]);
+        const currentYear = now.getFullYear();
+        const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+        selectedMonth.value = `${currentYear}-${currentMonth}`;
 
-        // note that metrics.value[0] is the total listings since it is the first metric card shown in the page
-        if (metrics.value[0]) {
-          const totalCount = responses[0].count || 0;
-          const curr = responses[1].count || 0;
-          const prev = responses[2].count || 0;
-          
-          metrics.value[0].value = totalCount.toString();
-          if (prev === 0) {
-            metrics.value[0].trend = curr > 0 ? '+100%' : '0%';
-            metrics.value[0].type = curr > 0 ? 'positive' : 'neutral';
-          } else {
-            const percent = ((curr - prev) / prev) * 100;
-            metrics.value[0].trend = `${percent > 0 ? '+' : ''}${percent.toFixed(1)}%`;
-            metrics.value[0].type = percent > 0 ? 'positive' : (percent < 0 ? 'negative' : 'neutral');
-          }
-        }
-    
-        const soldPricesData = responses[3].data || [];
-          
-        if (soldPricesData && metrics.value[1]) {
-          let totalGross = 0;
-          let thisMonthGross = 0;
-          let lastMonthGross = 0;
-          const startThisTime = new Date(startOfThisMonth).getTime();
-          const startLastTime = new Date(startOfLastMonth).getTime();
-
-          soldPricesData.forEach((item: any) => {
-            const price = Number(item.price) || 0;
-            const createdTime = new Date(item.created_at).getTime();
-            totalGross += price;
-            if (createdTime >= startThisTime) thisMonthGross += price;
-            else if (createdTime >= startLastTime) lastMonthGross += price;
-          });
-          // note that metrics.value[1] is the total gross 
-          metrics.value[1].value = formatCurrency(totalGross);
-          const percent = lastMonthGross === 0 ? (thisMonthGross > 0 ? 100 : 0) : ((thisMonthGross - lastMonthGross) / lastMonthGross) * 100;
-          metrics.value[1].trend = `${percent > 0 ? '+' : ''}${percent.toFixed(1)}%`;
-          metrics.value[1].type = percent > 0 ? 'positive' : (percent < 0 ? 'negative' : 'neutral');
-        }
-        // note that metrics.value[2] is the total sold listings since it is the third metric card shown in the page
-        if (metrics.value[2]) {
-          const totalSold = responses[4].count || 0;
-          const currSold = responses[5].count || 0;
-          const prevSold = responses[6].count || 0;
-          
-          metrics.value[2].value = totalSold.toString();
-          if (prevSold === 0) {
-            metrics.value[2].trend = currSold > 0 ? '+100%' : '0%';
-            metrics.value[2].type = currSold > 0 ? 'positive' : 'neutral';
-          } else {
-            const percent = ((currSold - prevSold) / prevSold) * 100;
-            metrics.value[2].trend = `${percent > 0 ? '+' : ''}${percent.toFixed(1)}%`;
-            metrics.value[2].type = percent > 0 ? 'positive' : (percent < 0 ? 'negative' : 'neutral');
-          }
-        }
-
-        
-
-        
+        await loadDashboardStats();
       }
     }
   } catch (error) {
-    console.error(" SUPABASE ERROR fetching dashboard data:", error); 
-    // Fallbacks if data fails
-    if (metrics.value[0]) { metrics.value[0].value = '0'; metrics.value[0].trend = 'N/A'; }
-    if (metrics.value[1]) { metrics.value[1].value = '$0'; metrics.value[1].trend = 'N/A'; }
-    if (metrics.value[2]) { metrics.value[2].value = '0'; metrics.value[2].trend = 'N/A'; }
+    console.error("Error setting up dashboard:", error); 
   }
 });
 
