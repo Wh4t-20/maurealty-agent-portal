@@ -35,6 +35,7 @@
           <div class="w-65 h-20 bg-white dark:bg-black border-[3px] border-[#07407B] dark:border-maurealty-light-blue dark:text-maurealty-light-blue rounded flex flex-col items-center justify-center">
             <div class="text-5 font-medium">{{ data.fullName }}</div>
             <div class="text-3 font-light">{{ data.position }}</div>
+            <div class = "text-3 font-light">{{ data.commission }}</div>
           </div>
         </template>
       </VueFlow>
@@ -69,6 +70,11 @@ function positionLabel(node: GenealogyNode): string {
   return "N/A"
 }
 
+function commissionLabel(node: GenealogyNode): number {
+  if (node.commission_rate) return parseFloat(node.commission_rate.toFixed(2))
+  return 1
+}
+
 // Flatten the tree into VueFlow nodes/edges. Uses agent_ID as the node id so
 // edges are stable regardless of traversal order.
 function flatten(node: GenealogyNode, parentId: string | null, outNodes: Node[], outEdges: Edge[]) {
@@ -81,6 +87,7 @@ function flatten(node: GenealogyNode, parentId: string | null, outNodes: Node[],
     data: {
       fullName: `${node.first_name} ${node.last_name}`,
       position: positionLabel(node),
+      commission: commissionLabel(node),
     },
   })
 
