@@ -10,6 +10,10 @@ import { supabase } from '../supabaseClient';
 // A bare agent as it appears in the hierarchy. position is resolved from the
 // `positions` table when available; null while that table is unpopulated
 // (the UI falls back to its own positionMap).
+interface PositionData {
+  position: string;
+  commission_rate: number | null;
+}
 export interface GenealogyAgent {
   agent_ID: number;
   first_name: string;
@@ -18,6 +22,7 @@ export interface GenealogyAgent {
   position_ID: number | null;
   position: string | null;
   profile_url: string | null;
+  commission_rate?: number | null; 
 }
 
 // A node in the tree: an agent plus its direct downlines.
@@ -76,12 +81,12 @@ const AGENT_FIELDS = 'agent_ID, first_name, middle_name, last_name, position_ID,
 async function fetchGraph(): Promise<{
   agents: AgentRow[];
   edges: Edge[];
-  positions: Map<number, string>;
+  positions: Map<number, PositionData>;
 }> {
   const [agentsRes, edgesRes, posRes] = await Promise.all([
     supabase.from('agents').select(`${AGENT_FIELDS}, hire_date`),
     supabase.from('genealogy').select('upline_agent_ID, downline_agent_ID'),
-    supabase.from('positions').select('position_ID, position'),
+    supabase.from('positions').select('position_ID, position, commission_rate'),
   ]);
 
   if (agentsRes.error) throw agentsRes.error;
@@ -89,8 +94,8 @@ async function fetchGraph(): Promise<{
   // positions may be empty/locked down — don't hard-fail on it.
   if (posRes.error) console.warn('genealogy: positions lookup failed:', posRes.error);
 
-  const positions = new Map<number, string>();
-  for (const p of posRes.data || []) positions.set(p.position_ID, p.position);
+  const positions = new Map<number, PositionData>();
+  for (const p of posRes.data || []) positions.set(p.position_ID, {position:p.position, commission_rate:p.commission_rate});
 
   return {
     agents: (agentsRes.data || []) as AgentRow[],
@@ -99,15 +104,16 @@ async function fetchGraph(): Promise<{
   };
 }
 
-function toAgent(row: AgentRow, positions: Map<number, string>): GenealogyAgent {
+function toAgent(row: AgentRow, positions: Map<number, PositionData>): GenealogyAgent {
   return {
     agent_ID: row.agent_ID,
     first_name: row.first_name,
     middle_name: row.middle_name,
     last_name: row.last_name,
     position_ID: row.position_ID,
-    position: row.position_ID != null ? positions.get(row.position_ID) ?? null : null,
+    position: row.position_ID != null ? positions.get(row.position_ID)?.position ?? null : null,
     profile_url: row.profile_url,
+    commission_rate: positions.get(row.position_ID ?? -1)?.commission_rate ?? null,
   };
 }
 
