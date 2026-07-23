@@ -35,7 +35,8 @@
           <div class="w-65 h-20 bg-white dark:bg-black border-[3px] border-[#07407B] dark:border-maurealty-light-blue dark:text-maurealty-light-blue rounded flex flex-col items-center justify-center">
             <div class="text-5 font-medium">{{ data.fullName }}</div>
             <div class="text-3 font-light">{{ data.position }}</div>
-            <div class = "text-3 font-light">{{ data.commission }}</div>
+            <div class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1">Commission: {{ data.commission }}%</div>
+          
           </div>
         </template>
       </VueFlow>
