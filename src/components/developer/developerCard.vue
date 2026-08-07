@@ -61,6 +61,30 @@
 		<p v-else class="text-xs text-gray-400 italic">No recent projects yet</p>
 		</div>
 
+		<!-- Promotions (posters) -->
+		<div class="mb-4">
+			<p class="font-semibold text-sm mb-1 dark:text-gray-300 flex items-center gap-1"><TagIcon class="size-4" /> Promotions</p>
+			<div v-if="dev.promos && dev.promos.length" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+				<figure
+					v-for="promo in dev.promos"
+					:key="promo.promo_ID"
+					class="group relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 cursor-pointer"
+					:title="promo.title"
+					@click="$emit('open-promo', promo)"
+				>
+					<img :src="promo.image_url" :alt="promo.title" class="w-full h-24 object-cover group-hover:scale-105 transition-transform" />
+					<figcaption v-if="promo.title || promo.valid_until"
+						class="absolute inset-x-0 bottom-0 bg-black/60 text-white text-[10px] px-1.5 py-1 leading-tight">
+						<span v-if="promo.title" class="block truncate font-semibold">{{ promo.title }}</span>
+						<span v-if="promo.valid_until" :class="isExpired(promo.valid_until) ? 'text-red-300' : 'text-green-300'">
+							{{ isExpired(promo.valid_until) ? 'Expired' : 'Until' }} {{ formatPromoDate(promo.valid_until) }}
+						</span>
+					</figcaption>
+				</figure>
+			</div>
+			<p v-else class="text-xs text-gray-400 italic">No promotions posted</p>
+		</div>
+
 		<!-- buttons -->
 		<div class="flex gap-2 items-end justify-end">
 			<button @click="handleDelete" class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px]  border border-red-600 text-red-600 rounded-[5px] px-4 py-2 hover:bg-red-100 dark:hover:bg-red-950 flex items-center gap-2 justify-center" >
@@ -77,9 +101,9 @@
 </template>
 
 <script setup lang="ts">
-import { type DayOption, type Developer, type DeveloperProject 	} from '@/assets/classes/developers';
+import { type DayOption, type Developer, type DeveloperProject, type DeveloperPromo 	} from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
-import { PhoneIcon, MailIcon, MapPinIcon, CalendarCheck2Icon, CalendarOffIcon, ClockIcon  } from 'lucide-vue-next';
+import { PhoneIcon, MailIcon, MapPinIcon, CalendarCheck2Icon, CalendarOffIcon, ClockIcon, TagIcon  } from 'lucide-vue-next';
 
 const props = defineProps<{ dev: Developer}>()
 const emit = defineEmits<{
@@ -87,7 +111,12 @@ const emit = defineEmits<{
 	(event: 'edit-developer', developer: Developer): void;
 	(event: 'contact-developer', devId: number | undefined): void;
 	(event:  'open-listing', project: DeveloperProject): void;
+	(event:  'open-promo', promo: DeveloperPromo): void;
 }>();
+
+const isExpired = (date: string | null) => !!date && new Date(date) < new Date(new Date().toDateString());
+const formatPromoDate = (date: string | null) =>
+	date ? new Date(date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
 
 const handleDelete = () => emit('delete-developer', props.dev)
 const handleEdit = () => emit('edit-developer', props.dev)

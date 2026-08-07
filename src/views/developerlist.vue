@@ -32,7 +32,7 @@
     <!-- Developer Cards -->
     <div class="flex-1 overflow-y-auto">
       <div class="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 sm:p-8">
-        <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" @edit-developer = "handleEditDeveloper" @delete-developer = "handleDeleteDeveloper" @open-listing="openListing"/>
+        <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" @edit-developer = "handleEditDeveloper" @delete-developer = "handleDeleteDeveloper" @open-listing="openListing" @open-promo="openPromo"/>
       </div>
     </div>
   </div>
@@ -42,28 +42,44 @@
     :prop_type="selectedProject.property_type"
     @closeDetails="selectedProject = null"
   />
+
+  <!-- Promo poster lightbox -->
+  <div v-if="selectedPromo" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" @click.self="selectedPromo = null">
+    <div class="relative max-w-3xl w-full max-h-full flex flex-col items-center">
+      <button class="absolute -top-3 -right-3 bg-white text-black p-2 rounded-full shadow hover:bg-gray-200 transition cursor-pointer" @click="selectedPromo = null">
+        <XIcon class="size-5" stroke-width="3" />
+      </button>
+      <img :src="selectedPromo.image_url" :alt="selectedPromo.title" class="max-h-[80vh] w-auto rounded-xl object-contain" />
+      <div v-if="selectedPromo.title || selectedPromo.valid_until" class="mt-3 text-center text-white">
+        <p v-if="selectedPromo.title" class="font-semibold text-lg">{{ selectedPromo.title }}</p>
+        <p v-if="selectedPromo.valid_until" class="text-sm text-gray-300">Valid until {{ selectedPromo.valid_until }}</p>
+      </div>
+    </div>
+  </div>
   </main>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from "vue";
-import { type Developer, type OfficeHourSlot, type DeveloperProject } from "@/assets/classes/developers.ts";
+import { type Developer, type OfficeHourSlot, type DeveloperProject, type DeveloperPromo } from "@/assets/classes/developers.ts";
 import { developerService } from "@/services/developerService";
 import DeveloperCard from "@/components/developer/developerCard.vue";
 import AddDeveloperTab from "@/components/developer/addDeveloper.vue";
 import PropertyDetails from "@/components/listings/PropertyDetails.vue";
-import { Plus } from "lucide-vue-next";
+import { Plus, XIcon } from "lucide-vue-next";
 
 
 const developers = ref<Developer[]>([])
 const devToEdit = ref<Developer | null>(null);
 const selectedProject = ref<DeveloperProject | null>(null)
-const openListing = (project: DeveloperProject) => { 
-  
+const selectedPromo = ref<DeveloperPromo | null>(null)
+const openListing = (project: DeveloperProject) => {
+
   selectedProject.value = project
   console.log('OPENED LISTING: ', selectedProject.value, '        ', project)
 
  }
+const openPromo = (promo: DeveloperPromo) => { selectedPromo.value = promo }
 const loadDevelopers = async () => {
   try {
     const data = await developerService.getDevelopers();
