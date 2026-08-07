@@ -1,5 +1,5 @@
 import { supabase } from '../supabaseClient';
-import { type Developer, type OfficeHourSlot, type DayOption, days } from '../assets/classes/developers';
+import { type Developer, type DeveloperPromo, type OfficeHourSlot, type DayOption, days } from '../assets/classes/developers';
 
 const formatHours = (time: string) => {
     const [hoursPart = '0', minutesPart = '00'] = time.split(':');
@@ -43,7 +43,7 @@ export const developerService = {
         // Embed each developer's listings in one query (avoids an N+1 per card).
         const { data, error } = await supabase
             .from('developers')
-            .select('dev_ID, profile_url, name, contact_number, contact_email, location, opening_days(day, open_hours, close_hours),  main_listings(listing_ID, listing_title, created_at, status, property_type(property_type))');
+            .select('dev_ID, profile_url, name, contact_number, contact_email, location, opening_days(day, open_hours, close_hours),  main_listings(listing_ID, listing_title, created_at, status, property_type(property_type)), developer_promos("promo_ID", image_url, title, valid_until, created_at)');
             console.log('Fetched developers:', data);
         if (error || !data) {
             console.error('Fetch error:', error);
@@ -76,8 +76,17 @@ export const developerService = {
                     listing_ID: l.listing_ID,
                     listing_title: l.listing_title || 'Untitled Listing',
                     property_type: l.property_type?.property_type || 'Unknown',
+                })),
+            promos: (item.developer_promos || [])
+                .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                .map((p: any): DeveloperPromo => ({
+                    promo_ID: p.promo_ID,
+                    dev_ID: item.dev_ID,
+                    image_url: p.image_url,
+                    title: p.title || '',
+                    valid_until: p.valid_until ?? null,
                 }))
-        })); 
+        }));
         developers.forEach(dev => { 
             var newOfficeHours: OfficeHourSlot[] = [];
             var openTimeComparator: string = '';
@@ -257,6 +266,68 @@ export const developerService = {
         }
         else if (developer.dev_ID) {
             console.log('Developer deleted with ID:', developer.dev_ID);
+        }
+    },
+
+    // --- Developer promos (posters) ---
+    // Upload a poster image to the images bucket under developer_promos/.
+    async uploadPromoImage(devID: number, file: File): Promise<string | ''> {
+        const fileExt = file.name.split('.').pop() || 'bin';
+        const fileName = `${devID}-${Date.now()}.${fileExt}`;
+        const filePath = `developer_promos/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('images')
+            .upload(filePath, file);
+
+        if (uploadError) {
+            console.error('Error uploading promo image:', uploadError);
+            return '';
+        }
+        const { data: { publicUrl } } = supabase.storage
+            .from('images')
+            .getPublicUrl(filePath);
+
+        return publicUrl;
+    },
+
+    // Insert a promo row. Returns the new promo_ID (or null on failure).
+    async addPromo(devID: number, promo: DeveloperPromo): Promise<number | null> {
+        const { data, error } = await supabase
+            .from('developer_promos')
+            .insert({
+                dev_ID: devID,
+                image_url: promo.image_url,
+                title: promo.title || null,
+                valid_until: promo.valid_until || null,
+            })
+            .select('promo_ID')
+            .single();
+
+        if (error) {
+            console.error('Error adding promo:', error);
+            return null;
+        }
+        return data?.promo_ID ?? null;
+    },
+
+    // Delete a promo row and its storage object (best-effort on the file).
+    async deletePromo(promo: DeveloperPromo): Promise<void> {
+        if (promo.image_url) {
+            const marker = '/object/public/images/';
+            const idx = promo.image_url.indexOf(marker);
+            if (idx !== -1) {
+                const path = promo.image_url.slice(idx + marker.length);
+                const { error: storageError } = await supabase.storage.from('images').remove([path]);
+                if (storageError) console.error('Error removing promo image file:', storageError);
+            }
+        }
+        if (promo.promo_ID != null) {
+            const { error } = await supabase
+                .from('developer_promos')
+                .delete()
+                .eq('promo_ID', promo.promo_ID);
+            if (error) console.error('Error deleting promo:', error);
         }
     }
 };

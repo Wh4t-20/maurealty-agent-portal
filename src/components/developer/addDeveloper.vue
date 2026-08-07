@@ -182,6 +182,55 @@
                     
                 </section>
 
+                <!-- PROMOTIONS (POSTERS) SECTION -->
+                <section class="col-span-full w-full flex flex-col gap-4">
+                    <div class="flex justify-between items-center">
+                        <h1 class="text-2xl font-bold text-maurealty-blue dark:text-white">Promotions</h1>
+                        <button type="button" @click="triggerPromoInput"
+                            class="text-sm font-semibold text-white dark:text-maurealty-blue bg-maurealty-blue dark:bg-white hover:opacity-80 px-3 py-1.5 rounded-lg transition">
+                            + Add Poster
+                        </button>
+                    </div>
+                    <input type="file" accept="image/*" ref="promoFileInput" class="hidden" @change="handlePromoUpload" />
+
+                    <p v-if="!existingPromos.length && !stagedPromos.length" class="text-sm text-gray-500 italic">
+                        No promotions yet. Add posters (with an optional title and validity date) to show them on this developer's card.
+                    </p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Existing (already saved) promos: remove only -->
+                        <div v-for="promo in existingPromos" :key="`existing-${promo.promo_ID}`"
+                            class="relative rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-gray-50/50 dark:bg-gray-50/10">
+                            <button type="button" @click="removeExistingPromo(promo)"
+                                class="absolute top-2 right-2 z-10 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition shadow" title="Remove poster">
+                                <XIcon class="size-4" stroke-width="2.5" />
+                            </button>
+                            <img :src="promo.image_url" :alt="promo.title" class="w-full h-40 object-cover" />
+                            <div class="p-3">
+                                <p class="font-semibold dark:text-white truncate">{{ promo.title || 'Untitled promo' }}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ promo.valid_until ? `Valid until ${promo.valid_until}` : 'No expiry' }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Staged (new, unsaved) promos: editable title + validity -->
+                        <div v-for="(promo, index) in stagedPromos" :key="`staged-${index}`"
+                            class="relative rounded-xl border-2 border-dashed border-maurealty-blue/40 overflow-hidden bg-blue-50/40 dark:bg-maurealty-light-blue/10">
+                            <button type="button" @click="removeStagedPromo(index)"
+                                class="absolute top-2 right-2 z-10 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 transition shadow" title="Remove poster">
+                                <XIcon class="size-4" stroke-width="2.5" />
+                            </button>
+                            <img :src="promo.preview" alt="New poster preview" class="w-full h-40 object-cover" />
+                            <div class="p-3 flex flex-col gap-2">
+                                <input v-model="promo.title" type="text" placeholder="Poster title (optional)"
+                                    class="w-full text-sm dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none" />
+                                <label class="text-xs font-bold text-gray-500 uppercase">Valid until (optional)</label>
+                                <input v-model="promo.valid_until" type="date"
+                                    class="w-full text-sm dark:text-white dark:scheme-dark border border-gray-300 dark:border-gray-700 rounded-lg p-2 focus:ring-2 focus:ring-maurealty-blue outline-none" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <section class="col-span-full w-full">
                     <button type="submit" class="w-full border-2 py-3 border-maurealty-blue dark:border-maurealty-light-blue rounded-xl flex flex-col items-center justify-center bg-maurealty-blue dark:bg-maurealty-light-blue text-white dark:text-maurealty-blue hover:bg-maurealty-blue/5 hover:text-maurealty-blue dark:hover:text-maurealty-light-blue transition">
                         <span class="text-2xl font-semibold">★ SAVE DEVELOPER</span>
@@ -200,7 +249,10 @@ import { type DayOption, type OfficeHourSlot, days } from '@/assets/classes/deve
 import placeholder from '@/assets/images/default_placeholder.png'
 import { CheckIcon, XIcon } from 'lucide-vue-next';
 import { developerService, reformatHours } from '@/services/developerService';
-import { type Developer } from '@/assets/classes/developers';
+import { type Developer, type DeveloperPromo } from '@/assets/classes/developers';
+
+// A poster the user picked but hasn't saved yet (holds the File + preview URL).
+interface StagedPromo { file: File; preview: string; title: string; valid_until: string }
 
 // reminder to safeguard the non-nullable inputs pls (error message if missing part)
 
@@ -217,6 +269,13 @@ const oldOfficeHours = ref<OfficeHourSlot[]>([]);
 const officeHours = ref<OfficeHourSlot[]>([
     { selectedDays: [], openTime: '', closeTime: '', isOpenUnavailable: false, isCloseUnavailable: false }
 ]);
+
+// Promotions (posters). existingPromos = already saved (edit mode); stagedPromos
+// = picked but not yet uploaded; removedPromos = saved ones marked for deletion.
+const promoFileInput = ref<HTMLInputElement | null>(null);
+const existingPromos = ref<DeveloperPromo[]>([]);
+const stagedPromos = ref<StagedPromo[]>([]);
+const removedPromos = ref<DeveloperPromo[]>([]);
 watch(() => props.dev, (newDev) => {
         if (newDev) {
         editMode.value = true;
@@ -225,16 +284,22 @@ watch(() => props.dev, (newDev) => {
         currentImage.value = { file: null as any, preview: newDev.image_url };
         officeHours.value = newDev.OfficeHours;
         if (newDev.OfficeHours && newDev.OfficeHours.length > 0) { //change in office hours is checked separately from the rest
-            
+
             oldOfficeHours.value = JSON.parse(JSON.stringify(newDev.OfficeHours));
         } else {
             const defaultSlot = { selectedDays: [], openTime: '', closeTime: '', isOpenUnavailable: false, isCloseUnavailable: false };
             oldOfficeHours.value = [JSON.parse(JSON.stringify(defaultSlot))];
         }
+        existingPromos.value = newDev.promos ? [...newDev.promos] : [];
+        stagedPromos.value = [];
+        removedPromos.value = [];
     } else {
         editMode.value = false;
         form.value = {};
         currentImage.value = undefined;
+        existingPromos.value = [];
+        stagedPromos.value = [];
+        removedPromos.value = [];
     }
 }, { immediate: true })
 
@@ -266,10 +331,54 @@ const handleFileUpload = (event: Event) => {
 
 const removeImage = () => {
   if (currentImage.value) {
-    URL.revokeObjectURL(currentImage.value.preview); 
+    URL.revokeObjectURL(currentImage.value.preview);
     currentImage.value = undefined;
   }
 };
+
+// --- Promotions handling ---
+const triggerPromoInput = () => promoFileInput.value?.click();
+
+const handlePromoUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files && target.files.length > 0) {
+    const file = target.files[0];
+    if (file) {
+      stagedPromos.value.push({ file, preview: URL.createObjectURL(file), title: '', valid_until: '' });
+    }
+  }
+  if (promoFileInput.value) promoFileInput.value.value = '';
+};
+
+const removeStagedPromo = (index: number) => {
+  const [removed] = stagedPromos.value.splice(index, 1);
+  if (removed) URL.revokeObjectURL(removed.preview);
+};
+
+// Mark a saved promo for deletion; it's actually deleted on save.
+const removeExistingPromo = (promo: DeveloperPromo) => {
+  existingPromos.value = existingPromos.value.filter(p => p.promo_ID !== promo.promo_ID);
+  removedPromos.value.push(promo);
+};
+
+// Persist promo changes once we have a real dev_ID (upload new, delete removed).
+async function persistPromos(devID: number) {
+  for (const promo of removedPromos.value) {
+    await developerService.deletePromo(promo);
+  }
+  for (const staged of stagedPromos.value) {
+    const url = await developerService.uploadPromoImage(devID, staged.file);
+    if (!url) continue;
+    await developerService.addPromo(devID, {
+      image_url: url,
+      title: staged.title,
+      valid_until: staged.valid_until || null,
+    });
+    URL.revokeObjectURL(staged.preview);
+  }
+  stagedPromos.value = [];
+  removedPromos.value = [];
+}
 
 async function saveDeveloper() {
     const payload: Developer = {
@@ -287,6 +396,7 @@ async function saveDeveloper() {
     if (oldDev.value !== undefined && oldDev.value !== payload && editMode.value) {
         await developerService.updateDeveloper(payload, oldOfficeHours.value);
         console.log("Updated Developer ID: ", payload.dev_ID);
+        await persistPromos(payload.dev_ID);
         form.value = {
             dev_ID: -1,
             image_url: '',
@@ -311,6 +421,7 @@ async function saveDeveloper() {
             imageUrl = await developerService.uploadImage(devID,currentImage.value.file);
             await developerService.updateDeveloper({ ...payload, dev_ID: devID, image_url: imageUrl }, oldOfficeHours.value); //second parameter is kinda irrelevant for adding new dev, but its genuinely needed to track if office hours has been changed from editing in edit mode
         }
+        if (devID != null) await persistPromos(devID);
     }
     
 }

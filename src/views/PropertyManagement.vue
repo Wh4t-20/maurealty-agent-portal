@@ -94,9 +94,24 @@
               
               <div v-if="displayDescriptionMarkdown" class="markdownTypography max-w-none w-full h-auto min-h-40 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg p-3" v-html="compiledDescriptionMarkdown"></div>
               
-              <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read 
-                <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a> 
+              <p class="text-sm text-gray-500 italic">Note: description follows the Markdown format, read
+                <a target="_blank" rel="noopener noreferrer" class="text-blue-400 underline" href="https://www.markdownguide.org/basic-syntax/">this</a>
               for formatting options</p>
+            </div>
+
+            <!-- Incentives: carried into the Sales Report when this listing is sold. -->
+            <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-2">Agent Incentive</label>
+                <textarea v-model="form.agent_incentive" placeholder="e.g. ₱10,000 cash bonus per unit sold"
+                          class="custom-scrollbar w-full min-h-20 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-bold text-maurealty-blue dark:text-white mb-2">Realty Incentive</label>
+                <textarea v-model="form.realty_incentive" placeholder="e.g. Free tripping, developer travel promo"
+                          class="custom-scrollbar w-full min-h-20 dark:text-white border border-gray-300 dark:border-gray-700 rounded-lg p-3 focus:ring-2 focus:ring-maurealty-blue outline-none"></textarea>
+              </div>
+              <p class="sm:col-span-2 text-sm text-gray-500 italic">These reflect in the Sales Report for any sale made on this listing.</p>
             </div>
           </div>
 
@@ -700,6 +715,8 @@ const loadProperties = async () => {
       form.value.faq = data.faq;
       form.value.fact_sheet = data.fact_sheet;
       form.value.is_bulk = data.is_bulk || false;
+      form.value.agent_incentive = data.agent_incentive || '';
+      form.value.realty_incentive = data.realty_incentive || '';
 
       console.log(data.longitude, data.latitude);
       console.log("^Data | vForm\n");
@@ -810,6 +827,8 @@ const form = ref<Partial<PropertyForm>>({
   dev_ID: null,
   faq: '',
   fact_sheet: '',
+  agent_incentive: '',
+  realty_incentive: '',
 
   // House and Lot Defaults
   one_storey: true,
@@ -953,7 +972,9 @@ const saveProperty = async () => {
         description: form.value.description || 'No description provided.',
         status: form.value.status,
         dev_ID: form.value.dev_ID,
-        faq: form.value.faq
+        faq: form.value.faq,
+        agent_incentive: form.value.agent_incentive || null,
+        realty_incentive: form.value.realty_incentive || null
       };
       // 3. Prepare Specific Sub-table Data (Translating frontend variables to exact Supabase column names)
       let specificData = {};
@@ -1053,7 +1074,9 @@ const saveProperty = async () => {
         description: form.value.description || 'No description provided.',
         status: form.value.status,
         dev_ID: form.value.dev_ID,
-        faq: form.value.faq
+        faq: form.value.faq,
+        agent_incentive: form.value.agent_incentive || null,
+        realty_incentive: form.value.realty_incentive || null
       };
       let specificData = {};
 

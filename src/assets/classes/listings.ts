@@ -18,6 +18,8 @@ export interface Property {
     faq: string;
     fact_sheet?: string;
     is_bulk?: boolean;
+    agent_incentive?: string | null;
+    realty_incentive?: string | null;
 }
 
 // lot only interface

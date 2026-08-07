@@ -186,6 +186,7 @@ import { type Property }  from '@/assets/classes/listings'
 import PropertyCard from '@/components/listings/PropertyCard.vue'
 import ListingsFilter from '@/components/listings/ListingsFilter.vue'
 import PropertyDetails from '@/components/listings/PropertyDetails.vue'
+import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
@@ -400,17 +401,27 @@ const processDelete = async (id: number) => {
 // Marking sold opens the sale form pre-filled with this listing. The agent
 // confirms buyer + date there; the listing is only flipped to 'sold' AFTER the
 // sale row is saved (see onSaleSaved) so we never hide a listing with no record.
-const markSold = async (listingId: number) => {
-  if (!confirm('Are you sure you want to mark this bulk listing as sold?')) return;
-  
+const soldListing = ref<Property | null>(null)
+
+const markSold = (listingId: number) => {
+  const listing = properties.value.find(p => p.listing_id === listingId)
+  if (!listing) return
+  soldListing.value = listing
+  showDetails.value = false
+}
+
+// Called after the pre-filled sale is saved: now it's safe to flip the listing
+// to 'sold' and drop it from the grid.
+const onSaleSaved = async () => {
+  const listingId = soldListing.value?.listing_id
+  soldListing.value = null
+  if (!listingId) return
   try {
-    await listingsService.updateListingStatus(listingId, 'sold');
-    properties.value = properties.value.filter(p => p.listing_id !== listingId);
-    showDetails.value = false;
-    alert("Success! The bulk property has been marked as sold.");
+    await listingsService.updateListingStatus(listingId, 'sold')
+    properties.value = properties.value.filter(p => p.listing_id !== listingId)
   } catch (error) {
-    console.error("Error marking property as sold:", error);
-    alert("Failed to update the listing status. Please retry.");
+    console.error("Error marking property as sold:", error)
+    alert("Failed to update the listing status. Please retry.")
   }
 }
 </script>
