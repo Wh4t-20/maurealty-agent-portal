@@ -28,6 +28,8 @@ export const listingsService = {
         created_at,
         status,
         is_bulk,
+        agent_incentive,
+        realty_incentive,
         agents (first_name, last_name),
         property_type (property_type),
         developers (name),
@@ -68,7 +70,9 @@ export const listingsService = {
       developer_name: item.developers?.name || 'None',
       image_url: thumbnailUrl, // Attach the thumbnail
       faq: item.faq,
-      is_bulk: item.is_bulk || false
+      is_bulk: item.is_bulk || false,
+      agent_incentive: item.agent_incentive ?? null,
+      realty_incentive: item.realty_incentive ?? null
     };
   },
 
