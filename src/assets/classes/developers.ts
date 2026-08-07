@@ -12,6 +12,15 @@ export interface DeveloperProject {
     property_type: string;
 }
 
+// A promotional poster shown per developer in the Developers list.
+export interface DeveloperPromo {
+    promo_ID?: number;        // undefined while still staged (not yet saved)
+    dev_ID?: number;
+    image_url: string;
+    title: string;
+    valid_until: string | null; // ISO date (yyyy-mm-dd) or null = no expiry
+}
+
 export interface Developer {
     dev_ID: number;
     image_url: string;
@@ -21,6 +30,7 @@ export interface Developer {
     location: string;
     OfficeHours: OfficeHourSlot[] | []; // Optional property for office hours
     projects: DeveloperProject[] | [];
+    promos?: DeveloperPromo[];
 }
 
 export interface DayOption {
