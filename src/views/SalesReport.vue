@@ -254,6 +254,8 @@
           <div><dt class="text-gray-500 dark:text-gray-400">Net Commission</dt><dd class="dark:text-white">{{ selectedSale.net_commission != null ? formatPeso(selectedSale.net_commission) : '—' }}</dd></div>
           <div><dt class="text-gray-500 dark:text-gray-400">Voucher</dt><dd class="dark:text-white">{{ selectedSale.voucher_series || '—' }}</dd></div>
           <div class="col-span-2"><dt class="text-gray-500 dark:text-gray-400">Remarks</dt><dd class="dark:text-white">{{ selectedSale.remarks || '—' }}</dd></div>
+          <div class="col-span-2"><dt class="text-gray-500 dark:text-gray-400">Agent Incentive</dt><dd class="dark:text-white whitespace-pre-line">{{ selectedSale.agent_incentive || '—' }}</dd></div>
+          <div class="col-span-2"><dt class="text-gray-500 dark:text-gray-400">Realty Incentive</dt><dd class="dark:text-white whitespace-pre-line">{{ selectedSale.realty_incentive || '—' }}</dd></div>
         </dl>
 
         <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-600" v-if="canEditSale(selectedSale)">
@@ -484,11 +486,12 @@ function csvCell(v: unknown): string {
 }
 function exportCsv() {
   if (filteredSales.value.length === 0) return
-  const cols = ['Date', 'Client', 'Project', 'Agent', 'Contract Price', 'Gross Commission', 'Net Commission', 'Sale #', 'Voucher', 'Remarks']
+  const cols = ['Date', 'Client', 'Project', 'Agent', 'Contract Price', 'Gross Commission', 'Net Commission', 'Sale #', 'Voucher', 'Remarks', 'Agent Incentive', 'Realty Incentive']
   const rows = sortedSales.value.map(s => [
     s.reservation_date, s.client_name, s.listing_title, s.agent_name,
     s.total_contract_price, s.gross_commission, s.net_commission,
     s.agent_sale_seq, s.voucher_series, s.remarks,
+    s.agent_incentive, s.realty_incentive,
   ].map(csvCell).join(','))
   const csv = [cols.join(','), ...rows].join('\n')
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })

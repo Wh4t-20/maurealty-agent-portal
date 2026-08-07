@@ -19,6 +19,9 @@ export interface Sale {
   created_at: string;
   agent_name: string;
   listing_title: string;
+  // Incentives read through from the linked listing (see main_listings).
+  agent_incentive: string | null;
+  realty_incentive: string | null;
 }
 
 // Totals feed (e.g. teammate's Sales calculator). Both interpretations of
@@ -53,7 +56,7 @@ const SALE_SELECT = `
   unit_details,
   created_at,
   agents (first_name, last_name),
-  main_listings (listing_title)
+  main_listings (listing_title, agent_incentive, realty_incentive)
 `;
 
 // Flatten the embedded agent/listing objects into display strings.
@@ -75,6 +78,8 @@ function mapToSale(item: any): Sale {
     created_at: item.created_at,
     agent_name: `${item.agents?.first_name || ''} ${item.agents?.last_name || ''}`.trim(),
     listing_title: item.main_listings?.listing_title || 'Unknown',
+    agent_incentive: item.main_listings?.agent_incentive ?? null,
+    realty_incentive: item.main_listings?.realty_incentive ?? null,
   };
 }
 
