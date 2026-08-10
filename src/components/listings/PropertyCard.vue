@@ -2,29 +2,34 @@
   <div class="relative w-full max-w-150" :class="{ 'animate-pulse cursor-wait': isLoading }">
     <div class="relative hover:shadow-2xl">
       
-      <!-- Skeleton Image -->
-      <div v-show="isLoading || !isImageLoaded" class="w-full aspect-square bg-gray-300 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-800"></div>
+      <!-- Skeleton Image Overlay -->
+      <div 
+        v-if="isLoading || !isImageLoaded" 
+        class="absolute inset-0 w-full h-full bg-gray-300 dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-800 z-0"
+      ></div>
       
       <!-- Actual Image -->
+      <!-- Opacity hides it visually without removing it from the DOM, preserving height & allowing lazy load -->
       <img 
-        v-show="!isLoading && isImageLoaded"
         :src="houseimg"
         alt="House"
         loading="lazy"
         @load="handleImageLoad"
-        class="w-full aspect-square object-cover rounded-lg border border-gray-300 dark:border-gray-800"
+        class="w-full aspect-square object-cover rounded-lg border border-gray-300 dark:border-gray-800 transition-opacity duration-300 relative z-10"
+        :class="isLoading || !isImageLoaded ? 'opacity-0' : 'opacity-100'"
       />
       
       <!-- Skeleton Badge -->
-      <span v-if="isLoading" class="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 w-16 sm:w-24 h-4 sm:h-6 bg-gray-400 dark:bg-gray-600 rounded-full shadow-md"></span>
+      <span v-if="isLoading" class="absolute top-1.5 right-1.5 sm:top-3 sm:right-3 w-16 sm:w-24 h-4 sm:h-6 bg-gray-400 dark:bg-gray-600 rounded-full shadow-md z-20"></span>
+      
       <!-- Actual Badge -->
-      <span v-else :class="['absolute top-1.5 right-1.5 sm:top-3 sm:right-3 text-[10px] sm:text-sm font-light text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full tracking-wider shadow-md', propertyTypeColor(details?.property_type)]">
+      <span v-else :class="['absolute top-1.5 right-1.5 sm:top-3 sm:right-3 text-[10px] sm:text-sm font-light text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full tracking-wider shadow-md z-20', propertyTypeColor(details?.property_type)]">
         {{ displayType }}
       </span>
     </div>
 
     <!-- Original Details Container -->
-    <div class="flex flex-col h-full z-1 -mt-6 sm:-mt-10 w-9/10 p-2 px-3 sm:p-3 sm:px-5 rounded-lg bg-white dark:bg-black border border-gray-300 dark:border-gray-800 shadow-md/30">
+    <div class="flex flex-col h-full z-1 -mt-6 sm:-mt-10 w-9/10 p-2 px-3 sm:p-3 sm:px-5 rounded-lg bg-white dark:bg-black border border-gray-300 dark:border-gray-800 shadow-md/30 relative">
       
       <!-- Title -->
       <div v-if="isLoading" class="h-5 sm:h-7 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-1"></div>
@@ -58,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue' // Don't forget to import this
+import { computed, ref, watch } from 'vue' // Don't forget to import this
 import { type Property, formattedPropertyType }  from '@/assets/classes/listings'
 import placeholder from '@/assets/images/default_placeholder.png'
 import { MapPin } from 'lucide-vue-next'
@@ -73,6 +78,11 @@ const props = withDefaults(defineProps<{
 
 // New state to track whether the image of the card is finished downloading
 const isImageLoaded = ref(false)
+
+// Watch for changes to the image URL to reset the skeleton when data updates
+watch(() => props.details?.image_url, () => {
+  isImageLoaded.value = false;
+})
 
 // function to fire when the image fully loads
 const handleImageLoad = () => {
