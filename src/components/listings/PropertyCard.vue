@@ -34,19 +34,35 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue' // Don't forget to import this
+import { computed, ref } from 'vue' // Don't forget to import this
 import { type Property, formattedPropertyType }  from '@/assets/classes/listings'
 import placeholder from '@/assets/images/default_placeholder.png'
 import { MapPin } from 'lucide-vue-next'
 
 import { formatPrice } from '@/utils/conversion.ts';
 
-const props = defineProps<{ details: Property }>()
+const props = withDefaults(defineProps<{ 
+  details?: Property; 
+  isLoading?: boolean;
+}>(), {
+  isLoading: false
+})
+
+// New state to track whether the image of the card is finished downloading
+const isImageLoaded = ref(false)
+
+// function to fire when the image fully loads
+const handleImageLoad = () => {
+  isImageLoaded.value = true
+}
 
 // Cache formatters for better performance  
 const dateFormatter = new Intl.DateTimeFormat('en-US')
 
 function propertyTypeColor(type: string) {
+
+  if(!type) return 'bg-gray-400'
+
   switch (type) {
     case 'house_and_lot':
       return 'bg-[#1b5c2d]'
@@ -66,9 +82,11 @@ function propertyTypeColor(type: string) {
 }
 
 // Computed properties for formatted display values
-const displayType = computed(() => formattedPropertyType(props.details.property_type))
+const displayType = computed(() => props.details ? formattedPropertyType(props.details.property_type): '')
 
 const formattedPrice = computed(() => {
+  if (!props.details) return '';
+
   const minPrice = formatPrice(props.details.price);
   // Return range if listing is bulk and max_price is available
   if (props.details.is_bulk && props.details.max_price) {
@@ -77,10 +95,11 @@ const formattedPrice = computed(() => {
   return minPrice;
 })
 
-const formattedDate = computed(() => dateFormatter.format(props.details.created_at))
+const formattedDate = computed(() => props.details ? dateFormatter.format(props.details.created_at): '');
 
 // Returns the database image URL if it exists, otherwise uses the local fallback
 const houseimg = computed(() => {
-  return props.details.image_url ? props.details.image_url : placeholder
+  if (!props.details) return placeholder;
+  return props.details.image_url ? props.details.image_url : placeholder;
 })
 </script>
