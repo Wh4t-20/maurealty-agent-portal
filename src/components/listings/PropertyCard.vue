@@ -62,7 +62,6 @@ import { computed, ref } from 'vue' // Don't forget to import this
 import { type Property, formattedPropertyType }  from '@/assets/classes/listings'
 import placeholder from '@/assets/images/default_placeholder.png'
 import { MapPin } from 'lucide-vue-next'
-
 import { formatPrice } from '@/utils/conversion.ts';
 
 const props = withDefaults(defineProps<{ 
