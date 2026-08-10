@@ -201,6 +201,8 @@ const properties = shallowRef<Property[]>([])
 const router = useRouter()
 const route = useRoute()
 
+const isFetchingData = ref(true) // for tracking fetching state of property cards
+
 const selectedType = ref("None")
 const searchQuery = ref("")
 const priceMin = ref("")
@@ -295,6 +297,9 @@ const memorialTypes: string[] = ['None', 'Urn', 'Vault', 'Garden', 'Estate', 'Fa
 // Connect to backend and fetch properties
 const loadProperties = async () => {
   console.log('Attempt to get listings imnida');
+
+  isFetchingData.value = true;
+
   try {
     const data = await listingsService.getListings();
     console.log('Naa na ang data bai:', data);
@@ -302,6 +307,9 @@ const loadProperties = async () => {
     currentPage.value = 1;
   } catch (error) { 
     console.error('Fetch error yah:', error);
+  } finally {
+    // stop loading state regardless of success or failure
+    isFetchingData.value = false;
   }
 }
 
