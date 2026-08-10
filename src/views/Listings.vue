@@ -140,7 +140,7 @@
                 v-for="n in itemsPerPage" 
                 :key="'skeleton-' + n" 
                 :isLoading="true" 
-                class="flex flex-col items-center hover:-translate-y-2 hover:scale-105 hover:z-5 transition-all cursor-pointer"
+                class="flex flex-col items-center hover:-translate-y-2 hover:scale-105 hover:z-5 transition-transform duration-300 will-change-transform cursor-pointer"
               />
             </template>
             <!-- 2. Render actual cards when data is ready -->
@@ -148,8 +148,8 @@
                 <PropertyCard 
                   v-for="property in paginatedProperties" 
                   :key="property.listing_id" 
-                  :details="property" 
-                  class="flex flex-col items-center hover:-translate-y-2 hover:scale-105 hover:z-5 transition-all cursor-pointer"
+                  :details="property"
+                  class="flex flex-col items-center hover:-translate-y-2 hover:scale-105 hover:z-5 transition-transform duration-300 will-change-transform cursor-pointer" 
                   @click="displayDetails(property)"
                   @edit="handleEdit"
                   @delete="processDelete"
