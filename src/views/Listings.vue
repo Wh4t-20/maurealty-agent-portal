@@ -133,15 +133,29 @@
           <!-- Column count here must match the gridColumns breakpoints in the script,
                so the "cards per page" math lines up with what's actually on screen -->
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-            <PropertyCard 
-              v-for="property in paginatedProperties" 
-              :key="property.listing_id" 
-              :details="property" 
-              class="flex flex-col items-center hover:-translate-y-2 hover:scale-105 hover:z-5 transition-all cursor-pointer"
-              @click="displayDetails(property)"
-              @edit="handleEdit"
-              @delete="processDelete"
-            />
+            <!-- 1. Render Skeleton Cards when fetching data-->
+             <template v-if="isFetchingData">
+
+              <PropertyCard 
+                v-for="n in itemsPerPage" 
+                :key="'skeleton-' + n" 
+                :isLoading="true" 
+                class="flex flex-col items-center w-full"
+              />
+            </template>
+            <!-- 2. Render actual cards when data is ready -->
+              <template v-else>
+                <PropertyCard 
+                  v-for="property in paginatedProperties" 
+                  :key="property.listing_id" 
+                  :details="property" 
+                  class="flex flex-col items-center hover:-translate-y-2 hover:scale-105 hover:z-5 transition-all cursor-pointer"
+                  @click="displayDetails(property)"
+                  @edit="handleEdit"
+                  @delete="processDelete"
+                />
+              </template>
+
           </div>
 
           <footer class="bg-transparent pt-5 pb--12 flex justify-center items-center gap-4 w-full mt-auto">
