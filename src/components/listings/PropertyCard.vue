@@ -14,6 +14,7 @@
         :src="houseimg"
         alt="House"
         loading="lazy"
+        decoding="async"
         @load="handleImageLoad"
         class="w-full aspect-square object-cover rounded-lg border border-gray-300 dark:border-gray-800 transition-opacity duration-300 relative z-10"
         :class="isLoading || !isImageLoaded ? 'opacity-0' : 'opacity-100'"
