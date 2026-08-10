@@ -29,7 +29,7 @@
     </div>
 
     <!-- Original Details Container -->
-    <div class="flex flex-col h-full z-1 -mt-6 sm:-mt-10 w-9/10 p-2 px-3 sm:p-3 sm:px-5 rounded-lg bg-white dark:bg-black border border-gray-300 dark:border-gray-800 shadow-md/30 relative">
+    <div class="flex flex-col h-full z-30 -mt-6 sm:-mt-10 w-9/10 p-2 px-3 sm:p-3 sm:px-5 rounded-lg bg-white dark:bg-black border border-gray-300 dark:border-gray-800 shadow-md/30 relative">
       
       <!-- Title -->
       <div v-if="isLoading" class="h-5 sm:h-7 bg-gray-300 dark:bg-gray-700 rounded w-3/4 mb-1"></div>
