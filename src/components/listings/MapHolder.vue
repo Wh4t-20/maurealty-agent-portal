@@ -20,14 +20,14 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { poiService, POI_CATEGORIES, haversineKm, type NearbyPois } from '@/services/poiService';
 
 const mapContainer = ref<HTMLElement | null>(null);
-const map = ref<any>(null);
-const marker = ref<any>(null);
+const map = shallowRef<any>(null);
+const marker = shallowRef<any>(null);
 
 const props = defineProps<{
   targetLocation?: { lng: number; lat: number } | null;
