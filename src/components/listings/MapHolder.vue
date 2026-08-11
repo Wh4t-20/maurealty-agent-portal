@@ -1,5 +1,6 @@
 <template>
-  <div class="relative w-full h-full">
+
+  <div :class="isExpanded ? 'fixed inset-0 z-[100] bg-white dark:bg-black' : 'relative w-full h-full'">
     <!-- POI category chips (only when we have a listing to cache against) -->
     <div v-if="listingId != null" class="absolute z-10 top-2 left-2 right-2 flex flex-wrap gap-1.5">
       <button
@@ -14,13 +15,21 @@
       </button>
       <span v-if="poiLoading" class="text-xs px-2 py-1 text-gray-600 bg-white/90 rounded-full shadow-sm">Loading…</span>
     </div>
+    <!-- Expand/Minimize button for map -->
+    <button
+      type="button"
+      @click="toggleExpand"
+      class="absolute z-20 bottom-2 right-2 text-xs px-3 py-1.5 rounded-full border border-gray-300 bg-white/90 backdrop-blur-sm shadow-sm cursor-pointer hover:opacity-90 transition font-bold text-maurealty-blue"
+    >
+      {{ isExpanded ? 'Close Fullscreen' : 'Expand Map' }}
+    </button>
 
     <div id="map-container" ref="mapContainer" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
+import { onMounted, onUnmounted, ref, shallowRef, watch, nextTick } from 'vue';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { poiService, POI_CATEGORIES, haversineKm, type NearbyPois } from '@/services/poiService';
@@ -28,6 +37,20 @@ import { poiService, POI_CATEGORIES, haversineKm, type NearbyPois } from '@/serv
 const mapContainer = ref<HTMLElement | null>(null);
 const map = shallowRef<any>(null);
 const marker = shallowRef<any>(null);
+
+const isExpanded = ref(false);
+// for expanding Map
+function toggleExpand() {
+  isExpanded.value = !isExpanded.value;
+  
+  // Wait for Vue to apply the full-screen CSS classes to the DOM
+  nextTick(() => {
+    if (map.value) {
+      // Force Mapbox to recalculate its canvas dimensions to fit the new size
+      map.value.resize();
+    }
+  });
+}
 
 const props = defineProps<{
   targetLocation?: { lng: number; lat: number } | null;
