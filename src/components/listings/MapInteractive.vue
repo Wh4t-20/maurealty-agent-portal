@@ -15,7 +15,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
@@ -25,8 +25,8 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { MapPinIcon, MapPinOffIcon } from 'lucide-vue-next';
 
 const mapContainer = ref<HTMLElement | null>(null);
-const map = ref<any>(null);
-const marker = ref<any>(null);
+const map = shallowRef<any>(null);
+const marker = shallowRef<any>(null);
 
 const props = defineProps<{
   targetLocation?: { lng: number; lat: number; loc: string } | null

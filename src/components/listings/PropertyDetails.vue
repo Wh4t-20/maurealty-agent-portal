@@ -75,7 +75,7 @@
               {{ details.location }}
             </span>
 
-            <section class="w-full h-64 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
+            <section class="relative w-full h-64 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
               <MapHolder :target-location="{ lng: details.lng, lat: details.lat }" :listing-id="details.listing_id" />
             </section>
 

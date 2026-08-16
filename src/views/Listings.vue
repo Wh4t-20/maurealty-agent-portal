@@ -135,15 +135,29 @@
           <!-- Column count here must match the gridColumns breakpoints in the script,
                so the "cards per page" math lines up with what's actually on screen -->
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
-            <PropertyCard 
-              v-for="property in paginatedProperties" 
-              :key="property.listing_id" 
-              :details="property" 
-              class="flex flex-col items-center hover:-translate-y-2 hover:scale-105 hover:z-5 transition-all cursor-pointer"
-              @click="displayDetails(property)"
-              @edit="handleEdit"
-              @delete="processDelete"
-            />
+            <!-- 1. Render Skeleton Cards when fetching data-->
+             <template v-if="isFetchingData">
+
+              <PropertyCard 
+                v-for="n in itemsPerPage" 
+                :key="'skeleton-' + n" 
+                :isLoading="true" 
+                class="flex flex-col items-center hover:-translate-y-2 hover:scale-105 hover:z-5 transition-transform duration-300 will-change-transform cursor-pointer"
+              />
+            </template>
+            <!-- 2. Render actual cards when data is ready -->
+              <template v-else>
+                <PropertyCard 
+                  v-for="property in paginatedProperties" 
+                  :key="property.listing_id" 
+                  :details="property"
+                  class="flex flex-col items-center hover:-translate-y-2 hover:scale-105 hover:z-5 transition-transform duration-300 will-change-transform cursor-pointer" 
+                  @click="displayDetails(property)"
+                  @edit="handleEdit"
+                  @delete="processDelete"
+                />
+              </template>
+
           </div>
 
           <footer class="bg-transparent pt-5 pb--12 flex justify-center items-center gap-4 w-full mt-auto">
@@ -207,6 +221,7 @@ import { type Property }  from '@/assets/classes/listings'
 import PropertyCard from '@/components/listings/PropertyCard.vue'
 import ListingsFilter from '@/components/listings/ListingsFilter.vue'
 import PropertyDetails from '@/components/listings/PropertyDetails.vue'
+import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
@@ -221,6 +236,8 @@ import { ChevronDown, Plus } from 'lucide-vue-next'
 const properties = shallowRef<Property[]>([])
 const router = useRouter()
 const route = useRoute()
+
+const isFetchingData = ref(true) // for tracking fetching state of property cards
 
 const selectedType = ref("None")
 const searchQuery = ref("")
@@ -316,6 +333,9 @@ const memorialTypes: string[] = ['None', 'Urn', 'Vault', 'Garden', 'Estate', 'Fa
 // Connect to backend and fetch properties
 const loadProperties = async () => {
   console.log('Attempt to get listings imnida');
+
+  isFetchingData.value = true;
+
   try {
     const data = await listingsService.getListings();
     console.log('Naa na ang data bai:', data);
@@ -323,6 +343,9 @@ const loadProperties = async () => {
     currentPage.value = 1;
   } catch (error) { 
     console.error('Fetch error yah:', error);
+  } finally {
+    // stop loading state regardless of success or failure
+    isFetchingData.value = false;
   }
 }
 
@@ -483,7 +506,21 @@ const processDelete = async (id: number) => {
 // Marking sold opens the sale form pre-filled with this listing. The agent
 // confirms buyer + date there; the listing is only flipped to 'sold' AFTER the
 // sale row is saved (see onSaleSaved) so we never hide a listing with no record.
-const markSold = async (listingId: number) => {  
+const soldListing = ref<Property | null>(null)
+
+const markSold = (listingId: number) => {
+  const listing = properties.value.find(p => p.listing_id === listingId)
+  if (!listing) return
+  soldListing.value = listing
+  showDetails.value = false
+}
+
+// Called after the pre-filled sale is saved: now it's safe to flip the listing
+// to 'sold' and drop it from the grid.
+const onSaleSaved = async () => {
+  const listingId = soldListing.value?.listing_id
+  soldListing.value = null
+  if (!listingId) return
   try {
     await listingsService.updateListingStatus(listingId, 'sold');
     properties.value = properties.value.filter(p => p.listing_id !== listingId);

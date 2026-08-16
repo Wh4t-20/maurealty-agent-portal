@@ -92,6 +92,20 @@
           <input v-model.trim="form.remarks" type="text" :class="inputClass" placeholder="e.g. third equity" />
         </div>
 
+        <!-- Incentives read from the selected listing (set in Property Management). Read-only here. -->
+        <div v-if="selectedListing?.agent_incentive || selectedListing?.realty_incentive"
+             class="sm:col-span-2 flex flex-col gap-2 rounded-lg border border-maurealty-blue/20 bg-blue-50/40 dark:bg-maurealty-light-blue/10 p-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-maurealty-blue dark:text-maurealty-light-blue">Listing Incentives</span>
+          <div v-if="selectedListing?.agent_incentive" class="text-sm">
+            <span class="font-semibold text-gray-600 dark:text-gray-300">Agent: </span>
+            <span class="text-gray-700 dark:text-gray-200 whitespace-pre-line">{{ selectedListing.agent_incentive }}</span>
+          </div>
+          <div v-if="selectedListing?.realty_incentive" class="text-sm">
+            <span class="font-semibold text-gray-600 dark:text-gray-300">Realty: </span>
+            <span class="text-gray-700 dark:text-gray-200 whitespace-pre-line">{{ selectedListing.realty_incentive }}</span>
+          </div>
+        </div>
+
         <div v-if="selectedListing?.is_bulk" class="sm:col-span-2 border-t border-gray-200 dark:border-gray-800 pt-5 mt-2">
           <h3 class="text-md font-bold text-maurealty-blue dark:text-maurealty-light-blue mb-4">Specific Unit Details (Bulk Sale)</h3>
           
@@ -338,9 +352,10 @@ watch([() => form.listing_ID, selectedListing], async ([newId, listing]) => {
     
     if (fullData) {
       const subTableName = [null, 'house_and_lot', 'lot_only', 'condominium', 'memorial'][typeId];
-      const subData = (subTableName && fullData[subTableName]) 
-        ? (Array.isArray(fullData[subTableName]) ? fullData[subTableName][0] : fullData[subTableName]) 
-        : fullData;
+      const fd = fullData as Record<string, any>;
+      const subData = (subTableName && fd[subTableName])
+        ? (Array.isArray(fd[subTableName]) ? fd[subTableName][0] : fd[subTableName])
+        : fd;
       
       if (subData) {
         // Safely map all possible unit details so they pre-fill accurately
