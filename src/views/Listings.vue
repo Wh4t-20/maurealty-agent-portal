@@ -188,6 +188,13 @@
         </div>
       </div>
     </Transition> <!-- BROAST -->
+    <Transition name="toast">
+      <div v-if="confirmedMessage.visible" class="fixed top-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-maurealty-green shadow-2xl px-5 py-3">
+        <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-green text-white text-sm font-bold">✓</span>
+        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ confirmedMessage.text }}</p>
+
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -340,6 +347,10 @@ const toastConfirm = ref({
   message: '',
   targetListingId: null as number | null               
 })
+const confirmedMessage = ref({
+  visible: false,
+  text: ''
+})
 const triggerConfirm = (listingId: number, actionType: string) => {
    // grak
   toastConfirm.value = {
@@ -440,30 +451,65 @@ const processDelete = async (id: number) => {
     
     if (result.success) {
       showDetails.value = false 
-      
+      confirmedMessage.value = {
+        visible: true,
+        text: "Success! The listing has been deleted."
+      };
+      setTimeout(() => {
+      confirmedMessage.value = {
+        visible: false,
+        text: ''
+      };
+    }, 3000);
       properties.value = properties.value.filter(p => p.listing_id !== id)
       
       console.log("Deleted successfully from DB and UI")
+      
     }
   } catch (err) {
-    alert("Could not delete listing. Check console for details.")
+    confirmedMessage.value = {
+        visible: true,
+        text: "Success! The listing has been deleted."
+      };
+      setTimeout(() => {
+      confirmedMessage.value = {
+        visible: false,
+        text: ''
+      };
+    }, 3000);
     console.error(err)
   }
 }
 // Marking sold opens the sale form pre-filled with this listing. The agent
 // confirms buyer + date there; the listing is only flipped to 'sold' AFTER the
 // sale row is saved (see onSaleSaved) so we never hide a listing with no record.
-const markSold = async (listingId: number) => {
-  if (!confirm('Are you sure you want to mark this bulk listing as sold?')) return;
-  
+const markSold = async (listingId: number) => {  
   try {
     await listingsService.updateListingStatus(listingId, 'sold');
     properties.value = properties.value.filter(p => p.listing_id !== listingId);
     showDetails.value = false;
-    alert("Success! The bulk property has been marked as sold.");
+    confirmedMessage.value = {
+      visible: true,
+      text: "Success! The bulk property has been marked as sold."
+    };
+    setTimeout(() => {
+      confirmedMessage.value = {
+        visible: false,
+        text: ''
+      };
+    }, 3000);
   } catch (error) {
     console.error("Error marking property as sold:", error);
-    alert("Failed to update the listing status. Please retry.");
+     confirmedMessage.value = {
+      visible: true,
+      text: "Failed to update the listing status. Please retry."
+    };
+    setTimeout(() => {
+      confirmedMessage.value = {
+        visible: false,
+        text: ''
+      };
+    }, 3000);
   }
 }
 </script>
