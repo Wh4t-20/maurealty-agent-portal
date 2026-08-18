@@ -272,6 +272,7 @@ import { ref, shallowRef, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ClipboardList, Plus, Download, Pencil, Trash2, AlertTriangle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-vue-next'
 import { salesService, type Sale } from '@/services/salesService'
 import { authService } from '@/services/authService'
+import {listingsService} from '@/services/listingsServices'
 import { genealogyService, type GenealogyAgent } from '@/services/genealogyService'
 import { positionMap } from '@/assets/classes/agent'
 import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
@@ -309,7 +310,7 @@ onMounted(loadSales)
 const toast = ref('')
 let toastTimer: ReturnType<typeof setTimeout> | undefined
 function showToast(msg: string) {
-  toast.value = msg
+  toast.value = msg 
   clearTimeout(toastTimer)
   toastTimer = setTimeout(() => (toast.value = ''), 2500)
 }
@@ -330,6 +331,13 @@ function openEdit(sale: Sale) {
 async function confirmDelete(sale: Sale) {
   if (!confirm(`Delete the sale for "${sale.client_name}"? This can't be undone.`)) return
   try {
+    try{
+      await listingsService.updateListingStatus(sale.listing_ID, 'active')
+    } catch (e) {
+      console.error('Failed to update listing status:', e)
+      showToast('Failed to update listing status — check permissions')
+      return
+    }
     const res = await salesService.deleteSale(sale.sale_ID)
     if (!res.success) {
       showToast('Delete failed — check permissions')

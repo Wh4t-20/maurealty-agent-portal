@@ -260,6 +260,7 @@
         </div>
       </div>
   </div>
+  
 </template>
 
 <script setup lang="ts">
@@ -284,7 +285,7 @@ const props = defineProps<{
   prop_type: string
  }>()
 
-const emit = defineEmits(['closeDetails', 'edit', 'delete', 'share', 'sold'])
+const emit = defineEmits(['close-details', 'edit', 'delete', 'share', 'sold'])
 
 const propertyTypesMap: Record<string, number> = {
   'house_and_lot': 1,

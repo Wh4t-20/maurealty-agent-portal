@@ -97,6 +97,21 @@ export const listingsService = {
  
     return data;
   },
+  async getAgentFromListing(listingId: number) {
+    try {
+      const { data, error } = await supabase
+        .from('main_listings')
+        .select('agent_ID')
+        .eq('listing_ID', listingId)
+        .single();
+      console.log("Agent ID from listing:", data?.agent_ID, "for listing ID:", listingId);
+      return data?.agent_ID;
+      
+    } catch (error) {
+      console.error('Error fetching agent from listing:', error);
+      throw error;
+    }
+  },
   // insert new listing
   async createListing(mainListingData: any, specificPropertyData: any, propertyTypeId: number) {
     try {
