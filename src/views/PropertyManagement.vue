@@ -653,6 +653,7 @@ import { developerService } from '@/services/developerService'
 import { compileMarkdown } from '@/services/listingsServices';
 const displayDescriptionMarkdown = ref(false);
 const currentAgentId = ref<number | null>(null); // store agent ID of current user
+const isAdmin = ref(false); // gates whether a new listing skips the approval queue
 
 function toggleDescriptionMarkdown() {
   displayDescriptionMarkdown.value = !displayDescriptionMarkdown.value;
@@ -807,6 +808,7 @@ onMounted(async () => {
 
   if(agentProfile){
     currentAgentId.value = agentProfile.agent_ID;
+    isAdmin.value = !!agentProfile.admin_access;
   }else {
     console.error('No authenticated agent profile found');
   }
@@ -970,7 +972,9 @@ const saveProperty = async () => {
         longitude: form.value.lng,
         latitude: form.value.lat,
         description: form.value.description || 'No description provided.',
-        status: form.value.status,
+        // New listings from a non-admin queue for approval; admins skip the
+        // queue since they'd just be approving their own submission.
+        status: isAdmin.value ? form.value.status : 'pending',
         dev_ID: form.value.dev_ID,
         faq: form.value.faq,
         agent_incentive: form.value.agent_incentive || null,
