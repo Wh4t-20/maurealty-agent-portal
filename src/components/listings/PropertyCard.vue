@@ -27,6 +27,11 @@
       <span v-else :class="['absolute top-1.5 right-1.5 sm:top-3 sm:right-3 text-[10px] sm:text-sm font-light text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full tracking-wider shadow-md z-20', propertyTypeColor(details?.property_type)]">
         {{ displayType }}
       </span>
+
+      <!-- Pending-approval badge (admin-only view shows these listings mixed in) -->
+      <span v-if="!isLoading && details?.status === 'pending'" class="absolute top-1.5 left-1.5 sm:top-3 sm:left-3 flex items-center gap-1 text-[10px] sm:text-sm font-light text-white px-2 py-0.5 sm:px-3 sm:py-1 rounded-full tracking-wider shadow-md z-20 bg-orange-500">
+        <Clock class="size-2.5 sm:size-3.5" /> PENDING
+      </span>
     </div>
 
     <!-- Original Details Container -->
@@ -67,7 +72,7 @@
 import { computed, ref, watch } from 'vue' // Don't forget to import this
 import { type Property, formattedPropertyType }  from '@/assets/classes/listings'
 import placeholder from '@/assets/images/default_placeholder.png'
-import { MapPin } from 'lucide-vue-next'
+import { MapPin, Clock } from 'lucide-vue-next'
 import { formatPrice } from '@/utils/conversion.ts';
 
 const props = withDefaults(defineProps<{ 
