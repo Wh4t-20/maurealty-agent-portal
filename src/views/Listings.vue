@@ -86,6 +86,30 @@
 
             <div class = "grow"></div>
 
+            <!-- Admin-only: isolate listings still awaiting approval -->
+            <section v-if="isAdmin" class="listings-filter-section">
+              <label class="text-base text-gray-500 dark:text-gray-300 font-medium flex items-center gap-1.5">
+                Pending Only
+                <span
+                  v-if="pendingCount > 0"
+                  class="inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-orange-500 text-white text-[11px] font-bold leading-none"
+                >{{ pendingCount }}</span>
+              </label>
+              <button
+                type="button"
+                role="switch"
+                :aria-checked="showPendingOnly"
+                @click="showPendingOnly = !showPendingOnly"
+                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer focus:outline-2 focus:outline-maurealty-blue"
+                :class="showPendingOnly ? 'bg-maurealty-blue' : 'bg-gray-300 dark:bg-gray-700'"
+              >
+                <span
+                  class="inline-block size-4 transform rounded-full bg-white shadow-md transition-transform duration-200"
+                  :class="showPendingOnly ? 'translate-x-6' : 'translate-x-1'"
+                />
+              </button>
+            </section>
+
             <section class="listings-filter-section">
               <label class="text-base text-gray-500 dark:text-gray-300 font-medium">Currency</label>
               <ListingsFilter :choices="currencies" v-model="currentCurrency" />
@@ -118,16 +142,18 @@
             leave-from-class="transform translate-y-0 scale-100 opacity-100"
             leave-to-class="transform -translate-y-4 scale-95 opacity-0"
       >
-        <PropertyDetails 
+        <PropertyDetails
           v-if="showDetails"
-          :prop_id="prop_id" 
+          :prop_id="prop_id"
           :prop_type="prop_type"
+          :is-admin="isAdmin"
           @close-details="showDetails = false"
           @edit="handleEdit"
           @delete="triggerConfirm($event, 'delete')"
           @sold="triggerConfirm($event, 'sold')"
+          @approve="handleApprove"
         />
-      </transition> 
+      </transition>
       
       <section class="custom-scrollbar flex-1 overflow-y-auto">
         <div class="p-4 sm:p-10 flex flex-col min-h-full">
@@ -227,6 +253,7 @@ import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 import { listingsService } from '@/services/listingsServices'
 import { developerService } from '@/services/developerService'
 import { agentService} from '@/services/agentService'
+import { authService } from '@/services/authService'
 
 // utiities
 import { currentCurrency, currentUnit, convertPriceToPHP, currencySymbols } from '@/utils/conversion.ts'
@@ -250,8 +277,19 @@ const developerChoices = ref<string[]>(["None"])
 const currencies = ['PHP', 'USD', 'CAD', 'CNY', 'JPY'];
 const units = ['Metric', 'English'];
 
+// Admin-only approval queue. Admins fetch active+pending together (see
+// loadProperties); this toggle isolates the pending ones. Agents never fetch
+// pending listings at all, so this is a no-op for them either way.
+const isAdmin = ref(false)
+const showPendingOnly = ref(false)
+const pendingCount = computed(() => properties.value.filter(p => p.status === 'pending').length)
+
 const filteredProperties = computed(() => {
   let result = properties.value
+
+  if (showPendingOnly.value) {
+    result = result.filter(p => p.status === 'pending')
+  }
 
   if (selectedType.value !== "None") {
     const dbFormatType = selectedType.value.toLowerCase().replace(/ /g, '_')
@@ -337,7 +375,10 @@ const loadProperties = async () => {
   isFetchingData.value = true;
 
   try {
-    const data = await listingsService.getListings();
+    // Admins see active + pending together (pending isolated via the toggle);
+    // everyone else only ever sees active listings.
+    const statuses = isAdmin.value ? ['active', 'pending'] : ['active']
+    const data = await listingsService.getListings(20, statuses);
     console.log('Naa na ang data bai:', data);
     properties.value = data;
     currentPage.value = 1;
@@ -404,7 +445,12 @@ const loadDeveloperChoices = async () => {
   developerChoices.value = ["None", ...names]
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // Admin check must resolve before the first fetch, since it decides
+  // whether pending listings are included in that fetch.
+  const agent = await authService.getCurrentAgent();
+  isAdmin.value = !!agent?.admin_access;
+
   loadProperties();
   loadDeveloperChoices();
   showSavedNotice();
@@ -540,6 +586,43 @@ const onSaleSaved = async () => {
      confirmedMessage.value = {
       visible: true,
       text: "Failed to update the listing status. Please retry."
+    };
+    setTimeout(() => {
+      confirmedMessage.value = {
+        visible: false,
+        text: ''
+      };
+    }, 3000);
+  }
+}
+
+// Admin approves a pending listing: flips it to 'active' so it shows up in
+// the public/agent view. Rejecting reuses the existing Delete flow instead
+// of a separate action (same destructive result, one confirm dialog).
+const handleApprove = async (listingId: number) => {
+  try {
+    await listingsService.updateListingStatus(listingId, 'active');
+    // properties is a shallowRef, so mutating an item in place wouldn't
+    // trigger reactivity — reassign the array instead (same as processDelete).
+    properties.value = properties.value.map(p =>
+      p.listing_id === listingId ? { ...p, status: 'active' } : p
+    );
+    showDetails.value = false;
+    confirmedMessage.value = {
+      visible: true,
+      text: "Listing approved and is now live."
+    };
+    setTimeout(() => {
+      confirmedMessage.value = {
+        visible: false,
+        text: ''
+      };
+    }, 3000);
+  } catch (error) {
+    console.error("Error approving listing:", error);
+    confirmedMessage.value = {
+      visible: true,
+      text: "Failed to approve the listing. Please retry."
     };
     setTimeout(() => {
       confirmedMessage.value = {
