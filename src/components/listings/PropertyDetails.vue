@@ -3,6 +3,12 @@
   <!-- Full screen on phones, floating card on bigger screens -->
   <div v-if="details" class="custom-scrollbar bg-white dark:bg-black w-full h-full sm:w-10/12 sm:h-11/12 rounded-none sm:rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-900 px-4 sm:px-10 py-4 sm:py-7 overflow-y-auto">
         <header class="relative mb-4">
+          <span
+            v-if="details.status === 'pending'"
+            class="inline-flex items-center gap-1 mb-2 px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider border bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800"
+          >
+            <Clock class="size-3" /> Pending Approval
+          </span>
           <h1 class="text-2xl sm:text-3xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-maurealty-light-blue">
             {{ details.listing_title || 'Untitled Listing' }}
           </h1>
@@ -234,6 +240,14 @@
           </button>
 
           <button
+            v-if="details.status === 'pending' && props.isAdmin"
+            @click="$emit('approve', details.listing_id)"
+            class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-green text-maurealty-green font-bold hover:bg-maurealty-green hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
+          >
+            <span class="flex items-center-safe gap-1"><Check class="size-4" /> APPROVE</span>
+          </button>
+
+          <button
             v-if="details.fact_sheet"
             @click="downloadFactSheet"
             class="flex flex-col items-center py-2 px-5 w-45 rounded-full border-2 border-maurealty-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
@@ -275,17 +289,20 @@ import placeholder from '@/assets/images/default_placeholder.png'
 
 import { formatPrice, formatArea } from '@/utils/conversion.ts';
 
-import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink, BadgeCheck, DownloadIcon, Bed, Calculator as CalculatorIcon} from "lucide-vue-next";
+import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRight, LandPlot, SquareDashed, Sofa, Toilet, BrushCleaning, Car, LifeBuoy, Check, CircleSmall, BedDouble, BookImage, Hash, Trash2, SquarePen, ExternalLink, BadgeCheck, DownloadIcon, Bed, Calculator as CalculatorIcon, Clock} from "lucide-vue-next";
 
 // Toggles the calculator popup for this listing.
 const showCalc = ref(false)
 
-const props = defineProps<{ 
+const props = withDefaults(defineProps<{
   prop_id: number,
-  prop_type: string
- }>()
+  prop_type: string,
+  isAdmin?: boolean
+ }>(), {
+  isAdmin: false
+})
 
-const emit = defineEmits(['close-details', 'edit', 'delete', 'share', 'sold'])
+const emit = defineEmits(['close-details', 'edit', 'delete', 'share', 'sold', 'approve'])
 
 const propertyTypesMap: Record<string, number> = {
   'house_and_lot': 1,
