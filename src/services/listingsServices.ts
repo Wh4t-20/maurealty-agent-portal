@@ -11,8 +11,10 @@ const SUB_TABLE_MAP: Record<number, string> = {
 };
 
 export const listingsService = {
-  // Fetch all active listings
-  async getListings(limit: number = 20): Promise<Property[]> {
+  // Fetch listings. Defaults to active-only (public/agent view); pass
+  // statuses to widen the set — e.g. ['active', 'pending'] for the admin
+  // view that also surfaces listings awaiting approval.
+  async getListings(limit: number = 20, statuses: string[] = ['active']): Promise<Property[]> {
     const { data, error } = await supabase
       .from('main_listings')
       .select(`
@@ -35,7 +37,7 @@ export const listingsService = {
         developers (name),
         listing_images (image_url, display_order)
       `)
-      .eq('status', 'active')
+      .in('status', statuses)
       .order('created_at', { ascending: false })
       .limit(limit); // Adjust the limit as needed
 
