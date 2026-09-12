@@ -269,6 +269,7 @@ import { salesService, type Sale } from '@/services/salesService'
 import { listingsService } from '@/services/listingsServices'
 import { authService } from '@/services/authService'
 import type { Property } from '@/assets/classes/listings'
+import { supabase } from '@/supabaseClient'
 
 // Sold flow passes a fixed listing (id + title + price) so the property is
 // locked and the contract price is prefilled. Omit it for the manual flow.
@@ -311,8 +312,8 @@ const form = reactive({
   reservation_date: e?.reservation_date ?? '',
   total_contract_price: e?.total_contract_price ?? props.lockedListing?.price ?? null as number | null,
   agent_sale_seq: e?.agent_sale_seq ?? null as number | null,
-  gross_commission: e?.gross_commission ?? null as number | null,
-  net_commission: e?.net_commission ?? null as number | null,
+  gross_commission: e?.gross_commission ?? null as number | null, // RUSSELL NOTES: should be filled already based on the user's commission rate (?)
+  net_commission: e?.net_commission ?? null as number | null, // RUSSELL NOTES: as above(?)
   voucher_series: e?.voucher_series ?? '',
   remarks: e?.remarks ?? '',
   status: e?.status ?? 'pending approval',
@@ -340,10 +341,36 @@ watch([() => form.listing_ID, selectedListing], async ([newId, listing]) => {
   if (props.editSale || !newId || !listing) return;
   
   // Prevent infinite loops or overwriting manual user edits after initial load
-  if (prefilledListingId.value === newId) return;
+  const currentAgent = await authService.getCurrentAgent();
+  if (!currentAgent?.agent_ID) return;
 
+  if (prefilledListingId.value === newId) return;
+  
+  const {data: agentPosition} = await supabase
+  .from('agents')
+  .select('position_ID')
+  .eq('agent_ID', currentAgent.agent_ID)
+  .single();
+
+  const {data: commissionRate} = await supabase
+  .from('positions')
+  .select('commission_rate')
+  .eq('position_ID', agentPosition?.position_ID)
+  .single();
+  
   // 1. Auto-fill the general listing price into the Contract Price field
   form.total_contract_price = listing.price || null;
+  console.log(`Auto-filled contract price for listing ${newId}: ${form.total_contract_price}`);
+  if(form.total_contract_price != null){
+    const price = Number(form.total_contract_price ?? 0);
+    const grossCommission = price * ((commissionRate?.commission_rate ?? 0) / 100);
+    const taxRate = 12
+    const netCommission = grossCommission * (1 - taxRate / 100); 
+    form.gross_commission = parseFloat(grossCommission.toFixed(2));
+
+    form.net_commission = parseFloat(netCommission.toFixed(2));
+    console.log(`Auto-filled commission for listing ${newId}: Gross = ${grossCommission}, Net = ${netCommission}`);
+  }
 
   // 2. Fetch and map specific property details to pre-fill the unit_details
   try {

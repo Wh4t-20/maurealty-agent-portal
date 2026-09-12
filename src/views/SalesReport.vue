@@ -368,6 +368,13 @@ watch(selectedSale, async (sale) => {
   } finally {
     uplineLoading.value = false
   }
+  /*if(!upline.value || upline.value.length === 0) {
+    console.warn('No upline found for agent', sale.agent_ID)
+  }
+  else{
+    const totalCommission = Math.max(...upline.value.map(u => u.commission_rate).filter(p => p != null) as number[])
+    const grossCommission = sale.gross_commission ?? 0
+  }*/
 })
 
 function uplinePosition(u: GenealogyAgent): string {
