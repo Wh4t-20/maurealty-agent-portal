@@ -252,7 +252,7 @@ import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
 import { developerService } from '@/services/developerService'
-import { agentService} from '@/services/agentService'
+import { agentService } from '@/services/agentService'
 import { authService } from '@/services/authService'
 
 // utiities
@@ -281,6 +281,7 @@ const units = ['Metric', 'English'];
 // loadProperties); this toggle isolates the pending ones. Agents never fetch
 // pending listings at all, so this is a no-op for them either way.
 const isAdmin = ref(false)
+const currentAgentId = ref<number | null>(null)
 const showPendingOnly = ref(false)
 const pendingCount = computed(() => properties.value.filter(p => p.status === 'pending').length)
 
@@ -320,6 +321,14 @@ const filteredProperties = computed(() => {
     const dbMax = convertPriceToPHP(max);
     result = result.filter(p => p.price <= dbMax)
   }
+
+  // Pending listings float to top so agents and admins spot them immediately
+  result = result.slice().sort((a, b) => {
+    const aPending = a.status === 'pending' ? 0 : 1;
+    const bPending = b.status === 'pending' ? 0 : 1;
+    if (aPending !== bPending) return aPending - bPending;
+    return (b.created_at?.getTime() ?? 0) - (a.created_at?.getTime() ?? 0);
+  });
 
   return result
 })
@@ -376,9 +385,13 @@ const loadProperties = async () => {
 
   try {
     // Admins see active + pending together (pending isolated via the toggle);
-    // everyone else only ever sees active listings.
-    const statuses = isAdmin.value ? ['active', 'pending'] : ['active']
-    const data = await listingsService.getListings(20, statuses);
+    // non-admins see active listings + their own pending ones.
+    let data: Property[];
+    if (isAdmin.value) {
+      data = await listingsService.getListings(20, ['active', 'pending']);
+    } else {
+      data = await listingsService.getListings(20, ['active'], currentAgentId.value ?? undefined);
+    }
     console.log('Naa na ang data bai:', data);
     properties.value = data;
     currentPage.value = 1;
@@ -395,7 +408,8 @@ const savedNotice = ref<string | null>(null)
 const showSavedNotice = () => {
   const messages: Record<string, string> = {
     created: 'Listing saved successfully.',
-    updated: 'Listing updated successfully.'
+    updated: 'Listing updated successfully.',
+    pending: 'Listing submitted for admin approval.'
   }
   const message = messages[String(route.query.saved)]
   if (!message) return
@@ -448,8 +462,12 @@ const loadDeveloperChoices = async () => {
 onMounted(async () => {
   // Admin check must resolve before the first fetch, since it decides
   // whether pending listings are included in that fetch.
-  const agent = await authService.getCurrentAgent();
+  const [agent, agentId] = await Promise.all([
+    authService.getCurrentAgent(),
+    agentService.getCurrentAgentID()
+  ]);
   isAdmin.value = !!agent?.admin_access;
+  currentAgentId.value = agentId;
 
   loadProperties();
   loadDeveloperChoices();

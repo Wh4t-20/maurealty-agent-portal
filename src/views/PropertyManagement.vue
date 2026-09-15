@@ -1052,7 +1052,8 @@ const saveProperty = async () => {
           }
         }
 
-        router.push({ path: '/listings', query: { saved: 'created' } });
+        const savedType = isAdmin.value ? 'created' : 'pending';
+        router.push({ path: '/listings', query: { saved: savedType } });
       }
 
     } catch (error) {
