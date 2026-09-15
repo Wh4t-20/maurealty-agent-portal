@@ -215,8 +215,9 @@
             <span class="flex items-center-safe gap-1"><Trash2 class="size-4" /> DELETE</span>
           </button>
 
-          <button 
-            @click="handleShare" 
+          <button
+            v-if="details.status !== 'pending'"
+            @click="handleShare"
             :disabled="isShareCooldown"
             class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             :class="!isShareCooldown ? 'hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75' : ''"
