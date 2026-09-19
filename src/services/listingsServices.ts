@@ -75,7 +75,27 @@ export const listingsService = {
       realty_incentive: item.realty_incentive ?? null
     };
   },
+// Add this inside the listingsService object
+  async getListingPropertyType(listingId: number) {
+    const { data, error } = await supabase
+      .from('main_listings')
+      .select('property_type_ID, property_type(property_type)')
+      .eq('listing_ID', listingId)
+      .single();
 
+    if (error) {
+      console.error('Error fetching property type:', error);
+      return null;
+    }
+
+    return {
+      typeId: data.property_type_ID,
+      // Handle the relation whether it returns as an array or a single object
+      typeName: Array.isArray(data.property_type) 
+        ? data.property_type[0].property_type 
+        : data.property_type?.property_type || ''
+    };
+  },
   // Fetch a single listing by ID
   async getListingById(id: number, propertyTypeId: number) {
     const subTable = SUB_TABLE_MAP[propertyTypeId];
@@ -97,6 +117,7 @@ export const listingsService = {
  
     return data;
   },
+
   async getAgentFromListing(listingId: number) {
     try {
       const { data, error } = await supabase
