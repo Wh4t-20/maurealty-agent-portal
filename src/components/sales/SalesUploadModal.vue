@@ -72,9 +72,17 @@
           />
         </div>
 
-        <div class="sm:col-span-2 flex flex-col gap-1" v-if="isAdmin && editSale">
+        <!-- Sale Status Block -->
+        <div class="sm:col-span-2 flex flex-col gap-1" v-if="editSale">
           <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Sale Status</label>
-          <select v-model="form.status" :class="inputClass">
+          <select 
+            v-model="form.status" 
+            :class="[
+              inputClass, 
+              !isAdmin ? 'bg-gray-200! dark:bg-gray-800/80! text-gray-400! dark:text-gray-500! border-gray-300! dark:border-gray-700! cursor-not-allowed shadow-inner' : ''
+            ]" 
+            :disabled="!isAdmin"
+          >
             <option value="pending approval">Pending Approval</option>
             <option value="awaiting payment">Awaiting Payment</option>
             <option value="complete">Complete</option>
