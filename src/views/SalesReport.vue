@@ -213,6 +213,7 @@
       @saved="onSaleSaved"
     />
 
+   <!-- TODO: Move this whole Sale Detail Portion into a whole new component under sales -->
     <!-- SALE DETAIL -->
     <div v-if="selectedSale" class="fixed inset-0 z-40 flex items-center justify-center bg-[rgba(10,61,98,0.7)] backdrop-blur-sm p-4" @click.self="selectedSale = null">
       <div class="w-full max-w-lg bg-white dark:bg-black rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
