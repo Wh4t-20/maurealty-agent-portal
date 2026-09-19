@@ -75,7 +75,6 @@ export const listingsService = {
       realty_incentive: item.realty_incentive ?? null
     };
   },
-// Add this inside the listingsService object
   async getListingPropertyType(listingId: number) {
     const { data, error } = await supabase
       .from('main_listings')
@@ -87,13 +86,14 @@ export const listingsService = {
       console.error('Error fetching property type:', error);
       return null;
     }
-
+    // type assertion to guarantee the shape of the query
+    const propTypeInfo = data.property_type as Record<string, any> | Record<string, any[] | null>;
     return {
       typeId: data.property_type_ID,
       // Handle the relation whether it returns as an array or a single object
       typeName: Array.isArray(data.property_type) 
-        ? data.property_type[0].property_type 
-        : data.property_type?.property_type || ''
+        ? propTypeInfo[0].property_type 
+        : propTypeInfo?.property_type || ''
     };
   },
   // Fetch a single listing by ID
