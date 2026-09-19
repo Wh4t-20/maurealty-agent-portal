@@ -215,56 +215,108 @@
 
     <!-- SALE DETAIL -->
     <div v-if="selectedSale" class="fixed inset-0 z-40 flex items-center justify-center bg-[rgba(10,61,98,0.7)] backdrop-blur-sm p-4" @click.self="selectedSale = null">
-      <div class="w-full max-w-lg bg-white dark:bg-black rounded-2xl shadow-2xl overflow-hidden">
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-600">
+      <div class="w-full max-w-lg bg-white dark:bg-black rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-600 shrink-0">
           <h2 class="text-xl font-bold text-maurealty-blue dark:text-white">Sale Details</h2>
           <button class="text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 text-xl leading-none cursor-pointer" @click="selectedSale = null">✕</button>
         </div>
 
-        <dl class="px-6 py-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-          <div><dt class="text-gray-500 dark:text-gray-400">Client</dt><dd class="font-medium text-maurealty-blue dark:text-white">{{ selectedSale.client_name }}</dd></div>
-          <div><dt class="text-gray-500 dark:text-gray-400">Project</dt><dd class="font-medium dark:text-white">{{ selectedSale.listing_title }}</dd></div>
-          <div v-if="isAdmin"><dt class="text-gray-500 dark:text-gray-400">Agent</dt><dd class="dark:text-white">{{ selectedSale.agent_name || '—' }}</dd></div>
-          <div v-if="isAdmin" class="col-span-2">
-            <dt class="text-gray-500 dark:text-gray-400">Upline</dt>
-            <dd>
-              <span v-if="uplineLoading" class="text-gray-400 dark:text-gray-600">Loading…</span>
-              <span v-else-if="upline.length === 0" class="dark:text-white">—</span>
-              <span v-else>
-                <template v-for="(u, i) in upline" :key="u.agent_ID"
-                  ><span class="font-medium dark:text-white">{{ u.first_name }} {{ u.last_name }}</span
-                  ><span v-if="uplinePosition(u)" class="text-gray-500 dark:text-gray-400"> ({{ uplinePosition(u) }})</span
-                  ><span v-if="i < upline.length - 1" class="text-gray-400 dark:text-gray-600"> → </span
-                ></template>
-              </span>
-            </dd>
-          </div>
-          <div><dt class="text-gray-500 dark:text-gray-400">Reservation Date</dt><dd class="dark:text-white">{{ formatDate(selectedSale.reservation_date) }}</dd></div>
-          <div><dt class="text-gray-500 dark:text-gray-400">Contract Price</dt><dd class="dark:text-white">{{ formatPeso(selectedSale.total_contract_price) }}</dd></div>
-          <div><dt class="text-gray-500 dark:text-gray-400">Sale #</dt><dd class="dark:text-white">{{ selectedSale.agent_sale_seq ?? '—' }}</dd></div>
-          <div>
-            <dt class="text-gray-500 dark:text-gray-400">Status</dt>
-            <dd>
-              <span :class="['px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider border', getStatusClass(selectedSale.status)]">
-                {{ selectedSale.status }}
-              </span>
-            </dd>
-          </div>
-          <div><dt class="text-gray-500 dark:text-gray-400">Gross Commission</dt><dd class="dark:text-white">{{ selectedSale.gross_commission != null ? formatPeso(selectedSale.gross_commission) : '—' }}</dd></div>
-          <div><dt class="text-gray-500 dark:text-gray-400">Net Commission</dt><dd class="dark:text-white">{{ selectedSale.net_commission != null ? formatPeso(selectedSale.net_commission) : '—' }}</dd></div>
-          <div><dt class="text-gray-500 dark:text-gray-400">Voucher</dt><dd class="dark:text-white">{{ selectedSale.voucher_series || '—' }}</dd></div>
-          <div class="col-span-2"><dt class="text-gray-500 dark:text-gray-400">Remarks</dt><dd class="dark:text-white">{{ selectedSale.remarks || '—' }}</dd></div>
-          <div class="col-span-2"><dt class="text-gray-500 dark:text-gray-400">Agent Incentive</dt><dd class="dark:text-white whitespace-pre-line">{{ selectedSale.agent_incentive || '—' }}</dd></div>
-          <div class="col-span-2"><dt class="text-gray-500 dark:text-gray-400">Realty Incentive</dt><dd class="dark:text-white whitespace-pre-line">{{ selectedSale.realty_incentive || '—' }}</dd></div>
-        </dl>
+        <div class="overflow-y-auto custom-scrollbar p-6">
+          <!-- ORIGINAL SALE DETAILS -->
+          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <div><dt class="text-gray-500 dark:text-gray-400">Client</dt><dd class="font-medium text-maurealty-blue dark:text-white">{{ selectedSale.client_name }}</dd></div>
+            <div><dt class="text-gray-500 dark:text-gray-400">Project</dt><dd class="font-medium dark:text-white">{{ selectedSale.listing_title }}</dd></div>
+            <div v-if="isAdmin"><dt class="text-gray-500 dark:text-gray-400">Agent</dt><dd class="dark:text-white">{{ selectedSale.agent_name || '—' }}</dd></div>
+            <div v-if="isAdmin" class="col-span-1 sm:col-span-2">
+              <dt class="text-gray-500 dark:text-gray-400">Upline</dt>
+              <dd>
+                <span v-if="uplineLoading" class="text-gray-400 dark:text-gray-600">Loading…</span>
+                <span v-else-if="upline.length === 0" class="dark:text-white">—</span>
+                <span v-else>
+                  <template v-for="(u, i) in upline" :key="u.agent_ID"
+                    ><span class="font-medium dark:text-white">{{ u.first_name }} {{ u.last_name }}</span
+                    ><span v-if="uplinePosition(u)" class="text-gray-500 dark:text-gray-400"> ({{ uplinePosition(u) }})</span
+                    ><span v-if="i < upline.length - 1" class="text-gray-400 dark:text-gray-600"> → </span
+                  ></template>
+                </span>
+              </dd>
+            </div>
+            <div><dt class="text-gray-500 dark:text-gray-400">Reservation Date</dt><dd class="dark:text-white">{{ formatDate(selectedSale.reservation_date) }}</dd></div>
+            <div><dt class="text-gray-500 dark:text-gray-400">Contract Price</dt><dd class="dark:text-white">{{ formatPeso(selectedSale.total_contract_price) }}</dd></div>
+            <div><dt class="text-gray-500 dark:text-gray-400">Sale #</dt><dd class="dark:text-white">{{ selectedSale.agent_sale_seq ?? '—' }}</dd></div>
+            <div>
+              <dt class="text-gray-500 dark:text-gray-400">Status</dt>
+              <dd>
+                <span :class="['px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider border', getStatusClass(selectedSale.status)]">
+                  {{ selectedSale.status }}
+                </span>
+              </dd>
+            </div>
+            <div><dt class="text-gray-500 dark:text-gray-400">Gross Commission</dt><dd class="dark:text-white">{{ selectedSale.gross_commission != null ? formatPeso(selectedSale.gross_commission) : '—' }}</dd></div>
+            <div><dt class="text-gray-500 dark:text-gray-400">Net Commission</dt><dd class="dark:text-white">{{ selectedSale.net_commission != null ? formatPeso(selectedSale.net_commission) : '—' }}</dd></div>
+            <div><dt class="text-gray-500 dark:text-gray-400">Voucher</dt><dd class="dark:text-white">{{ selectedSale.voucher_series || '—' }}</dd></div>
+            <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Remarks</dt><dd class="dark:text-white">{{ selectedSale.remarks || '—' }}</dd></div>
+            <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Agent Incentive</dt><dd class="dark:text-white whitespace-pre-line">{{ selectedSale.agent_incentive || '—' }}</dd></div>
+            <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Realty Incentive</dt><dd class="dark:text-white whitespace-pre-line">{{ selectedSale.realty_incentive || '—' }}</dd></div>
+          </dl>
 
-        <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-600" v-if="canEditSale(selectedSale)">
+          <!-- NEW PROPERTY DETAILS SECTION -->
+          <div class="mt-6 pt-5 border-t border-gray-100 dark:border-gray-800">
+            <h3 class="text-lg font-bold text-maurealty-blue dark:text-white mb-3">Property Details</h3>
+            
+            <div v-if="detailsLoading" class="text-gray-500 dark:text-gray-400 text-sm">Loading property details...</div>
+            <div v-else-if="!selectedListingDetails" class="text-gray-500 dark:text-gray-400 text-sm">No additional property details available.</div>
+            
+            <dl v-else class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <!-- HOUSE AND LOT -->
+              <template v-if="['House And Lot', 'House and Lot', 'house_and_lot'].includes(selectedPropertyType)">
+                <div><dt class="text-gray-500 dark:text-gray-400">Lot Area</dt><dd class="font-medium dark:text-white">{{ formatArea(selectedListingDetails.area || selectedListingDetails.lot_area) }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Floor Area</dt><dd class="font-medium dark:text-white">{{ formatArea(selectedListingDetails.floor_area) }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Rooms</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.room_count ?? '—' }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Toilets</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.toilet_count ?? '—' }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Master BR Area</dt><dd class="font-medium dark:text-white">{{ formatArea(selectedListingDetails.master_bedroom_area) }}</dd></div>
+                <div v-if="selectedListingDetails.helper_rooms_count >= 0"><dt class="text-gray-500 dark:text-gray-400">Helper Rooms</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.helper_rooms_count }}</dd></div>
+                <div v-if="selectedListingDetails.driver_rooms_count >= 0"><dt class="text-gray-500 dark:text-gray-400">Driver Rooms</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.driver_rooms_count }}</dd></div>
+                <div v-if="selectedListingDetails.carpark_count >= 0"><dt class="text-gray-500 dark:text-gray-400">Carpark</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.carpark_count }}</dd></div>
+                <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Features</dt><dd class="font-medium dark:text-white">{{ getHouseFeatures(selectedListingDetails) }}</dd></div>
+              </template>
+
+              <!-- LOT ONLY -->
+              <template v-else-if="['Lot Only', 'Lot only', 'lot_only'].includes(selectedPropertyType)">
+                <div><dt class="text-gray-500 dark:text-gray-400">Block No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.block_number ?? '—' }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Lot No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.lot_number ?? '—' }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Phase No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.phase_number ?? '—' }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Area</dt><dd class="font-medium dark:text-white">{{ formatArea(selectedListingDetails.area) }}</dd></div>
+                <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Class</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.class || '—' }}</dd></div>
+              </template>
+
+              <!-- CONDOMINIUM -->
+              <template v-else-if="['Condominium', 'condominium'].includes(selectedPropertyType)">
+                <div><dt class="text-gray-500 dark:text-gray-400">Unit No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.unit_number ?? '—' }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Bedrooms</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.bedroom_count ?? '—' }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Balconies</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.balcony_count ?? '—' }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Carpark</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.carpark_count ?? '—' }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Master BR Area</dt><dd class="font-medium dark:text-white">{{ formatArea(selectedListingDetails.master_bedroom_area) }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Class</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.class || '—' }}</dd></div>
+                <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Type</dt><dd class="font-medium dark:text-white">{{ getCondoType(selectedListingDetails) }}</dd></div>
+              </template>
+
+              <!-- MEMORIAL -->
+              <template v-else-if="['Memorial', 'memorial'].includes(selectedPropertyType)">
+                <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Type</dt><dd class="font-medium dark:text-white">{{ getMemorialType(selectedListingDetails) }}</dd></div>
+              </template>
+            </dl>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-600 shrink-0" v-if="canEditSale(selectedSale)">
           <button @click="confirmDelete(selectedSale)" class="px-4 py-2 rounded-lg border border-red-300 dark:border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/80 cursor-pointer">Delete</button>
           <button @click="openEdit(selectedSale)" class="px-4 py-2 rounded-lg bg-maurealty-blue text-white hover:opacity-80 transition cursor-pointer">Edit</button>
         </div>
       </div>
     </div>
-  </div>  
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -274,6 +326,7 @@ import { salesService, type Sale } from '@/services/salesService'
 import { authService } from '@/services/authService'
 import {listingsService} from '@/services/listingsServices'
 import { genealogyService, type GenealogyAgent } from '@/services/genealogyService'
+import { formatArea } from '@/utils/conversion.ts'
 import { positionMap } from '@/assets/classes/agent'
 import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 
@@ -288,6 +341,27 @@ const agentFilter = ref<number | null>(null)   // admin: filter by agent
 const dateFrom = ref('')
 const dateTo = ref('')
 
+const detailsLoading = ref(false)
+const selectedListingDetails = ref<any>(null)
+const selectedPropertyType = ref<string>('')
+
+const lotClassesMap: Record<number, string> = {
+  1: 'Residential', 2: 'Commercial', 3: 'Industrial', 4: 'Farm Lot'
+}
+
+const condoClassesMap: Record<number, string> = {
+  1: 'Residential', 2: 'Commercial', 3: 'Industrial', 4: 'Condotel', 5: 'Timeshare'
+}
+
+function getCondoType(details: any) {
+  if (!details) return 'N/A'
+  if (details.is_studio_type) return 'Studio'
+  if (details.is_BR_unit) return 'BR Unit'
+  if (details.is_villa) return 'Villa'
+  if (details.is_garden_villa) return 'Garden Villa'
+  if (details.is_penthouse) return 'Penthouse'
+  return 'N/A'
+}
 // Admin sees all sales; an agent sees only their own. Decided by admin_access.
 async function loadSales() {
   loading.value = true
@@ -485,7 +559,68 @@ const paginatedSales = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
   return sortedSales.value.slice(start, start + itemsPerPage)
 })
-watch([searchQuery, dateFrom, dateTo, agentFilter, sortKey, sortDir], () => { currentPage.value = 1 })
+watch(selectedSale, async (sale) => {
+  upline.value = [];
+  selectedListingDetails.value = null;
+  selectedPropertyType.value = '';
+
+  if (!sale) return;
+
+  // 1. Fetch Upline (Admin Only)
+  if (isAdmin.value) {
+    uplineLoading.value = true;
+    try {
+      upline.value = await genealogyService.getUplineChain(sale.agent_ID, 2);
+    } catch (e) {
+      console.error('Failed to load upline:', e);
+    } finally {
+      uplineLoading.value = false;
+    }
+  }
+
+  // 2. Fetch Property Details (Everyone)
+  detailsLoading.value = true;
+  try {
+    const typeInfo = await listingsService.getListingPropertyType(sale.listing_ID);
+    if (typeInfo) {
+      selectedPropertyType.value = typeInfo.typeName;
+
+      // If bulk sale, details are saved directly on the sale record
+      if (sale.unit_details && Object.keys(sale.unit_details).length > 0) {
+        selectedListingDetails.value = sale.unit_details;
+      } else {
+        // If single sale, fetch from main_listings
+        const fullData = await listingsService.getListingById(sale.listing_ID, typeInfo.typeId);
+        if (fullData) {
+          const subTableName = [null, 'house_and_lot', 'lot_only', 'condominium', 'memorial'][typeInfo.typeId];
+          const rawSubData = subTableName ? (fullData as any)[subTableName as string] : null;
+          const dbDetails = Array.isArray(rawSubData) ? rawSubData[0] : (rawSubData || {});
+          
+          // Normalize to match expected format
+          const normalized = { ...dbDetails };
+          normalized.room_count = dbDetails.rooms_count ?? null;
+          normalized.toilet_count = dbDetails.toilets_count ?? null;
+          normalized.one_storey = dbDetails['1_storey'] ?? false;
+          normalized.two_storey = dbDetails['2_storey'] ?? false;
+          normalized.townhome = dbDetails.townhomes ?? false;
+          normalized.area = dbDetails.lot_area ?? dbDetails.area ?? null;
+          
+          if (typeInfo.typeId === 2 && dbDetails.lot_class_ID) {
+            normalized.class = lotClassesMap[dbDetails.lot_class_ID] || 'N/A';
+          } else if (typeInfo.typeId === 3 && dbDetails.condo_class_ID) {
+            normalized.class = condoClassesMap[dbDetails.condo_class_ID] || 'N/A';
+          }
+          
+          selectedListingDetails.value = normalized;
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Failed to load property details", e);
+  } finally {
+    detailsLoading.value = false;
+  }
+})
 
 // --- CSV export of the current filtered view ---
 function csvCell(v: unknown): string {
@@ -537,6 +672,29 @@ function getStatusClass(status: string) {
       return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-gray-200';
   }
 }
+// -- This Block is purely for display purposes of Sales Report -- 
+function getMemorialType(details: any) {
+  if (!details) return 'N/A';
+  if (details.is_urn) return 'Urn'
+  if (details.is_vault) return 'Vault'
+  if (details.is_garden) return 'Garden'
+  if (details.is_estate) return 'Estate'
+  if (details.is_family_estate) return 'Family Estate'
+  if (details.is_pet_memorial) return 'Pet Memorial'
+  return 'N/A'
+}
+
+function getHouseFeatures(details: any) {
+  if (!details) return '—';
+  const features = [];
+  if (details.one_storey) features.push('One Storey');
+  if (details.two_storey) features.push('Two Storey');
+  if (details.with_loft) features.push('With Loft');
+  if (details.townhome) features.push('Townhome');
+  if (details.rowhouse) features.push('Rowhouse');
+  return features.length ? features.join(', ') : '—';
+}
+// -- End of Block -- 
 
 </script>
 
