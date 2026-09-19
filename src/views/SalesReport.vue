@@ -261,9 +261,20 @@
             <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Realty Incentive</dt><dd class="dark:text-white whitespace-pre-line">{{ selectedSale.realty_incentive || '—' }}</dd></div>
           </dl>
 
-          <!-- NEW PROPERTY DETAILS SECTION -->
+          <!-- PROPERTY DETAILS SECTION -->
           <div class="mt-6 pt-5 border-t border-gray-100 dark:border-gray-800">
-            <h3 class="text-lg font-bold text-maurealty-blue dark:text-white mb-3">Property Details</h3>
+            <div class="flex items-center gap-3 mb-3">
+              <h3 class="text-lg font-bold text-maurealty-blue dark:text-maurealty-light-blue leading-none">Property Details</h3>
+              <span 
+                v-if="selectedPropertyType" 
+                :class="[
+                  'text-[10px] sm:text-xs font-light text-white px-2 py-0.5 sm:px-3 sm:py-0.5 rounded-full tracking-wider shadow-md leading-none', 
+                  propertyTypeColor(selectedPropertyType)
+                ]"
+              >
+                {{ formattedPropertyType(selectedPropertyType) }}
+              </span>
+            </div>
             
             <div v-if="detailsLoading" class="text-gray-500 dark:text-gray-400 text-sm">Loading property details...</div>
             <div v-else-if="!selectedListingDetails" class="text-gray-500 dark:text-gray-400 text-sm">No additional property details available.</div>
@@ -328,6 +339,7 @@ import {listingsService} from '@/services/listingsServices'
 import { genealogyService, type GenealogyAgent } from '@/services/genealogyService'
 import { formatArea } from '@/utils/conversion.ts'
 import { positionMap } from '@/assets/classes/agent'
+import { formattedPropertyType } from '@/assets/classes/listings'
 import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 
 const sales = shallowRef<Sale[]>([])
@@ -693,6 +705,29 @@ function getHouseFeatures(details: any) {
   if (details.townhome) features.push('Townhome');
   if (details.rowhouse) features.push('Rowhouse');
   return features.length ? features.join(', ') : '—';
+}
+  // for property type badges
+function propertyTypeColor(type?: string) {
+  if (!type) return 'bg-gray-400'
+
+  switch (type.toLowerCase()) {
+    case 'house_and_lot':
+    case 'house and lot':
+      return 'bg-[#1b5c2d]'
+    case 'lot_only':
+    case 'lot only':
+      return 'bg-yellow-500'
+    case 'condominium':
+      return 'bg-[#336db0]'
+    case 'memorial':
+      return 'bg-gray-500'
+    case 'clubshare':
+      return 'bg-purple-600'
+    case 'golfshare':
+      return 'bg-emerald-700'
+    default:
+      return 'bg-gray-400'
+  }
 }
 // -- End of Block -- 
 
