@@ -19,7 +19,7 @@
             :class="[inputClass, 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed']"
           />
           <select v-else v-model="form.listing_ID" required :class="inputClass">
-            <option :value="null" disabled>Select a property…</option>
+            <option :value="null" disabled>Select a property…</option> <!--POKO-->
             <option v-for="l in listings" :key="l.listing_id" :value="l.listing_id">{{ l.listing_title }}</option>
           </select>
         </div>
@@ -28,12 +28,18 @@
           <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Client (Buyer) <span class="text-red-500">*</span></label>
           <input v-model.trim="form.client_name" type="text" required :class="inputClass" placeholder="Full name" />
         </div>
-
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Developer</label>
+          <input  type="text" :class="inputClass" placeholder="Developer Company"/>
+        </div>        
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Reservation Date <span class="text-red-500">*</span></label>
           <input v-model="form.reservation_date" type="date" required :class="inputClass" />
         </div>
-
+        <div class="sm:col-span-2 flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Project</label>
+          <input  type="text" :class="inputClass" />
+        </div>        
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Total Contract Price (₱) <span class="text-red-500">*</span></label>
           <input v-model.number="form.total_contract_price" type="number" min="0" step="0.01" required :class="inputClass" placeholder="0.00" />
@@ -94,6 +100,78 @@
           <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Voucher Series</label>
           <input v-model.trim="form.voucher_series" type="text" :class="inputClass" placeholder="VCH-0001" />
         </div>
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Financing<span class="text-red-500">*</span></label>
+          <input type= "text" required :class="inputClass" placeholder= "Correspondent lender/In-house"/>
+        </div> <!-- Might be drop down, with bank affiliations and in-house as options-->
+        <div class="flex flex-col gap-1">
+          <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Payment Scheme<span class="text-red-500">*</span></label>
+          <select v-model="commissionsForm.paymentScheme" required :class="inputClass">
+            <option :value="null" disabled>Select payment scheme</option> 
+            <option value="Spot-Cash">Spot-Cash</option>
+            <option value="DP">Downpayment</option>
+          </select> <!--POM-->
+        </div>
+        <div v-if="scdisplay" class="flex flex-col gap-1">
+          <div  class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Downpayment Rate<span class="text-red-500">*</span></label>
+            <input v-model= "commissionsForm.overallDpRate" type= "number" min = "0" required :class="inputClass" placeholder= "e.g. 20 as for 20%"/>
+          </div>
+        </div>
+        <div v-if="dpdisplay" class="sm:col-span-2 border-t border-gray-200 dark:border-gray-800 pt-5 mt-2"> <!--Connect to real variables or something-->
+          <div class="grid grid-cols-4 gap-4">
+            <div  class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-600 dark:text-gray-300">DP Rate<span class="text-red-500">*</span></label>
+            <input v-model= "commissionsForm.overallDpRate" type= "number" min = "0" required :class="inputClass" placeholder= "e.g. 20 as for 20%"/>
+          </div>      
+          <div  class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Payment Duration <span class="text-red-500">*</span></label> <!--(QUESTION)Is the amount of months arbitrarily decided or does it increase/decreases in set increments-->
+            <input v-model= "commissionsForm.downpaymentDuration" type= "number" required :class="inputClass" placeholder= "months"/>
+          </div>
+          <div  class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Due Date Start<span class="text-red-500">*</span></label> <!--(QUESTION)What does Due date start and end mean-->
+            <input v-model= "commissionsForm.dueDateStart" type= "date" required :class="inputClass" />
+          </div>
+          <div  class="flex flex-col gap-1">
+            <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Due Date End<span class="text-red-500">*</span></label>
+            <input v-model= "commissionsForm.dueDateEnd" type= "date" required :class="inputClass" />
+          </div>
+        </div>
+        <div v-if="dpdisplay" class="sm:col-span-2 border-t border-gray-200 dark:border-gray-800 pt-5 mt-2" >
+          <div v-for="(division, index) in commissionsForm.dpDivisions" :key="index" class="grid grid-cols-4 gap-4">
+            <div class="flex flex-col gap-1">
+              <label class="text-sm font-medium text-gray-600 dark:text-gray-300">DP Rate {{ index + 1 }}<span class="text-red-500">*</span></label>
+              <input v-model.number="division.divisionRate" type="number" min="0" required :class="inputClass" placeholder="Amount for division {{ index + 1 }}" />
+            </div>
+            <div  class="flex flex-col gap-1">
+              <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Months<span class="text-red-500">*</span></label>
+              <input v-model.number="division.months" type= "number" min="0" required :class="inputClass" placeholder="Number of payments" />
+            </div>
+            <div  class="flex flex-col gap-1">
+              <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Due Date Start<span class="text-red-500">*</span></label>
+              <input v-model="division.startDate" type= "date" required :class="inputClass" />
+            </div>
+            <div  class="flex flex-col gap-1">
+              <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Due Date End<span class="text-red-500">*</span></label>
+              <input v-model="division.endDate" type= "date" required :class="inputClass" />
+            </div>
+          </div>
+          
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <button class="flex flex-col gap-1" @click="addDivision">
+            <Plus class="size-4" /> Add Division
+          </button>
+          <button class="flex flex-col gap-1" @click="removeDivision" :disabled="commissionsForm.dpDivisions.length <= 1">
+            <Minus class="size-4" /> Remove 
+          </button>
+        </div>
+        </div>
+          
+
+         <!--This should instead be a + - button that allows adding/removing divisions
+                  there should also be 2 divisions as a default -->       
+
 
         <div class="sm:col-span-2 flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Remarks</label>
@@ -113,7 +191,7 @@
             <span class="text-gray-700 dark:text-gray-200 whitespace-pre-line">{{ selectedListing.realty_incentive }}</span>
           </div>
         </div>
-
+        <!--Sheeta-->
         <div v-if="selectedListing?.is_bulk" class="sm:col-span-2 border-t border-gray-200 dark:border-gray-800 pt-5 mt-2">
           <h3 class="text-md font-bold text-maurealty-blue dark:text-maurealty-light-blue mb-4">Specific Unit Details (Bulk Sale)</h3>
           
@@ -272,12 +350,15 @@
 </template>
 
 <script setup lang="ts">
+import { Plus, Minus } from 'lucide-vue-next'
 import { ref, reactive, onMounted, computed, watch} from 'vue'
 import { salesService, type Sale } from '@/services/salesService'
 import { listingsService } from '@/services/listingsServices'
 import { authService } from '@/services/authService'
 import type { Property } from '@/assets/classes/listings'
 import { supabase } from '@/supabaseClient'
+import { commissionService} from '@/services/commissionService'
+import type { CalculateCommissionPayload, DpDivision } from '@/assets/classes/commission'
 
 // Sold flow passes a fixed listing (id + title + price) so the property is
 // locked and the contract price is prefilled. Omit it for the manual flow.
@@ -313,6 +394,74 @@ const saving = ref(false)
 const error = ref('')
 
 const e = props.editSale
+//totoro
+const dpdisplay = ref(false);
+const scdisplay = ref(false);
+const startDateAdd = ref(0);
+const commissionsForm = reactive<{
+  commissionableAmount: number
+  overallDpRate: number
+  paymentScheme: 'DP' | 'Spot-Cash' | ''
+  dpDivisions: DpDivision[]
+  downpaymentDuration: number
+  dueDateStart: string
+  dueDateEnd: string
+}>({
+  commissionableAmount: 0,
+  overallDpRate: 0,
+  paymentScheme: '',
+  dpDivisions: [
+    { divisionRate: 0, months: 0, startDate: '', endDate: '' }, 
+  { divisionRate: 0, months: 0, startDate: '', endDate: '' }
+  ] as DpDivision[],
+  downpaymentDuration: 0,
+  dueDateStart: '',
+  dueDateEnd: ''
+})
+watch(() => commissionsForm.paymentScheme, (paymentScheme) => {
+  if (paymentScheme === 'DP') {
+    dpdisplay.value = true
+    scdisplay.value = false
+  } else if (paymentScheme === 'Spot-Cash'){
+    scdisplay.value = true
+    dpdisplay.value = false
+  }
+});
+function addMonths(dateString: string, monthsToAdd: number): string {
+  const [year, month, day] = dateString.split('-').map(Number)
+  const date = new Date(year || 0, month || 0 - 1 + monthsToAdd, 1) 
+  const daysInTargetMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+  date.setDate(Math.min(day || 0, daysInTargetMonth)) 
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+watch (() => commissionsForm.downpaymentDuration, (downpaymentDuration) => {
+  startDateAdd.value = downpaymentDuration;
+});
+watch (() => commissionsForm.dueDateStart, (dueDateStart) => {
+  if (dueDateStart && startDateAdd.value > 0) {
+    commissionsForm.dueDateEnd = addMonths(dueDateStart, startDateAdd.value);
+    console.log(`Due Date End updated to: ${addMonths(dueDateStart, startDateAdd.value)}`);
+  } else {
+    commissionsForm.dueDateEnd = '';
+  }
+});
+
+const addDivision = () => {
+  commissionsForm.dpDivisions.push({ 
+    divisionRate: 0,
+    months: 0,
+    startDate: '',
+    endDate: '',
+  });
+};
+const removeDivision = () => {
+  if (commissionsForm.dpDivisions.length > 0) {
+    commissionsForm.dpDivisions.pop();
+  }
+};
 const form = reactive({
   // Prefill from the edited sale, else the locked listing (Sold flow), else blank.
   listing_ID: e?.listing_ID ?? props.lockedListing?.id ?? null as number | null,

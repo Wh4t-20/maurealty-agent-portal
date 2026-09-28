@@ -12,6 +12,7 @@ import GenealogyLandingpage from '@/views/Genealogy-landingpage.vue'
 import Profile from '@/views/Profile.vue'
 import SharedListing from '@/views/SharedListing.vue'
 import Settings from '@/views/Settings.vue'
+import Commissions from '@/views/Commissions.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -79,6 +80,12 @@ const routes: Array<RouteRecordRaw> = [
     path: '/settings',
     name: 'Settings',
     component: Settings,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/commissions',
+    name: 'Commissions',
+    component: Commissions,
     meta: { requiresAuth: true }
   }
 ]
