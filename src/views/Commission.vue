@@ -321,35 +321,40 @@ function countCommissionsByStatus(tabId: string): number {
 
 // this filters the commission tabs
 const filteredCommissions = computed(() => {
-    //filter the list
-    let list = commissions_list.value;
+    // 1. Filter items by active tab
+    const list = commissions_list.value.filter(comm => {
+        if (active_tab.value === 'ready') {
+        return comm.status !== 'Claimed' && comm.is_admin_approved && isDueDateReached(comm.due_date);
+        }
+        if (active_tab.value === 'locked') {
+        return comm.status !== 'Claimed' && (!comm.is_admin_approved || !isDueDateReached(comm.due_date));
+        }
+        if (active_tab.value === 'claimed') {
+        return comm.status === 'Claimed';
+        }
+        // Default for 'all' tab
+        return true;
+    });
 
-    if (active_tab.value !== 'all') {
-        list = list.filter(comm => comm.status === active_tab.value);
-    }
-
-    // Sort the filtered list
-    return [...list].sort((a, b) => {
-        // first by Unclaimed vs. Claimed (Unclaimed at the top)
-        const aIsClaimed = a.status === 'Claimed' ? 1 : 0;
-        const bIsClaimed = b.status === 'Claimed' ? 1 : 0;
-
-        if (aIsClaimed !== bIsClaimed) {
-        return aIsClaimed - bIsClaimed; // 0 (unclaimed) comes before 1 (claimed)
+    // 2. Multi-level sort: Unclaimed first -> Due Date -> Developer Name
+    return list.sort((a, b) => {
+        // 1st Priority: Unclaimed (0) before Claimed (1)
+        const aClaimed = a.status === 'Claimed' ? 1 : 0;
+        const bClaimed = b.status === 'Claimed' ? 1 : 0;
+        if (aClaimed !== bClaimed) {
+        return aClaimed - bClaimed;
         }
 
-        // then by Due Date (Closest date to furthest date)
+        // 2nd Priority: Due Date (Earliest first)
         const dateA = new Date(a.due_date).getTime();
         const dateB = new Date(b.due_date).getTime();
-
         if (dateA !== dateB) {
-        return dateA - dateB; // Ascending date order
+        return dateA - dateB;
         }
 
-        // then by Developer Name (Alphabetical A to Z)
+        // 3rd Priority: Developer Name (Alphabetical A-Z)
         const devA = (a.developer_name || '').toLowerCase();
         const devB = (b.developer_name || '').toLowerCase();
-
         return devA.localeCompare(devB);
     });
 });
