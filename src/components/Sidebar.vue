@@ -139,7 +139,8 @@ import {
   SquareChartGantt,
   Network,
   ReceiptText,
-  Settings
+  Settings,
+  WalletCards // this is for the commission tab
 } from "lucide-vue-next";
 
 // fetch current Agent profile data
@@ -175,7 +176,8 @@ const isAdmin = computed(() => {
     // { id: 6, icon: Trophy, path: "/leaderboards", label: "Leaderboards" },
     { id: 7, icon: ContactRound, path: "/developerlist", label: "Developer List" },
     { id: 8, icon: SquareChartGantt, path: "/propertymanagement", label: "Property Management"},
-    { id: 9, icon: Network, path: "/genealogy", label: "Genealogy" }
+    { id: 9, icon: Network, path: "/genealogy", label: "Genealogy" },
+    { id: 10, icon: WalletCards, path: "/commissions", label: "Commissions" }
   ];
 
   const handleLogout = async () => {
