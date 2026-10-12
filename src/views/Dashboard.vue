@@ -332,7 +332,7 @@ const loadDashboardStats = async () => {
         supabase.from('sales').select('status, net_commission, created_at, main_listings(listing_title)')
           .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfSelected).lt('created_at', endOfSelected),
         
-        supabase.from('sales').select('status, net_commission, created_at, main_listings(listing_title')
+        supabase.from('sales').select('status, net_commission, created_at, main_listings(listing_title)')
           .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfPrev).lt('created_at', endOfPrev)
       ]);
 

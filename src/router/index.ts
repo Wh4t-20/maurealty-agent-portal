@@ -80,7 +80,12 @@ const routes: Array<RouteRecordRaw> = [
     name: 'Settings',
     component: Settings,
     meta: { requiresAuth: true }
-  }
+  },
+  {
+  path: '/commissions',
+  name: 'Commission',
+  component: () => import('@/views/Commission.vue')
+  }     
 ]
 
 const router = createRouter({
