@@ -57,9 +57,13 @@ export const getSharedListing = async (token: string) => {
 
   const now = new Date();
   const expiresAt = new Date(data.expires_at);
-  
+
   if (now > expiresAt) {
     throw new Error('This shared link has expired.');
+  }
+
+  if (data.main_listings?.status === 'pending') {
+    throw new Error('This listing is not yet available for viewing.');
   }
 
   return data;

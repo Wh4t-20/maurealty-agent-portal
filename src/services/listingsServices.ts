@@ -11,11 +11,11 @@ const SUB_TABLE_MAP: Record<number, string> = {
 };
 
 export const listingsService = {
-  // Fetch all active listings
-  async getListings(limit: number = 20): Promise<Property[]> {
-    const { data, error } = await supabase
-      .from('main_listings')
-      .select(`
+  // Fetch listings. Defaults to active-only (public/agent view); pass
+  // statuses to widen the set — e.g. ['active', 'pending'] for the admin
+  // view that also surfaces listings awaiting approval.
+  async getListings(limit: number = 20, statuses: string[] = ['active'], ownPendingAgentId?: number): Promise<Property[]> {
+    const selectFields = `
         listing_ID,
         listing_title,
         price,
@@ -34,10 +34,22 @@ export const listingsService = {
         property_type (property_type),
         developers (name),
         listing_images (image_url, display_order)
-      `)
-      .eq('status', 'active')
+      `;
+
+    let query = supabase
+      .from('main_listings')
+      .select(selectFields);
+
+    if (ownPendingAgentId) {
+      // Non-admin agents: show all active listings + their own pending ones
+      query = query.or(`status.in.(${statuses.join(',')}),and(status.eq.pending,agent_ID.eq.${ownPendingAgentId})`);
+    } else {
+      query = query.in('status', statuses);
+    }
+
+    const { data, error } = await query
       .order('created_at', { ascending: false })
-      .limit(limit); // Adjust the limit as needed
+      .limit(limit);
 
     if (error) {
       console.error('Error fetching listings:', error);
