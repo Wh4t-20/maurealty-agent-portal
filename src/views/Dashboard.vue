@@ -313,6 +313,7 @@ const loadDashboardStats = async () => {
   try {
     if (selectedMonth.value) {
       const [yearStr, monthStr] = selectedMonth.value.split('-');
+      if (!yearStr || !monthStr) return; // malformed month value, bail
       const year = parseInt(yearStr);
       const month = parseInt(monthStr);
 

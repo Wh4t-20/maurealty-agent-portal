@@ -7,7 +7,7 @@
             {{ details.listing_title || 'Untitled Listing' }}
           </h1>
 
-          <button class="absolute top-0 right-0 p-3 rounded-full text-black dark:text-white hover:bg-gray-200/40 dark:hover:bg-gray-200/20 transition-colors cursor-pointer" @click="$emit('closeDetails')">
+          <button class="absolute top-0 right-0 p-3 rounded-full text-black dark:text-white hover:bg-gray-200/40 dark:hover:bg-gray-200/20 transition-colors cursor-pointer" @click="$emit('close-details')">
             <XIcon class="size-5" stroke-width="3"/>
           </button>
         </header>
