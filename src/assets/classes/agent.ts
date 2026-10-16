@@ -21,7 +21,8 @@ export interface AgentProfile {
 export const positionMap: Record<number, string> = {
     1: 'Property Sales Specialist',
     2: 'Property Sales Supervisor',
-    3: 'Investment Manager'
+    3: 'Investment Manager',
+    4: 'Partner Broker'
 }
 
 export const getAge = (birth_date: string) => {

@@ -185,7 +185,7 @@
     <!-- Sold flow: pre-filled sale form. On save, the listing is marked sold. -->
     <SalesUploadModal
       v-if="soldListing"
-      :locked-listing="{ id: soldListing.listing_id, title: soldListing.listing_title, price: soldListing.price }"
+      :locked-listing="{ id: soldListing.listing_id, title: soldListing.listing_title, price: soldListing.price, commission: soldListing.commission }"
       @close="soldListing = null"
       @saved="onSaleSaved"
     />

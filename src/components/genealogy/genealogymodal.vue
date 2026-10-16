@@ -32,11 +32,13 @@
         />
 
         <template #node-genealogy="{ data }">
-          <div class="w-65 h-20 bg-white dark:bg-black border-[3px] border-[#07407B] dark:border-maurealty-light-blue dark:text-maurealty-light-blue rounded flex flex-col items-center justify-center">
+          <div class="w-65 h-24 bg-white dark:bg-black border-[3px] border-[#07407B] dark:border-maurealty-light-blue dark:text-maurealty-light-blue rounded flex flex-col items-center justify-center">
             <div class="text-5 font-medium">{{ data.fullName }}</div>
             <div class="text-3 font-light">{{ data.position }}</div>
             <div class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1">Commission: {{ data.commission }}%</div>
-          
+            <div class="text-[11px] text-gray-600 dark:text-gray-300">
+              Accumulated: {{ data.accumulated }}<template v-if="data.progress != null"> · {{ data.progress }}% to next</template>
+            </div>
           </div>
         </template>
       </VueFlow>
@@ -50,14 +52,15 @@ import { ref, onMounted } from "vue"
 import { VueFlow, Position, type Node, type Edge } from "@vue-flow/core"
 import { Controls } from "@vue-flow/controls"
 import { MiniMap } from "@vue-flow/minimap"
-import { genealogyService, type GenealogyNode } from "@/services/genealogyService"
+import { genealogyService, type GenealogyNode, type TeamMember } from "@/services/genealogyService"
+import { useLiveRefresh } from "@/utils/liveRefresh"
 import { positionMap } from "@/assets/classes/agent"
 
 import { useSettings } from "@/utils/useSettings"
 const { configs } = useSettings();
 
 const baseNodeWidth = 200
-const baseNodeHeight = 64
+const baseNodeHeight = 96
 
 const nodes = ref<Node[]>([])
 const edges = ref<Edge[]>([])
@@ -78,7 +81,7 @@ function commissionLabel(node: GenealogyNode): number {
 
 // Flatten the tree into VueFlow nodes/edges. Uses agent_ID as the node id so
 // edges are stable regardless of traversal order.
-function flatten(node: GenealogyNode, parentId: string | null, outNodes: Node[], outEdges: Edge[]) {
+function flatten(node: GenealogyNode, parentId: string | null, outNodes: Node[], outEdges: Edge[], insights: Map<number, TeamMember>) {
   const id = String(node.agent_ID)
 
   outNodes.push({
@@ -89,6 +92,8 @@ function flatten(node: GenealogyNode, parentId: string | null, outNodes: Node[],
       fullName: `${node.first_name} ${node.last_name}`,
       position: positionLabel(node),
       commission: commissionLabel(node),
+      accumulated: '₱' + (insights.get(node.agent_ID)?.accumulatedSales ?? 0).toLocaleString('en-PH', { maximumFractionDigits: 0 }),
+      progress: insights.get(node.agent_ID)?.threshold ? insights.get(node.agent_ID)!.progress : null,
     },
   })
 
@@ -103,7 +108,7 @@ function flatten(node: GenealogyNode, parentId: string | null, outNodes: Node[],
   }
 
   for (const child of node.children) {
-    flatten(child, id, outNodes, outEdges)
+    flatten(child, id, outNodes, outEdges, insights)
   }
 }
 
@@ -130,12 +135,13 @@ function layout(nodesIn: Node[], edgesIn: Edge[]) {
   })
 }
 
-onMounted(async () => {
+async function loadTree() {
   try {
-    const forest = await genealogyService.getTree()
+    const [forest, team] = await Promise.all([genealogyService.getTree(), genealogyService.getTeamInsights().catch(() => [])])
+    const insights = new Map<number, TeamMember>(team.map(t => [t.agent_ID, t]))
     const rawNodes: Node[] = []
     const rawEdges: Edge[] = []
-    for (const root of forest) flatten(root, null, rawNodes, rawEdges)
+    for (const root of forest) flatten(root, null, rawNodes, rawEdges, insights)
 
     nodes.value = rawNodes.length ? layout(rawNodes, rawEdges) : []
     edges.value = rawEdges
@@ -146,7 +152,11 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(loadTree)
+// Sales and team changes redraw the tree (accumulated sales, promotions, moves).
+useLiveRefresh(loadTree, ['sales'])
 </script>
 
 <style scoped>

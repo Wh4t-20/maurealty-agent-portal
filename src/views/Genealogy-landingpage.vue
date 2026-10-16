@@ -126,6 +126,8 @@
           </div>
         </div>
 
+        <TeamInsights @changed="onSaved" />
+
       </section>
 
       </div>
@@ -140,6 +142,8 @@
 import { ref, computed, onMounted } from 'vue'
 import Gen from '@/components/genealogy/genealogymodal.vue'
 import AddAgentModal from '@/components/genealogy/AddAgentModal.vue'
+import TeamInsights from '@/components/genealogy/TeamInsights.vue'
+import { useLiveRefresh } from '@/utils/liveRefresh'
 import { genealogyService, type GenealogyStats, type GenealogyAgent, type GenealogyNode, type AgentDetail } from '@/services/genealogyService'
 import { positionMap } from '@/assets/classes/agent'
 
@@ -258,6 +262,9 @@ function onSaved() {
 }
 
 onMounted(load)
+
+// Agents added, moved or promoted elsewhere refresh the page without a reload.
+useLiveRefresh(async () => { await load(); reloadKey.value++ }, ['agents', 'genealogy'])
 </script>
 
 

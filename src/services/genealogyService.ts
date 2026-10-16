@@ -6,6 +6,8 @@
 // At this scale (tens of agents) that's simpler and cheaper than a recursive
 // SQL CTE. Swap to an RPC/CTE if the roster ever grows large.
 import { supabase } from '../supabaseClient';
+import { rankOf, rankLabel, allowedUplineRanks, type Rank } from '../utils/ranks';
+import { allocatePayouts, type ChainMember, type PayoutRole } from '../utils/commissionAllocation';
 
 // A bare agent as it appears in the hierarchy. position is resolved from the
 // `positions` table when available; null while that table is unpopulated
@@ -13,6 +15,7 @@ import { supabase } from '../supabaseClient';
 interface PositionData {
   position: string;
   commission_rate: number | null;
+  promotion_sales_threshold?: number | null; // accumulated sales needed to be promoted INTO this position
 }
 export interface GenealogyAgent {
   agent_ID: number;
@@ -83,11 +86,16 @@ async function fetchGraph(): Promise<{
   edges: Edge[];
   positions: Map<number, PositionData>;
 }> {
-  const [agentsRes, edgesRes, posRes] = await Promise.all([
+  const [agentsRes, edgesRes, posResFull] = await Promise.all([
     supabase.from('agents').select(`${AGENT_FIELDS}, hire_date`),
     supabase.from('genealogy').select('upline_agent_ID, downline_agent_ID'),
-    supabase.from('positions').select('position_ID, position, commission_rate'),
+    supabase.from('positions').select('position_ID, position, commission_rate, promotion_sales_threshold'),
   ]);
+  // The threshold column comes with the roles migration; fall back to the old shape without it.
+  let posRes: { data: any[] | null; error: any } = posResFull as any;
+  if (posRes.error) {
+    posRes = (await supabase.from('positions').select('position_ID, position, commission_rate')) as any;
+  }
 
   if (agentsRes.error) throw agentsRes.error;
   if (edgesRes.error) throw edgesRes.error;
@@ -95,7 +103,13 @@ async function fetchGraph(): Promise<{
   if (posRes.error) console.warn('genealogy: positions lookup failed:', posRes.error);
 
   const positions = new Map<number, PositionData>();
-  for (const p of posRes.data || []) positions.set(p.position_ID, {position:p.position, commission_rate:p.commission_rate});
+  for (const p of posRes.data || []) {
+    positions.set(p.position_ID, {
+      position: p.position,
+      commission_rate: p.commission_rate,
+      promotion_sales_threshold: p.promotion_sales_threshold != null ? Number(p.promotion_sales_threshold) : null,
+    });
+  }
 
   return {
     agents: (agentsRes.data || []) as AgentRow[],
@@ -115,6 +129,158 @@ function toAgent(row: AgentRow, positions: Map<number, PositionData>): Genealogy
     profile_url: row.profile_url,
     commission_rate: positions.get(row.position_ID ?? -1)?.commission_rate ?? null,
   };
+}
+
+
+// ---------- Hierarchy rules ----------
+//  - A Partner Broker has no upline.
+//  - An Investment Manager can only report to a Partner Broker.
+//  - Each team has at most one Property Sales Supervisor. A "team" is everything below the
+//    topmost non-broker agent (a Partner Broker's direct reports each head their own team).
+//  - Promoting someone to Investment Manager detaches them from a non-broker upline
+//    (to Partner Broker: from any upline).
+type Graph = { agents: AgentRow[]; edges: Edge[]; positions: Map<number, PositionData> };
+
+const RANK_ORDER: Rank[] = ['specialist', 'supervisor', 'investment_manager', 'broker'];
+const FALLBACK_POSITION_ID: Record<Rank, number> = { specialist: 1, supervisor: 2, investment_manager: 3, broker: 4 };
+
+function uplineRuleError(rank: Rank, uplineRank: Rank): string | null {
+  if (!allowedUplineRanks(rank).includes(uplineRank)) {
+    return rank === 'broker'
+      ? 'A Partner Broker cannot have an upline.'
+      : 'An Investment Manager can only report to a Partner Broker.';
+  }
+  return null;
+}
+
+function rankOfAgent(row: AgentRow, positions: Map<number, PositionData>): Rank {
+  return rankOf(row.position_ID != null ? positions.get(row.position_ID)?.position : null, row.position_ID);
+}
+
+function positionIdForRank(rank: Rank, positions: Map<number, PositionData>): number {
+  for (const [id, p] of positions) if (rankOf(p.position, id) === rank) return id;
+  return FALLBACK_POSITION_ID[rank];
+}
+
+// Checks where an agent may sit. `agentId` null = a new agent. When `explicit` is false the
+// upline is just the one the agent already had; if a promotion makes it invalid it is dropped
+// (detached) instead of failing. An explicit choice that breaks a rule throws.
+function checkPlacement(
+  g: Graph, agentId: number | null, positionId: number, uplineId: number | null, explicit: boolean,
+): { uplineId: number | null; detached: boolean } {
+  const id = agentId ?? -1;
+  const rankMap = new Map<number, Rank>();
+  for (const a of g.agents) rankMap.set(a.agent_ID, rankOfAgent(a, g.positions));
+  const rank = rankOf(g.positions.get(positionId)?.position, positionId);
+  rankMap.set(id, rank);
+
+  if (uplineId === id) throw new Error('An agent cannot be its own upline.');
+
+  const oldChildren = new Map<number, number[]>();
+  for (const e of g.edges) oldChildren.set(e.upline_agent_ID, [...(oldChildren.get(e.upline_agent_ID) ?? []), e.downline_agent_ID]);
+
+  // Not below one of its own descendants.
+  if (uplineId != null && agentId != null) {
+    const stack = [agentId];
+    const seen = new Set<number>();
+    while (stack.length) {
+      const n = stack.pop()!;
+      if (n === uplineId) throw new Error('That agent is below this one — would create a loop.');
+      if (seen.has(n)) continue;
+      seen.add(n);
+      stack.push(...(oldChildren.get(n) ?? []));
+    }
+  }
+
+  let up = uplineId;
+  let detached = false;
+  if (up != null) {
+    const err = uplineRuleError(rank, rankMap.get(up) ?? 'specialist');
+    if (err) {
+      if (explicit) throw new Error(err);
+      up = null;
+      detached = true;
+    }
+  }
+
+  // The agent's own downlines must still be allowed under its (possibly new) rank.
+  const parentOf = new Map<number, number>();
+  for (const e of g.edges) if (e.downline_agent_ID !== id) parentOf.set(e.downline_agent_ID, e.upline_agent_ID);
+  if (up != null) parentOf.set(id, up);
+  const childrenOf = new Map<number, number[]>();
+  for (const [d, u] of parentOf) childrenOf.set(u, [...(childrenOf.get(u) ?? []), d]);
+
+  for (const child of childrenOf.get(id) ?? []) {
+    const err = uplineRuleError(rankMap.get(child) ?? 'specialist', rank);
+    if (err) throw new Error(`${err} (a downline of this agent would break that rule).`);
+  }
+
+  // One Supervisor per team (only checked when this agent's branch contains a Supervisor).
+  const subtree = (root: number): number[] => {
+    const out: number[] = [];
+    const stack = [root];
+    const seen = new Set<number>();
+    while (stack.length) {
+      const n = stack.pop()!;
+      if (seen.has(n)) continue;
+      seen.add(n);
+      out.push(n);
+      stack.push(...(childrenOf.get(n) ?? []));
+    }
+    return out;
+  };
+  if (subtree(id).some(n => rankMap.get(n) === 'supervisor')) {
+    let root = id;
+    const guard = new Set<number>([id]);
+    for (;;) {
+      const p = parentOf.get(root);
+      if (p == null || guard.has(p) || rankMap.get(p) === 'broker') break;
+      guard.add(p);
+      root = p;
+    }
+    const supervisors = subtree(root).filter(n => rankMap.get(n) === 'supervisor').length;
+    if (supervisors > 1) throw new Error('Each team can only have one Property Sales Supervisor.');
+  }
+
+  return { uplineId: up, detached };
+}
+
+// ---------- Team insights (accumulated sales, promotion progress, override map) ----------
+export interface OverrideLine {
+  agent_ID: number;
+  name: string;
+  role: PayoutRole;
+  rankLabel: string;
+  pct: number;          // % of the company commission of each payment
+}
+
+export interface TeamMember {
+  agent_ID: number;
+  name: string;
+  position_ID: number | null;
+  rank: Rank;
+  rankLabel: string;
+  rate: number;                 // position commission rate in %
+  uplineId: number | null;
+  directDownlines: number;
+  teamSize: number;             // everyone below, any depth
+  ownSales: number;             // completed sales (contract price)
+  accumulatedSales: number;     // own + everyone below
+  agentSharePct: number;        // % of the company commission the agent keeps on their own sale
+  overrides: OverrideLine[];    // who earns an override on this agent's sales, and how much
+  nextRankLabel: string | null;
+  nextPositionId: number | null;
+  threshold: number | null;     // accumulated sales needed for the next rank (null = not set)
+  progress: number;             // 0-100
+  eligible: boolean;            // reached the threshold (an admin still confirms the promotion)
+}
+
+export interface RankPosition {
+  position_ID: number;
+  position: string;
+  rank: Rank;
+  rate: number;
+  threshold: number | null;
 }
 
 export const genealogyService = {
@@ -167,6 +333,69 @@ export const genealogyService = {
     }
 
     return chain;
+  },
+
+  // The seller and EVERYONE above them (nearest first), each with rank and position rate.
+  // This is what the commission engine splits a payment across.
+  async getRoleChain(agentId: number): Promise<{ seller: ChainMember; ancestors: ChainMember[] }> {
+    const { agents, edges, positions } = await fetchGraph();
+
+    const agentById = new Map<number, AgentRow>();
+    for (const a of agents) agentById.set(a.agent_ID, a);
+    const uplineOf = new Map<number, number>();
+    for (const e of edges) uplineOf.set(e.downline_agent_ID, e.upline_agent_ID);
+
+    const member = (id: number): ChainMember => {
+      const row = agentById.get(id);
+      const pos = row?.position_ID != null ? positions.get(row.position_ID) : undefined;
+      return { agent_ID: id, rank: rankOf(pos?.position, row?.position_ID), rate: pos?.commission_rate ?? null };
+    };
+
+    const ancestors: ChainMember[] = [];
+    const seen = new Set<number>([agentId]);
+    let current = agentId;
+    for (;;) {
+      const up = uplineOf.get(current);
+      if (up == null || seen.has(up) || !agentById.has(up)) break;
+      seen.add(up);
+      ancestors.push(member(up));
+      current = up;
+    }
+    return { seller: member(agentId), ancestors };
+  },
+
+  // Walk downward from an agent: direct downlines first, then theirs, up to `levels`
+  // generations (default 2, matching the two upline levels that earn commission).
+  async getDownline(agentId: number, levels = 2): Promise<GenealogyAgent[]> {
+    const { agents, edges, positions } = await fetchGraph();
+
+    const agentById = new Map<number, AgentRow>();
+    for (const a of agents) agentById.set(a.agent_ID, a);
+
+    const downlinesOf = new Map<number, number[]>();
+    for (const e of edges) {
+      downlinesOf.set(e.upline_agent_ID, [...(downlinesOf.get(e.upline_agent_ID) ?? []), e.downline_agent_ID]);
+    }
+
+    const result: GenealogyAgent[] = [];
+    const seen = new Set<number>([agentId]);
+    let frontier = [agentId];
+
+    for (let level = 0; level < levels; level++) {
+      const next: number[] = [];
+      for (const id of frontier) {
+        for (const child of downlinesOf.get(id) ?? []) {
+          if (seen.has(child)) continue;
+          seen.add(child);
+          const row = agentById.get(child);
+          if (row) result.push(toAgent(row, positions));
+          next.push(child);
+        }
+      }
+      frontier = next;
+    }
+
+    return result;
   },
 
   // Landing-page stats, derived from the same flat fetch.
@@ -233,6 +462,10 @@ export const genealogyService = {
     agentData: Record<string, any>,
     uplineId?: number,
   ): Promise<{ success: boolean; agent_ID?: number }> {
+    // Hierarchy rules first (broker has no upline, IM only under a broker, one supervisor per team).
+    const placement = checkPlacement(await fetchGraph(), null, Number(agentData.position_ID), uplineId ?? null, true);
+    uplineId = placement.uplineId ?? undefined;
+
     const { data, error } = await supabase
       .from('agents')
       .insert([agentData])
@@ -286,6 +519,11 @@ export const genealogyService = {
   async setUpline(downlineId: number, uplineId: number | null): Promise<void> {
     if (uplineId === downlineId) throw new Error('An agent cannot be its own upline.');
 
+    // Hierarchy rules, using the agent's current position.
+    const g = await fetchGraph();
+    const me = g.agents.find(a => a.agent_ID === downlineId);
+    if (me?.position_ID != null) checkPlacement(g, downlineId, me.position_ID, uplineId, true);
+
     if (uplineId != null) {
       // Cycle guard: the proposed upline must not sit in the downline's subtree.
       const { edges } = await fetchGraph();
@@ -306,7 +544,11 @@ export const genealogyService = {
       }
     }
 
-    // Replace the single existing upline edge (downline is UNIQUE).
+    await this.replaceUplineEdge(downlineId, uplineId);
+  },
+
+  // Replace the single existing upline edge (downline is UNIQUE). No rule checks.
+  async replaceUplineEdge(downlineId: number, uplineId: number | null): Promise<void> {
     const { error: delErr } = await supabase
       .from('genealogy')
       .delete()
@@ -319,6 +561,149 @@ export const genealogyService = {
         .insert([{ upline_agent_ID: uplineId, downline_agent_ID: downlineId }]);
       if (insErr) throw insErr;
     }
+  },
+
+
+  // Save an agent's fields and upline together, enforcing the hierarchy rules. A promotion that
+  // makes the current upline invalid detaches the agent (returned as `detached`).
+  async updateAgentAndUpline(
+    id: number, patch: Record<string, any>, uplineId: number | null,
+  ): Promise<{ detached: boolean }> {
+    const g = await fetchGraph();
+    const current = g.edges.find(e => e.downline_agent_ID === id)?.upline_agent_ID ?? null;
+    const me = g.agents.find(a => a.agent_ID === id);
+    const positionId = Number(patch.position_ID ?? me?.position_ID);
+    const placement = checkPlacement(g, id, positionId, uplineId, uplineId !== current);
+
+    await this.updateAgent(id, patch);
+    if (placement.uplineId !== current) await this.replaceUplineEdge(id, placement.uplineId);
+    return { detached: placement.detached };
+  },
+
+  // Everyone with their rank, accumulated sales (own + all below), promotion progress and the
+  // override split that applies to their own sales.
+  async getTeamInsights(): Promise<TeamMember[]> {
+    const g = await fetchGraph();
+    const { data: saleRows, error } = await supabase
+      .from('sales')
+      .select('agent_ID, total_contract_price, status');
+    if (error) throw error;
+
+    const own = new Map<number, number>();
+    for (const r of (saleRows || []) as any[]) {
+      if ((r.status || '').toString().toLowerCase().trim() !== 'complete') continue;
+      own.set(r.agent_ID, (own.get(r.agent_ID) ?? 0) + (Number(r.total_contract_price) || 0));
+    }
+
+    const byId = new Map(g.agents.map(a => [a.agent_ID, a] as const));
+    const uplineOf = new Map<number, number>();
+    const childrenOf = new Map<number, number[]>();
+    for (const e of g.edges) {
+      if (!byId.has(e.upline_agent_ID) || !byId.has(e.downline_agent_ID)) continue;
+      uplineOf.set(e.downline_agent_ID, e.upline_agent_ID);
+      childrenOf.set(e.upline_agent_ID, [...(childrenOf.get(e.upline_agent_ID) ?? []), e.downline_agent_ID]);
+    }
+
+    const name = (a: AgentRow) => `${a.first_name} ${a.last_name}`.trim();
+    const chainMember = (a: AgentRow): ChainMember => ({
+      agent_ID: a.agent_ID,
+      rank: rankOfAgent(a, g.positions),
+      rate: a.position_ID != null ? g.positions.get(a.position_ID)?.commission_rate ?? null : null,
+    });
+
+    const below = (rootId: number): number[] => {
+      const out: number[] = [];
+      const seen = new Set<number>([rootId]);
+      const stack = [...(childrenOf.get(rootId) ?? [])];
+      while (stack.length) {
+        const n = stack.pop()!;
+        if (seen.has(n)) continue;
+        seen.add(n);
+        out.push(n);
+        stack.push(...(childrenOf.get(n) ?? []));
+      }
+      return out;
+    };
+
+    return g.agents.map((a): TeamMember => {
+      const me = chainMember(a);
+      const desc = below(a.agent_ID);
+      const ownSales = own.get(a.agent_ID) ?? 0;
+      const accumulated = ownSales + desc.reduce((sum, id) => sum + (own.get(id) ?? 0), 0);
+
+      // Ancestors, nearest first, then the override split for one payment (raw = 100 -> percentages).
+      const ancestors: ChainMember[] = [];
+      const seen = new Set<number>([a.agent_ID]);
+      for (let cur = uplineOf.get(a.agent_ID); cur != null && !seen.has(cur); cur = uplineOf.get(cur)) {
+        seen.add(cur);
+        const row = byId.get(cur);
+        if (row) ancestors.push(chainMember(row));
+      }
+      const split = allocatePayouts(100, me, ancestors);
+
+      const idx = RANK_ORDER.indexOf(me.rank);
+      const nextRank = RANK_ORDER[idx + 1] ?? null;
+      const nextPositionId = nextRank ? positionIdForRank(nextRank, g.positions) : null;
+      const threshold = nextPositionId != null ? g.positions.get(nextPositionId)?.promotion_sales_threshold ?? null : null;
+
+      return {
+        agent_ID: a.agent_ID,
+        name: name(a),
+        position_ID: a.position_ID,
+        rank: me.rank,
+        rankLabel: rankLabel(me.rank),
+        rate: me.rate ?? 0,
+        uplineId: uplineOf.get(a.agent_ID) ?? null,
+        directDownlines: (childrenOf.get(a.agent_ID) ?? []).length,
+        teamSize: desc.length,
+        ownSales,
+        accumulatedSales: accumulated,
+        agentSharePct: split[0]?.amount ?? 0,
+        overrides: split.slice(1).map(p => ({
+          agent_ID: p.agent_ID,
+          name: byId.get(p.agent_ID) ? name(byId.get(p.agent_ID)!) : `Agent #${p.agent_ID}`,
+          role: p.role,
+          rankLabel: p.rankLabel,
+          pct: p.amount,
+        })),
+        nextRankLabel: nextRank ? rankLabel(nextRank) : null,
+        nextPositionId,
+        threshold,
+        progress: threshold ? Math.min(100, Math.round((accumulated / threshold) * 100)) : 0,
+        eligible: threshold != null && threshold > 0 && accumulated >= threshold,
+      };
+    });
+  },
+
+  // Admin confirms a promotion to the next rank (never automatic).
+  async promoteAgent(agentId: number): Promise<{ detached: boolean; newRank: string }> {
+    const member = (await this.getTeamInsights()).find(m => m.agent_ID === agentId);
+    if (!member) throw new Error('Agent not found.');
+    if (!member.nextPositionId || !member.nextRankLabel) throw new Error('This agent is already at the top rank.');
+    if (!member.eligible) throw new Error('This agent has not reached the sales needed for the next rank.');
+    const { detached } = await this.updateAgentAndUpline(agentId, { position_ID: member.nextPositionId }, member.uplineId);
+    return { detached, newRank: member.nextRankLabel };
+  },
+
+  // The four ranks with their rate and the editable "accumulated sales to be promoted into it".
+  async getRankPositions(): Promise<RankPosition[]> {
+    const { positions } = await fetchGraph();
+    const list: RankPosition[] = [];
+    for (const [id, p] of positions) {
+      list.push({
+        position_ID: id, position: p.position, rank: rankOf(p.position, id),
+        rate: p.commission_rate ?? 0, threshold: p.promotion_sales_threshold ?? null,
+      });
+    }
+    return list.sort((a, b) => RANK_ORDER.indexOf(a.rank) - RANK_ORDER.indexOf(b.rank));
+  },
+
+  async setPromotionThreshold(positionId: number, threshold: number | null): Promise<void> {
+    const { error } = await supabase
+      .from('positions')
+      .update({ promotion_sales_threshold: threshold })
+      .eq('position_ID', positionId);
+    if (error) throw error;
   },
 
   // Count financial/listing rows that would block a hard delete.

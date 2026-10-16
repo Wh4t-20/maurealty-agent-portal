@@ -12,6 +12,8 @@
       </button>
     </div>
 
+    <p v-if="activities.length === 0" class="text-sm text-gray-500 dark:text-gray-400">No activity yet.</p>
+
     <div 
       v-for="act in activities.slice(0, 3)" 
       :key="act.id" 
