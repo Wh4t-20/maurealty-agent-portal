@@ -7,12 +7,101 @@
       <div class="flex flex-col md:flex-row md:items-center justify-between bg-white rounded-2xl p-6 shadow-sm mb-6 border border-sidebar-hover/20">
         <div>
           <strong><h1 class="text-2xl md:text-3xl font-bold text-maurealty-blue">COMMISSIONS MANAGEMENT</h1></strong>
-          <p class="text-sm text-gray-600 mt-1">Track, review, and claim your real estate commissions schedule.</p>
+          <p class="text-sm text-gray-600 mt-1">Track your commissions: get approved, request payment, and confirm once you are paid.</p>
         </div>
         <div class="mt-4 md:mt-0 flex items-center gap-3">
           <span class="px-3 py-1 bg-maurealty-green/10 text-maurealty-green font-semibold text-xs rounded-full uppercase tracking-wider">
             Active Portal
           </span>
+        </div>
+      </div>
+
+      <!-- ADMIN VIEW SWITCH: own commissions (claimable) vs everyone's (for approval) -->
+      <div v-if="isAdmin" class="bg-white rounded-2xl p-3 shadow-sm mb-3 border border-sidebar-hover/20">
+        <div class="flex items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+          <button
+            v-for="sc in scopes"
+            :key="sc.id"
+            @click="scope = sc.id"
+            :class="[
+              'px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0',
+              scope === sc.id
+                ? 'bg-maurealty-green text-white shadow-md'
+                : 'bg-background-gray text-sidebar-hover hover:bg-sidebar-hover/20'
+            ]"
+          >
+            {{ sc.label }}
+          </button>
+        </div>
+        <p class="text-xs text-gray-500 mt-2 px-1">
+          {{ scope === 'all'
+            ? 'Every agent’s commissions. Approve them, then release payment once an agent requests it.'
+            : 'Commissions you receive as the seller or as an upline (Upline 1, 2 or the broker).' }}
+        </p>
+      </div>
+
+      <!-- RECEIVABLES: claimed vs total commission (everyone's in the admin "All Agents" view) -->
+      <div class="bg-white rounded-2xl p-5 shadow-sm mb-3 border border-sidebar-hover/20">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div>
+            <span class="text-[11px] uppercase tracking-wider text-gray-500 font-medium">
+              {{ isAdmin && scope === 'all' ? 'Total Receivables (All Agents)' : 'My Receivables (received)' }}
+            </span>
+            <p class="text-2xl font-extrabold text-maurealty-green">
+              {{ peso(receivables.claimedAmount) }}
+              <span class="text-base font-semibold text-gray-500">received of {{ peso(receivables.totalAmount) }}</span>
+            </p>
+          </div>
+          <div class="text-xs text-gray-600 sm:text-right">
+            <p>{{ receivables.claimedCount }} of {{ receivables.totalCount }} payouts received</p>
+            <p>Yet to collect: <span class="font-semibold text-amber-600">{{ peso(receivables.pendingAmount) }}</span></p>
+          </div>
+        </div>
+        <div class="h-2 bg-background-gray rounded-full overflow-hidden mt-3">
+          <div class="h-full bg-maurealty-green transition-all" :style="{ width: receivablesPercent + '%' }"></div>
+        </div>
+
+        <div v-if="isAdmin && scope === 'all' && perAgent.length" class="mt-4 border-t border-gray-100 pt-3">
+          <span class="text-[11px] uppercase tracking-wider text-gray-500 font-medium">Per agent (received / total)</span>
+          <ul class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
+            <li v-for="a in perAgent" :key="a.id" class="flex items-center justify-between gap-3">
+              <span class="truncate text-gray-700" :title="a.name">{{ a.name }}</span>
+              <span class="shrink-0 font-semibold text-gray-800">
+                {{ peso(a.summary.claimedAmount) }} <span class="text-gray-400 font-normal">/ {{ peso(a.summary.totalAmount) }}</span>
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- PER-SALE FILTER: what has been collected and what is still to collect for one sale -->
+      <div class="bg-white rounded-2xl p-4 shadow-sm mb-3 border border-sidebar-hover/20">
+        <div class="flex flex-col md:flex-row md:items-center gap-3">
+          <label class="text-sm font-semibold text-sidebar-hover shrink-0" for="sale-filter">Filter by sale</label>
+          <select id="sale-filter" v-model="saleFilter"
+                  class="flex-1 min-w-0 py-2 px-3 rounded-md border border-gray-300 bg-white text-sm focus:outline-2 focus:outline-maurealty-blue">
+            <option value="all">All sales</option>
+            <option v-for="s in saleOptions" :key="s.id" :value="String(s.id)">
+              Sale #{{ s.id }} · {{ s.project }} ({{ s.summary.claimedCount }}/{{ s.summary.totalCount }} received)
+            </option>
+          </select>
+        </div>
+        <div v-if="saleSummary" class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+          <div class="rounded-lg bg-maurealty-green/10 p-3">
+            <span class="text-[11px] uppercase tracking-wider text-gray-500 block">Collected</span>
+            <span class="font-bold text-maurealty-green">{{ peso(saleSummary.claimedAmount) }}</span>
+            <span class="text-xs text-gray-500 block">{{ saleSummary.claimedCount }} payout(s)</span>
+          </div>
+          <div class="rounded-lg bg-amber-100/60 p-3">
+            <span class="text-[11px] uppercase tracking-wider text-gray-500 block">Yet to collect</span>
+            <span class="font-bold text-amber-700">{{ peso(saleSummary.pendingAmount) }}</span>
+            <span class="text-xs text-gray-500 block">{{ saleSummary.totalCount - saleSummary.claimedCount }} payout(s)</span>
+          </div>
+          <div class="rounded-lg bg-background-gray p-3">
+            <span class="text-[11px] uppercase tracking-wider text-gray-500 block">Sale total</span>
+            <span class="font-bold text-maurealty-blue">{{ peso(saleSummary.totalAmount) }}</span>
+            <span class="text-xs text-gray-500 block">{{ saleSummary.totalCount }} payout(s)</span>
+          </div>
         </div>
       </div>
 
@@ -47,8 +136,17 @@
           </div>
         </div>
 
+        <div v-if="loading" class="py-16 text-center text-sm text-gray-500">Loading commissions…</div>
+
+        <!-- LOAD ERROR: shown instead of an empty list so the cause is visible -->
+        <div v-else-if="loadError" class="py-12 px-4 text-center">
+          <p class="text-sm font-semibold text-red-600">Commissions could not be loaded.</p>
+          <p class="text-xs text-gray-600 mt-1 break-words">{{ loadError }}</p>
+          <p class="text-xs text-gray-500 mt-2">If it mentions a missing column, re-run the latest migration and then <code>notify pgrst, 'reload schema';</code>.</p>
+        </div>
+
         <!-- EMPTY STATE -->
-        <div v-if="filteredCommissions.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
+        <div v-else-if="filteredCommissions.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
           <div class="w-16 h-16 bg-background-gray text-sidebar-hover rounded-full flex items-center justify-center mb-4 text-2xl font-bold">
             ₱
           </div>
@@ -61,10 +159,17 @@
           <div
             v-for="comm in filteredCommissions"
             :key="comm.id"
-            class="bg-background-gray/40 border border-sidebar-hover/20 rounded-xl p-5 hover:shadow-md transition-all flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+            class="bg-background-gray/40 border border-sidebar-hover/20 rounded-xl p-5 hover:shadow-md transition-all grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[4.5rem_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)_11rem] gap-x-4 gap-y-3 items-center"
           >
-            <!-- DETAILS SECTION -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 flex-1">
+            <!-- One grid for every card (columns line up whatever the status); `contents` lets the
+                 cells below sit directly in it. On phones it becomes 2 columns, on tablets 3. -->
+            <div class="contents">
+              <!-- Payment index: 1/12, 2/12, ... -->
+              <div class="col-span-2 sm:col-span-3 lg:col-span-1 flex lg:flex-col items-baseline lg:items-start gap-2 lg:gap-0">
+                <span class="text-[11px] uppercase tracking-wider text-gray-500 font-medium">Payment</span>
+                <span class="text-xl font-extrabold text-maurealty-blue leading-tight">{{ comm.payment_no }}/{{ comm.payment_total }}</span>
+              </div>
+
               <!-- Project Name & Developer -->
               <div class="col-span-2 sm:col-span-1">
                 <span class="text-[11px] uppercase tracking-wider text-gray-500 block font-medium">Project / Developer</span>
@@ -72,13 +177,19 @@
                 <p class="text-xs text-gray-600 truncate" :title="comm.developer_name">{{ comm.developer_name }}</p>
               </div>
 
-              <!-- Agent Name & Role -->
+              <!-- Agent (the person receiving this commission) -->
               <div>
-                <span class="text-[11px] uppercase tracking-wider text-gray-500 block font-medium">Agent & Role</span>
+                <span class="text-[11px] uppercase tracking-wider text-gray-500 block font-medium">Agent</span>
                 <p class="text-sm font-semibold text-gray-800 truncate" :title="comm.agent_name">{{ comm.agent_name }}</p>
+              </div>
+
+              <!-- Role: Agent, Upline 1, Upline 2 or Upline 3 (broker), with the recipient's rank -->
+              <div>
+                <span class="text-[11px] uppercase tracking-wider text-gray-500 block font-medium">Role</span>
                 <span class="inline-block px-2 py-0.5 mt-1 text-[10px] font-bold rounded bg-sidebar-hover/10 text-maurealty-blue uppercase">
                   {{ comm.role }}
                 </span>
+                <p v-if="comm.rank" class="text-[11px] text-gray-600 mt-0.5 truncate" :title="comm.rank">Rank: {{ comm.rank }}</p>
               </div>
 
               <!-- Commission Amount -->
@@ -87,7 +198,7 @@
                 <p class="text-base font-extrabold text-maurealty-green">
                   ₱{{ comm.commission_amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                 </p>
-                <span class="text-[10px] text-gray-500">Pay No. {{ comm.payment_no }}</span>
+                <span v-if="comm.is_balance" class="text-[10px] text-gray-500">Remaining balance</span>
               </div>
 
               <!-- Due Date -->
@@ -97,199 +208,251 @@
                 <span 
                   :class="[
                     'text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block mt-0.5',
-                    isDueDateReached(comm.due_date) ? 'bg-maurealty-green/20 text-maurealty-green' : 'bg-amber-100 text-amber-700'
+                    isDue(comm) ? 'bg-maurealty-green/20 text-maurealty-green' : 'bg-amber-100 text-amber-700'
                   ]"
                 >
-                  {{ isDueDateReached(comm.due_date) ? 'Due Date Reached' : 'Pending Date' }}
+                  {{ comm.sale_status === 'complete' && !isDateReached(comm.due_date) ? 'Sale Complete' : isDue(comm) ? 'Due Date Reached' : 'Pending Date' }}
                 </span>
               </div>
 
-              <!-- Admin Approval Status -->
-              <div>
-                <span class="text-[11px] uppercase tracking-wider text-gray-500 block font-medium">Admin Approval</span>
-                <div class="mt-1 flex items-center gap-1.5">
-                  <span 
-                    :class="[
-                      'w-2.5 h-2.5 rounded-full',
-                      comm.is_admin_approved ? 'bg-maurealty-green' : 'bg-amber-500'
-                    ]"
-                  ></span>
-                  <span class="text-xs font-semibold" :class="comm.is_admin_approved ? 'text-maurealty-green' : 'text-amber-600'">
-                    {{ comm.is_admin_approved ? 'Approved' : 'Pending Approval' }}
-                  </span>
-                </div>
-                <!-- Admin Toggle Simulator Button for testing -->
-                <button 
-                  @click="toggleAdminApproval(comm.id)"
-                  class="text-[10px] text-maurealty-blue underline mt-1 hover:text-sidebar-hover cursor-pointer"
-                  title="Toggle Admin Approval status for testing"
-                >
-                  [Toggle Admin]
-                </button>
-              </div>
-
-              <!-- Claim Status Badge -->
+              <!-- Commission status -->
               <div>
                 <span class="text-[11px] uppercase tracking-wider text-gray-500 block font-medium">Status</span>
-                <span 
-                  :class="[
-                    'inline-block px-2.5 py-1 rounded-full text-xs font-bold mt-1',
-                    comm.status === 'Claimed' ? 'bg-gray-200 text-gray-700' :
-                    (isDueDateReached(comm.due_date) && comm.is_admin_approved) ? 'bg-maurealty-green text-white animate-pulse' : 'bg-gray-100 text-gray-500'
-                  ]"
-                >
-                  {{ comm.status }}
+                <span :class="['inline-block px-2.5 py-1 rounded-full text-xs font-bold mt-1', statusClass(comm.status)]">
+                  {{ STATUS_LABEL[comm.status] }}
                 </span>
+                <span v-if="comm.status === 'approved' && blockedBy(comm) !== null && !isAdmin" class="block text-[10px] text-amber-700 mt-0.5">Receive payment {{ blockedBy(comm) }} first</span>
+                <span v-else-if="comm.status === 'approved' && !isDue(comm)" class="block text-[10px] text-gray-500 mt-0.5">Request opens on the due date</span>
               </div>
             </div>
 
-            <!-- CLAIM BUTTON CONTAINER -->
-            <div class="flex items-center justify-end lg:justify-center border-t lg:border-t-0 pt-3 lg:pt-0">
-            <button
-                @click="handleClaimCommission(comm.id)"
-                :disabled="comm.status === 'Claimed' || !isDueDateReached(comm.due_date) || !comm.is_admin_approved"
-                :class="[
-                'w-44 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all shadow-sm flex items-center justify-center gap-2',
-                comm.status === 'Claimed'
-                    ? 'bg-gray-100 text-gray-500 cursor-default shadow-none border border-gray-200'
-                    : (isDueDateReached(comm.due_date) && comm.is_admin_approved)
-                    ? 'bg-maurealty-green hover:bg-maurealty-green/90 text-white cursor-pointer shadow-md'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                ]"
-                :title="getClaimButtonTooltip(comm)"
-            >
-                <!-- CLAIMED STATE -->
-                <template v-if="comm.status === 'Claimed'">
-                <span>✓ Claimed & Credited</span>
-                </template>
+            <!-- ACTIONS: approve (admin) -> request payment (recipient) -> release payment (admin) -> received (recipient) -->
+            <div class="col-span-2 sm:col-span-3 lg:col-span-1 flex flex-col items-stretch lg:items-center justify-center gap-2 border-t lg:border-t-0 pt-3 lg:pt-0">
+              <button v-if="isAdmin && comm.status === 'pending_approval'" class="action-btn border border-maurealty-blue text-maurealty-blue hover:bg-maurealty-blue hover:text-white" @click="handleApprove(comm.id)">
+                Approve commission
+              </button>
 
-                <!-- UNCLAIMED STATE -->
-                <template v-else>
-                <span>Claim</span>
-                <svg v-if="isDueDateReached(comm.due_date) && comm.is_admin_approved" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                </template>
-            </button>
+              <template v-if="comm.status === 'approved'">
+                <button v-if="canAgentAct(comm)" :disabled="!canRequest(comm)"
+                        :class="['action-btn', canRequest(comm) ? 'bg-maurealty-green text-white hover:bg-maurealty-green/90 shadow-md' : 'bg-gray-200 text-gray-400 cursor-not-allowed']"
+                        :title="requestTooltip(comm)"
+                        @click="requesting = comm">
+                  Request payment
+                </button>
+                <p v-else class="w-full text-center text-xs text-gray-500">Waiting for the agent to request payment</p>
+              </template>
+
+              <template v-if="comm.status === 'payment_requested'">
+                <button v-if="isAdmin" class="action-btn bg-maurealty-blue text-white hover:opacity-90 shadow-md" @click="releasing = comm">
+                  Release payment
+                </button>
+                <p v-else class="w-full text-center text-xs text-gray-500">Request sent. Waiting for the admin to release payment.</p>
+              </template>
+
+              <template v-if="comm.status === 'payment_released'">
+                <button class="action-btn bg-maurealty-green text-white hover:bg-maurealty-green/90 shadow-md animate-pulse" @click="viewing = comm">
+                  {{ canAgentAct(comm) ? 'View proof / Confirm' : 'View proof of payment' }}
+                </button>
+              </template>
+
+              <template v-if="comm.status === 'received'">
+                <p class="w-full text-center text-xs font-bold text-gray-500">✓ Received<template v-if="comm.claimed_at"><br /><span class="font-normal">{{ new Date(comm.claimed_at).toLocaleDateString('en-PH') }}</span></template></p>
+                <button v-if="comm.proof_urls.length" class="text-xs text-maurealty-blue underline cursor-pointer" @click="viewing = comm">View proof</button>
+              </template>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- POPUPS -->
+      <PaymentRequestModal v-if="requesting && me" :tab="requesting" :agent="me" @close="requesting = null" @submitted="afterChange(requesting!, 'Payment request sent to the admin.')" />
+      <ReleasePaymentModal v-if="releasing" :tab="releasing" :admin-agent-id="currentAgentId" @close="releasing = null" @released="afterChange(releasing!, 'Proof of payment sent. The agent has been notified.')" />
+      <ProofModal v-if="viewing" :tab="viewing" :can-confirm="canAgentAct(viewing) && viewing.status === 'payment_released'" @close="viewing = null" @received="afterChange(viewing!, 'Marked as received.')" />
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
 
-import { ref, computed } from 'vue';
-import { commissionService } from '@/services/commissionService';
-import type { CalculateCommissionPayload } from '@/assets/classes/commission';
+import { ref, computed, onMounted, watch } from 'vue';
+import { commissionService, summarizeTabs, STATUS_LABEL, type CommissionTab, type CommissionStatus } from '@/services/commissionService';
+import PaymentRequestModal from '@/components/commissions/PaymentRequestModal.vue';
+import ReleasePaymentModal from '@/components/commissions/ReleasePaymentModal.vue';
+import ProofModal from '@/components/commissions/ProofModal.vue';
+import { useLiveRefresh } from '@/utils/liveRefresh';
+import { authService } from '@/services/authService';
 
-interface CommissionItem {
-  id: string;
-  due_date: string;
-  commission_amount: number;
-  agent_name: string;
-  role: 'Agent' | 'Upline 1' | 'Upline 2';
-  project_name: string;
-  developer_name: string;
-  is_admin_approved: boolean;
-  status: 'Ready' | 'Locked' | 'Claimed';
-  payment_no: number;
-}
+// Tabs come from the `commissions` table, which is filled when a sale is approved
+// (see salesService.generateCommissionTabs). Each has a status in the payment flow.
+type CommissionItem = CommissionTab;
+
+const commissions_list = ref<CommissionItem[]>([]);
+const loading = ref(true);
+const loadError = ref('');
+
+// Who is looking. Admins can see and approve everything, but only claim their own tabs.
+const isAdmin = ref(false);
+const currentAgentId = ref<number | null>(null);
+const me = ref<{ first_name: string; middle_name?: string | null; last_name: string } | null>(null);
+
+// Popups
+const requesting = ref<CommissionItem | null>(null);
+const releasing = ref<CommissionItem | null>(null);
+const viewing = ref<CommissionItem | null>(null);
+
+let adminScopeSet = false;
+
+// Admin view: "mine" = tabs I receive, "all" = everyone's tabs (for approval).
+const scope = ref<'mine' | 'all'>('mine');
+const scopes = [
+  { id: 'mine', label: 'My Commissions' },
+  { id: 'all', label: 'All Agents (Approval)' }
+] as const;
 
 // Active Filter Tab state
 const active_tab = ref<string>('all');
 
 // Filter tabs definition
-const filter_tabs = [
+const filter_tabs: { id: string; label: string }[] = [
   { id: 'all', label: 'All Commissions' },
-  { id: 'ready', label: 'Ready to Claim' },
-  { id: 'locked', label: 'Locked / Pending' },
-  { id: 'claimed', label: 'Claimed' }
+  { id: 'pending_approval', label: 'Awaiting Approval' },
+  { id: 'approved', label: 'Approved' },
+  { id: 'payment_requested', label: 'Payment Requested' },
+  { id: 'payment_released', label: 'Payment Released' },
+  { id: 'received', label: 'Received' }
 ];
 
-// Current date string for display and comparison
-const current_date_string = ref<string>('2026-10-12');
+const statusClass = (st: CommissionStatus) =>
+  st === 'received' ? 'bg-gray-200 text-gray-700'
+  : st === 'payment_released' ? 'bg-maurealty-green text-white'
+  : st === 'payment_requested' ? 'bg-blue-100 text-blue-700'
+  : st === 'approved' ? 'bg-maurealty-green/20 text-maurealty-green'
+  : 'bg-amber-100 text-amber-700';
 
-// Mock Data initialized utilizing the commissionService calculation patterns
-const commissions_list = ref<CommissionItem[]>([
-  {
-    id: 'comm-1',
-    due_date: '2026-10-01',
-    commission_amount: 67500.00,
-    agent_name: 'Cole de Unson',
-    role: 'Agent',
-    project_name: 'Grand Tower Manila',
-    developer_name: 'Megaworld Corporation',
-    is_admin_approved: true,
-    status: 'Ready',
-    payment_no: 1
-  },
-  {
-    id: 'comm-2',
-    due_date: '2026-10-15',
-    commission_amount: 11250.00,
-    agent_name: 'Cole de Unson',
-    role: 'Upline 1',
-    project_name: 'Grand Tower Manila',
-    developer_name: 'Megaworld Corporation',
-    is_admin_approved: true,
-    status: 'Locked',
-    payment_no: 1
-  },
-  {
-    id: 'comm-3',
-    due_date: '2026-11-01',
-    commission_amount: 11250.00,
-    agent_name: 'Cole de Unson',
-    role: 'Upline 2',
-    project_name: 'Grand Tower Manila',
-    developer_name: 'Megaworld Corporation',
-    is_admin_approved: false,
-    status: 'Locked',
-    payment_no: 1
-  },
-  {
-    id: 'comm-4',
-    due_date: '2026-09-15',
-    commission_amount: 45000.00,
-    agent_name: 'Cole de Unson',
-    role: 'Agent',
-    project_name: 'Ayala Center Residences',
-    developer_name: 'Ayala Land Premier',
-    is_admin_approved: true,
-    status: 'Claimed',
-    payment_no: 1
-  },
-  {
-    id: 'comm-5',
-    due_date: '2026-10-20',
-    commission_amount: 33750.00,
-    agent_name: 'Cole de Unson',
-    role: 'Agent',
-    project_name: 'Seaside Towers Cebu',
-    developer_name: 'SM Development Corporation',
-    is_admin_approved: false,
-    status: 'Locked',
-    payment_no: 2
-  }
-]);
-
-/**
- * Checks if the due date has been reached relative to the current date.
- * 
- * @param {string} dueDate - The target due date string (YYYY-MM-DD).
- * @returns {boolean} True if current date is equal or past due date.
- */
-function isDueDateReached(dueDate: string): boolean {
-  const current = new Date(current_date_string.value);
-  const due = new Date(dueDate);
-  return current >= due;
+// Today's date (YYYY-MM-DD, local time) for display and comparison
+function todayString(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
+const current_date_string = ref<string>(todayString());
+
+// True when the calendar due date has arrived. YYYY-MM-DD strings compare correctly.
+function isDateReached(dueDate: string): boolean {
+  return current_date_string.value >= dueDate;
+}
+
+// A tab counts as due when its date has arrived, or when the sale is complete
+// (every remaining tab becomes claimable once the sale is completed).
+function isDue(tab: CommissionTab): boolean {
+  return tab.sale_status === 'complete' || isDateReached(tab.due_date);
+}
+
+// Requesting and receiving payment is for the agent only: the recipient of the tab, never an admin.
+// (Approving and releasing payment are the admin-only steps.)
+function canAgentAct(tab: CommissionTab): boolean {
+  return !isAdmin.value && isOwnTab(tab);
+}
+
+// Payments of a sale are received in order: a later payment can't be requested until the
+// earlier ones (same sale, same person) are received. Returns the first earlier payment still
+// open, or null when nothing blocks.
+function blockedBy(tab: CommissionTab): number | null {
+  const open = commissions_list.value
+    .filter(t => t.sale_ID === tab.sale_ID && t.recipient_agent_ID === tab.recipient_agent_ID
+      && t.payment_no < tab.payment_no && t.status !== 'received')
+    .map(t => t.payment_no);
+  return open.length ? Math.min(...open) : null;
+}
+
+const canRequest = (tab: CommissionTab) => isDue(tab) && blockedBy(tab) === null;
+
+function requestTooltip(tab: CommissionTab): string {
+  const b = blockedBy(tab);
+  if (b !== null) return `Receive payment ${b} of this sale first.`;
+  if (!isDue(tab)) return 'You can request payment once the due date is reached (or the sale is complete).';
+  return 'Send your details to the admin';
+}
+
+// The tab belongs to the signed-in person.
+function isOwnTab(tab: CommissionTab): boolean {
+  return tab.recipient_agent_ID === currentAgentId.value;
+}
+
+// Admin loads everyone's tabs; an agent loads only the tabs they receive.
+async function loadCommissions(silent = false) {
+  if (!silent) loading.value = true;
+  try {
+    const agent = await authService.getCurrentAgent();
+    isAdmin.value = !!agent?.admin_access;
+    currentAgentId.value = agent?.agent_ID ?? null;
+    me.value = agent ? { first_name: agent.first_name, middle_name: (agent as any).middle_name ?? null, last_name: agent.last_name } : null;
+    // An admin has no payouts of their own to act on, so they start on everyone's commissions.
+    if (isAdmin.value && !adminScopeSet) { scope.value = 'all'; adminScopeSet = true; }
+    loadError.value = '';
+    const tabs = await commissionService.getTabs(isAdmin.value ? undefined : agent?.agent_ID);
+    commissions_list.value = tabs;
+  } catch (e: any) {
+    console.error('Failed to load commissions:', e);
+    loadError.value = e?.message || String(e);
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(() => loadCommissions());
+
+// Stay current without a reload (sales approved/completed, tabs approved or claimed elsewhere).
+useLiveRefresh(() => loadCommissions(true), ['commissions', 'sales']);
+
+// What this person is looking at: an admin in "mine" scope sees only their own tabs.
+const scopedList = computed(() =>
+  isAdmin.value && scope.value === 'mine'
+    ? commissions_list.value.filter(c => isOwnTab(c))
+    : commissions_list.value
+);
+
+// --- Receivables (claimed vs total) ---
+const peso = (n: number) => '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const receivables = computed(() => summarizeTabs(scopedList.value));
+const receivablesPercent = computed(() =>
+  receivables.value.totalAmount > 0 ? Math.min(100, Math.round((receivables.value.claimedAmount / receivables.value.totalAmount) * 100)) : 0
+);
+
+// Admin "All Agents" view: claimed / total per recipient.
+const perAgent = computed(() => {
+  const groups = new Map<number, { id: number; name: string; tabs: CommissionTab[] }>();
+  for (const t of scopedList.value) {
+    const g = groups.get(t.recipient_agent_ID) ?? { id: t.recipient_agent_ID, name: t.agent_name, tabs: [] };
+    g.tabs.push(t);
+    groups.set(t.recipient_agent_ID, g);
+  }
+  return [...groups.values()]
+    .map(g => ({ id: g.id, name: g.name, summary: summarizeTabs(g.tabs) }))
+    .sort((a, b) => b.summary.totalAmount - a.summary.totalAmount);
+});
+
+// --- Per-sale filter ---
+const saleFilter = ref<string>('all');
+watch(scope, () => { saleFilter.value = 'all'; });
+const saleOptions = computed(() => {
+  const groups = new Map<number, { id: number; project: string; tabs: CommissionTab[] }>();
+  for (const t of scopedList.value) {
+    const g = groups.get(t.sale_ID) ?? { id: t.sale_ID, project: t.project_name, tabs: [] };
+    g.tabs.push(t);
+    groups.set(t.sale_ID, g);
+  }
+  return [...groups.values()]
+    .map(g => ({ id: g.id, project: g.project, summary: summarizeTabs(g.tabs) }))
+    .sort((a, b) => b.id - a.id);
+});
+const saleSummary = computed(() =>
+  saleFilter.value === 'all' ? null : saleOptions.value.find(o => String(o.id) === saleFilter.value)?.summary ?? null
+);
+
+// What the list and the status counters show: the scope, narrowed to the chosen sale.
+const visibleList = computed(() =>
+  saleFilter.value === 'all' ? scopedList.value : scopedList.value.filter(c => String(c.sale_ID) === saleFilter.value)
+);
 
 /**
  * Gets the active tab header label.
@@ -299,6 +462,11 @@ const getActiveTabLabel = computed(() => {
   return found ? found.label : 'Commissions';
 });
 
+// Does a tab belong under a given filter tab?
+function matchesFilter(c: CommissionItem, tabId: string): boolean {
+  return tabId === 'all' || c.status === tabId;
+}
+
 /**
  * Counts commissions matching specific status filter category.
  * 
@@ -306,41 +474,19 @@ const getActiveTabLabel = computed(() => {
  * @returns {number} Count of items.
  */
 function countCommissionsByStatus(tabId: string): number {
-  if (tabId === 'all') return commissions_list.value.length;
-  if (tabId === 'ready') {
-    return commissions_list.value.filter(c => c.status !== 'Claimed' && isDueDateReached(c.due_date) && c.is_admin_approved).length;
-  }
-  if (tabId === 'locked') {
-    return commissions_list.value.filter(c => c.status !== 'Claimed' && (!isDueDateReached(c.due_date) || !c.is_admin_approved)).length;
-  }
-  if (tabId === 'claimed') {
-    return commissions_list.value.filter(c => c.status === 'Claimed').length;
-  }
-  return 0;
+  return visibleList.value.filter(c => matchesFilter(c, tabId)).length;
 }
 
 // this filters the commission tabs
 const filteredCommissions = computed(() => {
     // 1. Filter items by active tab
-    const list = commissions_list.value.filter(comm => {
-        if (active_tab.value === 'ready') {
-        return comm.status !== 'Claimed' && comm.is_admin_approved && isDueDateReached(comm.due_date);
-        }
-        if (active_tab.value === 'locked') {
-        return comm.status !== 'Claimed' && (!comm.is_admin_approved || !isDueDateReached(comm.due_date));
-        }
-        if (active_tab.value === 'claimed') {
-        return comm.status === 'Claimed';
-        }
-        // Default for 'all' tab
-        return true;
-    });
+    const list = visibleList.value.filter(comm => matchesFilter(comm, active_tab.value));
 
     // 2. Multi-level sort: Unclaimed first -> Due Date -> Developer Name
     return list.sort((a, b) => {
         // 1st Priority: Unclaimed (0) before Claimed (1)
-        const aClaimed = a.status === 'Claimed' ? 1 : 0;
-        const bClaimed = b.status === 'Claimed' ? 1 : 0;
+        const aClaimed = a.status === 'received' ? 1 : 0;
+        const bClaimed = b.status === 'received' ? 1 : 0;
         if (aClaimed !== bClaimed) {
         return aClaimed - bClaimed;
         }
@@ -360,47 +506,47 @@ const filteredCommissions = computed(() => {
 });
 
 /**
- * Generates appropriate tooltip text for the claim button.
+ * Admin approves a commission so its recipient can claim it.
  * 
- * @param {CommissionItem} comm - The commission item object.
- * @returns {string} Tooltip description.
+ * @param {number} commId - The commission ID.
  */
-function getClaimButtonTooltip(comm: CommissionItem): string {
-  const dateReached = isDueDateReached(comm.due_date);
-  if (!dateReached && !comm.is_admin_approved) {
-    return 'Locked: Due date not reached and pending admin approval.';
-  }
-  if (!dateReached) {
-    return 'Locked: Due date has not been reached yet.';
-  }
-  if (!comm.is_admin_approved) {
-    return 'Locked: Waiting for admin approval.';
-  }
-  return 'Ready to claim!';
-}
-
-/**
- * Toggles the admin approval status of a commission item (for testing sandbox).
- * 
- * @param {string} commId - The commission ID.
- */
-function toggleAdminApproval(commId: string): void {
+async function handleApprove(commId: number): Promise<void> {
   const item = commissions_list.value.find(c => c.id === commId);
-  if (item) {
-    item.is_admin_approved = !item.is_admin_approved;
+  if (!item || !isAdmin.value) return;
+
+  try {
+    const ok = await commissionService.approveTab(commId);
+    if (!ok) {
+      alert('Approval failed — check permissions.');
+      return;
+    }
+    item.is_admin_approved = true;
+    item.status = 'approved';
+  } catch (e) {
+    console.error('Failed to approve commission:', e);
+    alert('Something went wrong approving this commission.');
   }
 }
 
-/**
- * Handles the claiming action for an individual commission.
- * 
- * @param {string} commId - The commission ID.
- */
-function handleClaimCommission(commId: string): void {
-  const item = commissions_list.value.find(c => c.id === commId);
-  if (item && isDueDateReached(item.due_date) && item.is_admin_approved) {
-    item.status = 'Claimed';
-    alert(`Success! Commission of ₱${item.commission_amount.toLocaleString()} for ${item.project_name} has been successfully claimed and queued for release.`);
-  }
+// After a request / release / receipt: close the popup, show a note and reload.
+async function afterChange(_tab: CommissionItem, message: string): Promise<void> {
+  requesting.value = null;
+  releasing.value = null;
+  viewing.value = null;
+  await loadCommissions(true);
+  alert(message);
 }
 </script>
+
+<style scoped>
+.action-btn {
+  width: 100%;
+  max-width: 11rem;
+  padding: 0.6rem 0;
+  border-radius: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: all 0.15s;
+  cursor: pointer;
+}
+</style>

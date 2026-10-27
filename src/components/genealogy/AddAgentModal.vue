@@ -61,12 +61,13 @@
           </label>
           <label class="flex flex-col gap-1">
             <span class="text-gray-500">Upline (sponsor)</span>
-            <select v-model.number="uplineId" class="form-input">
+            <select v-model.number="uplineId" class="form-input" :disabled="selectedRank === 'broker'">
               <option :value="null">— none (team root) —</option>
               <option v-for="a in uplineOptions" :key="a.agent_ID" :value="a.agent_ID">
-                {{ a.first_name }} {{ a.last_name }}
+                {{ a.first_name }} {{ a.last_name }} ({{ rankText(a) }})
               </option>
             </select>
+            <span class="text-xs text-gray-400">{{ uplineHint }}</span>
           </label>
           <label class="flex items-center gap-2 sm:col-span-2">
             <input type="checkbox" v-model="form.admin_access" />
@@ -89,9 +90,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { genealogyService, type GenealogyAgent, type AgentDetail } from '@/services/genealogyService'
 import { positionMap, getAge } from '@/assets/classes/agent'
+import { rankOf, rankLabel, allowedUplineRanks } from '@/utils/ranks'
 import defaultSettings from '@/assets/defaultSettings.json'
 
 // `agent` present = edit mode (prefill + update); absent = add mode.
@@ -123,9 +125,27 @@ const saving = ref(false)
 const error = ref('')
 
 // Any existing agent can be an upline, except the agent being edited (no self-parent).
-const uplineOptions = computed(() =>
-  isEdit.value ? agents.value.filter((a) => a.agent_ID !== props.agent!.agent_ID) : agents.value,
+// The position chosen decides who can be the upline: a Partner Broker has none, an Investment
+// Manager can only report to a Partner Broker.
+const selectedRank = computed(() => rankOf(form.value.position_ID != null ? positionMap[form.value.position_ID] : null, form.value.position_ID))
+const rankText = (a: GenealogyAgent) => rankLabel(rankOf(a.position, a.position_ID))
+const uplineOptions = computed(() => {
+  const allowed = allowedUplineRanks(selectedRank.value)
+  return agents.value.filter((a) =>
+    (!isEdit.value || a.agent_ID !== props.agent!.agent_ID) &&
+    allowed.includes(rankOf(a.position, a.position_ID)),
+  )
+})
+const uplineHint = computed(() =>
+  selectedRank.value === 'broker' ? 'A Partner Broker has no upline.'
+  : selectedRank.value === 'investment_manager' ? 'An Investment Manager can only report to a Partner Broker.'
+  : isEdit.value ? 'Changing to Investment Manager detaches this agent from a non-broker upline.' : '',
 )
+
+// Drop an upline that the chosen position no longer allows.
+watch(selectedRank, () => {
+  if (uplineId.value != null && !uplineOptions.value.some(a => a.agent_ID === uplineId.value)) uplineId.value = null
+})
 
 onMounted(async () => {
   try {
@@ -174,10 +194,8 @@ async function save() {
         middle_name: form.value.middle_name || null,
         age: getAge(form.value.birth_date), // keep age consistent with birth_date
       }
-      await genealogyService.updateAgent(props.agent!.agent_ID, patch)
-      if (uplineId.value !== originalUplineId.value) {
-        await genealogyService.setUpline(props.agent!.agent_ID, uplineId.value)
-      }
+      const { detached } = await genealogyService.updateAgentAndUpline(props.agent!.agent_ID, patch, uplineId.value)
+      if (detached) alert('This agent was detached from their previous upline because of the new position.')
     } else {
       const payload = {
         ...form.value,

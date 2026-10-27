@@ -12,12 +12,22 @@
             <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#0066ff] dark:bg-[#0052cc] text-white hover:bg-[#0052cc] dark:hover:bg-[#0066ff]" @click="addListing">+ Add Listing</button>
             <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#e6f4ea] dark:bg-[#1e2821] text-[#1e8e3e] dark:text-green-500 hover:bg-[#d4eeda] dark:hover:bg-[#385440]" @click="activeModal = 'addAgent'">+ Add Agent</button>
             <div class="w-px h-6 bg-[#e1e4e8] mx-1"></div>
+
+            <!-- Admin: own numbers or the whole company's -->
+            <div v-if="isAdmin" class="flex items-center rounded-md border border-[#dcdcdc] dark:border-[#2d2d2d] overflow-hidden">
+              <button
+                v-for="sc in scopes" :key="sc.id"
+                @click="setScope(sc.id)"
+                :class="['px-3 py-1.5 text-[0.85rem] font-medium cursor-pointer transition-colors',
+                  scope === sc.id ? 'bg-[#0066ff] text-white' : 'bg-white dark:bg-background-dark-gray text-[#4a4a4a] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800']"
+              >{{ sc.label }}</button>
+            </div>
             
             <div class="flex items-center gap-1">
               <input 
                 type="month" 
                 v-model="selectedMonth" 
-                @change="loadDashboardStats"
+                @change="refresh"
                 class="px-4 py-1.5 rounded-md font-medium text-[0.9rem] cursor-pointer border border-[#dcdcdc] dark:border-[#2d2d2d] bg-white dark:bg-background-dark-gray text-[#4a4a4a] dark:text-white outline-none focus:border-[#0066ff] focus:ring-1 focus:ring-[#0066ff] transition-all duration-200 ease-in-out"
                 title="Filter by month"
               />
@@ -35,7 +45,22 @@
       </header>
 
       <div class="p-8 md:px-10">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Alerts: commission approvals, payment requests and proofs of payment -->
+        <div v-if="alerts.length" class="flex flex-col gap-3 mb-6">
+          <button
+            v-for="(al, i) in alerts" :key="i" type="button"
+            class="flex items-center gap-3 w-full text-left px-4 py-3 rounded-xl border cursor-pointer transition hover:shadow-md"
+            :class="al.tone === 'action'
+              ? 'bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-700 dark:text-amber-100'
+              : 'bg-blue-50 border-blue-200 text-blue-900 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-100'"
+            @click="router.push(al.to)"
+          >
+            <span class="text-lg">{{ al.tone === 'action' ? '🔔' : 'ℹ️' }}</span>
+            <span class="flex-1 text-sm font-medium">{{ al.text }}</span>
+            <span class="text-sm font-semibold underline shrink-0">Open</span>
+          </button>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <StatCard 
             v-for="stat in metrics" 
             :key="stat.label" 
@@ -44,22 +69,41 @@
             class="cursor-pointer hover:shadow-md transition-shadow"
           />
         </div>
-        <!-- Hid this kay samok pa tan awn -->
-        <!-- <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8"> 
+        <!-- Commissions (from the Commissions page) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <StatCard 
+            v-for="stat in commissionMetrics" 
+            :key="stat.label" 
+            :stat="stat" 
+            @click="expandMetric(stat)" 
+            class="cursor-pointer hover:shadow-md transition-shadow"
+          />
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8"> 
           <div class="flex flex-col gap-8">
-            <SalesPerformance @open-details="openDetails(performanceData, 'performance')" />
+            <SalesPerformance
+              :bars="performance.bars"
+              :sold="performance.sold"
+              :avg-deal="performance.avgDeal"
+              @open-details="router.push('/sales')"
+            />
+            <CommissionHistory :history="history" />
+            <!-- Recent Activity is hidden for now (not removed). To bring it back, uncomment this block and
+                 the RecentActivity import in the script; `activities` is still built by dashboardService.
             <RecentActivity 
               :activities="activities" 
-              @view-item="(item) => openDetails(item, 'activity')"
-              @view-all="openDetails(activities, 'activity_all')"
+              @view-item="(item: any) => router.push(item.to || '/sales')"
+              @view-all="router.push('/sales')"
             />
+            -->
           </div>
 
           <div class="flex flex-col gap-8">
-            <GenealogyCard :downline="downline" @view-full="openDetails(null, 'genealogy_full')" />
-            <Reminders :reminders="reminders" @view-all="openDetails(reminders, 'reminders_all')" />
+            <GenealogyCard :upline="upline" :downline="downline" @view-full="router.push('/genealogy')" />
+            <Reminders :reminders="reminders" @open="(r) => router.push(r.to)" />
           </div>
-        </div> -->
+        </div>
       </div>
     </div>
 
@@ -71,7 +115,7 @@
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
-      <div v-if="selectedItem || selectedMetric || activeModal" class="fixed inset-0 w-full h-full bg-[#0a3d62]/70 backdrop-blur-sm flex items-center justify-center z-[9999]" @click.self="closeAll">
+      <div v-if="selectedMetric || activeModal" class="fixed inset-0 w-full h-full bg-[#0a3d62]/70 backdrop-blur-sm flex items-center justify-center z-[9999]" @click.self="closeAll">
         
         <div v-if="activeModal" class="bg-white dark:bg-black rounded-[24px] relative p-6 w-full max-w-lg shadow-xl">
           <button class="absolute top-4 right-5 text-gray-400 dark:text-gray-700 hover:text-gray-700 dark:hover:text-gray-400 text-xl font-bold" @click="activeModal = null">✕</button>
@@ -93,21 +137,20 @@
                   <th class="pb-3 font-medium">Date</th>
                   <th class="pb-3 font-medium">Title</th>
                   <th class="pb-3 font-medium">Status</th>
-                  <th class="pb-3 font-medium text-right" v-if="selectedMetric.label.includes('GROSS') || selectedMetric.label.includes('RECEIVABLES')">Amount</th>
+                  <th class="pb-3 font-medium text-right" v-if="selectedMetric.showAmount">Amount</th>
                 </tr>
               </thead>
               <tbody>
-                <!-- UPDATED: Now uses paginatedDetails instead of selectedMetric.details -->
-                <tr v-for="(item, index) in paginatedDetails" :key="index" class="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                  <td class="py-3 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(item.created_at) }}</td>
-                  <td class="py-3 text-sm text-gray-700 dark:text-gray-300">{{ item.listing_title || item.main_listings?.listing_title || item.main_listings?.[0]?.listing_title }}</td>
+                                <tr v-for="(item, index) in paginatedDetails" :key="index" class="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
+                  <td class="py-3 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(item.date) }}</td>
+                  <td class="py-3 text-sm text-gray-700 dark:text-gray-300">{{ item.title }}</td>
                   <td class="py-3 text-sm">
                     <span class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                      {{ item.sales?.[0]?.status || item.sales?.status || item.status || 'N/A' }}
+                      {{ item.status || 'N/A' }}
                     </span>
                   </td>
-                  <td class="py-3 text-sm text-right font-medium text-gray-900 dark:text-white" v-if="selectedMetric.label.includes('GROSS') || selectedMetric.label.includes('RECEIVABLES')">
-                    {{ formatCurrency(Number(item.net_commission) || 0) }}
+                  <td class="py-3 text-sm text-right font-medium text-gray-900 dark:text-white" v-if="selectedMetric.showAmount">
+                    {{ formatCurrency(item.amount || 0) }}
                   </td>
                 </tr>
               </tbody>
@@ -145,10 +188,6 @@
           </div>
         </div>
 
-        <div v-else-if="selectedItem" class="bg-white dark:bg-black rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl">
-           <button class="absolute top-4 right-5 text-gray-400 dark:text-gray-700 hover:text-gray-700 dark:hover:text-gray-400 text-xl font-bold" @click="closeAll">✕</button>
-        </div>
-
       </div>
     </transition>
   </div>
@@ -159,22 +198,39 @@ import { ref, watch, onMounted, computed } from 'vue';
 import { supabase } from '@/supabaseClient';
 import { type AgentProfile, positionMap } from '@/assets/classes/agent';
 import { useRouter } from 'vue-router'
+import { genealogyService, type GenealogyAgent } from '@/services/genealogyService';
+import {
+  getDashboardData, buildDashboard,
+  type Metric, type Activity, type Reminder, type Performance, type HistoryItem, type DashAlert
+} from '@/services/dashboardService';
 
 // Component Imports
 import StatCard from '@/components/dashboard/DashboardStatCard.vue';
 import SalesPerformance from '@/components/dashboard/SalesPerfromance.vue';
-import RecentActivity from '@/components/dashboard/RecentActivity.vue';
+// import RecentActivity from '@/components/dashboard/RecentActivity.vue'; // hidden for now, see the template
+import CommissionHistory from '@/components/dashboard/CommissionHistory.vue';
+import { useLiveRefresh } from '@/utils/liveRefresh';
 import GenealogyCard from '@/components/dashboard/GenealogyCard.vue';
 import Reminders from '@/components/dashboard/Reminders.vue';
 import AddAgent from '@/components/dashboard/AddAgent.vue';
 
+// The numbers on this page are built from the same tables the rest of the app writes to
+// (sales, commissions, listings, genealogy) in dashboardService, so they always match the
+// Sales Report, Commissions and Listings pages.
+
 // State
-const selectedItem = ref<any>(null);
-const selectedMetric = ref<any>(null);
+const selectedMetric = ref<Metric | null>(null);
 const activeModal = ref<string | null>(null);
-const modalType = ref('');
-const agent = ref<Partial<AgentProfile>>({});
+const agent = ref<Partial<AgentProfile & { admin_access: boolean }>>({});
 const router = useRouter();
+
+// Admins can look at their own numbers or the whole company's. Agents only see their own.
+const isAdmin = computed(() => !!agent.value.admin_access);
+const scope = ref<'mine' | 'all'>('mine');
+const scopes = [
+  { id: 'mine', label: 'My Stats' },
+  { id: 'all', label: 'All Agents' }
+] as const;
 
 // Filter State
 const selectedMonth = ref('');
@@ -206,38 +262,40 @@ const nextPage = () => {
   if (currentPage.value < totalPages.value) currentPage.value++;
 };
 
-// Data
-const metrics = ref([
-  { label: 'MONTHLY LISTINGS', value: 'Loading', trend: 'Loading', sub: 'vs previous month', type: '...', details: [] as any[] },
-  { label: 'MONTHLY GROSS', value: 'Loading', trend: '...', sub: 'vs previous month', type: '...', details: [] as any[] },
-  { label: 'PROPERTIES SOLD', value: 'Loading', trend: '...', sub: 'vs previous month', type: 'positive', details: [] as any[] },
-  { label: 'RECEIVABLES', value: 'Loading', trend: '...', sub: 'Awaiting payment', type: 'neutral', details: [] as any[] }
-]);
-
-const performanceData = ref({ title: "Performance Data", id: "perf-1" });
-const activities = ref([]);
-const reminders = ref([]);
-const downline = ref([]);
+// Data shown on the page
+const loadingStat = (label: string): Metric => ({ label, value: 'Loading', trend: '...', sub: '', type: 'neutral', details: [], showAmount: false });
+const metrics = ref<Metric[]>(['TOTAL SALES', 'TOTAL RECEIVED COMMISSION', 'LISTINGS'].map(loadingStat));
+const history = ref<HistoryItem[]>([]);
+const alerts = ref<DashAlert[]>([]);
+const commissionMetrics = ref<Metric[]>(['RECEIVABLES', 'READY TO REQUEST', 'AWAITING APPROVAL'].map(loadingStat));
+const performance = ref<Performance>({ bars: [], sold: 0, avgDeal: 0 });
+const activities = ref<Activity[]>([]);
+const reminders = ref<Reminder[]>([]);
+const upline = ref<{ name: string; meta: string }[]>([]);      // direct upline first, then theirs, up to the top
+const downline = ref<{ name: string; meta: string }[]>([]);    // everyone below, any depth
 
 // Handlers
-const expandMetric = (stat: any) => { selectedMetric.value = stat; };
-const openDetails = (item: any, type: string) => {
-  selectedItem.value = item || { id: 'temp' };
-  modalType.value = type;
+// A card with a link (Total Sales) opens that page; the others open their breakdown popup.
+const expandMetric = (stat: Metric) => {
+  if (stat.link) { router.push(stat.link); return; }
+  selectedMetric.value = stat;
 };
 const closeAll = () => {
-  selectedItem.value = null;
   selectedMetric.value = null;
   activeModal.value = null;
 };
 const clearMonthFilter = () => {
   selectedMonth.value = '';
-  loadDashboardStats();
+  refresh();
+};
+const setScope = (s: 'mine' | 'all') => {
+  scope.value = s;
+  refresh();
 };
 
 // Scroll Lock
-watch([selectedItem, selectedMetric, activeModal], ([item, metric, modal]) => {
-  document.body.style.overflow = (item || metric || modal) ? 'hidden' : '';
+watch([selectedMetric, activeModal], ([metric, modal]) => {
+  document.body.style.overflow = (metric || modal) ? 'hidden' : '';
 });
 
 // Helper to format dates cleanly for the modal table
@@ -257,46 +315,6 @@ const formatCurrency = (value: number) => {
   }).format(value);
 };
 
-// Calculate Trends Helper
-const calculateTrend = (curr: number, prev: number) => {
-  if (prev === 0) return curr > 0 ? '+100%' : '0%';
-  const percent = ((curr - prev) / prev) * 100;
-  return `${percent > 0 ? '+' : ''}${percent.toFixed(1)}%`;
-};
-
-// Get Trend Type Helper
-const getTrendType = (curr: number, prev: number) => {
-  if (prev === 0) return curr > 0 ? 'positive' : 'neutral';
-  const percent = ((curr - prev) / prev) * 100;
-  return percent > 0 ? 'positive' : (percent < 0 ? 'negative' : 'neutral');
-};
-
-const processSalesData = (data: any[]) => {
-  let stats = { gross: 0, sold: 0, receivables: 0, grossItems: [] as any[], receivableItems: [] as any[] };
-  if (!data) return stats;
-
-  data.forEach((item) => {
-    const status = (item.status || '').toString().toLowerCase().trim();
-    const netCommission = Number(item.net_commission) || 0;
-
-    if (status === 'complete') {
-      stats.gross += netCommission;
-      stats.sold += 1;
-      stats.grossItems.push(item);
-    } 
-    else if (status === 'awaiting payment' ) {
-      stats.receivables += netCommission;
-      stats.receivableItems.push(item);
-    }
-  });
-
-// sort items descending
-  stats.grossItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  stats.receivableItems.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-  return stats;
-};
-
 // Adds the first and last name of the agent
 const agentName = computed(() => {
   if (agent.value.first_name && agent.value.last_name){
@@ -305,101 +323,66 @@ const agentName = computed(() => {
   return 'Guest';
 });
 
+const fullName = (a: GenealogyAgent) => `${a.first_name} ${a.last_name}`.trim();
+
+// Sales, commissions and listings numbers (re-run when the month or scope changes).
 const loadDashboardStats = async () => {
   if (!agent.value.agent_ID) return;
 
-  metrics.value.forEach(m => { m.value = 'Loading'; m.trend = '...'; m.details = []; });
-
   try {
-    if (selectedMonth.value) {
-      const [yearStr, monthStr] = selectedMonth.value.split('-');
-      if (!yearStr || !monthStr) return; // malformed month value, bail
-      const year = parseInt(yearStr);
-      const month = parseInt(monthStr);
+    const lookAtEveryone = isAdmin.value && scope.value === 'all';
+    const data = await getDashboardData(lookAtEveryone ? undefined : agent.value.agent_ID);
+    const view = buildDashboard(data, {
+      month: selectedMonth.value,
+      agentId: agent.value.agent_ID,
+      isAdmin: isAdmin.value
+    });
 
-      const startOfSelected = new Date(year, month - 1, 1).toISOString();
-      const endOfSelected = new Date(year, month, 1).toISOString();
-      const startOfPrev = new Date(year, month - 2, 1).toISOString();
-      const endOfPrev = new Date(year, month - 1, 1).toISOString();
-
-      const [currListingsRes, prevListingsRes, currSalesRes, prevSalesRes] = await Promise.all([
-        supabase.from('main_listings').select('listing_title, created_at, sales(status)', { count: 'exact' })
-          .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfSelected).lt('created_at', endOfSelected)
-          .order('created_at', { ascending: false }),
-        
-        supabase.from('main_listings').select('*', { count: 'exact', head: true })
-          .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfPrev).lt('created_at', endOfPrev),
-        
-        supabase.from('sales').select('status, net_commission, created_at, main_listings(listing_title)')
-          .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfSelected).lt('created_at', endOfSelected),
-        
-        supabase.from('sales').select('status, net_commission, created_at, main_listings(listing_title)')
-          .eq('agent_ID', agent.value.agent_ID).gte('created_at', startOfPrev).lt('created_at', endOfPrev)
-      ]);
-
-      const currListings = currListingsRes.count || 0;
-      const prevListings = prevListingsRes.count || 0;
-
-      const currSalesStats = processSalesData(currSalesRes.data || []);
-      const prevSalesStats = processSalesData(prevSalesRes.data || []);
-
-      // updates UI Cards for Monthly
-      metrics.value[2] = { ...metrics.value[2], label: 'MONTHLY LISTINGS',
-                          sub: 'vs previous month', 
-                          value: currListings.toString(), 
-                          trend: calculateTrend(currListings, prevListings), 
-                          type: getTrendType(currListings, prevListings), 
-                          details: currListingsRes.data || [] };
-      metrics.value[0] = { ...metrics.value[0], 
-                          label: 'MONTHLY GROSS', 
-                          sub: 'vs previous month', 
-                          value: formatCurrency(currSalesStats.gross), 
-                          trend: calculateTrend(currSalesStats.gross, prevSalesStats.gross), 
-                          type: getTrendType(currSalesStats.gross, prevSalesStats.gross), 
-                          details: currSalesStats.grossItems };
-      metrics.value[3] = { ...metrics.value[3], 
-                            label: 'PROPERTIES SOLD', 
-                            sub: 'vs previous month', 
-                            value: currSalesStats.sold.toString(), 
-                            trend: calculateTrend(currSalesStats.sold, 
-                            prevSalesStats.sold), 
-                            type: getTrendType(currSalesStats.sold, prevSalesStats.sold), 
-                            details: currSalesStats.grossItems };
-      metrics.value[1] = { ...metrics.value[1], 
-                            label: 'RECEIVABLES', 
-                            sub: 'Awaiting payment', 
-                            value: formatCurrency(currSalesStats.receivables), 
-                            trend: calculateTrend(currSalesStats.receivables, 
-                            prevSalesStats.receivables), 
-                            type: getTrendType(currSalesStats.receivables, prevSalesStats.receivables), 
-                            details: currSalesStats.receivableItems };
-
-    } else {
-      const [listingsRes, salesRes] = await Promise.all([
-        supabase.from('main_listings').select('listing_title, created_at, sales(status)', { count: 'exact' })
-          .eq('agent_ID', agent.value.agent_ID).order('created_at', { ascending: false }),
-        
-        supabase.from('sales').select('status, net_commission, created_at, main_listings(listing_title)')
-          .eq('agent_ID', agent.value.agent_ID)
-      ]);
-      
-      const totalListings = listingsRes.count || 0;
-      const totalSalesStats = processSalesData(salesRes.data || []);
-
-      metrics.value[2] = { ...metrics.value[2], label: 'TOTAL LISTINGS', sub: 'All Time', value: totalListings.toString(), trend: '-', type: 'neutral', details: listingsRes.data || [] };
-      metrics.value[0] = { ...metrics.value[0], label: 'TOTAL GROSS', sub: 'All Time', value: formatCurrency(totalSalesStats.gross), trend: '-', type: 'neutral', details: totalSalesStats.grossItems };
-      metrics.value[3] = { ...metrics.value[3], label: 'TOTAL PROPERTIES SOLD', sub: 'All Time', value: totalSalesStats.sold.toString(), trend: '-', type: 'neutral', details: totalSalesStats.grossItems };
-      metrics.value[1] = { ...metrics.value[1], label: 'TOTAL RECEIVABLES', sub: 'Awaiting payment', value: formatCurrency(totalSalesStats.receivables), trend: '-', type: 'neutral', details: totalSalesStats.receivableItems };
-    }
-
+    metrics.value = view.metrics;
+    commissionMetrics.value = view.commissionMetrics;
+    history.value = view.history;
+    alerts.value = view.alerts;
+    performance.value = view.performance;
+    activities.value = view.activities;
+    reminders.value = view.reminders;
   } catch (error) {
-    console.error("SUPABASE ERROR fetching dashboard stats:", error);
-    if (metrics.value[0]) { metrics.value[0].value = '0'; metrics.value[0].trend = 'N/A'; }
-    if (metrics.value[1]) { metrics.value[1].value = '$0'; metrics.value[1].trend = 'N/A'; }
-    if (metrics.value[2]) { metrics.value[2].value = '0'; metrics.value[2].trend = 'N/A'; }
-    if (metrics.value[3]) { metrics.value[3].value = '$0'; metrics.value[3].trend = 'N/A'; }
+    console.error("Error fetching dashboard stats:", error);
+    metrics.value = metrics.value.map(m => ({ ...m, value: '0', trend: 'N/A', details: [] }));
+    commissionMetrics.value = commissionMetrics.value.map(m => ({ ...m, value: '0', trend: 'N/A', details: [] }));
   }
 };
+
+// Upline and team come from the Genealogy page's data (two generations down).
+const loadTeam = async () => {
+  if (!agent.value.agent_ID) return;
+  try {
+    // Upline: the whole chain above (direct upline first). Downline: everyone below at any depth,
+    // so a Supervisor or Investment Manager sees every Specialist under them.
+    const [uplineChain, team] = await Promise.all([
+      genealogyService.getUplineChain(agent.value.agent_ID, 20),
+      genealogyService.getDownline(agent.value.agent_ID, 20)
+    ]);
+    const meta = (a: GenealogyAgent) => a.position || (a.position_ID ? positionMap[a.position_ID] ?? '' : '');
+    upline.value = uplineChain.map(u => ({ name: fullName(u), meta: meta(u) }));
+    downline.value = team.map(t => ({ name: fullName(t), meta: meta(t) }));
+  } catch (error) {
+    console.error("Error loading team for dashboard:", error);
+  }
+};
+
+const refresh = () => loadDashboardStats();
+
+// Every number here follows the database: sales, commissions, listings and genealogy changes
+// (made on any page or by anyone) refresh the dashboard without a reload.
+useLiveRefresh(async () => {
+  await Promise.all([loadDashboardStats(), loadTeam()]);
+  // keep an open analysis popup in step with the new numbers
+  if (selectedMetric.value) {
+    const fresh = [...metrics.value, ...commissionMetrics.value].find(m => m.label === selectedMetric.value?.label);
+    const open = selectedMetric.value;
+    if (fresh && (fresh.value !== open.value || fresh.details.length !== open.details.length)) selectedMetric.value = fresh;
+  }
+}, ['sales', 'commissions', 'main_listings', 'genealogy', 'agents']);
 
 onMounted(async () => {
   try {
@@ -408,7 +391,7 @@ onMounted(async () => {
     if (user) {
       const { data: agentData, error: agentError } = await supabase
         .from('agents')
-        .select('agent_ID, first_name, last_name, position_ID')
+        .select('agent_ID, first_name, last_name, position_ID, admin_access')
         .eq('user_id', user.id) 
         .single();
 
@@ -416,13 +399,14 @@ onMounted(async () => {
       
       if (agentData) {
         agent.value = agentData;
+        if (agentData.admin_access) scope.value = 'all'; // admins start on the company view
 
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
         selectedMonth.value = `${currentYear}-${currentMonth}`;
 
-        await loadDashboardStats();
+        await Promise.all([loadDashboardStats(), loadTeam()]);
       }
     }
   } catch (error) {

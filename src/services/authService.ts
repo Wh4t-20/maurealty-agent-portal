@@ -13,7 +13,7 @@ export const authService = {
 
       const { data: agentData, error: agentError } = await supabase
         .from('agents')
-        .select('agent_ID, first_name, last_name, admin_access')
+        .select('agent_ID, first_name, middle_name, last_name, admin_access')
         .eq('user_id', authData.user.id)
         .single();
 

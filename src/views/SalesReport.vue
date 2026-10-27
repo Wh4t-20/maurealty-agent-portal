@@ -109,7 +109,7 @@
               <thead class="bg-maurealty-blue dark:bg-[#072339] text-white sticky top-0 z-10">
                 <tr>
                   <th class="px-4 py-3 font-semibold cursor-pointer select-none hover:bg-white dark:hover:bg-[#1da2d6]/20 transition-colors" @click="setSort('reservation_date')">
-                    <span class="inline-flex items-center gap-1">Date <component :is="sortIcon('reservation_date')" class="size-4" :class="sortKey==='reservation_date' ? 'text-amber-300' : 'opacity-70'" /></span>
+                    <span class="inline-flex items-center gap-1">Reservation Date <component :is="sortIcon('reservation_date')" class="size-4" :class="sortKey==='reservation_date' ? 'text-amber-300' : 'opacity-70'" /></span>
                   </th>
                   <th class="px-4 py-3 font-semibold cursor-pointer select-none hover:bg-white dark:hover:bg-[#1da2d6]/20 transition-colors" @click="setSort('client_name')">
                     <span class="inline-flex items-center gap-1">Client <component :is="sortIcon('client_name')" class="size-4" :class="sortKey==='client_name' ? 'text-amber-300' : 'opacity-70'" /></span>
@@ -227,6 +227,7 @@
           <!-- ORIGINAL SALE DETAILS -->
           <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
             <div><dt class="text-gray-500 dark:text-gray-400">Client</dt><dd class="font-medium text-maurealty-blue dark:text-white">{{ selectedSale.client_name }}</dd></div>
+            <div><dt class="text-gray-500 dark:text-gray-400">Developer</dt><dd class="font-medium dark:text-white">{{ selectedSale.developer_name || '—' }}</dd></div>
             <div><dt class="text-gray-500 dark:text-gray-400">Project</dt><dd class="font-medium dark:text-white">{{ selectedSale.listing_title }}</dd></div>
             <div v-if="isAdmin"><dt class="text-gray-500 dark:text-gray-400">Agent</dt><dd class="dark:text-white">{{ selectedSale.agent_name || '—' }}</dd></div>
             <div v-if="isAdmin" class="col-span-1 sm:col-span-2">
@@ -245,7 +246,27 @@
             </div>
             <div><dt class="text-gray-500 dark:text-gray-400">Reservation Date</dt><dd class="dark:text-white">{{ formatDate(selectedSale.reservation_date) }}</dd></div>
             <div><dt class="text-gray-500 dark:text-gray-400">Contract Price</dt><dd class="dark:text-white">{{ formatPeso(selectedSale.total_contract_price) }}</dd></div>
-            <div><dt class="text-gray-500 dark:text-gray-400">Sale #</dt><dd class="dark:text-white">{{ selectedSale.agent_sale_seq ?? '—' }}</dd></div>
+            <div v-if="selectedSale.commissionable_amount != null"><dt class="text-gray-500 dark:text-gray-400">Commissionable Amount</dt><dd class="dark:text-white">{{ formatPeso(selectedSale.commissionable_amount) }}</dd></div>
+            <div><dt class="text-gray-500 dark:text-gray-400">Financing</dt><dd class="dark:text-white">{{ selectedSale.financing || '—' }}</dd></div>
+            <div><dt class="text-gray-500 dark:text-gray-400">Payment Scheme</dt><dd class="dark:text-white">{{ selectedSale.payment_scheme === 'Deferred-Cash' ? 'Deferred Cash (12 monthly installments)' : (selectedSale.payment_scheme || '—') }}</dd></div>
+            <div v-if="selectedSale.commission_rate != null"><dt class="text-gray-500 dark:text-gray-400">Commission Rate</dt><dd class="dark:text-white">{{ selectedSale.commission_rate }}%</dd></div>
+            <template v-if="selectedSale.payment_scheme === 'DP'">
+              <div><dt class="text-gray-500 dark:text-gray-400">DP ({{ selectedSale.dp_rate }}%)</dt><dd class="dark:text-white">{{ formatPeso(selectedSale.dp_amount ?? 0) }}</dd></div>
+              <div><dt class="text-gray-500 dark:text-gray-400">Remaining Balance</dt><dd class="dark:text-white">{{ formatPeso(selectedSale.remaining_balance ?? 0) }}</dd></div>
+              <div class="col-span-1 sm:col-span-2">
+                <dt class="text-gray-500 dark:text-gray-400">DP Divisions</dt>
+                <dd class="dark:text-white">
+                  <span v-if="saleDivisions.length === 0">—</span>
+                  <ul v-else class="mt-1 flex flex-col gap-1">
+                    <li v-for="(d, i) in saleDivisions" :key="i">
+                      Division {{ i + 1 }}: {{ d.divisionRate }}% over {{ d.count }} {{ d.count === 1 ? d.unit.slice(0, -1) : d.unit }}
+                      ({{ formatDate(d.startDate ?? '') }} – {{ formatDate(d.endDate ?? '') }})
+                    </li>
+                  </ul>
+                </dd>
+              </div>
+            </template>
+            <div><dt class="text-gray-500 dark:text-gray-400">Sale</dt><dd class="dark:text-white">{{ selectedSale.agent_sale_seq ?? '—' }}</dd></div>
             <div>
               <dt class="text-gray-500 dark:text-gray-400">Status</dt>
               <dd>
@@ -256,7 +277,10 @@
             </div>
             <div><dt class="text-gray-500 dark:text-gray-400">Gross Commission</dt><dd class="dark:text-white">{{ selectedSale.gross_commission != null ? formatPeso(selectedSale.gross_commission) : '—' }}</dd></div>
             <div><dt class="text-gray-500 dark:text-gray-400">Net Commission</dt><dd class="dark:text-white">{{ selectedSale.net_commission != null ? formatPeso(selectedSale.net_commission) : '—' }}</dd></div>
+            <!-- Voucher series (the voucher/receipt number of the sale) is hidden for now. Not removed:
+                 sales.voucher_series still exists and is still searched and exported.
             <div><dt class="text-gray-500 dark:text-gray-400">Voucher</dt><dd class="dark:text-white">{{ selectedSale.voucher_series || '—' }}</dd></div>
+            -->
             <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Remarks</dt><dd class="dark:text-white">{{ selectedSale.remarks || '—' }}</dd></div>
             <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Agent Incentive</dt><dd class="dark:text-white whitespace-pre-line">{{ selectedSale.agent_incentive || '—' }}</dd></div>
             <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Realty Incentive</dt><dd class="dark:text-white whitespace-pre-line">{{ selectedSale.realty_incentive || '—' }}</dd></div>
@@ -283,6 +307,9 @@
             <dl v-else class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
               <!-- HOUSE AND LOT -->
               <template v-if="['House And Lot', 'House and Lot', 'house_and_lot'].includes(selectedPropertyType)">
+                <div><dt class="text-gray-500 dark:text-gray-400">Block No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.block_number ?? '—' }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Lot No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.lot_number ?? '—' }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Phase No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.phase_number ?? '—' }}</dd></div>
                 <div><dt class="text-gray-500 dark:text-gray-400">Lot Area</dt><dd class="font-medium dark:text-white">{{ formatArea(selectedListingDetails.area || selectedListingDetails.lot_area) }}</dd></div>
                 <div><dt class="text-gray-500 dark:text-gray-400">Floor Area</dt><dd class="font-medium dark:text-white">{{ formatArea(selectedListingDetails.floor_area) }}</dd></div>
                 <div><dt class="text-gray-500 dark:text-gray-400">Rooms</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.room_count ?? '—' }}</dd></div>
@@ -306,6 +333,7 @@
               <!-- CONDOMINIUM -->
               <template v-else-if="['Condominium', 'condominium'].includes(selectedPropertyType)">
                 <div><dt class="text-gray-500 dark:text-gray-400">Unit No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.unit_number ?? '—' }}</dd></div>
+                <div><dt class="text-gray-500 dark:text-gray-400">Floor</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.floor ?? '—' }}</dd></div>
                 <div><dt class="text-gray-500 dark:text-gray-400">Bedrooms</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.bedroom_count ?? '—' }}</dd></div>
                 <div><dt class="text-gray-500 dark:text-gray-400">Balconies</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.balcony_count ?? '—' }}</dd></div>
                 <div><dt class="text-gray-500 dark:text-gray-400">Carpark</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.carpark_count ?? '—' }}</dd></div>
@@ -335,6 +363,7 @@
 import { ref, shallowRef, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ClipboardList, Plus, Download, Pencil, Trash2, AlertTriangle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-vue-next'
 import { salesService, type Sale } from '@/services/salesService'
+import type { DpDivision } from '@/assets/classes/commission'
 import { authService } from '@/services/authService'
 import {listingsService} from '@/services/listingsServices'
 import { genealogyService, type GenealogyAgent } from '@/services/genealogyService'
@@ -381,9 +410,15 @@ async function loadSales() {
   try {
     const agent = await authService.getCurrentAgent()
     isAdmin.value = !!agent?.admin_access
-    sales.value = await salesService.getSales(
-      isAdmin.value ? {} : { agentId: agent?.agent_ID }
-    )
+    if (isAdmin.value) {
+      sales.value = await salesService.getSales()
+    } else if (agent?.agent_ID !== undefined) {
+      // Agents only ever see their own sales.
+      sales.value = await salesService.getSales({ agentId: agent.agent_ID })
+    } else {
+      // Not signed in as an agent: show nothing rather than everyone's sales.
+      sales.value = []
+    }
   } catch (e) {
     console.error('Failed to load sales report:', e)
   } finally {
@@ -454,6 +489,19 @@ watch(selectedSale, async (sale) => {
     console.error('Failed to load upline:', e)
   } finally {
     uplineLoading.value = false
+  }
+})
+
+// DP divisions of the selected sale (only DP sales have any).
+const saleDivisions = ref<DpDivision[]>([])
+
+watch(selectedSale, async (sale) => {
+  saleDivisions.value = []
+  if (sale?.payment_scheme !== 'DP') return
+  try {
+    saleDivisions.value = await salesService.getDpDivisions(sale.sale_ID)
+  } catch (e) {
+    console.error('Failed to load DP divisions:', e)
   }
 })
 
@@ -553,13 +601,13 @@ const totals = computed(() => ({
   net: filteredSales.value.reduce((sum, s) => sum + (s.net_commission || 0), 0),
 }))
 
-// --- Red-flag indicator: a sale missing its voucher or commission ---
+// --- Red-flag indicator: a sale missing its commission ---
+// (Voucher series is hidden for now, so a missing voucher is no longer flagged.)
 function isFlagged(s: Sale) {
-  return !s.voucher_series || s.gross_commission == null
+  return s.gross_commission == null
 }
 function flagReason(s: Sale) {
   const missing = []
-  if (!s.voucher_series) missing.push('voucher')
   if (s.gross_commission == null) missing.push('commission')
   return `Lacking ${missing.join(' & ')}`
 }
@@ -642,7 +690,7 @@ function csvCell(v: unknown): string {
 }
 function exportCsv() {
   if (filteredSales.value.length === 0) return
-  const cols = ['Date', 'Client', 'Project', 'Agent', 'Contract Price', 'Gross Commission', 'Net Commission', 'Sale #', 'Voucher', 'Remarks', 'Agent Incentive', 'Realty Incentive']
+  const cols = ['Reservation Date', 'Client', 'Project', 'Agent', 'Contract Price', 'Gross Commission', 'Net Commission', 'Sale #', 'Voucher', 'Remarks', 'Agent Incentive', 'Realty Incentive']
   const rows = sortedSales.value.map(s => [
     s.reservation_date, s.client_name, s.listing_title, s.agent_name,
     s.total_contract_price, s.gross_commission, s.net_commission,
