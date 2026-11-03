@@ -1,37 +1,39 @@
 <template>
-  <div class="min-h-screen bg-background-gray flex flex-col">
+  <!-- dark: classes mirror PropertyDetails.vue. App.vue turns dark mode on from the viewer's saved
+       settings, so clients see the light page; an agent with dark mode on sees the dark one. -->
+  <div class="min-h-screen bg-background-gray dark:bg-background-dark-gray flex flex-col">
 
     <!-- PUBLIC BRAND HEADER -->
-    <header class="w-full bg-linear-to-r from-[#A9D6FF70] to-[#FFFFFF] shadow-md px-6 md:px-10 py-4 flex items-center gap-3">
+    <header class="w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black shadow-md px-6 md:px-10 py-4 flex items-center gap-3">
       <img src="@/assets/images/Maurealty.png" alt="MauRealty" class="h-9 w-auto" />
-      <span class="text-maurealty-blue font-extrabold text-lg md:text-xl tracking-tight">MauRealty &amp; Brokerage</span>
+      <span class="text-maurealty-blue dark:text-white font-extrabold text-lg md:text-xl tracking-tight">MauRealty &amp; Brokerage</span>
     </header>
 
     <div class="flex-1 flex items-start justify-center py-8 px-4">
 
-      <div v-if="loading" class="text-xl font-semibold text-maurealty-blue mt-20">
+      <div v-if="loading" class="text-xl font-semibold text-maurealty-blue dark:text-maurealty-light-blue mt-20">
         Loading property details...
       </div>
 
-      <div v-else-if="error" class="text-xl font-bold text-red-600 bg-white p-8 rounded-xl shadow-md mt-20">
+      <div v-else-if="error" class="text-xl font-bold text-red-600 bg-white dark:bg-black p-8 rounded-xl shadow-md mt-20">
         {{ error }}
       </div>
 
-      <div v-else-if="details" class="bg-white w-full max-w-6xl rounded-3xl shadow-2xl border border-gray-100 px-6 md:px-10 py-7">
+      <div v-else-if="details" class="bg-white dark:bg-black w-full max-w-6xl rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-900 px-6 md:px-10 py-7">
         <header class="relative mb-4">
-          <h1 class="text-2xl sm:text-3xl max-w-19/20 font-extrabold text-maurealty-blue">
+          <h1 class="text-2xl sm:text-3xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-maurealty-light-blue">
             {{ details.listing_title || 'Untitled Listing' }}
           </h1>
         </header>
 
-        <hr class="mb-6 border-maurealty-blue/20">
+        <hr class="mb-6 border-maurealty-blue/20 dark:border-maurealty-light-blue/30">
 
         <main class="flex gap-6 lg:gap-12 mx-1 md:mx-4 flex-col lg:flex-row">
 
           <!-- LEFT: gallery -->
           <div class="grow lg:w-3/5 flex flex-col gap-6">
             <div class="relative flex gap-4 items-center">
-              <div class="relative grow aspect-video rounded-xl overflow-hidden border border-gray-200 bg-gray-100 shadow-sm">
+              <div class="relative grow aspect-video rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-mist-800 shadow-sm">
                 <img
                   :src="thumbnails[currentImageIndex] || placeholder"
                   alt="Property Main View"
@@ -40,13 +42,13 @@
               </div>
 
               <button v-if="thumbnails.length > 1"
-                class="absolute left-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue cursor-pointer"
+                class="absolute left-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black dark:text-white text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue dark:hover:text-maurealty-light-blue cursor-pointer"
                 @click="updateImage(currentImageIndex - 1)">
                 <ChevronLeft stroke-width="2.75" />
               </button>
 
               <button v-if="thumbnails.length > 1"
-                class="absolute right-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue cursor-pointer"
+                class="absolute right-2 w-8 h-18 bg-slate-500/30 backdrop-blur-xs self-center rounded flex items-center justify-center text-black dark:text-white text-4xl hover:bg-slate-500/60 hover:text-maurealty-blue dark:hover:text-maurealty-light-blue cursor-pointer"
                 @click="updateImage(currentImageIndex + 1)">
                 <ChevronRight stroke-width="2.75" />
               </button>
@@ -59,14 +61,14 @@
                 :src="thumb"
                 @click="updateImage(index)"
                 alt="Property thumbnail"
-                class="w-20 h-14 sm:w-32 sm:h-24 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-maurealty-blue"
+                class="w-20 h-14 sm:w-32 sm:h-24 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-maurealty-blue dark:hover:ring-maurealty-light-blue"
                 :class="[index == currentImageIndex ? 'opacity-50' : '']"
               />
             </div>
           </div>
 
           <!-- RIGHT: details -->
-          <div class="lg:w-2/5 flex flex-col gap-2 text-gray-800 text-lg">
+          <div class="lg:w-2/5 flex flex-col gap-2 text-gray-800 dark:text-gray-200 text-lg">
             <!-- Bulk listings show their min - max price range, same as the listing details overlay -->
             <span class="inline-block bg-maurealty-green w-fit text-2xl text-white px-4 py-0.5 rounded-full tracking-wider mt-0.5">
               <template v-if="details.is_bulk && details.max_price">
@@ -78,25 +80,25 @@
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
-              <Building2Icon class="size-6" color="#000000" />
+              <Building2Icon class="size-6 text-black dark:text-white" />
               {{ formattedPropertyType(details.property_type) }}
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
-              <MapPinIcon class="size-6" color="#000000" />
+              <MapPinIcon class="size-6 text-black dark:text-white" />
               {{ details.location }}
             </span>
 
-            <section class="w-full h-64 rounded-xl overflow-hidden border border-gray-200">
+            <section class="w-full h-64 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
               <MapHolder :target-location="{ lng: details.longitude, lat: details.latitude }" :listing-id="details.listing_ID" />
             </section>
 
             <span class="flex items-center gap-1.5">
-              <UserStarIcon class="size-6" color="#000000" />
+              <UserStarIcon class="size-6 text-black dark:text-white" />
               <p>{{ details.agent_name }}</p>
             </span>
 
-            <p class="text-sm text-gray-500">Listed on: {{ new Date(details.created_at).toLocaleDateString() }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Listed on: {{ new Date(details.created_at).toLocaleDateString() }}</p>
 
             <span class="flex items-center-safe mt-2 text-xl" v-if="details.developer_name">
               <p class="font-semibold">Developed by:</p>
@@ -108,8 +110,8 @@
 
             <!-- HOUSE AND LOT -->
             <template v-if="!details.is_bulk && details.property_type === 'house_and_lot' && details.house_and_lot">
-              <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full mt-2">
-                <legend class="px-2 font-semibold text-maurealty-blue">House and Lot Features</legend>
+              <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full mt-2">
+                <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">House and Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><LandPlot /> <b> Lot Area: </b> {{ formatArea(details.house_and_lot.lot_area) }}</span>
@@ -148,8 +150,8 @@
 
             <!-- LOT ONLY -->
             <template v-if="!details.is_bulk && details.property_type === 'lot_only' && details.lot_only">
-              <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full mt-2">
-                <legend class="px-2 font-semibold text-maurealty-blue">Lot Features</legend>
+              <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full mt-2">
+                <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
                   <div class="grid grid-cols-1 sm:grid-cols-2">
                     <div>
@@ -163,7 +165,7 @@
                   </div>
 
                   <div class="mt-2 pb-2 flex gap-2">
-                    <p class="font-bold text-xl text-maurealty-blue">Class:</p>
+                    <p class="font-bold text-xl text-maurealty-blue dark:text-maurealty-light-blue">Class:</p>
                     <p class="text-xl">{{ lotClassesMap[details.lot_only.lot_class_ID] || 'N/A' }}</p>
                   </div>
                 </main>
@@ -172,8 +174,8 @@
 
             <!-- CONDOMINIUM -->
             <template v-if="!details.is_bulk && details.property_type === 'condominium' && details.condominium">
-              <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full mt-2">
-                <legend class="px-2 font-semibold text-maurealty-blue">Condominium Features</legend>
+              <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full mt-2">
+                <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">Condominium Features</legend>
                 <main class="text-sm px-2 flex flex-col">
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><Hash /> Unit No. <b>{{ details.condominium.unit_number }}</b></span>
@@ -184,11 +186,11 @@
                   </div>
 
                   <div class="mt-4 flex gap-2">
-                    <p class="font-bold text-xl text-maurealty-blue">Class:</p>
+                    <p class="font-bold text-xl text-maurealty-blue dark:text-maurealty-light-blue">Class:</p>
                     <p class="text-xl">{{ condoClassesMap[details.condominium.condo_class_ID] || 'N/A' }}</p>
                   </div>
                   <div class="pb-2 flex gap-2">
-                    <p class="font-bold text-xl text-maurealty-blue">Type:</p>
+                    <p class="font-bold text-xl text-maurealty-blue dark:text-maurealty-light-blue">Type:</p>
                     <p class="text-xl">{{ getCondoType(details.condominium) }}</p>
                   </div>
                 </main>
@@ -197,11 +199,11 @@
 
             <!-- MEMORIAL -->
             <template v-if="!details.is_bulk && details.property_type === 'memorial' && details.memorial">
-              <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full mt-2">
-                <legend class="px-2 font-semibold text-maurealty-blue">Memorial Features</legend>
+              <fieldset class="border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-xl px-4 py-2 w-full mt-2">
+                <legend class="px-2 font-semibold text-maurealty-blue dark:text-maurealty-light-blue">Memorial Features</legend>
                 <main class="text-sm px-2 flex flex-col">
                   <div class="pb-2 flex gap-2">
-                    <p class="font-bold text-xl text-maurealty-blue">Type:</p>
+                    <p class="font-bold text-xl text-maurealty-blue dark:text-maurealty-light-blue">Type:</p>
                     <p class="text-xl">{{ getMemorialType(details.memorial) }}</p>
                   </div>
                 </main>
@@ -209,13 +211,13 @@
             </template>
 
             <!-- Description -->
-            <section class="mt-2 markdownTypography max-w-none" v-html="compiledMarkdown" />
+            <section class="mt-2 markdownTypography max-w-none text-black dark:text-white" v-html="compiledMarkdown" />
           </div>
         </main>
 
         <!-- FAQs -->
-        <section v-if="compiledFAQMarkdown" class="p-5 border border-maurealty-blue/20 rounded-3xl w-full mt-10">
-          <section class="markdownTypography max-w-none" v-html="compiledFAQMarkdown" />
+        <section v-if="compiledFAQMarkdown" class="p-5 border border-maurealty-blue/20 dark:border-maurealty-light-blue/40 rounded-3xl w-full mt-10">
+          <section class="markdownTypography max-w-none text-black dark:text-white" v-html="compiledFAQMarkdown" />
         </section>
       </div>
     </div>
