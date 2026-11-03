@@ -10,7 +10,8 @@
           </div>
           <div class="flex items-center gap-3">
             <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#0066ff] dark:bg-[#0052cc] text-white hover:bg-[#0052cc] dark:hover:bg-[#0066ff]" @click="addListing">+ Add Listing</button>
-            <button class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#e6f4ea] dark:bg-[#1e2821] text-[#1e8e3e] dark:text-green-500 hover:bg-[#d4eeda] dark:hover:bg-[#385440]" @click="activeModal = 'addAgent'">+ Add Agent</button>
+            <!-- Admins only: opens the same Add Agent modal as the Genealogy page (it also creates the login) -->
+            <button v-if="isAdmin" class="px-4 py-2 rounded-md font-medium text-[0.9rem] cursor-pointer border border-transparent transition-all duration-200 ease-in-out flex items-center bg-[#e6f4ea] dark:bg-[#1e2821] text-[#1e8e3e] dark:text-green-500 hover:bg-[#d4eeda] dark:hover:bg-[#385440]" @click="openAddAgent">+ Add Agent</button>
             <div class="w-px h-6 bg-[#e1e4e8] mx-1"></div>
 
             <!-- Admin: own numbers or the whole company's -->
@@ -101,7 +102,7 @@
 
           <div class="flex flex-col gap-8">
             <GenealogyCard :upline="upline" :downline="downline" @view-full="router.push('/genealogy')" />
-            <Reminders :reminders="reminders" @open="(r) => router.push(r.to)" />
+            <Reminders :reminders="reminders" @open="openReminder" />
           </div>
         </div>
       </div>
@@ -115,14 +116,9 @@
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
-      <div v-if="selectedMetric || activeModal" class="fixed inset-0 w-full h-full bg-[#0a3d62]/70 backdrop-blur-sm flex items-center justify-center z-[9999]" @click.self="closeAll">
-        
-        <div v-if="activeModal" class="bg-white dark:bg-black rounded-[24px] relative p-6 w-full max-w-lg shadow-xl">
-          <button class="absolute top-4 right-5 text-gray-400 dark:text-gray-700 hover:text-gray-700 dark:hover:text-gray-400 text-xl font-bold" @click="activeModal = null">✕</button>
-          <AddAgent v-if="activeModal === 'addAgent'" />
-        </div> 
+      <div v-if="selectedMetric" class="fixed inset-0 w-full h-full bg-[#0a3d62]/70 backdrop-blur-sm flex items-center justify-center z-[9999]" @click.self="closeAll">
 
-        <div v-else-if="selectedMetric" class="bg-white dark:bg-black rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl flex flex-col max-h-[80vh]">
+        <div v-if="selectedMetric" class="bg-white dark:bg-black rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl flex flex-col max-h-[80vh]">
           <button class="absolute top-4 right-5 text-gray-400 dark:text-gray-700 hover:text-gray-700 dark:hover:text-gray-400 text-xl font-bold" @click="selectedMetric = null">✕</button>
           
           <div class="border-b border-gray-200 dark:border-gray-800 pb-4 mb-4 shrink-0">
@@ -190,6 +186,18 @@
 
       </div>
     </transition>
+
+    <!-- Add Agent (admins): the Genealogy page's modal, teleported to <body> with its own overlay -->
+    <AddAgentModal v-if="showAddAgent" @close="showAddAgent = false" @saved="onAgentSaved" />
+
+    <!-- From the red "initial password" reminder: the code always goes to the agent's own login email -->
+    <ChangePasswordModal
+      v-if="showChangePassword"
+      :email="loginEmail"
+      lock-email
+      @close="showChangePassword = false"
+      @changed="onPasswordChanged"
+    />
   </div>
 </template>
 
@@ -212,7 +220,9 @@ import CommissionHistory from '@/components/dashboard/CommissionHistory.vue';
 import { useLiveRefresh } from '@/utils/liveRefresh';
 import GenealogyCard from '@/components/dashboard/GenealogyCard.vue';
 import Reminders from '@/components/dashboard/Reminders.vue';
-import AddAgent from '@/components/dashboard/AddAgent.vue';
+import AddAgentModal from '@/components/genealogy/AddAgentModal.vue';
+import ChangePasswordModal from '@/components/auth/ChangePasswordModal.vue';
+import { accountService } from '@/services/accountService';
 
 // The numbers on this page are built from the same tables the rest of the app writes to
 // (sales, commissions, listings, genealogy) in dashboardService, so they always match the
@@ -220,7 +230,9 @@ import AddAgent from '@/components/dashboard/AddAgent.vue';
 
 // State
 const selectedMetric = ref<Metric | null>(null);
-const activeModal = ref<string | null>(null);
+const showAddAgent = ref(false); // Add Agent modal (admins only)
+const showChangePassword = ref(false); // opened from the "initial password" reminder
+const loginEmail = ref(''); // the signed-in user's login email (where the password code is sent)
 const agent = ref<Partial<AgentProfile & { admin_access: boolean }>>({});
 const router = useRouter();
 
@@ -282,7 +294,24 @@ const expandMetric = (stat: Metric) => {
 };
 const closeAll = () => {
   selectedMetric.value = null;
-  activeModal.value = null;
+};
+const openAddAgent = () => {
+  if (isAdmin.value) showAddAgent.value = true;
+};
+// A new agent changes the team card; the live refresh would catch it too, this is just sooner.
+const onAgentSaved = () => {
+  showAddAgent.value = false;
+  loadTeam();
+};
+// Reminders go to their page, except the password one, which opens the change-password modal here.
+const openReminder = (r: Reminder) => {
+  if (r.action === 'change-password') showChangePassword.value = true;
+  else router.push(r.to);
+};
+// Password changed: reload so the red reminder goes away.
+const onPasswordChanged = () => {
+  showChangePassword.value = false;
+  refresh();
 };
 const clearMonthFilter = () => {
   selectedMonth.value = '';
@@ -294,8 +323,8 @@ const setScope = (s: 'mine' | 'all') => {
 };
 
 // Scroll Lock
-watch([selectedMetric, activeModal], ([metric, modal]) => {
-  document.body.style.overflow = (metric || modal) ? 'hidden' : '';
+watch([selectedMetric, showAddAgent, showChangePassword], ([metric, modal, password]) => {
+  document.body.style.overflow = (metric || modal || password) ? 'hidden' : '';
 });
 
 // Helper to format dates cleanly for the modal table
@@ -331,11 +360,16 @@ const loadDashboardStats = async () => {
 
   try {
     const lookAtEveryone = isAdmin.value && scope.value === 'all';
-    const data = await getDashboardData(lookAtEveryone ? undefined : agent.value.agent_ID);
+    // The password check is personal (not affected by the scope or month) and never throws.
+    const [data, needsPasswordChange] = await Promise.all([
+      getDashboardData(lookAtEveryone ? undefined : agent.value.agent_ID),
+      accountService.needsPasswordChange(),
+    ]);
     const view = buildDashboard(data, {
       month: selectedMonth.value,
       agentId: agent.value.agent_ID,
-      isAdmin: isAdmin.value
+      isAdmin: isAdmin.value,
+      needsPasswordChange
     });
 
     metrics.value = view.metrics;
@@ -389,6 +423,7 @@ onMounted(async () => {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
+      loginEmail.value = user.email ?? '';
       const { data: agentData, error: agentError } = await supabase
         .from('agents')
         .select('agent_ID, first_name, last_name, position_ID, admin_access')

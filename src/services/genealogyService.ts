@@ -8,6 +8,7 @@
 import { supabase } from '../supabaseClient';
 import { rankOf, rankLabel, allowedUplineRanks, type Rank } from '../utils/ranks';
 import { allocatePayouts, type ChainMember, type PayoutRole } from '../utils/commissionAllocation';
+import { accountService } from './accountService';
 
 // A bare agent as it appears in the hierarchy. position is resolved from the
 // `positions` table when available; null while that table is unpopulated
@@ -455,44 +456,25 @@ export const genealogyService = {
     }));
   },
 
-  // Create an agent record and (optionally) attach it under an upline. The agent
-  // is created WITHOUT a login (user_id null) — logins are provisioned later via
-  // Supabase invite, which can't be done from the client. Admin-only in practice.
+  // Create an agent WITH a login and (optionally) attach it under an upline. Admin-only.
+  // The hierarchy rules are checked here; then the agent-account Edge Function creates the
+  // Supabase Auth user, the agents row (user_id already linked, so nobody pastes a UID by hand),
+  // the upline edge and the encrypted initial password, and undoes all of it if a step fails.
   async addAgent(
     agentData: Record<string, any>,
-    uplineId?: number,
-  ): Promise<{ success: boolean; agent_ID?: number }> {
+    uplineId: number | undefined,
+    initialPassword: string,
+  ): Promise<{ success: boolean; agent_ID: number; user_id: string; email: string }> {
     // Hierarchy rules first (broker has no upline, IM only under a broker, one supervisor per team).
     const placement = checkPlacement(await fetchGraph(), null, Number(agentData.position_ID), uplineId ?? null, true);
-    uplineId = placement.uplineId ?? undefined;
 
-    const { data, error } = await supabase
-      .from('agents')
-      .insert([agentData])
-      .select('agent_ID')
-      .single();
-
-    if (error) {
+    try {
+      const account = await accountService.createAgentWithLogin(agentData, placement.uplineId, initialPassword);
+      return { success: true, agent_ID: account.agent_ID, user_id: account.user_id, email: account.email };
+    } catch (error) {
       console.error('Error creating agent:', error);
       throw error;
     }
-
-    const newId = data.agent_ID as number;
-
-    if (uplineId != null) {
-      const { error: edgeError } = await supabase
-        .from('genealogy')
-        .insert([{ upline_agent_ID: uplineId, downline_agent_ID: newId }]);
-
-      if (edgeError) {
-        // Agent row exists but the edge failed — surface it; caller can retry
-        // the edge or delete the orphan agent.
-        console.error('Agent created but upline link failed:', edgeError);
-        throw edgeError;
-      }
-    }
-
-    return { success: true, agent_ID: newId };
   },
 
   // Full record for the edit form (prefill).
@@ -724,6 +706,7 @@ export const genealogyService = {
   // financial/listing paper trail — archive instead, long term). Downlines are
   // reassigned to the deleted agent's own upline (subtree stays connected); if it
   // had no upline they become team roots. Then the agent's own edges are removed.
+  // Last, the agent's login (Supabase Auth user) is removed through the agent-account Edge Function.
   async deleteAgent(id: number): Promise<void> {
     const refs = await this.getAgentReferences(id);
     if (refs.sales > 0 || refs.listings > 0 || refs.shared > 0) {
@@ -733,6 +716,15 @@ export const genealogyService = {
       if (refs.shared) parts.push(`${refs.shared} shared link(s)`);
       throw new Error(`Cannot delete: agent has ${parts.join(', ')}. Reassign or archive first.`);
     }
+
+    // Remember the agent's login so it can be removed after the agent row is gone.
+    const { data: loginRow, error: loginErr } = await supabase
+      .from('agents')
+      .select('user_id')
+      .eq('agent_ID', id)
+      .maybeSingle();
+    if (loginErr) throw loginErr;
+    const loginUserId: string | null = loginRow?.user_id ?? null;
 
     // Find this agent's upline (the new parent for its downlines).
     const { data: upRows, error: upErr } = await supabase
@@ -762,7 +754,20 @@ export const genealogyService = {
       .eq('downline_agent_ID', id);
     if (selfEdgeErr) throw selfEdgeErr;
 
-    const { error: delErr } = await supabase.from('agents').delete().eq('agent_ID', id);
+    // .select() so a delete silently blocked by RLS (0 rows) is caught instead of looking successful.
+    const { data: deleted, error: delErr } = await supabase.from('agents').delete().eq('agent_ID', id).select('agent_ID');
     if (delErr) throw delErr;
+    if (!deleted || deleted.length === 0) throw new Error('The agent could not be deleted. You may not have permission.');
+
+    // Remove the login too, so a deleted agent can't sign in anymore. (Their agent_credentials row
+    // already went with the agents row: ON DELETE CASCADE.) The Edge Function refuses if any agent
+    // still uses this login.
+    if (loginUserId) {
+      try {
+        await accountService.deleteLogin(loginUserId);
+      } catch (e: any) {
+        throw new Error(`The agent was deleted, but their login could not be removed: ${e?.message ?? e}. Remove it under Authentication > Users in Supabase.`);
+      }
+    }
   },
 };
