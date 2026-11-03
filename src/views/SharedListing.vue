@@ -67,8 +67,14 @@
 
           <!-- RIGHT: details -->
           <div class="lg:w-2/5 flex flex-col gap-2 text-gray-800 text-lg">
+            <!-- Bulk listings show their min - max price range, same as the listing details overlay -->
             <span class="inline-block bg-maurealty-green w-fit text-2xl text-white px-4 py-0.5 rounded-full tracking-wider mt-0.5">
-              {{ formatPrice(details.price ?? 0) }}
+              <template v-if="details.is_bulk && details.max_price">
+                {{ formatPrice(details.price ?? 0) }} - {{ formatPrice(details.max_price) }}
+              </template>
+              <template v-else>
+                {{ formatPrice(details.price ?? 0) }}
+              </template>
             </span>
 
             <span class="flex items-center gap-1.5 font-semibold">
