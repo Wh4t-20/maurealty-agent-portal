@@ -5,6 +5,19 @@ Rules: log only what changed or was added; no repeats of earlier entries; no res
 
 ---
 
+## 2026-11-03 - Commission confirmations, admin filter, shared listing price range
+- **Added:** `src/components/commissions/ConfirmActionModal.vue`, a small confirm popup in the commission-modal style (blurred blue overlay, `z-60` so it can open on top of another popup). Keyboard focus moves into it, Tab stays inside, Escape or a click outside closes it, and focus goes back to the opening button. Optional `requiredPhrase` keeps Confirm disabled until the phrase is typed (letter case and extra spaces ignored). Has dark-mode classes.
+- **Added:** Commissions, admin switch gains **Other Agents** (every agent's tabs except the admin's own), beside My Commissions and All Agents (Approval). The receivables label and the per-agent list follow the view.
+- **Added:** Commissions, in the admin All Agents view a blue **YOU** pill sits right of the agent name on the admin's own tabs (`showOwnBadge`).
+- **Changed:** Commissions, **Approve commission** opens "Are you sure you want to approve this commission?" (No / Yes, with agent, role, project, payment and amount). Yes runs `approveTab`; success closes the popup and shows a **"Commission approved."** toast at the bottom right (raised above the phone bottom nav). Errors stay in the popup instead of `alert()`.
+- **Changed:** Commissions, admins can now **request and receive payment on their own tabs** (`canAgentAct` = the signed-in person is the recipient). Before, these steps were agent-only and an admin's own tab stopped at Approved. Admins still can't act on someone else's tab, and the Dashboard still gives them no personal payout alerts.
+- **Changed:** Proof of payment, **Received payment** asks the recipient (any rank, admin or not) to type **"I have received payment"** before `confirmReceived` runs.
+- **Fixed:** Shared listing page shows the **min - max price range** for bulk listings (it showed only the minimum price), with the same markup as the listing details overlay.
+- **Changed:** Shared listing page matches the overlay: type features show for single listings only (a bulk listing's sub-table holds placeholder values), photos follow `listing_images.display_order` (`getSharedListing` now selects it), and it has the overlay's dark-mode classes. Without them, an agent with dark mode on saw the description in light text on a white card.
+- **Notes:** No database changes. Payment request, release and receipt still confirm with `alert()`; only Approve uses the toast. `vue-tsc --build --force` shows 0 errors and `vite build` passes. Not clicked through against live data (needs a signed-in admin and agent).
+
+---
+
 ## 2026-11-03 - Automatic DP division dates
 - **Changed:** `SalesUploadModal.vue`: DP division dates fill themselves. Division 1 starts one month after the reservation date (also refreshed when the reservation date changes). Each later division starts one step after the previous division's end date, where the step is one month, quarter or year following the previous division's unit. End dates still come from `lastDueDate`. Dates stay editable; changing a division's count, unit, start or end shifts the divisions after it. New helpers: `startFollowing`, `onDivisionChange`, `restartDivisionDates`; `addDivision` pre-fills the start.
 

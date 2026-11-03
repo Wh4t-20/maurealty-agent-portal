@@ -33,18 +33,40 @@
           <button type="button" class="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer" @click="$emit('close')">Close</button>
           <button v-if="canConfirm" type="button" :disabled="saving"
                   class="px-4 py-2 rounded-lg bg-maurealty-green text-white hover:opacity-90 transition cursor-pointer disabled:opacity-50"
-                  @click="confirm">
+                  @click="askReceived">
             {{ saving ? 'Saving…' : 'Received payment' }}
           </button>
         </div>
       </div>
     </div>
+
+    <!-- Typed confirmation: the recipient types the phrase before the payment is marked received -->
+    <ConfirmActionModal
+      v-if="confirmingReceived"
+      title="Confirm Payment Received"
+      message="This marks the commission as received and cannot be undone."
+      confirm-label="Confirm"
+      cancel-label="Cancel"
+      busy-label="Saving…"
+      tone="green"
+      :required-phrase="RECEIVED_PHRASE"
+      :busy="saving"
+      :error="error"
+      @cancel="confirmingReceived = false"
+      @confirm="confirm"
+    >
+      <p class="text-xs">
+        {{ tab.project_name }} · Payment {{ tab.payment_no }} of {{ tab.payment_total }} ·
+        <span class="font-bold text-maurealty-green">{{ peso(tab.commission_amount) }}</span>
+      </p>
+    </ConfirmActionModal>
   </Teleport>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { commissionService, type CommissionTab } from '@/services/commissionService'
+import ConfirmActionModal from '@/components/commissions/ConfirmActionModal.vue'
 
 // canConfirm: only the recipient, and only while the payment is released.
 const props = defineProps<{ tab: CommissionTab; canConfirm: boolean }>()
@@ -53,6 +75,15 @@ const emit = defineEmits<{ (e: 'close'): void; (e: 'received'): void }>()
 const saving = ref(false)
 const error = ref('')
 const peso = (n: number) => '₱' + (n || 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+// "Received payment" can't be undone, so it first asks the recipient (agent or admin, any rank)
+// to type this phrase. confirm() below only runs from that popup.
+const RECEIVED_PHRASE = 'I have received payment'
+const confirmingReceived = ref(false)
+function askReceived() {
+  error.value = ''
+  confirmingReceived.value = true
+}
 
 async function confirm() {
   error.value = ''

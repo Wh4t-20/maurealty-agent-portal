@@ -2,7 +2,7 @@
 
 > **What this file is:** the single reference for how the Maureal Realty and Brokerage (MRB) web portal works today: its features, the processes behind them, and where each piece of logic lives in the code. It is written for AI assistants and for the dev team.
 >
-> **Last verified against the code:** 2026-10-28 · branch `feature/sales-report-v2` · commit `859ea5d` · `npx vue-tsc --build --force` passes with **0 errors**.
+> **Last verified against the code:** 2026-11-03 · branch `fix/commissions-and-shared-listing` · commit `a7ce0e3` · `npx vue-tsc --build --force` passes with **0 errors** · `npx vite build` passes.
 >
 > **Related docs:** `documentation.md` (running log of changes, newest first) · `changelog.md` (early frontend notes, Dec 2025 to Jan 2026, historical only) · `README.md` (setup and branch naming).
 
@@ -135,8 +135,9 @@ Sale (Sales Report / "Sold" button)
    │ admin sets 'cancelled'                       ──►  tabs not yet received are deleted
    ▼
 Commission tab (Commissions page)
-   pending_approval ─admin approves─► approved ─agent requests─► payment_requested
-        ─admin releases with proof images─► payment_released ─agent confirms─► received
+   pending_approval ─admin approves (Yes/No popup)─► approved ─recipient requests─► payment_requested
+        ─admin releases with proof images─► payment_released ─recipient types the phrase─► received
+   (the recipient is the agent the tab pays: a non-admin, or an admin on their own tab)
 ```
 
 ### 2.2 Team ranks
@@ -259,7 +260,8 @@ The rank titles are marked *provisional pending client confirmation* in `src/ass
       ├─ Sidebar.vue          Desktop hover sidebar + phone bottom nav
       ├─ accounting/amortSched.vue        Amortization schedule modal + PDF export
       ├─ calculator/CalculatorPanel.vue   Loan / Sales / Property Tax calculator (reused in listing popup)
-      ├─ commissions/PaymentRequestModal.vue, ReleasePaymentModal.vue, ProofModal.vue
+      ├─ commissions/PaymentRequestModal.vue, ReleasePaymentModal.vue, ProofModal.vue,
+      │             ConfirmActionModal.vue (Yes/No or typed-phrase confirm popup)
       ├─ dashboard/DashboardStatCard.vue, SalesPerfromance.vue (sic), CommissionHistory.vue,
       │           GenealogyCard.vue, Reminders.vue, RecentActivity.vue (hidden),
       │           AddAgent.vue (placeholder), AddListing.vue & Calculator.vue (unused placeholders)
@@ -371,9 +373,10 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 
 - Page header: a gradient bar `bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black` with an uppercase title (Listings, Sales Report, Developers, Accounting, Profile).
 - Modals: a fixed overlay `bg-[rgba(10,61,98,0.7)] backdrop-blur-sm`. The commission and agent modals use `<Teleport to="body">`.
-- Feedback: small toasts (`Transition name="toast"`), `alert()` and `confirm()` in older code.
+- Confirmations: for an action that can't be undone, use `components/commissions/ConfirmActionModal.vue` (same look as the other modals, `z-60` so it can open on top of one). It moves keyboard focus into itself, keeps Tab inside, closes on Escape or a click outside, and can require a typed phrase (`requiredPhrase`). New code should use it instead of `confirm()`.
+- Feedback: small toasts (`Transition name="toast"`), `alert()` and `confirm()` in older code. Success toasts are top-right on Listings and Sales Report; the Commissions page toast is **bottom-right** (`bottom-20 md:bottom-6`, so it clears the phone bottom nav).
 - Responsive: Sidebar is `hidden md:flex`; phones get a bottom nav (`App.vue` adds `pb-16`). Grids and tables are built mobile-first.
-- `Commission.vue`, its three modals, `AddAgentModal.vue` and `SharedListing.vue` have **no dark-mode classes** yet.
+- `Commission.vue`, its three original modals (`PaymentRequestModal`, `ReleasePaymentModal`, `ProofModal`) and `AddAgentModal.vue` have **no dark-mode classes** yet. `ConfirmActionModal.vue` and the Commissions toast do. `SharedListing.vue` has had them since 2026-11-03 (copied from `PropertyDetails.vue`).
 
 ---
 
@@ -394,13 +397,13 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 | See sales | own only | all + Agent filter, Agent column, upline in details | `SalesReport.loadSales` |
 | Edit / delete sale | only while `pending approval` | always | `SalesReport.canEditSale` |
 | Change sale status | ✗ (field disabled, status stripped from payload) | ✓ | `SalesUploadModal` |
-| See commission tabs | own (as recipient) | all, with "My Commissions" / "All Agents (Approval)" switch | `Commission.loadCommissions` |
-| Approve commission | ✗ | ✓ (any tab, including their own) | `Commission.vue` button + status guard in `approveTab` |
-| Request payment | own tab, approved, due, earlier payments received | ✗ never, not even on their own tabs | `canAgentAct` + `canRequest` + `commissionService.requestPayment` order check |
-| Release payment | ✗ | ✓ | `Commission.vue` button |
-| Confirm received | own tab, `payment_released` | ✗ | `canAgentAct` |
+| See commission tabs | own (as recipient) | all, with a "My Commissions" / "All Agents (Approval)" / "Other Agents" switch; own tabs carry a "You" badge in All Agents | `Commission.loadCommissions`, `scopedList`, `showOwnBadge` |
+| Approve commission | ✗ | ✓ (any tab, including their own), after Yes in a confirmation popup | `Commission.askApprove` → `handleApprove` + status guard in `approveTab` |
+| Request payment | own tab, approved, due, earlier payments received | **own tabs only**, same rules (since 2026-11-03) | `canAgentAct` (= `isOwnTab`) + `canRequest` + `commissionService.requestPayment` order check |
+| Release payment | ✗ | ✓ (any tab, including their own) | `Commission.vue` button |
+| Confirm received | own tab, `payment_released`, after typing "I have received payment" | **own tabs only**, same typed check (since 2026-11-03) | `canAgentAct` + `ProofModal.askReceived` |
 | Dashboard scope | own data | "My Stats" / "All Agents" (default All) | `Dashboard.vue` |
-| Personal payout alerts and reminders | ✓ | ✗ (admins don't request or receive payouts in the app) | `dashboardService.buildDashboard` |
+| Personal payout alerts and reminders | ✓ | ✗ (admins can act on their own tabs from the Commissions page, but the Dashboard gives them approval alerts only) | `dashboardService.buildDashboard` |
 | Add / edit / delete agents, promote, edit thresholds | ✗ intended, but ⚠ currently visible to everyone | ✓ | **no gating yet** (admin-only confirmed by the team, 2026-10-28) |
 | Add / edit / delete developers and promos | ✗ intended, but ⚠ currently visible to everyone | ✓ | **no gating yet** (admin-only confirmed by the team, 2026-10-28) |
 | Profile, Settings | own | own | — |
@@ -529,9 +532,10 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   2. The URL `${origin}/shared/listing/${share_id}` is copied to the clipboard and an `alert` confirms it.
   3. `SharedListing.vue` calls `getSharedListing(token)`. This joins the listing, its sub-tables, images, agent and developer, and throws if the link expired or the listing is pending.
   4. The page shows the gallery, price, type, location, a map with POIs, the agent, the developer, the features, the description and the FAQ. **The commission and incentives are never shown.**
+  5. It follows the `PropertyDetails` overlay: bulk listings show the **min – max price range** (`is_bulk && max_price`), type features are shown for **single listings only**, photos are ordered by `listing_images.display_order`, and the `dark:` classes are the overlay's.
 - **Data:** W/R `shared_listings` (uuid `share_id` is the token).
 - **Code:** `src/services/shareService.ts`, `PropertyDetails.handleShare`, `src/views/SharedListing.vue`.
-- **Rules and edge cases:** the `agent_ID` saved on the link is the **listing owner's** id (`details.agent_ID`), not the id of the agent who shared it. A bulk listing's price range is not shown on the public page (only `price`).
+- **Rules and edge cases:** the `agent_ID` saved on the link is the **listing owner's** id (`details.agent_ID`), not the id of the agent who shared it. Dark mode follows the viewer's saved settings (`App.vue`), so a client normally sees the light page. If you change how the overlay shows a listing, change `SharedListing.vue` the same way.
 
 ### 7.8 Maps and nearby points of interest
 - **Where:** `MapHolder.vue` (read-only map in the listing overlay and the public page) and `MapInteractive.vue` (location picker in Property Management).
@@ -620,30 +624,33 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 
 ### 7.12 Commissions page (payment flow)
 - **Route / entry point:** `/commissions`; also the Dashboard alerts and reminders.
-- **Who:** agents see the tabs where they are the recipient (as seller or upline). Admins see every tab ("All Agents (Approval)", the default) or only their own ("My Commissions").
+- **Who:** agents see the tabs where they are the recipient (as seller or upline). Admins get a three-way switch (`scope`): **All Agents (Approval)** (every tab, the default), **My Commissions** (only their own), **Other Agents** (every tab except their own).
 - **When it is used:** tracking receivables and moving each payout through the payment process.
 - **Layout:**
-  1. **Receivables header:** received of total, number of payouts received, "yet to collect", and a progress bar. In the admin All Agents view, a per-agent received/total list.
+  1. **Receivables header:** received of total, number of payouts received, "yet to collect", and a progress bar. In the admin All Agents and Other Agents views, the label names the view and a per-agent received/total list is shown.
   2. **Filter by sale:** collected, yet to collect, sale total.
   3. **Status filter tabs with counts:** All, Awaiting Approval, Approved, Payment Requested, Payment Released, Received.
   4. **Cards** in one shared grid: Payment `n/N`, project/developer, agent, role (+ rank), amount (+ "Remaining balance"), due date with a badge (Due Date Reached, Pending Date or Sale Complete), status, and a hint ("Receive payment k first" or "Request opens on the due date").
+     - **"You" badge:** in the admin All Agents view, a blue `YOU` pill sits right of the agent name on the admin's own tabs (`showOwnBadge`). It is not shown in My Commissions (all theirs) or Other Agents (none).
   5. Sort order: not received first, then due date, then developer name.
-- **Actions** (state machine in 8.3):
+- **Actions** (state machine in 8.3). "Recipient" = the signed-in person is `recipient_agent_ID` (`canAgentAct`), a non-admin or an admin on their own tab:
 
-  | Status | Admin sees | Recipient agent sees |
+  | Status | Admin sees (someone else's tab) | Recipient sees (own tab, admin or not) |
   |---|---|---|
-  | `pending_approval` | **Approve commission** → `approveTab` | (waiting) |
+  | `pending_approval` | **Approve commission** → confirmation popup "Are you sure you want to approve this commission?" (No / Yes, with a summary) → `approveTab` → toast "Commission approved." (bottom right) | (waiting); an admin on their own tab sees Approve too |
   | `approved` | "Waiting for the agent to request payment" | **Request payment**: enabled when due (due date reached or sale complete) and every earlier payment of the same sale for the same person is received. Opens `PaymentRequestModal`. |
-  | `payment_requested` | **Release payment** → `ReleasePaymentModal` | "Request sent..." |
-  | `payment_released` | View proof of payment | **View proof / Confirm** → `ProofModal` → **Received payment** |
+  | `payment_requested` | **Release payment** → `ReleasePaymentModal` | "Request sent..." (an admin on their own tab sees Release payment instead) |
+  | `payment_released` | View proof of payment | **View proof / Confirm** → `ProofModal` → **Received payment** → typed confirmation popup |
   | `received` | ✓ Received + date, View proof | same |
 
 - **Modals:**
   - `PaymentRequestModal`: prefilled with the first/middle/last name (from the account) and the sale details. **Edit details** unlocks the names, client, project, developer and reservation date; **Reset** restores them. The contract price, role/rank, payment number, due date and amount stay locked. Submits `PaymentRequestDetails` into `commissions.request_details`.
   - `ReleasePaymentModal`: shows the request. The admin must attach at least one image (file picker or **Ctrl+V paste**). Uploads go to `images/payment-proofs/`.
-  - `ProofModal`: an image gallery; the recipient can confirm receipt, which cannot be undone.
+  - `ProofModal`: an image gallery; the recipient can confirm receipt, which cannot be undone. **Received payment** opens a `ConfirmActionModal` that requires typing **"I have received payment"** (letter case and extra spaces ignored) before **Confirm** is enabled; only then does `confirmReceived` run.
+  - `ConfirmActionModal`: the shared confirm popup (see 5.8). Used for Approve (`Commission.vue`) and Received payment (`ProofModal`). Save errors show inside it.
 - **Data:** R/W `commissions` (+ `agents!recipient_agent_ID`, `sales`, `main_listings`, `developers`); storage `images/payment-proofs/`.
-- **Code:** `src/views/Commission.vue`, `components/commissions/*`, `commissionService.getTabs/approveTab/requestPayment/releasePayment/confirmReceived/summarizeTabs/STATUS_LABEL`.
+- **Code:** `src/views/Commission.vue` (`scope`, `scopedList`, `showOwnBadge`, `canAgentAct`, `askApprove`, `handleApprove`, `showToast`), `components/commissions/*`, `commissionService.getTabs/approveTab/requestPayment/releasePayment/confirmReceived/summarizeTabs/STATUS_LABEL`.
+- **Rules and edge cases:** admins can request and receive payment **on their own tabs only** (since 2026-11-03; before that these steps were agent-only and an admin's own tab stopped at Approved). The Dashboard still gives admins no personal payout alerts. Request and release toasts are not implemented; those steps still confirm with `alert()`.
 
 ### 7.13 Genealogy (team tree and agent management)
 - **Route / entry point:** `/genealogy`.
@@ -753,16 +760,18 @@ Values used by the app: `draft`, `pending`, `active`, `sold`. The listing grids 
 ### 8.3 Commission tab status (`commissions.status`, text with a check constraint)
 
 ```
-pending_approval ──admin approveTab──► approved ──agent requestPayment──► payment_requested
-      ──admin releasePayment (≥1 proof image)──► payment_released ──agent confirmReceived──► received
+pending_approval ──admin approveTab──► approved ──recipient requestPayment──► payment_requested
+      ──admin releasePayment (≥1 proof image)──► payment_released ──recipient confirmReceived──► received
 ```
+
+The recipient is whoever the tab pays (`recipient_agent_ID`): a non-admin agent, or an admin on their own tab.
 
 | Step | Sets | Guard |
 |---|---|---|
-| `approveTab` | `admin_approved=true`, `approved_at` | only from `pending_approval` |
+| `approveTab` | `admin_approved=true`, `approved_at` | only from `pending_approval`; UI asks for Yes in a confirmation popup first |
 | `requestPayment` | `requested_at`, `request_details` | from `approved`; every earlier `payment_no` of the same sale for the same recipient is `received`; UI also requires due (`due_date <= today` or sale `complete`) |
 | `releasePayment` | `released_at`, `released_by`, `proof_urls` | from `payment_requested`; at least one file |
-| `confirmReceived` | `claimed=true`, `claimed_at` | from `payment_released` |
+| `confirmReceived` | `claimed=true`, `claimed_at` | from `payment_released`; UI requires typing "I have received payment" first |
 
 Each step goes through `_advance(id, from, patch)`, which updates `.eq('status', from)` and returns `false` if 0 rows changed (the status had already moved, or RLS blocked it). **Only `received` counts as received money** in receivables and dashboard totals. Labels: `STATUS_LABEL` uses "Pending Approval" while the filter tab says "Awaiting Approval"; both mean `pending_approval`.
 
@@ -1053,7 +1062,7 @@ Tables that existed before migrations were introduced (`agents`, `main_listings`
 | Function | Purpose | Used by |
 |---|---|---|
 | `generateShareLink(listingId, agentId, daysValid=1)` | Clean up expired links, insert a new `shared_listings` row, return it | PropertyDetails |
-| `getSharedListing(token)` | Load the listing for a token; throws if expired or pending | SharedListing |
+| `getSharedListing(token)` | Load the listing for a token (images with `display_order`); throws if expired or pending | SharedListing |
 
 **`src/services/poiService.ts`** (`poiService`, `POI_CATEGORIES`, `haversineKm`)
 
@@ -1181,6 +1190,7 @@ Tables that existed before migrations were introduced (`agents`, `main_listings`
 | `commissions/PaymentRequestModal` | `tab`, `agent` | `close`, `submitted` | Commission |
 | `commissions/ReleasePaymentModal` | `tab`, `adminAgentId` | `close`, `released` | Commission |
 | `commissions/ProofModal` | `tab`, `canConfirm` | `close`, `received` | Commission |
+| `commissions/ConfirmActionModal` | `title`, `message`, `confirmLabel?` ('Yes'), `cancelLabel?` ('No'), `busyLabel?`, `tone?` ('blue' \| 'green'), `busy?`, `error?`, `requiredPhrase?`; default slot = summary box | `confirm`, `cancel` | Commission (approve), ProofModal (received) |
 | `dashboard/DashboardStatCard` | `stat: Metric` | `click` | Dashboard |
 | `dashboard/SalesPerfromance` | `bars`, `sold`, `avgDeal` | `open-details` | Dashboard |
 | `dashboard/CommissionHistory` | `history: HistoryItem[]` | — | Dashboard |
@@ -1248,7 +1258,8 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 ### 11.6 Settings and UI
 - `currentCurrency` and `currentUnit` are set once, at module load. Changing the default in Settings only applies after a reload; the Listings dropdowns change them for the session only.
 - Settings Save shows no success or error message to the user. Logout doesn't clear `localStorage['app_user_settings']`.
-- The Commissions page, its modals, `AddAgentModal` and `SharedListing` have no dark-mode styling.
+- The Commissions page, its request/release/proof modals and `AddAgentModal` have no dark-mode styling. (`ConfirmActionModal` and the Commissions toast have it, so they turn dark over a light page when dark mode is on.)
+- The Commissions page still uses `alert()` after a payment request, a release and a receipt; only Approve uses the toast.
 - `bg-maurealty-red` (Listings confirmation toast) isn't a defined theme color.
 
 ### 11.7 Security (pre-launch)
@@ -1300,6 +1311,7 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 
 | `documentation.md` entry | Summary | See |
 |---|---|---|
+| 2026-11-03: Commission confirmations, admin filter, shared listing | Other Agents switch, "You" badge, Approve popup + toast, admins request/receive on own tabs, typed "I have received payment", `ConfirmActionModal`; shared page shows bulk price range, hides bulk features, orders photos, dark mode | 5.8, 6, 7.7, 7.12, 8.3, 10.4 |
 | 2026-10-15: Dashboard cards, genealogy card, commissions page | New card rows, live Sales Performance, full upline and any-depth downline, Recent Activity hidden, single grid of commission cards with "n/N", ordered payment requests, editable request details, per-agent vs all sale numbering | 7.3, 7.12, 7.9 |
 | 2026-10-14: Commission payment flow | `claimTab` replaced by the 5-status flow, request/release/proof modals, proof images, role restrictions, `agents!recipient_agent_ID` fix | 7.12, 8.3 |
 | 2026-10-14: Roles, role-based commissions, sale form, live dashboard | `ranks.ts`, `commissionAllocation.ts`, Deferred-Cash, `getRoleChain`, `useLiveRefresh`, hierarchy rules, `TeamInsights`, block/lot/phase/floor on bulk sales | 7.10, 7.11, 7.13, 7.14, 8.4, 8.5, 5.6 |
@@ -1328,6 +1340,7 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 
 Add one line per update, newest first: `YYYY-MM-DD: what changed (sections)`.
 
+- **2026-11-03:** Commissions: admin "Other Agents" view, "You" badge, Approve confirmation popup + bottom-right toast, admins can request/receive payment on their own tabs, typed "I have received payment" check, new `ConfirmActionModal` (2.1, 4, 5.8, 6, 7.12, 8.3, 10.4, 11.6). Shared listing: bulk price range, single-only type features, photo order, dark mode (5.8, 7.7, 10.1, 11.6).
 - **2026-11-03:** Sale form fills DP division dates automatically (7.10).
 - **2026-11-03:** Commission pool is now the gross commission itself (extra 5% removed); sale form defaults the Commission Rate to 5% when the listing has none (7.10, 8.4).
 - **2026-10-28:** Recorded team answers: the 5% formula stays unconfirmed (8.4); the approval date is the correct due-date anchor, so the sale form's wording is the bug (11.2, 13.2); agent and developer management is meant to be admin-only (6, 7.13, 7.15, 11.3, 11.4).

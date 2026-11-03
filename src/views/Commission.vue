@@ -1,6 +1,14 @@
 <template>
   <div class="min-h-screen bg-background-gray text-gray-800 flex flex-col md:flex-row font-sans">
 
+    <!-- TOAST: bottom right; raised on phones so the bottom nav bar doesn't cover it -->
+    <Transition name="toast">
+      <div v-if="toast" role="status" class="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-70 flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-maurealty-green/40 dark:border-maurealty-green/60 shadow-lg px-5 py-3">
+        <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-green text-white text-sm font-bold">✓</span>
+        <p class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ toast }}</p>
+      </div>
+    </Transition>
+
     <!-- MAIN CONTENT CONTAINER -->
     <main class="flex-1 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8">
       <!-- HEADER -->
@@ -16,7 +24,7 @@
         </div>
       </div>
 
-      <!-- ADMIN VIEW SWITCH: own commissions (claimable) vs everyone's (for approval) -->
+      <!-- ADMIN VIEW SWITCH: own commissions (claimable), everyone's (for approval), or everyone else's -->
       <div v-if="isAdmin" class="bg-white rounded-2xl p-3 shadow-sm mb-3 border border-sidebar-hover/20">
         <div class="flex items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
           <button
@@ -35,17 +43,21 @@
         </div>
         <p class="text-xs text-gray-500 mt-2 px-1">
           {{ scope === 'all'
-            ? 'Every agent’s commissions. Approve them, then release payment once an agent requests it.'
-            : 'Commissions you receive as the seller or as an upline (Upline 1, 2 or the broker).' }}
+            ? 'Every agent’s commissions, yours included. Approve them, then release payment once an agent requests it.'
+            : scope === 'others'
+              ? 'Every other agent’s commissions (yours are left out). Approve them, then release payment once an agent requests it.'
+              : 'Commissions you receive as the seller or as an upline (Upline 1, 2 or the broker).' }}
         </p>
       </div>
 
-      <!-- RECEIVABLES: claimed vs total commission (everyone's in the admin "All Agents" view) -->
+      <!-- RECEIVABLES: claimed vs total commission (everyone's in the admin "All Agents" / "Other Agents" views) -->
       <div class="bg-white rounded-2xl p-5 shadow-sm mb-3 border border-sidebar-hover/20">
         <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
             <span class="text-[11px] uppercase tracking-wider text-gray-500 font-medium">
-              {{ isAdmin && scope === 'all' ? 'Total Receivables (All Agents)' : 'My Receivables (received)' }}
+              {{ isAdmin && scope === 'all' ? 'Total Receivables (All Agents)'
+                : isAdmin && scope === 'others' ? 'Total Receivables (Other Agents)'
+                : 'My Receivables (received)' }}
             </span>
             <p class="text-2xl font-extrabold text-maurealty-green">
               {{ peso(receivables.claimedAmount) }}
@@ -61,7 +73,7 @@
           <div class="h-full bg-maurealty-green transition-all" :style="{ width: receivablesPercent + '%' }"></div>
         </div>
 
-        <div v-if="isAdmin && scope === 'all' && perAgent.length" class="mt-4 border-t border-gray-100 pt-3">
+        <div v-if="isAdmin && scope !== 'mine' && perAgent.length" class="mt-4 border-t border-gray-100 pt-3">
           <span class="text-[11px] uppercase tracking-wider text-gray-500 font-medium">Per agent (received / total)</span>
           <ul class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
             <li v-for="a in perAgent" :key="a.id" class="flex items-center justify-between gap-3">
@@ -177,10 +189,16 @@
                 <p class="text-xs text-gray-600 truncate" :title="comm.developer_name">{{ comm.developer_name }}</p>
               </div>
 
-              <!-- Agent (the person receiving this commission) -->
+              <!-- Agent (the person receiving this commission). In the admin "All Agents" view a
+                   "You" badge sits right of the name when the commission is the admin's own. -->
               <div>
                 <span class="text-[11px] uppercase tracking-wider text-gray-500 block font-medium">Agent</span>
-                <p class="text-sm font-semibold text-gray-800 truncate" :title="comm.agent_name">{{ comm.agent_name }}</p>
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <p class="text-sm font-semibold text-gray-800 truncate" :title="comm.agent_name">{{ comm.agent_name }}</p>
+                  <span v-if="showOwnBadge(comm)" class="shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full bg-maurealty-blue text-white uppercase tracking-wider" title="This commission is yours">
+                    You
+                  </span>
+                </div>
               </div>
 
               <!-- Role: Agent, Upline 1, Upline 2 or Upline 3 (broker), with the recipient's rank -->
@@ -221,14 +239,14 @@
                 <span :class="['inline-block px-2.5 py-1 rounded-full text-xs font-bold mt-1', statusClass(comm.status)]">
                   {{ STATUS_LABEL[comm.status] }}
                 </span>
-                <span v-if="comm.status === 'approved' && blockedBy(comm) !== null && !isAdmin" class="block text-[10px] text-amber-700 mt-0.5">Receive payment {{ blockedBy(comm) }} first</span>
+                <span v-if="comm.status === 'approved' && blockedBy(comm) !== null && canAgentAct(comm)" class="block text-[10px] text-amber-700 mt-0.5">Receive payment {{ blockedBy(comm) }} first</span>
                 <span v-else-if="comm.status === 'approved' && !isDue(comm)" class="block text-[10px] text-gray-500 mt-0.5">Request opens on the due date</span>
               </div>
             </div>
 
             <!-- ACTIONS: approve (admin) -> request payment (recipient) -> release payment (admin) -> received (recipient) -->
             <div class="col-span-2 sm:col-span-3 lg:col-span-1 flex flex-col items-stretch lg:items-center justify-center gap-2 border-t lg:border-t-0 pt-3 lg:pt-0">
-              <button v-if="isAdmin && comm.status === 'pending_approval'" class="action-btn border border-maurealty-blue text-maurealty-blue hover:bg-maurealty-blue hover:text-white" @click="handleApprove(comm.id)">
+              <button v-if="isAdmin && comm.status === 'pending_approval'" class="action-btn border border-maurealty-blue text-maurealty-blue hover:bg-maurealty-blue hover:text-white" @click="askApprove(comm)">
                 Approve commission
               </button>
 
@@ -265,6 +283,27 @@
       </div>
 
       <!-- POPUPS -->
+      <!-- Approve confirmation: the admin says Yes before the tab is approved -->
+      <ConfirmActionModal
+        v-if="approving"
+        title="Approve Commission"
+        message="Are you sure you want to approve this commission?"
+        confirm-label="Yes"
+        cancel-label="No"
+        busy-label="Approving…"
+        :busy="approveBusy"
+        :error="approveError"
+        @cancel="approving = null"
+        @confirm="handleApprove(approving!.id)"
+      >
+        <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+          <div><dt class="text-gray-500 dark:text-gray-400">Agent</dt><dd class="font-semibold">{{ approving.agent_name }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Role</dt><dd class="font-semibold">{{ approving.role }}<template v-if="approving.rank"> · {{ approving.rank }}</template></dd></div>
+          <div class="col-span-2"><dt class="text-gray-500 dark:text-gray-400">Project</dt><dd class="font-semibold">{{ approving.project_name }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Payment</dt><dd class="font-semibold">{{ approving.payment_no }} of {{ approving.payment_total }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Commission</dt><dd class="font-extrabold text-maurealty-green">{{ peso(approving.commission_amount) }}</dd></div>
+        </dl>
+      </ConfirmActionModal>
       <PaymentRequestModal v-if="requesting && me" :tab="requesting" :agent="me" @close="requesting = null" @submitted="afterChange(requesting!, 'Payment request sent to the admin.')" />
       <ReleasePaymentModal v-if="releasing" :tab="releasing" :admin-agent-id="currentAgentId" @close="releasing = null" @released="afterChange(releasing!, 'Proof of payment sent. The agent has been notified.')" />
       <ProofModal v-if="viewing" :tab="viewing" :can-confirm="canAgentAct(viewing) && viewing.status === 'payment_released'" @close="viewing = null" @received="afterChange(viewing!, 'Marked as received.')" />
@@ -279,6 +318,7 @@ import { commissionService, summarizeTabs, STATUS_LABEL, type CommissionTab, typ
 import PaymentRequestModal from '@/components/commissions/PaymentRequestModal.vue';
 import ReleasePaymentModal from '@/components/commissions/ReleasePaymentModal.vue';
 import ProofModal from '@/components/commissions/ProofModal.vue';
+import ConfirmActionModal from '@/components/commissions/ConfirmActionModal.vue';
 import { useLiveRefresh } from '@/utils/liveRefresh';
 import { authService } from '@/services/authService';
 
@@ -300,13 +340,29 @@ const requesting = ref<CommissionItem | null>(null);
 const releasing = ref<CommissionItem | null>(null);
 const viewing = ref<CommissionItem | null>(null);
 
+// Approve confirmation popup: the tab waiting for the admin's Yes, and the save state.
+const approving = ref<CommissionItem | null>(null);
+const approveBusy = ref(false);
+const approveError = ref('');
+
+// --- Toast feedback (bottom right) ---
+const toast = ref('');
+let toastTimer: ReturnType<typeof setTimeout> | undefined;
+function showToast(msg: string) {
+  toast.value = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (toast.value = ''), 3000);
+}
+
 let adminScopeSet = false;
 
-// Admin view: "mine" = tabs I receive, "all" = everyone's tabs (for approval).
-const scope = ref<'mine' | 'all'>('mine');
+// Admin view: "mine" = tabs I receive, "all" = everyone's tabs (for approval),
+// "others" = everyone's tabs except mine.
+const scope = ref<'mine' | 'all' | 'others'>('mine');
 const scopes = [
   { id: 'mine', label: 'My Commissions' },
-  { id: 'all', label: 'All Agents (Approval)' }
+  { id: 'all', label: 'All Agents (Approval)' },
+  { id: 'others', label: 'Other Agents' }
 ] as const;
 
 // Active Filter Tab state
@@ -347,10 +403,11 @@ function isDue(tab: CommissionTab): boolean {
   return tab.sale_status === 'complete' || isDateReached(tab.due_date);
 }
 
-// Requesting and receiving payment is for the agent only: the recipient of the tab, never an admin.
+// Requesting and receiving payment is for the recipient of the tab only. That includes an admin
+// on their own tabs, but never an admin on someone else's.
 // (Approving and releasing payment are the admin-only steps.)
 function canAgentAct(tab: CommissionTab): boolean {
-  return !isAdmin.value && isOwnTab(tab);
+  return isOwnTab(tab);
 }
 
 // Payments of a sale are received in order: a later payment can't be requested until the
@@ -378,6 +435,12 @@ function isOwnTab(tab: CommissionTab): boolean {
   return tab.recipient_agent_ID === currentAgentId.value;
 }
 
+// "You" badge on the agent field: only in the admin "All Agents" view, where the admin's own
+// tabs are mixed in with everyone else's ("My Commissions" is all theirs, "Other Agents" has none).
+function showOwnBadge(tab: CommissionTab): boolean {
+  return isAdmin.value && scope.value === 'all' && isOwnTab(tab);
+}
+
 // Admin loads everyone's tabs; an agent loads only the tabs they receive.
 async function loadCommissions(silent = false) {
   if (!silent) loading.value = true;
@@ -386,7 +449,7 @@ async function loadCommissions(silent = false) {
     isAdmin.value = !!agent?.admin_access;
     currentAgentId.value = agent?.agent_ID ?? null;
     me.value = agent ? { first_name: agent.first_name, middle_name: (agent as any).middle_name ?? null, last_name: agent.last_name } : null;
-    // An admin has no payouts of their own to act on, so they start on everyone's commissions.
+    // An admin mostly approves and releases payments, so they start on everyone's commissions.
     if (isAdmin.value && !adminScopeSet) { scope.value = 'all'; adminScopeSet = true; }
     loadError.value = '';
     const tabs = await commissionService.getTabs(isAdmin.value ? undefined : agent?.agent_ID);
@@ -404,12 +467,14 @@ onMounted(() => loadCommissions());
 // Stay current without a reload (sales approved/completed, tabs approved or claimed elsewhere).
 useLiveRefresh(() => loadCommissions(true), ['commissions', 'sales']);
 
-// What this person is looking at: an admin in "mine" scope sees only their own tabs.
-const scopedList = computed(() =>
-  isAdmin.value && scope.value === 'mine'
+// What this person is looking at: an admin in "mine" scope sees only their own tabs, and in
+// "others" scope everyone's tabs but their own.
+const scopedList = computed(() => {
+  if (!isAdmin.value || scope.value === 'all') return commissions_list.value;
+  return scope.value === 'mine'
     ? commissions_list.value.filter(c => isOwnTab(c))
-    : commissions_list.value
-);
+    : commissions_list.value.filter(c => !isOwnTab(c));
+});
 
 // --- Receivables (claimed vs total) ---
 const peso = (n: number) => '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -418,7 +483,7 @@ const receivablesPercent = computed(() =>
   receivables.value.totalAmount > 0 ? Math.min(100, Math.round((receivables.value.claimedAmount / receivables.value.totalAmount) * 100)) : 0
 );
 
-// Admin "All Agents" view: claimed / total per recipient.
+// Admin "All Agents" / "Other Agents" views: claimed / total per recipient.
 const perAgent = computed(() => {
   const groups = new Map<number, { id: number; name: string; tabs: CommissionTab[] }>();
   for (const t of scopedList.value) {
@@ -505,26 +570,45 @@ const filteredCommissions = computed(() => {
     });
 });
 
+// "Approve commission" opens the confirmation popup first; handleApprove runs on its Yes.
+function askApprove(comm: CommissionItem): void {
+  approveError.value = '';
+  approving.value = comm;
+}
+
 /**
  * Admin approves a commission so its recipient can claim it.
- * 
+ * Runs after the admin presses Yes in the confirmation popup. Errors stay in the popup;
+ * success closes it and shows the "Commission approved" toast.
+ *
  * @param {number} commId - The commission ID.
  */
 async function handleApprove(commId: number): Promise<void> {
+  // Looked up again by id: a live refresh may have replaced the list while the popup was open.
   const item = commissions_list.value.find(c => c.id === commId);
-  if (!item || !isAdmin.value) return;
+  if (!isAdmin.value) return;
+  if (!item) {
+    approveError.value = 'This commission is no longer available. It may have been removed.';
+    return;
+  }
 
+  approveBusy.value = true;
+  approveError.value = '';
   try {
     const ok = await commissionService.approveTab(commId);
     if (!ok) {
-      alert('Approval failed — check permissions.');
+      approveError.value = 'Approval failed. The commission may have changed, or you may not have permission.';
       return;
     }
     item.is_admin_approved = true;
     item.status = 'approved';
+    approving.value = null;
+    showToast('Commission approved.');
   } catch (e) {
     console.error('Failed to approve commission:', e);
-    alert('Something went wrong approving this commission.');
+    approveError.value = 'Something went wrong approving this commission.';
+  } finally {
+    approveBusy.value = false;
   }
 }
 
@@ -548,5 +632,16 @@ async function afterChange(_tab: CommissionItem, message: string): Promise<void>
   font-weight: 700;
   transition: all 0.15s;
   cursor: pointer;
+}
+
+/* Toast slides up into the bottom-right corner */
+.toast-enter-active,
+.toast-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 </style>
