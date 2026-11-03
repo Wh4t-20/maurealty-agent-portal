@@ -16,7 +16,7 @@
         </div>
       </div>
 
-      <!-- ADMIN VIEW SWITCH: own commissions (claimable) vs everyone's (for approval) -->
+      <!-- ADMIN VIEW SWITCH: own commissions (claimable), everyone's (for approval), or everyone else's -->
       <div v-if="isAdmin" class="bg-white rounded-2xl p-3 shadow-sm mb-3 border border-sidebar-hover/20">
         <div class="flex items-center gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden">
           <button
@@ -35,17 +35,21 @@
         </div>
         <p class="text-xs text-gray-500 mt-2 px-1">
           {{ scope === 'all'
-            ? 'Every agent’s commissions. Approve them, then release payment once an agent requests it.'
-            : 'Commissions you receive as the seller or as an upline (Upline 1, 2 or the broker).' }}
+            ? 'Every agent’s commissions, yours included. Approve them, then release payment once an agent requests it.'
+            : scope === 'others'
+              ? 'Every other agent’s commissions (yours are left out). Approve them, then release payment once an agent requests it.'
+              : 'Commissions you receive as the seller or as an upline (Upline 1, 2 or the broker).' }}
         </p>
       </div>
 
-      <!-- RECEIVABLES: claimed vs total commission (everyone's in the admin "All Agents" view) -->
+      <!-- RECEIVABLES: claimed vs total commission (everyone's in the admin "All Agents" / "Other Agents" views) -->
       <div class="bg-white rounded-2xl p-5 shadow-sm mb-3 border border-sidebar-hover/20">
         <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
           <div>
             <span class="text-[11px] uppercase tracking-wider text-gray-500 font-medium">
-              {{ isAdmin && scope === 'all' ? 'Total Receivables (All Agents)' : 'My Receivables (received)' }}
+              {{ isAdmin && scope === 'all' ? 'Total Receivables (All Agents)'
+                : isAdmin && scope === 'others' ? 'Total Receivables (Other Agents)'
+                : 'My Receivables (received)' }}
             </span>
             <p class="text-2xl font-extrabold text-maurealty-green">
               {{ peso(receivables.claimedAmount) }}
@@ -61,7 +65,7 @@
           <div class="h-full bg-maurealty-green transition-all" :style="{ width: receivablesPercent + '%' }"></div>
         </div>
 
-        <div v-if="isAdmin && scope === 'all' && perAgent.length" class="mt-4 border-t border-gray-100 pt-3">
+        <div v-if="isAdmin && scope !== 'mine' && perAgent.length" class="mt-4 border-t border-gray-100 pt-3">
           <span class="text-[11px] uppercase tracking-wider text-gray-500 font-medium">Per agent (received / total)</span>
           <ul class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
             <li v-for="a in perAgent" :key="a.id" class="flex items-center justify-between gap-3">
@@ -302,11 +306,13 @@ const viewing = ref<CommissionItem | null>(null);
 
 let adminScopeSet = false;
 
-// Admin view: "mine" = tabs I receive, "all" = everyone's tabs (for approval).
-const scope = ref<'mine' | 'all'>('mine');
+// Admin view: "mine" = tabs I receive, "all" = everyone's tabs (for approval),
+// "others" = everyone's tabs except mine.
+const scope = ref<'mine' | 'all' | 'others'>('mine');
 const scopes = [
   { id: 'mine', label: 'My Commissions' },
-  { id: 'all', label: 'All Agents (Approval)' }
+  { id: 'all', label: 'All Agents (Approval)' },
+  { id: 'others', label: 'Other Agents' }
 ] as const;
 
 // Active Filter Tab state
@@ -404,12 +410,14 @@ onMounted(() => loadCommissions());
 // Stay current without a reload (sales approved/completed, tabs approved or claimed elsewhere).
 useLiveRefresh(() => loadCommissions(true), ['commissions', 'sales']);
 
-// What this person is looking at: an admin in "mine" scope sees only their own tabs.
-const scopedList = computed(() =>
-  isAdmin.value && scope.value === 'mine'
+// What this person is looking at: an admin in "mine" scope sees only their own tabs, and in
+// "others" scope everyone's tabs but their own.
+const scopedList = computed(() => {
+  if (!isAdmin.value || scope.value === 'all') return commissions_list.value;
+  return scope.value === 'mine'
     ? commissions_list.value.filter(c => isOwnTab(c))
-    : commissions_list.value
-);
+    : commissions_list.value.filter(c => !isOwnTab(c));
+});
 
 // --- Receivables (claimed vs total) ---
 const peso = (n: number) => '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -418,7 +426,7 @@ const receivablesPercent = computed(() =>
   receivables.value.totalAmount > 0 ? Math.min(100, Math.round((receivables.value.claimedAmount / receivables.value.totalAmount) * 100)) : 0
 );
 
-// Admin "All Agents" view: claimed / total per recipient.
+// Admin "All Agents" / "Other Agents" views: claimed / total per recipient.
 const perAgent = computed(() => {
   const groups = new Map<number, { id: number; name: string; tabs: CommissionTab[] }>();
   for (const t of scopedList.value) {
