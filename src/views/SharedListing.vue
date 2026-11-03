@@ -103,8 +103,11 @@
               <p class="ml-2.5">{{ details.developer_name }}</p>
             </span>
 
+            <!-- Type features are for single listings only, like the listing details overlay: a bulk
+                 listing's sub-table row only holds the form's placeholder values. -->
+
             <!-- HOUSE AND LOT -->
-            <template v-if="details.property_type === 'house_and_lot' && details.house_and_lot">
+            <template v-if="!details.is_bulk && details.property_type === 'house_and_lot' && details.house_and_lot">
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full mt-2">
                 <legend class="px-2 font-semibold text-maurealty-blue">House and Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
@@ -144,7 +147,7 @@
             </template>
 
             <!-- LOT ONLY -->
-            <template v-if="details.property_type === 'lot_only' && details.lot_only">
+            <template v-if="!details.is_bulk && details.property_type === 'lot_only' && details.lot_only">
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full mt-2">
                 <legend class="px-2 font-semibold text-maurealty-blue">Lot Features</legend>
                 <main class="text-sm px-2 flex flex-col">
@@ -168,7 +171,7 @@
             </template>
 
             <!-- CONDOMINIUM -->
-            <template v-if="details.property_type === 'condominium' && details.condominium">
+            <template v-if="!details.is_bulk && details.property_type === 'condominium' && details.condominium">
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full mt-2">
                 <legend class="px-2 font-semibold text-maurealty-blue">Condominium Features</legend>
                 <main class="text-sm px-2 flex flex-col">
@@ -193,7 +196,7 @@
             </template>
 
             <!-- MEMORIAL -->
-            <template v-if="details.property_type === 'memorial' && details.memorial">
+            <template v-if="!details.is_bulk && details.property_type === 'memorial' && details.memorial">
               <fieldset class="border border-maurealty-blue/20 rounded-xl px-4 py-2 w-full mt-2">
                 <legend class="px-2 font-semibold text-maurealty-blue">Memorial Features</legend>
                 <main class="text-sm px-2 flex flex-col">
@@ -302,8 +305,10 @@ const loadListing = async () => {
       developer_name: mainListing.developers ? mainListing.developers.name : null,
     };
 
+    // Same photo order as the listing card and details overlay (lowest display_order first)
     if (mainListing.listing_images && mainListing.listing_images.length > 0) {
-      thumbnails.value = mainListing.listing_images.map((img: any) => img.image_url);
+      const sortedImages = [...mainListing.listing_images].sort((a: any, b: any) => (a.display_order ?? 0) - (b.display_order ?? 0));
+      thumbnails.value = sortedImages.map((img: any) => img.image_url);
     }
   } catch (err: any) {
     error.value = err.message || 'Failed to load listing or the link is invalid.';

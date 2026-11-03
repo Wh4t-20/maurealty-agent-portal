@@ -45,7 +45,7 @@ export const getSharedListing = async (token: string) => {
         lot_only (*),
         condominium (*),
         memorial (*),
-        listing_images (image_url),
+        listing_images (image_url, display_order),
         agents (first_name, last_name),
         developers (name)
       )
