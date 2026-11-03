@@ -155,7 +155,8 @@ export const commissionService = {
     }
 
     const schedule: CommissionScheduleItem[] = slots.map((slot, i) => {
-      const raw = (slot.ratePct / 100) * (0.05 * commissionableAmount);
+      // commissionableAmount here is the sale's Gross Commission (amount x rate), already final.
+      const raw = (slot.ratePct / 100) * commissionableAmount;
       return {
         paymentNo: i + 1,
         dueDate: slot.dueDate,

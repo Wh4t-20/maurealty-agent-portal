@@ -5,6 +5,18 @@ Rules: log only what changed or was added; no repeats of earlier entries; no res
 
 ---
 
+## 2026-11-03 - Automatic DP division dates
+- **Changed:** `SalesUploadModal.vue`: DP division dates fill themselves. Division 1 starts one month after the reservation date (also refreshed when the reservation date changes). Each later division starts one step after the previous division's end date, where the step is one month, quarter or year following the previous division's unit. End dates still come from `lastDueDate`. Dates stay editable; changing a division's count, unit, start or end shifts the divisions after it. New helpers: `startFollowing`, `onDivisionChange`, `restartDivisionDates`; `addDivision` pre-fills the start.
+
+---
+
+## 2026-11-03 - Commission pool uses the gross commission as is
+- **Fixed:** `commissionService.calculateSchedule` no longer multiplies the gross commission by another 5%. The rate was applied twice (once in the sale form, again in the engine). Each payment's company commission is now its share of the gross commission (Commissionable Amount x Commission Rate).
+- **Changed:** `SalesUploadModal.vue`: the Commission Rate defaults to 5% when the listing has no commission rate; a listing's own rate is still used.
+- **Notes:** Tabs already generated keep their old amounts. To regenerate, delete that sale's rows from `commissions` and save the sale as Awaiting Payment again. Property Management has no commission field, so listings only get their own rate if `main_listings.commission` is set in the database.
+
+---
+
 ## 2026-10-15 - Dashboard cards, genealogy card, commissions page updates
 - **Changed:** Dashboard cards. Row 1: Total Sales (approved sales = awaiting payment or complete, by reservation date; opening it goes to the Sales Report), Total Received Commission, Listings. Row 2 (one row): Receivables (commission not yet received), Ready to Request, Awaiting Approval. The old Gross, Properties Sold and per-sale Receivables cards are gone. `Metric` gains an optional `link`.
 - **Changed:** Sales Performance shows approved sales per month (live from `sales`, 7 months ending at the selected month, by reservation date) and the average contract price of the selected month.

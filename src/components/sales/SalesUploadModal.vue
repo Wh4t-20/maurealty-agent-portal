@@ -46,7 +46,7 @@
 
         <div class="flex flex-col gap-1">
           <label class="text-sm font-medium text-gray-600 dark:text-gray-300">Reservation Date <span class="text-red-500">*</span></label>
-          <input v-model="form.reservation_date" type="date" required :class="inputClass" />
+          <input v-model="form.reservation_date" type="date" required :class="inputClass" @change="restartDivisionDates" />
         </div>
 
         <div class="flex flex-col gap-1">
@@ -136,8 +136,8 @@
               <div class="flex flex-col gap-1">
                 <label class="text-xs font-bold text-gray-500 uppercase">Payable in</label>
                 <div class="flex gap-2">
-                  <input v-model.number="current.count" type="number" min="1" step="1" :class="[inputClass, 'w-24']" placeholder="e.g. 12" @change="updateEndDate(current)" />
-                  <select v-model="current.unit" :class="[inputClass, 'flex-1']" @change="updateEndDate(current)">
+                  <input v-model.number="current.count" type="number" min="1" step="1" :class="[inputClass, 'w-24']" placeholder="e.g. 12" @change="onDivisionChange(current)" />
+                  <select v-model="current.unit" :class="[inputClass, 'flex-1']" @change="onDivisionChange(current)">
                     <option value="months">Months</option>
                     <option value="quarters">Quarters</option>
                     <option value="years">Years</option>
@@ -147,11 +147,11 @@
               </div>
               <div class="flex flex-col gap-1">
                 <label class="text-xs font-bold text-gray-500 uppercase">Due Date Start</label>
-                <input v-model="current.startDate" type="date" :class="inputClass" @change="updateEndDate(current)" />
+                <input v-model="current.startDate" type="date" :class="inputClass" @change="onDivisionChange(current)" />
               </div>
               <div class="flex flex-col gap-1">
                 <label class="text-xs font-bold text-gray-500 uppercase">Due Date End</label>
-                <input v-model="current.endDate" type="date" :min="current.startDate || undefined" :class="inputClass" />
+                <input v-model="current.endDate" type="date" :min="current.startDate || undefined" :class="inputClass" @change="startFollowing(activeDivision)" />
               </div>
               <div class="sm:col-span-2 flex justify-end">
                 <button v-if="divisions.length > 1" type="button"
@@ -431,7 +431,7 @@ import { listingsService } from '@/services/listingsServices'
 import { developerService } from '@/services/developerService'
 import { commissionService } from '@/services/commissionService'
 import type { PayUnit } from '@/assets/classes/commission'
-import { lastDueDate, addMonthsClamped } from '@/utils/paySchedule'
+import { lastDueDate, addMonthsClamped, UNIT_MONTHS } from '@/utils/paySchedule'
 import { authService } from '@/services/authService'
 import type { Property } from '@/assets/classes/listings'
 
@@ -479,7 +479,7 @@ const form = reactive({
   reservation_date: e?.reservation_date ?? '',
   total_contract_price: e?.total_contract_price ?? props.lockedListing?.price ?? null as number | null,
   commissionable_amount: e?.commissionable_amount ?? null as number | null,
-  commission_rate: e?.commission_rate ?? props.lockedListing?.commission ?? null as number | null,
+  commission_rate: e?.commission_rate ?? props.lockedListing?.commission ?? 5 as number | null,
   gross_commission: e?.gross_commission ?? null as number | null,
   net_commission: e?.net_commission ?? null as number | null,
   voucher_series: e?.voucher_series ?? '',
@@ -534,10 +534,15 @@ const rateStatusClass = computed(() =>
   ratesMatch.value && allocatedHundredths.value > 0 ? 'text-green-600' : allocatedHundredths.value > hundredths(form.dp_rate) ? 'text-red-500' : 'text-amber-600'
 )
 
-// A new division starts with whatever rate is still unallocated.
+// A new division starts with whatever rate is still unallocated, and picks up its start date
+// from the division before it (or from the reservation date if it is the first one).
 function addDivision() {
   const left = Math.max(0, (hundredths(form.dp_rate) - allocatedHundredths.value) / 100)
-  divisions.value.push({ divisionRate: left || null, count: null, unit: 'months', startDate: '', endDate: '' })
+  const prev = divisions.value[divisions.value.length - 1]
+  const startDate = prev
+    ? (prev.endDate ? addMonthsClamped(prev.endDate, UNIT_MONTHS[prev.unit]) : '')
+    : firstDueDate.value
+  divisions.value.push({ divisionRate: left || null, count: null, unit: 'months', startDate, endDate: '' })
   activeDivision.value = divisions.value.length - 1
 }
 
@@ -551,6 +556,32 @@ function removeDivision(i: number) {
 function updateEndDate(d: DivisionForm) {
   if (!d.startDate || !d.count || d.count < 1) return
   d.endDate = lastDueDate(d.startDate, d.unit, d.count)
+}
+
+// Each division after the changed one continues the schedule: it starts one step (a month,
+// quarter or year, following the previous division's unit) after the previous end date.
+function startFollowing(index: number) {
+  for (let i = index + 1; i < divisions.value.length; i++) {
+    const prev = divisions.value[i - 1]!
+    const next = divisions.value[i]!
+    if (!prev.endDate) return
+    next.startDate = addMonthsClamped(prev.endDate, UNIT_MONTHS[prev.unit])
+    updateEndDate(next)
+  }
+}
+
+// Count, unit or start date changed: refresh this division's end date, then the ones after it.
+function onDivisionChange(d: DivisionForm) {
+  updateEndDate(d)
+  startFollowing(divisions.value.indexOf(d))
+}
+
+// The reservation date moved: the first division starts one month after it.
+function restartDivisionDates() {
+  const first = divisions.value[0]
+  if (!first || !firstDueDate.value) return
+  first.startDate = firstDueDate.value
+  onDivisionChange(first)
 }
 
 // Switching scheme: DP starts with one empty division, Spot-Cash clears them.
@@ -624,7 +655,8 @@ watch([() => form.listing_ID, selectedListing], async ([newId, listing]) => {
 
   // 1. Auto-fill the general listing price into the Contract Price field
   form.total_contract_price = listing.price || null;
-  form.commission_rate = listing.commission ?? null;
+  // Listings without their own commission rate use the 5% default.
+  form.commission_rate = listing.commission ?? 5;
 
   // 2. Fetch and map specific property details to pre-fill the unit_details
   try {
