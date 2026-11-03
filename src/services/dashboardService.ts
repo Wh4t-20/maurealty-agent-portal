@@ -69,6 +69,8 @@ export interface Reminder {
   text: string;
   urgent: boolean;
   to: string;      // page to open when the reminder is clicked
+  critical?: boolean;          // solid red, always first: account security (initial password still in use)
+  action?: 'change-password';  // handled on the Dashboard (opens a modal) instead of going to `to`
 }
 
 export interface Performance {
@@ -116,6 +118,7 @@ interface BuildOptions {
   agentId: number | null;  // who is looking
   isAdmin: boolean;
   now?: Date;
+  needsPasswordChange?: boolean; // the viewer still uses the initial password an admin gave them
 }
 
 // ---------- Loading ----------
@@ -345,6 +348,16 @@ export function buildDashboard(data: DashboardData, opts: BuildOptions): Dashboa
   // Reminders: what needs attention now.
   const reminders: Reminder[] = [];
   const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
+  // New account still on its initial password (agents and admins alike): first, in solid red.
+  if (opts.needsPasswordChange) {
+    reminders.push({
+      text: 'You are still using the initial password an admin gave you. Change it now to keep your account secure.',
+      urgent: true,
+      critical: true,
+      to: '/dashboard',
+      action: 'change-password',
+    });
+  }
   if (opts.isAdmin) {
     const pending = data.sales.filter(s => s.status === 'pending approval').length;
     if (pending > 0) reminders.push({ text: `${plural(pending, 'sale')} waiting for your approval`, urgent: true, to: '/sales' });

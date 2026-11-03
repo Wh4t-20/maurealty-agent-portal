@@ -102,7 +102,7 @@
 
           <div class="flex flex-col gap-8">
             <GenealogyCard :upline="upline" :downline="downline" @view-full="router.push('/genealogy')" />
-            <Reminders :reminders="reminders" @open="(r) => router.push(r.to)" />
+            <Reminders :reminders="reminders" @open="openReminder" />
           </div>
         </div>
       </div>
@@ -189,6 +189,15 @@
 
     <!-- Add Agent (admins): the Genealogy page's modal, teleported to <body> with its own overlay -->
     <AddAgentModal v-if="showAddAgent" @close="showAddAgent = false" @saved="onAgentSaved" />
+
+    <!-- From the red "initial password" reminder: the code always goes to the agent's own login email -->
+    <ChangePasswordModal
+      v-if="showChangePassword"
+      :email="loginEmail"
+      lock-email
+      @close="showChangePassword = false"
+      @changed="onPasswordChanged"
+    />
   </div>
 </template>
 
@@ -212,6 +221,8 @@ import { useLiveRefresh } from '@/utils/liveRefresh';
 import GenealogyCard from '@/components/dashboard/GenealogyCard.vue';
 import Reminders from '@/components/dashboard/Reminders.vue';
 import AddAgentModal from '@/components/genealogy/AddAgentModal.vue';
+import ChangePasswordModal from '@/components/auth/ChangePasswordModal.vue';
+import { accountService } from '@/services/accountService';
 
 // The numbers on this page are built from the same tables the rest of the app writes to
 // (sales, commissions, listings, genealogy) in dashboardService, so they always match the
@@ -220,6 +231,8 @@ import AddAgentModal from '@/components/genealogy/AddAgentModal.vue';
 // State
 const selectedMetric = ref<Metric | null>(null);
 const showAddAgent = ref(false); // Add Agent modal (admins only)
+const showChangePassword = ref(false); // opened from the "initial password" reminder
+const loginEmail = ref(''); // the signed-in user's login email (where the password code is sent)
 const agent = ref<Partial<AgentProfile & { admin_access: boolean }>>({});
 const router = useRouter();
 
@@ -290,6 +303,16 @@ const onAgentSaved = () => {
   showAddAgent.value = false;
   loadTeam();
 };
+// Reminders go to their page, except the password one, which opens the change-password modal here.
+const openReminder = (r: Reminder) => {
+  if (r.action === 'change-password') showChangePassword.value = true;
+  else router.push(r.to);
+};
+// Password changed: reload so the red reminder goes away.
+const onPasswordChanged = () => {
+  showChangePassword.value = false;
+  refresh();
+};
 const clearMonthFilter = () => {
   selectedMonth.value = '';
   refresh();
@@ -300,8 +323,8 @@ const setScope = (s: 'mine' | 'all') => {
 };
 
 // Scroll Lock
-watch([selectedMetric, showAddAgent], ([metric, modal]) => {
-  document.body.style.overflow = (metric || modal) ? 'hidden' : '';
+watch([selectedMetric, showAddAgent, showChangePassword], ([metric, modal, password]) => {
+  document.body.style.overflow = (metric || modal || password) ? 'hidden' : '';
 });
 
 // Helper to format dates cleanly for the modal table
@@ -337,11 +360,16 @@ const loadDashboardStats = async () => {
 
   try {
     const lookAtEveryone = isAdmin.value && scope.value === 'all';
-    const data = await getDashboardData(lookAtEveryone ? undefined : agent.value.agent_ID);
+    // The password check is personal (not affected by the scope or month) and never throws.
+    const [data, needsPasswordChange] = await Promise.all([
+      getDashboardData(lookAtEveryone ? undefined : agent.value.agent_ID),
+      accountService.needsPasswordChange(),
+    ]);
     const view = buildDashboard(data, {
       month: selectedMonth.value,
       agentId: agent.value.agent_ID,
-      isAdmin: isAdmin.value
+      isAdmin: isAdmin.value,
+      needsPasswordChange
     });
 
     metrics.value = view.metrics;
@@ -395,6 +423,7 @@ onMounted(async () => {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
+      loginEmail.value = user.email ?? '';
       const { data: agentData, error: agentError } = await supabase
         .from('agents')
         .select('agent_ID, first_name, last_name, position_ID, admin_access')
