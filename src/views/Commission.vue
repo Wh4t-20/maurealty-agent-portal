@@ -1,6 +1,14 @@
 <template>
   <div class="min-h-screen bg-background-gray text-gray-800 flex flex-col md:flex-row font-sans">
 
+    <!-- TOAST: bottom right; raised on phones so the bottom nav bar doesn't cover it -->
+    <Transition name="toast">
+      <div v-if="toast" role="status" class="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-70 flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-maurealty-green/40 dark:border-maurealty-green/60 shadow-lg px-5 py-3">
+        <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-green text-white text-sm font-bold">✓</span>
+        <p class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ toast }}</p>
+      </div>
+    </Transition>
+
     <!-- MAIN CONTENT CONTAINER -->
     <main class="flex-1 p-4 md:p-8 overflow-y-auto pb-24 md:pb-8">
       <!-- HEADER -->
@@ -238,7 +246,7 @@
 
             <!-- ACTIONS: approve (admin) -> request payment (recipient) -> release payment (admin) -> received (recipient) -->
             <div class="col-span-2 sm:col-span-3 lg:col-span-1 flex flex-col items-stretch lg:items-center justify-center gap-2 border-t lg:border-t-0 pt-3 lg:pt-0">
-              <button v-if="isAdmin && comm.status === 'pending_approval'" class="action-btn border border-maurealty-blue text-maurealty-blue hover:bg-maurealty-blue hover:text-white" @click="handleApprove(comm.id)">
+              <button v-if="isAdmin && comm.status === 'pending_approval'" class="action-btn border border-maurealty-blue text-maurealty-blue hover:bg-maurealty-blue hover:text-white" @click="askApprove(comm)">
                 Approve commission
               </button>
 
@@ -275,6 +283,27 @@
       </div>
 
       <!-- POPUPS -->
+      <!-- Approve confirmation: the admin says Yes before the tab is approved -->
+      <ConfirmActionModal
+        v-if="approving"
+        title="Approve Commission"
+        message="Are you sure you want to approve this commission?"
+        confirm-label="Yes"
+        cancel-label="No"
+        busy-label="Approving…"
+        :busy="approveBusy"
+        :error="approveError"
+        @cancel="approving = null"
+        @confirm="handleApprove(approving!.id)"
+      >
+        <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+          <div><dt class="text-gray-500 dark:text-gray-400">Agent</dt><dd class="font-semibold">{{ approving.agent_name }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Role</dt><dd class="font-semibold">{{ approving.role }}<template v-if="approving.rank"> · {{ approving.rank }}</template></dd></div>
+          <div class="col-span-2"><dt class="text-gray-500 dark:text-gray-400">Project</dt><dd class="font-semibold">{{ approving.project_name }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Payment</dt><dd class="font-semibold">{{ approving.payment_no }} of {{ approving.payment_total }}</dd></div>
+          <div><dt class="text-gray-500 dark:text-gray-400">Commission</dt><dd class="font-extrabold text-maurealty-green">{{ peso(approving.commission_amount) }}</dd></div>
+        </dl>
+      </ConfirmActionModal>
       <PaymentRequestModal v-if="requesting && me" :tab="requesting" :agent="me" @close="requesting = null" @submitted="afterChange(requesting!, 'Payment request sent to the admin.')" />
       <ReleasePaymentModal v-if="releasing" :tab="releasing" :admin-agent-id="currentAgentId" @close="releasing = null" @released="afterChange(releasing!, 'Proof of payment sent. The agent has been notified.')" />
       <ProofModal v-if="viewing" :tab="viewing" :can-confirm="canAgentAct(viewing) && viewing.status === 'payment_released'" @close="viewing = null" @received="afterChange(viewing!, 'Marked as received.')" />
@@ -289,6 +318,7 @@ import { commissionService, summarizeTabs, STATUS_LABEL, type CommissionTab, typ
 import PaymentRequestModal from '@/components/commissions/PaymentRequestModal.vue';
 import ReleasePaymentModal from '@/components/commissions/ReleasePaymentModal.vue';
 import ProofModal from '@/components/commissions/ProofModal.vue';
+import ConfirmActionModal from '@/components/commissions/ConfirmActionModal.vue';
 import { useLiveRefresh } from '@/utils/liveRefresh';
 import { authService } from '@/services/authService';
 
@@ -309,6 +339,20 @@ const me = ref<{ first_name: string; middle_name?: string | null; last_name: str
 const requesting = ref<CommissionItem | null>(null);
 const releasing = ref<CommissionItem | null>(null);
 const viewing = ref<CommissionItem | null>(null);
+
+// Approve confirmation popup: the tab waiting for the admin's Yes, and the save state.
+const approving = ref<CommissionItem | null>(null);
+const approveBusy = ref(false);
+const approveError = ref('');
+
+// --- Toast feedback (bottom right) ---
+const toast = ref('');
+let toastTimer: ReturnType<typeof setTimeout> | undefined;
+function showToast(msg: string) {
+  toast.value = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => (toast.value = ''), 3000);
+}
 
 let adminScopeSet = false;
 
@@ -525,26 +569,45 @@ const filteredCommissions = computed(() => {
     });
 });
 
+// "Approve commission" opens the confirmation popup first; handleApprove runs on its Yes.
+function askApprove(comm: CommissionItem): void {
+  approveError.value = '';
+  approving.value = comm;
+}
+
 /**
  * Admin approves a commission so its recipient can claim it.
- * 
+ * Runs after the admin presses Yes in the confirmation popup. Errors stay in the popup;
+ * success closes it and shows the "Commission approved" toast.
+ *
  * @param {number} commId - The commission ID.
  */
 async function handleApprove(commId: number): Promise<void> {
+  // Looked up again by id: a live refresh may have replaced the list while the popup was open.
   const item = commissions_list.value.find(c => c.id === commId);
-  if (!item || !isAdmin.value) return;
+  if (!isAdmin.value) return;
+  if (!item) {
+    approveError.value = 'This commission is no longer available. It may have been removed.';
+    return;
+  }
 
+  approveBusy.value = true;
+  approveError.value = '';
   try {
     const ok = await commissionService.approveTab(commId);
     if (!ok) {
-      alert('Approval failed — check permissions.');
+      approveError.value = 'Approval failed. The commission may have changed, or you may not have permission.';
       return;
     }
     item.is_admin_approved = true;
     item.status = 'approved';
+    approving.value = null;
+    showToast('Commission approved.');
   } catch (e) {
     console.error('Failed to approve commission:', e);
-    alert('Something went wrong approving this commission.');
+    approveError.value = 'Something went wrong approving this commission.';
+  } finally {
+    approveBusy.value = false;
   }
 }
 
@@ -568,5 +631,16 @@ async function afterChange(_tab: CommissionItem, message: string): Promise<void>
   font-weight: 700;
   transition: all 0.15s;
   cursor: pointer;
+}
+
+/* Toast slides up into the bottom-right corner */
+.toast-enter-active,
+.toast-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 </style>
