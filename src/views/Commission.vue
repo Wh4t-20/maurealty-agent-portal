@@ -181,10 +181,16 @@
                 <p class="text-xs text-gray-600 truncate" :title="comm.developer_name">{{ comm.developer_name }}</p>
               </div>
 
-              <!-- Agent (the person receiving this commission) -->
+              <!-- Agent (the person receiving this commission). In the admin "All Agents" view a
+                   "You" badge sits right of the name when the commission is the admin's own. -->
               <div>
                 <span class="text-[11px] uppercase tracking-wider text-gray-500 block font-medium">Agent</span>
-                <p class="text-sm font-semibold text-gray-800 truncate" :title="comm.agent_name">{{ comm.agent_name }}</p>
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <p class="text-sm font-semibold text-gray-800 truncate" :title="comm.agent_name">{{ comm.agent_name }}</p>
+                  <span v-if="showOwnBadge(comm)" class="shrink-0 px-2 py-0.5 text-[10px] font-bold rounded-full bg-maurealty-blue text-white uppercase tracking-wider" title="This commission is yours">
+                    You
+                  </span>
+                </div>
               </div>
 
               <!-- Role: Agent, Upline 1, Upline 2 or Upline 3 (broker), with the recipient's rank -->
@@ -382,6 +388,12 @@ function requestTooltip(tab: CommissionTab): string {
 // The tab belongs to the signed-in person.
 function isOwnTab(tab: CommissionTab): boolean {
   return tab.recipient_agent_ID === currentAgentId.value;
+}
+
+// "You" badge on the agent field: only in the admin "All Agents" view, where the admin's own
+// tabs are mixed in with everyone else's ("My Commissions" is all theirs, "Other Agents" has none).
+function showOwnBadge(tab: CommissionTab): boolean {
+  return isAdmin.value && scope.value === 'all' && isOwnTab(tab);
 }
 
 // Admin loads everyone's tabs; an agent loads only the tabs they receive.
