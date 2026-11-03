@@ -36,11 +36,6 @@
               <span class="text-lg">+</span>
               Add Agent
             </button>
-
-            <img
-              src="/src/assets/images/profile.png"
-              class="w-[45px] h-[45px] rounded-full object-cover border"
-            />
           </div>
         </div>
 
