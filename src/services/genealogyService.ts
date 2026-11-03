@@ -706,6 +706,7 @@ export const genealogyService = {
   // financial/listing paper trail — archive instead, long term). Downlines are
   // reassigned to the deleted agent's own upline (subtree stays connected); if it
   // had no upline they become team roots. Then the agent's own edges are removed.
+  // Last, the agent's login (Supabase Auth user) is removed through the agent-account Edge Function.
   async deleteAgent(id: number): Promise<void> {
     const refs = await this.getAgentReferences(id);
     if (refs.sales > 0 || refs.listings > 0 || refs.shared > 0) {
@@ -715,6 +716,15 @@ export const genealogyService = {
       if (refs.shared) parts.push(`${refs.shared} shared link(s)`);
       throw new Error(`Cannot delete: agent has ${parts.join(', ')}. Reassign or archive first.`);
     }
+
+    // Remember the agent's login so it can be removed after the agent row is gone.
+    const { data: loginRow, error: loginErr } = await supabase
+      .from('agents')
+      .select('user_id')
+      .eq('agent_ID', id)
+      .maybeSingle();
+    if (loginErr) throw loginErr;
+    const loginUserId: string | null = loginRow?.user_id ?? null;
 
     // Find this agent's upline (the new parent for its downlines).
     const { data: upRows, error: upErr } = await supabase
@@ -744,7 +754,20 @@ export const genealogyService = {
       .eq('downline_agent_ID', id);
     if (selfEdgeErr) throw selfEdgeErr;
 
-    const { error: delErr } = await supabase.from('agents').delete().eq('agent_ID', id);
+    // .select() so a delete silently blocked by RLS (0 rows) is caught instead of looking successful.
+    const { data: deleted, error: delErr } = await supabase.from('agents').delete().eq('agent_ID', id).select('agent_ID');
     if (delErr) throw delErr;
+    if (!deleted || deleted.length === 0) throw new Error('The agent could not be deleted. You may not have permission.');
+
+    // Remove the login too, so a deleted agent can't sign in anymore. (Their agent_credentials row
+    // already went with the agents row: ON DELETE CASCADE.) The Edge Function refuses if any agent
+    // still uses this login.
+    if (loginUserId) {
+      try {
+        await accountService.deleteLogin(loginUserId);
+      } catch (e: any) {
+        throw new Error(`The agent was deleted, but their login could not be removed: ${e?.message ?? e}. Remove it under Authentication > Users in Supabase.`);
+      }
+    }
   },
 };
