@@ -25,6 +25,27 @@
             <slot />
           </div>
 
+          <!-- Typed confirmation: the action stays locked until the phrase is typed -->
+          <label v-if="requiredPhrase" class="flex flex-col gap-1.5">
+            <span class="text-xs text-gray-600 dark:text-gray-300">
+              Type <b class="text-gray-800 dark:text-gray-100">{{ requiredPhrase }}</b> below to confirm.
+            </span>
+            <input
+              ref="phraseInput"
+              v-model="typed"
+              type="text"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+              :readonly="busy"
+              :aria-invalid="typed !== '' && !phraseOk"
+              class="w-full py-2 px-3 rounded-md border bg-white dark:bg-background-dark-gray text-gray-800 dark:text-gray-100 text-sm focus:outline-2 focus:outline-maurealty-blue read-only:opacity-60"
+              :class="phraseOk ? 'border-maurealty-green' : 'border-gray-300 dark:border-gray-700'"
+              @keydown.enter.prevent="confirm"
+            />
+          </label>
+
           <p v-if="error" class="text-red-600 text-xs">{{ error }}</p>
         </div>
 
@@ -34,7 +55,7 @@
                   @click="cancel">
             {{ cancelLabel }}
           </button>
-          <button type="button" :disabled="busy"
+          <button type="button" :disabled="busy || !phraseOk"
                   :class="['px-4 py-2 rounded-lg text-white hover:opacity-90 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
                            tone === 'green' ? 'bg-maurealty-green' : 'bg-maurealty-blue']"
                   @click="confirm">
@@ -47,10 +68,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, useId, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, useId, onMounted, onBeforeUnmount, nextTick } from 'vue'
 
-// Small "are you sure?" popup for commission actions that can't be undone (approve, ...).
+// Small "are you sure?" popup for commission actions that can't be undone (approve, received).
 // The parent runs the action on `confirm` and passes `busy` / `error` back while it does.
+// With `requiredPhrase`, the confirm button stays disabled until the user types that phrase.
 const props = withDefaults(defineProps<{
   title: string
   message: string
@@ -60,6 +82,7 @@ const props = withDefaults(defineProps<{
   tone?: 'blue' | 'green'
   busy?: boolean
   error?: string
+  requiredPhrase?: string
 }>(), {
   confirmLabel: 'Yes',
   cancelLabel: 'No',
@@ -67,19 +90,27 @@ const props = withDefaults(defineProps<{
   tone: 'blue',
   busy: false,
   error: '',
+  requiredPhrase: '',
 })
 const emit = defineEmits<{ (e: 'confirm'): void; (e: 'cancel'): void }>()
 
 const titleId = useId()
 const messageId = useId()
 const panel = ref<HTMLElement | null>(null)
+const phraseInput = ref<HTMLInputElement | null>(null)
 
-// Keyboard focus moves into the popup (not onto a button, so Enter can't confirm by accident)
-// and goes back to whatever had it, usually the button that opened the popup, on close.
+// Typed phrase check. Letter case and extra spaces are ignored; the words must match.
+const typed = ref('')
+const normalize = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase()
+const phraseOk = computed(() => !props.requiredPhrase || normalize(typed.value) === normalize(props.requiredPhrase))
+
+// Keyboard focus moves into the popup: onto the phrase field when there is one, otherwise the
+// popup itself (not onto a button, so Enter can't confirm by accident). It goes back to whatever
+// had it, usually the button that opened the popup, on close.
 let returnFocus: HTMLElement | null = null
 onMounted(() => {
   returnFocus = document.activeElement as HTMLElement | null
-  nextTick(() => panel.value?.focus())
+  nextTick(() => (phraseInput.value ?? panel.value)?.focus())
 })
 onBeforeUnmount(() => returnFocus?.focus?.())
 
@@ -87,7 +118,7 @@ function cancel() {
   if (!props.busy) emit('cancel')
 }
 function confirm() {
-  if (!props.busy) emit('confirm')
+  if (!props.busy && phraseOk.value) emit('confirm')
 }
 
 // Escape closes; Tab and Shift+Tab cycle through the popup's controls instead of the page behind.
