@@ -5,6 +5,11 @@ Rules: log only what changed or was added; no repeats of earlier entries; no res
 
 ---
 
+## 2026-11-03 - Automatic DP division dates
+- **Changed:** `SalesUploadModal.vue`: DP division dates fill themselves. Division 1 starts one month after the reservation date (also refreshed when the reservation date changes). Each later division starts one step after the previous division's end date, where the step is one month, quarter or year following the previous division's unit. End dates still come from `lastDueDate`. Dates stay editable; changing a division's count, unit, start or end shifts the divisions after it. New helpers: `startFollowing`, `onDivisionChange`, `restartDivisionDates`; `addDivision` pre-fills the start.
+
+---
+
 ## 2026-11-03 - Commission pool uses the gross commission as is
 - **Fixed:** `commissionService.calculateSchedule` no longer multiplies the gross commission by another 5%. The rate was applied twice (once in the sale form, again in the engine). Each payment's company commission is now its share of the gross commission (Commissionable Amount x Commission Rate).
 - **Changed:** `SalesUploadModal.vue`: the Commission Rate defaults to 5% when the listing has no commission rate; a listing's own rate is still used.

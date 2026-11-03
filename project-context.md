@@ -578,7 +578,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   - **Payment Scheme:** `DP`, `Spot-Cash` or `Deferred-Cash` (12 monthly installments).
     - **Financing** (DP only, required): `Pag-ibig`, `Banking`, `In-House with Interest`.
     - **DP only:** DP Rate %; DP Amount and Remaining Balance are computed (`calculateDownpaymentMetrics`).
-    - **DP Divisions** (DP only): tabs with "+ Add division". Each division has a Rate %, "Payable in" count + unit (months, quarters or years), Due Date Start, and Due Date End. The end date is filled automatically with `lastDueDate(start, unit, count)` and can be edited, but not to a date before the last payment. A live status shows "x% of y% allocated".
+    - **DP Divisions** (DP only): tabs with "+ Add division". Each division has a Rate %, "Payable in" count + unit (months, quarters or years), Due Date Start, and Due Date End. The dates are filled automatically: Division 1 starts one month after the reservation date; each later division starts one step (month, quarter or year, following the **previous** division's unit) after the previous end date; the end date is `lastDueDate(start, unit, count)`. All of them can be edited, but the end date can't be before the last payment, and editing a division shifts the ones after it (`startFollowing`). A live status shows "x% of y% allocated".
     - Spot-Cash and Deferred-Cash show an info box instead (no divisions, no financing).
   - **Commissionable Amount:** starts equal to the contract price until the user types a value; it can differ because of taxes and policies.
   - **Commission Rate %:** prefilled from `main_listings.commission`; **5%** when the listing has none. Editable per sale.
@@ -1328,6 +1328,7 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 
 Add one line per update, newest first: `YYYY-MM-DD: what changed (sections)`.
 
+- **2026-11-03:** Sale form fills DP division dates automatically (7.10).
 - **2026-11-03:** Commission pool is now the gross commission itself (extra 5% removed); sale form defaults the Commission Rate to 5% when the listing has none (7.10, 8.4).
 - **2026-10-28:** Recorded team answers: the 5% formula stays unconfirmed (8.4); the approval date is the correct due-date anchor, so the sale form's wording is the bug (11.2, 13.2); agent and developer management is meant to be admin-only (6, 7.13, 7.15, 11.3, 11.4).
 - **2026-10-28:** Created from a full read of the codebase (branch `feature/sales-report-v2` @ `859ea5d`), the project PDF and `documentation.md`. Type-check verified clean.
