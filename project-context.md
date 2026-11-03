@@ -581,7 +581,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
     - **DP Divisions** (DP only): tabs with "+ Add division". Each division has a Rate %, "Payable in" count + unit (months, quarters or years), Due Date Start, and Due Date End. The end date is filled automatically with `lastDueDate(start, unit, count)` and can be edited, but not to a date before the last payment. A live status shows "x% of y% allocated".
     - Spot-Cash and Deferred-Cash show an info box instead (no divisions, no financing).
   - **Commissionable Amount:** starts equal to the contract price until the user types a value; it can differ because of taxes and policies.
-  - **Commission Rate %:** prefilled from `main_listings.commission`.
+  - **Commission Rate %:** prefilled from `main_listings.commission`; **5%** when the listing has none. Editable per sale.
   - **Gross Commission** (read-only) = Commissionable Amount × Commission Rate ÷ 100.
   - **Sale Status** (Edit mode only; editable by admins only): `pending approval`, `awaiting payment`, `complete`, `cancelled`.
   - Remarks (placeholder hint by type: "Floor 12, Unit 1205" for condos, "Block 5, Lot 12, Phase 2" for house/lot).
@@ -779,8 +779,8 @@ Inputs: `commissionableAmount` = **`sales.gross_commission`** (which the form co
 | DP | `count` per division | `divisionRate / count` % | `dueDateAt(start, unit, i)` (start date, then every month, quarter or year) |
 | DP balance tab | 1 extra (`is_balance`), unless DP = 100% | `100 − dpRate` % | 1 month after the latest division end date |
 
-**2. Raw company commission per slot:** `raw = (slotPct / 100) × 5% × commissionableAmount`. Across all slots the total raw is always 5% × gross commission.
-> **Unconfirmed (as of 2026-10-28).** The extra 5% applied on top of the gross commission is what the code does, and `documentation.md` (2026-10-14) calls the per-pay formulas "confirmed unchanged", but the team has not confirmed it is intended. Do not change it, in either direction, without the team's confirmation. If a task touches this formula, ask first.
+**2. Raw company commission per slot:** `raw = (slotPct / 100) × grossCommission`. Across all slots the total raw equals the gross commission. No extra percentage is applied on top of it.
+> **Changed 2026-11-03 (requested by the project owner).** The engine used to multiply the gross commission by another 5%, which applied the rate twice. The gross commission (Commissionable Amount × Commission Rate) is now the pool. Tabs generated before this date keep their old amounts.
 
 **3. Split each slot** (`allocatePayouts(raw, seller, ancestors)` in `src/utils/commissionAllocation.ts`):
 - **Seller (role `Agent`):** `raw × 3/4 × (rate / 5)`. The rate is the position's `commission_rate`, falling back to `DEFAULT_RANK_RATE`. So 3% → 3/5, 3.5% → 7/10, 4% → 4/5, 4.5% → 9/10.
@@ -797,14 +797,14 @@ Inputs: `commissionableAmount` = **`sales.gross_commission`** (which the form co
 - **Role labels:** non-broker overrides are `Upline 1` and `Upline 2` (nearest first); the broker is always `Upline 3`. The recipient's rank label is stored separately in `recipient_rank`.
 - Amounts are rounded to 2 decimals per payout.
 
-**Worked example (Spot-Cash):** contract price ₱5,000,000; commissionable amount ₱5,000,000; rate 5% → gross ₱250,000 → raw = 1.00 × 0.05 × 250,000 = **₱12,500**. The seller is a Specialist (3%) with a Supervisor, then an IM, then a Broker above them:
+**Worked example (Spot-Cash):** contract price ₱5,000,000; commissionable amount ₱5,000,000; rate 5% → gross ₱250,000 → raw = 1.00 × 250,000 = **₱250,000**. The seller is a Specialist (3%) with a Supervisor, then an IM, then a Broker above them:
 
 | Recipient | Role | Amount |
 |---|---|---|
-| Seller (Specialist) | Agent | 12,500 × 0.75 × 0.6 = ₱5,625.00 |
-| Supervisor | Upline 1 | 12,500 × 0.75 × 0.10 = ₱937.50 |
-| Investment Manager | Upline 2 | ₱937.50 (would be ₱1,875.00 if the IM were the direct upline) |
-| Partner Broker | Upline 3 | ₱937.50 |
+| Seller (Specialist) | Agent | 250,000 × 0.75 × 0.6 = ₱112,500.00 |
+| Supervisor | Upline 1 | 250,000 × 0.75 × 0.10 = ₱18,750.00 |
+| Investment Manager | Upline 2 | ₱18,750.00 (would be ₱37,500.00 if the IM were the direct upline) |
+| Partner Broker | Upline 3 | ₱18,750.00 |
 
 **Due-date helpers (`src/utils/paySchedule.ts`):** `addMonthsClamped("2026-01-31", 1)` returns `"2026-02-28"`; `UNIT_MONTHS = { months: 1, quarters: 3, years: 12 }`; `lastDueDate(start, unit, count) = dueDateAt(start, unit, count − 1)`.
 
@@ -1328,5 +1328,6 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 
 Add one line per update, newest first: `YYYY-MM-DD: what changed (sections)`.
 
+- **2026-11-03:** Commission pool is now the gross commission itself (extra 5% removed); sale form defaults the Commission Rate to 5% when the listing has none (7.10, 8.4).
 - **2026-10-28:** Recorded team answers: the 5% formula stays unconfirmed (8.4); the approval date is the correct due-date anchor, so the sale form's wording is the bug (11.2, 13.2); agent and developer management is meant to be admin-only (6, 7.13, 7.15, 11.3, 11.4).
 - **2026-10-28:** Created from a full read of the codebase (branch `feature/sales-report-v2` @ `859ea5d`), the project PDF and `documentation.md`. Type-check verified clean.

@@ -479,7 +479,7 @@ const form = reactive({
   reservation_date: e?.reservation_date ?? '',
   total_contract_price: e?.total_contract_price ?? props.lockedListing?.price ?? null as number | null,
   commissionable_amount: e?.commissionable_amount ?? null as number | null,
-  commission_rate: e?.commission_rate ?? props.lockedListing?.commission ?? null as number | null,
+  commission_rate: e?.commission_rate ?? props.lockedListing?.commission ?? 5 as number | null,
   gross_commission: e?.gross_commission ?? null as number | null,
   net_commission: e?.net_commission ?? null as number | null,
   voucher_series: e?.voucher_series ?? '',
@@ -624,7 +624,8 @@ watch([() => form.listing_ID, selectedListing], async ([newId, listing]) => {
 
   // 1. Auto-fill the general listing price into the Contract Price field
   form.total_contract_price = listing.price || null;
-  form.commission_rate = listing.commission ?? null;
+  // Listings without their own commission rate use the 5% default.
+  form.commission_rate = listing.commission ?? 5;
 
   // 2. Fetch and map specific property details to pre-fill the unit_details
   try {
