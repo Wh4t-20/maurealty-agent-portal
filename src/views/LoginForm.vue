@@ -38,6 +38,7 @@
           </div>
 
           <p v-if="errorMessage" class="text-red-500 text-sm mb-3 text-center">{{ errorMessage }}</p>
+          <p v-if="successMessage" class="text-[#27ae60] text-sm mb-3 text-center font-medium" role="status">{{ successMessage }}</p>
 
           <button 
             type="submit" 
@@ -47,9 +48,15 @@
             {{ isLoading ? 'Signing In...' : 'Sign In' }}
           </button>
 
-          <div class="flex items-center gap-2 mt-4 text-[#4b5563] text-[0.95rem]">
-            <input id="rememberMe" type="checkbox" v-model="rememberMe" />
-            <label for="rememberMe">Remember Email</label>
+          <div class="flex flex-wrap items-center justify-between gap-2 mt-4 text-[#4b5563] dark:text-gray-300 text-[0.95rem]">
+            <div class="flex items-center gap-2">
+              <input id="rememberMe" type="checkbox" v-model="rememberMe" />
+              <label for="rememberMe">Remember Email</label>
+            </div>
+            <!-- Opens the email-code flow (ChangePasswordModal) -->
+            <button type="button" class="text-[#27ae60] text-[0.9rem] font-medium hover:underline cursor-pointer" @click="openChangePassword">
+              Forgot or change password?
+            </button>
           </div>
 
           <div class="text-center mt-4.5 text-[0.9rem]">
@@ -58,6 +65,15 @@
         </form>
       </div>
     </div>
+
+    <!-- Change password with a one-time code; ends the code's session so the user signs in again -->
+    <ChangePasswordModal
+      v-if="showChangePassword"
+      :email="email"
+      sign-out-when-done
+      @close="showChangePassword = false"
+      @changed="onPasswordChanged"
+    />
   </div>
 </template>
 
@@ -67,6 +83,8 @@ import { useRouter } from 'vue-router'
 import { supabase } from '../supabaseClient'
 
 import defaultSettings from '@/assets/defaultSettings.json'
+import ChangePasswordModal from '@/components/auth/ChangePasswordModal.vue'
+import { normalizeEmail, isValidEmail } from '@/utils/sanitize'
 
 const router = useRouter()
 
@@ -74,15 +92,41 @@ const email = ref('')
 const password = ref('')
 const rememberMe = ref(false)
 const errorMessage = ref('')
+const successMessage = ref('')
 const isLoading = ref(false)
+const showChangePassword = ref(false)
+
+const openChangePassword = () => {
+  errorMessage.value = ''
+  successMessage.value = ''
+  showChangePassword.value = true
+}
+
+// Back from the change-password modal: prefill the email and ask for the new password.
+const onPasswordChanged = (changedEmail: string) => {
+  showChangePassword.value = false
+  email.value = changedEmail
+  password.value = ''
+  successMessage.value = 'Password changed. Sign in with your new password.'
+}
 
 const handleLogin = async () => {
   errorMessage.value = ''
+  successMessage.value = ''
+
+  // Clean the email before it is sent (trimmed, lower case, valid format).
+  // The password is sent exactly as typed: Supabase Auth compares it with the stored hash.
+  const cleanEmail = normalizeEmail(email.value)
+  if (!isValidEmail(cleanEmail) || !password.value) {
+    errorMessage.value = 'Enter your email and password.'
+    return
+  }
+
   isLoading.value = true
 
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.value,
+      email: cleanEmail,
       password: password.value,
     })
 
