@@ -2,7 +2,9 @@
 
 > **What this file is:** the single reference for how the Maureal Realty and Brokerage (MRB) web portal works today: its features, the processes behind them, and where each piece of logic lives in the code. It is written for AI assistants and for the dev team.
 >
-> **Last verified against the code:** 2026-11-03 · branch `fix/commissions-and-shared-listing` · commit `a7ce0e3` · `npx vue-tsc --build --force` passes with **0 errors** · `npx vite build` passes.
+> **Last verified against the code:** 2026-11-04 · branch `feat/account-creation` · commit `7167f3c` · `npx vue-tsc --build --force` passes with **0 errors** · `npx vite build` passes · the Edge Function type-checks against a Deno shim.
+>
+> **Supabase changes need manual steps.** Agent accounts (2026-11-04) need a migration, an Edge Function deploy and some dashboard settings. See [3.3 Supabase project setup](#33-supabase-project-setup-manual-steps).
 >
 > **Related docs:** `documentation.md` (running log of changes, newest first) · `changelog.md` (early frontend notes, Dec 2025 to Jan 2026, historical only) · `README.md` (setup and branch naming).
 
@@ -48,6 +50,8 @@ Read this section before writing any code for this project.
 | A full page | `src/views/<Name>.vue` + a route in `src/router/index.ts` (with `meta: { requiresAuth: true }`) + an entry in `topItems` in `src/components/Sidebar.vue` | Both the desktop sidebar and the phone bottom bar read `topItems`. |
 | A reusable or page-specific component | `src/components/<page-folder>/<Name>.vue` | One folder per page (`listings/`, `sales/`, `commissions/`, ...). |
 | A DB schema change | a new file in `supabase/migrations/` named `YYYYMMDDHHMMSS_description.sql` | See 1.5. |
+| Server-side code that needs the service-role key (creating/deleting Auth users, anything an admin-only check must guard) | a Supabase Edge Function: `supabase/functions/<name>/index.ts` (Deno, `npm:@supabase/supabase-js@2`) | Called from a service with `supabase.functions.invoke('<name>', { body })`. Check the caller inside the function. Document it in 9.8 and the deploy step in 3.3. Not part of `vue-tsc` (Deno code). |
+| Form input cleaning (trim, length caps, email/phone/date checks) | `src/utils/sanitize.ts` | Use it in every form that writes to the DB or Supabase Auth. Never trim or alter passwords. |
 
 ### 1.3 Coding conventions (match the existing code)
 
@@ -60,12 +64,14 @@ Read this section before writing any code for this project.
 - Comments are short and plain: they say *why*, not *what*. Match the density of the file you are in.
 - Money is stored in **PHP**; areas are stored in **square metres**. Convert only for display (see 5.5).
 - Dates are plain `YYYY-MM-DD` strings. Compare them as strings and do month math with `src/utils/paySchedule.ts`, so there are no timezone shifts. When you must build a `Date` from a date-only string, append `T00:00:00`.
+- **Input cleaning / SQL injection:** never build SQL or PostgREST filter strings from user text. supabase-js sends values as JSON and PostgREST binds them as parameters; SQL functions must not use `EXECUTE`/`format()` with user input. On top of that, clean form values with `src/utils/sanitize.ts` (`cleanText`, `normalizeEmail`, `isValidEmail`, `isValidPhone`, `isIsoDate`, `digitsOnly`) before sending them, and re-validate on the server when an Edge Function is involved.
 
 ### 1.4 Guardrails
 
 - **Do not change commission formulas, rank rates, override percentages or hierarchy rules** (Section 8) without explicit confirmation from the team. They are business rules from the client, not implementation details.
 - Keep `commissions.claimed`, `claimed_at` and `admin_approved` in step with `commissions.status`. Older queries still read them.
-- **Role checks happen only in the app.** RLS is the open dev policy on every table. Any new admin-only action must be gated in the UI *and*, where possible, guarded in the service (for example by checking the expected previous status, as `commissionService._advance` does).
+- **Role checks happen mostly in the app.** RLS is the open dev policy on every table except `agent_credentials`. Any new admin-only action must be gated in the UI *and*, where possible, guarded in the service (for example by checking the expected previous status, as `commissionService._advance` does). **Exceptions (checked on the server):** the `agent-account` Edge Function and the SQL functions `admin_get_agent_login` / `store_agent_initial_password` (see 9.7, 9.8).
+- **Passwords:** never store, log or send a password anywhere except Supabase Auth. The only copy the app keeps is the **encrypted initial password** in `agent_credentials` (deleted as soon as the agent changes it). Don't add RLS policies to `agent_credentials`, don't select it from the browser, and don't print `agent_password_key` from Vault.
 - Some features are hidden by being **commented out on purpose**: Net Commission input, Voucher Series input, the Recent Activity panel. Do not delete them, and do not restore them unless asked.
 - Do not commit, push or create branches unless the user asks. The main branch is `mainer`. The branch naming rule is `<feat/fix>/<frontend/backend>/<featureName>`.
 - Never put real keys in `.env.example`, and never print the contents of `.env.local`.
@@ -74,10 +80,11 @@ Read this section before writing any code for this project.
 
 1. Write an **idempotent** migration (`add column if not exists`, `create table if not exists`, `drop policy if exists`, and `do $$ ... $$` blocks for constraints). The team re-runs migrations by hand in the Supabase SQL editor.
 2. Quote mixed-case identifiers (`"agent_ID"`, `"listing_ID"`). Lower-case column names stay unquoted.
-3. New tables get RLS enabled plus the same open dev policy as the others (see `20261014140000_...sql`, section 4).
+3. New tables get RLS enabled plus the same open dev policy as the others (see `20261014140000_...sql`, section 4). **Exception:** a table holding secrets gets RLS with **no** policies plus `revoke all ... from anon, authenticated`, and is reached only through `SECURITY DEFINER` functions with `set search_path = ''` (see `20261104120000_agent_accounts.sql`). Revoke `execute` on such functions from `public, anon` and grant only the roles that need them.
 4. If a page should refresh live from the new table, add it to the `supabase_realtime` publication (see section 5d of the same migration) and to that page's `useLiveRefresh([...])` list.
 5. End the migration with `notify pgrst, 'reload schema';`.
-6. Update Section 9 of this file.
+6. Update Section 9 of this file, and 3.3 if the team has to do anything by hand in the Supabase dashboard.
+7. **Every Supabase change is documented here**: migrations (9.6), SQL functions and triggers (9.7), Edge Functions (9.8), Vault secrets, Auth settings and email templates (3.3).
 
 ### 1.6 Verifying your work
 
@@ -121,7 +128,7 @@ Use this template for a new feature in Section 7:
 - use **calculators** (loan amortization, net commission, property tax),
 - browse the **developers** the company works with, including their promo posters.
 
-**Admins** are agents with `agents.admin_access = true`. They approve listings, sales and commissions, release commission payments with proof, and manage agents, ranks and promotion thresholds.
+**Admins** are agents with `agents.admin_access = true`. They approve listings, sales and commissions, release commission payments with proof, and manage agents, ranks and promotion thresholds. **Adding an agent also creates their login** (Supabase Auth user + generated initial password); agents change that password themselves with a code sent by email.
 
 ### 2.1 Core lifecycle at a glance
 
@@ -160,7 +167,7 @@ The rank titles are marked *provisional pending client confirmation* in `src/ass
 | Framework | Vue `^3.5` + TypeScript `~5.9`, Vite `^7` | `<script setup>` everywhere. Vue DevTools plugin enabled in `vite.config.ts`. |
 | Routing | vue-router `^4.6` | `src/router/index.ts`, HTML5 history. |
 | Styling | Tailwind CSS `^4` (`@tailwindcss/vite`), `@tailwindcss/typography` | Theme tokens and utilities in `src/style.css`. Font: Poppins (Google Fonts, `index.html`). |
-| Backend | Supabase (`@supabase/supabase-js ^2`) | Auth (email/password), Postgres through PostgREST, Storage, Realtime. Client in `src/supabaseClient.ts`. |
+| Backend | Supabase (`@supabase/supabase-js ^2`) | Auth (email/password + email one-time codes for password changes), Postgres through PostgREST (tables and RPC functions), Storage, Realtime, **Edge Functions** (Deno; `supabase/functions/`), **Vault** + `pgcrypto` (encrypted initial passwords). Client in `src/supabaseClient.ts`. |
 | Maps | `mapbox-gl ^3`, `@mapbox/mapbox-gl-geocoder` | Map display, location picker, reverse geocoding, nearby-POI search. |
 | Genealogy tree | `@vue-flow/core` (+ controls, minimap), `@dagrejs/dagre` | Auto-layout of the org chart. |
 | UI helpers | `@headlessui/vue` (Listbox), `lucide-vue-next` (icons) | |
@@ -176,6 +183,8 @@ The rank titles are marked *provisional pending client confirmation* in `src/ass
 | `VITE_SUPABASE_ANON_KEY` | `src/supabaseClient.ts` | Supabase anon key |
 | `VITE_MAPBOX_TOKEN` | `MapHolder.vue`, `MapInteractive.vue`, `poiService.ts` | Mapbox access token. **Missing from `.env.example`.** |
 
+The `agent-account` Edge Function reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, which Supabase provides to every Edge Function automatically. **Never put the service-role key in `.env.local` or any `VITE_` variable**: anything starting with `VITE_` ends up in the browser bundle.
+
 ### 3.2 Scripts
 
 | Command | Does |
@@ -187,6 +196,31 @@ The rank titles are marked *provisional pending client confirmation* in `src/ass
 | `npm run preview` | Preview the production build |
 
 `supabase/config.toml` is the Supabase CLI local config (mostly defaults). The team applies migrations by hand in the Supabase SQL editor rather than through the CLI.
+
+### 3.3 Supabase project setup (manual steps)
+
+Things that live in the Supabase project, not in the frontend build. Do them once per project (dev and production), in this order. Redo step 2 whenever `supabase/functions/agent-account/index.ts` changes.
+
+| # | Where (Supabase dashboard) | What | Why |
+|---|---|---|---|
+| 1 | SQL Editor | Run `supabase/migrations/20261104120000_agent_accounts.sql` (safe to re-run). If it fails with *schema "vault" does not exist*, enable **Integrations → Vault** and run it again. Check: `select name from vault.secrets where name = 'agent_password_key';` returns one row. | Creates `agent_credentials`, the Vault key, the SQL functions and the `auth.users` trigger (9.7). |
+| 2 | Edge Functions → **Deploy a new function → Via editor** | Name it exactly **`agent-account`**, paste `supabase/functions/agent-account/index.ts`, Deploy. (CLI alternative: `supabase functions deploy agent-account --project-ref <ref>`.) Leave **Verify JWT** on; if calls fail with 401 *Invalid JWT* (projects on the new JWT signing keys), turn it off for this function: the function still checks the caller itself. | Creates logins with the service-role key (9.8). Until it is deployed, Add Agent shows "The agent-account Edge Function is not deployed yet". |
+| 3 | Authentication → Emails → **Templates → Reset password** | Make the email contain the code `{{ .Token }}` (template below). Remove `{{ .ConfirmationURL }}` so nobody signs in through a link without changing their password. | The change-password modal asks for the **code**; the default template only has a link. |
+| 4 | Authentication → **Sign In / Providers → Email** | Optional: *Email OTP Expiration* (default 3600 s) and *Email OTP Length* (the modal accepts 6–10 digits). | Code lifetime and length. |
+| 5 | Authentication → Emails → **SMTP Settings**, then **Rate Limits** | Set up a custom SMTP sender (company mail, Resend, SendGrid, ...) and raise *emails per hour*. | Supabase's built-in sender only delivers to members of the Supabase team and allows only a few emails per hour, so agents would not receive their codes. |
+| 6 | Authentication → **Sign In / Providers** | Turn **off** *Allow new users to sign up*. | Logins are created only by admins (through the Edge Function, which isn't affected). With sign-ups on, anyone holding the anon key could make a login and, with the open dev RLS, read the data. |
+| 7 | App: Genealogy → Edit Agent | For agents with **no login**, tick *Create a login with this email when I save*. Logins linked by hand earlier keep working (their password can't be shown). | Older agents have `user_id = null`. |
+
+Reset password email template (step 3), subject e.g. *Your MauRealty password code*:
+
+```html
+<h2>Change your MauRealty password</h2>
+<p>Enter this code in the portal to change your password:</p>
+<p style="font-size:28px;font-weight:bold;letter-spacing:6px">{{ .Token }}</p>
+<p>The code can be used once and expires soon. If you did not ask to change your password, you can ignore this email.</p>
+```
+
+**Smoke test after setup:** as an admin, add a test agent → the success screen shows the email and password; Authentication → Users lists the email; `agents.user_id` is filled; `select "agent_ID", password_changed_at from agent_credentials;` shows a row with `password_changed_at` null. Sign in as that agent → red reminder on the Dashboard → change the password with the emailed code → the reminder disappears and Edit Agent shows "Changed by the agent on ...". Delete the test agent → their user disappears from Authentication → Users.
 
 ---
 
@@ -207,7 +241,9 @@ The rank titles are marked *provisional pending client confirmation* in `src/ass
 ├─ public/                    favicon.ico, profile.png (barely used)
 ├─ supabase/
 │  ├─ config.toml             Supabase CLI local config
-│  └─ migrations/             Versioned schema changes (see 9.6)
+│  ├─ migrations/             Versioned schema changes (see 9.6)
+│  └─ functions/              Edge Functions (Deno, deployed by hand, see 3.3 and 9.8)
+│     └─ agent-account/index.ts  Creates/removes agent logins with the service-role key (admins only)
 └─ src/
    ├─ main.ts                 createApp(App).use(router).mount('#app')
    ├─ App.vue                 Layout: Sidebar (unless route.meta.hideSidebar) + RouterView; applies dark mode / no-animation classes
@@ -225,6 +261,7 @@ The rank titles are marked *provisional pending client confirmation* in `src/ass
    │  └─ questions.json       Suggested FAQ questions per property type (Property Management)
    ├─ services/               Everything that talks to Supabase or external APIs (Section 10)
    │  ├─ authService.ts       Current agent (id, names, admin_access), logout
+   │  ├─ accountService.ts    Agent logins (Edge Function), initial-password reveal, password reminder, email-code password change
    │  ├─ agentService.ts      Full profile, profile/config updates, profile image upload/delete
    │  ├─ listingsServices.ts  Listings CRUD, images, fact sheets, status, compileMarkdown()   (note the plural file name)
    │  ├─ shareService.ts      Temporary public share links
@@ -241,9 +278,11 @@ The rank titles are marked *provisional pending client confirmation* in `src/ass
    │  ├─ paySchedule.ts           Month/quarter/year due-date math (month-end safe)
    │  ├─ conversion.ts            Currency and area conversion/formatting (global refs)
    │  ├─ useSettings.ts           Reactive user settings backed by localStorage
-   │  └─ liveRefresh.ts           useLiveRefresh(): realtime + focus + polling reloads
+   │  ├─ liveRefresh.ts           useLiveRefresh(): realtime + focus + polling reloads
+   │  ├─ sanitize.ts              Form input cleaning: cleanText, normalizeEmail, isValidEmail/Phone, isIsoDate, digitsOnly
+   │  └─ password.ts              Initial password (<initials><random>, 14 chars) + password rules checklist
    ├─ views/                  Pages (one per route)
-   │  ├─ LoginForm.vue        /                     Login
+   │  ├─ LoginForm.vue        /                     Login + "Forgot or change password?"
    │  ├─ Dashboard.vue        /dashboard            KPIs, alerts, charts, history, genealogy card, reminders
    │  ├─ Listings.vue         /listings             Listing grid, filters, details overlay, approve/delete/sold
    │  ├─ PropertyManagement.vue /propertymanagement Create/edit a listing
@@ -258,15 +297,17 @@ The rank titles are marked *provisional pending client confirmation* in `src/ass
    │  └─ DashboardPrevious.vue (unrouted legacy mock-up, keep only for reference)
    └─ components/
       ├─ Sidebar.vue          Desktop hover sidebar + phone bottom nav
+      ├─ auth/ChangePasswordModal.vue     Email → one-time code → new password (Login page, Dashboard reminder)
       ├─ accounting/amortSched.vue        Amortization schedule modal + PDF export
       ├─ calculator/CalculatorPanel.vue   Loan / Sales / Property Tax calculator (reused in listing popup)
       ├─ commissions/PaymentRequestModal.vue, ReleasePaymentModal.vue, ProofModal.vue,
       │             ConfirmActionModal.vue (Yes/No or typed-phrase confirm popup)
       ├─ dashboard/DashboardStatCard.vue, SalesPerfromance.vue (sic), CommissionHistory.vue,
       │           GenealogyCard.vue, Reminders.vue, RecentActivity.vue (hidden),
-      │           AddAgent.vue (placeholder), AddListing.vue & Calculator.vue (unused placeholders)
+      │           AddListing.vue & Calculator.vue (unused placeholders)
       ├─ developer/developerCard.vue, addDeveloper.vue
-      ├─ genealogy/genealogymodal.vue (tree), AddAgentModal.vue, TeamInsights.vue
+      ├─ genealogy/genealogymodal.vue (tree), AddAgentModal.vue (add/edit agent + login), PasswordReveal.vue
+      │           (dots + eye / copy / regenerate), TeamInsights.vue
       ├─ listings/PropertyCard.vue, PropertyDetails.vue, ListingsFilter.vue, MapHolder.vue, MapInteractive.vue
       ├─ profile/ProfileCard.vue, ProfileEdit.vue
       ├─ sales/SalesUploadModal.vue       Sale create / confirm (Sold) / edit form
@@ -284,6 +325,14 @@ The rank titles are marked *provisional pending client confirmation* in `src/ass
 View (src/views)  ──calls──►  Service (src/services)  ──supabase-js──►  Supabase (Postgres / Storage / Realtime)
    │                               │
    └─uses──► Components            └─uses──► Utils (pure math/format) + Classes (types)
+```
+
+**Logins go through the server.** Creating or deleting a Supabase Auth user needs the service-role key, so `accountService` calls the `agent-account` Edge Function (`supabase.functions.invoke`), which checks the caller is an admin and then writes `auth.users`, `agents`, `genealogy` and `agent_credentials`. Reading login status or revealing an initial password calls a `SECURITY DEFINER` SQL function (`supabase.rpc('admin_get_agent_login', ...)`):
+
+```
+AddAgentModal ─► genealogyService.addAgent (hierarchy rules) ─► accountService ─► Edge Function agent-account ─► Auth admin API + agents + genealogy + agent_credentials
+AddAgentModal (edit) ─► accountService.getAgentLogin ─► rpc admin_get_agent_login ─► agents + auth.users + agent_credentials (decrypts with the Vault key)
+ChangePasswordModal ─► accountService ─► supabase.auth (resetPasswordForEmail → verifyOtp 'recovery' → updateUser) ─► trigger on auth.users updates agent_credentials
 ```
 
 There is **no global store** (no Pinia). Each page fetches what it needs on mount, including the current agent. To know who is signed in:
@@ -320,7 +369,9 @@ All of them resolve `supabase.auth.getUser()` → `agents.user_id`.
 - **Ambiguous embed:** `commissions` has two foreign keys to `agents` (`recipient_agent_ID`, `released_by`), so it must be embedded as `agents!recipient_agent_ID (...)`.
 - **Numeric columns** are wrapped with `Number(...)` before doing math (existing pattern).
 - **Silent RLS blocks:** `.update(...).select()` / `.delete().select()` and check `data.length` (see 1.3).
-- **Supabase calls outside services** (legacy): `Dashboard.vue` (`onMounted` agent lookup), `LoginForm.vue` (sign in + configs), `router/index.ts` (session check).
+- **RPC functions** are called with `supabase.rpc('name', { p_arg: value })`; arguments are bound parameters. A missing function returns error code `PGRST202` (usually: the migration wasn't run).
+- **Edge Functions** are called with `supabase.functions.invoke('name', { body })`; supabase-js adds the signed-in user's token. A non-2xx answer comes back as `FunctionsHttpError` whose `context` is the `Response`: read `await error.context.json()` for the function's `{ error }` message (see `functionErrorMessage` in `accountService.ts`).
+- **Supabase calls outside services** (legacy): `Dashboard.vue` (`onMounted` agent lookup, also reads the login email), `LoginForm.vue` (sign in + configs), `router/index.ts` (session check).
 
 ### 5.4 Storage buckets
 
@@ -376,13 +427,16 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 - Confirmations: for an action that can't be undone, use `components/commissions/ConfirmActionModal.vue` (same look as the other modals, `z-60` so it can open on top of one). It moves keyboard focus into itself, keeps Tab inside, closes on Escape or a click outside, and can require a typed phrase (`requiredPhrase`). New code should use it instead of `confirm()`.
 - Feedback: small toasts (`Transition name="toast"`), `alert()` and `confirm()` in older code. Success toasts are top-right on Listings and Sales Report; the Commissions page toast is **bottom-right** (`bottom-20 md:bottom-6`, so it clears the phone bottom nav).
 - Responsive: Sidebar is `hidden md:flex`; phones get a bottom nav (`App.vue` adds `pb-16`). Grids and tables are built mobile-first.
-- `Commission.vue`, its three original modals (`PaymentRequestModal`, `ReleasePaymentModal`, `ProofModal`) and `AddAgentModal.vue` have **no dark-mode classes** yet. `ConfirmActionModal.vue` and the Commissions toast do. `SharedListing.vue` has had them since 2026-11-03 (copied from `PropertyDetails.vue`).
+- `Commission.vue` and its three original modals (`PaymentRequestModal`, `ReleasePaymentModal`, `ProofModal`) have **no dark-mode classes** yet. `ConfirmActionModal.vue`, the Commissions toast, `AddAgentModal.vue` (since 2026-11-04), `PasswordReveal.vue` and `ChangePasswordModal.vue` do. `SharedListing.vue` has had them since 2026-11-03 (copied from `PropertyDetails.vue`).
+- **Important fields** (a login email, a password): an amber box (`border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700`) titled with a `TriangleAlert` icon, a red `CircleAlert` icon before each label, and a 2px amber border on the input. See the "Login account · Important" section of `AddAgentModal.vue`.
+- **Secrets on screen**: show dots until an eye button is pressed (`PasswordReveal.vue`); fetch the secret only when it is revealed.
+- **Critical reminder**: solid red (`bg-red-600 text-white`, `ShieldAlert` icon, "Important · Account security" label, call to action) for account-security items; normal urgent reminders stay light red. See `Reminders.vue`.
 
 ---
 
 ## 6. Roles and permissions
 
-"Agent" means a signed-in user with `admin_access = false`. **Every rule below is enforced only in the frontend.** All tables use an open RLS policy (`using (true) with check (true)` for `anon` and `authenticated`).
+"Agent" means a signed-in user with `admin_access = false`. **Most rules below are enforced only in the frontend.** All tables use an open RLS policy (`using (true) with check (true)` for `anon` and `authenticated`), except `agent_credentials` (no policies at all). The login rules marked **server** are also checked by the `agent-account` Edge Function or a SQL function.
 
 | Action | Agent | Admin | Enforced in |
 |---|---|---|---|
@@ -404,7 +458,14 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 | Confirm received | own tab, `payment_released`, after typing "I have received payment" | **own tabs only**, same typed check (since 2026-11-03) | `canAgentAct` + `ProofModal.askReceived` |
 | Dashboard scope | own data | "My Stats" / "All Agents" (default All) | `Dashboard.vue` |
 | Personal payout alerts and reminders | ✓ | ✗ (admins can act on their own tabs from the Commissions page, but the Dashboard gives them approval alerts only) | `dashboardService.buildDashboard` |
-| Add / edit / delete agents, promote, edit thresholds | ✗ intended, but ⚠ currently visible to everyone | ✓ | **no gating yet** (admin-only confirmed by the team, 2026-10-28) |
+| Add agent (creates the login + initial password) | ✗ (button hidden on Genealogy and Dashboard) | ✓ | `Genealogy-landingpage.vue` / `Dashboard.vue` (`isAdmin`) + **server**: `agent-account` Edge Function |
+| Edit / delete agents | ✗ (buttons hidden) | ✓; can't delete **their own** record | `Genealogy-landingpage.vue` (`isAdmin`, `currentAgentId`) |
+| Create a login for an agent without one | ✗ | ✓ (Edit Agent) | **server**: `agent-account` (`create-login`) |
+| Reveal an agent's initial password (eye icon) | ✗ | ✓ any agent, admins included, until that agent changes it | **server**: `admin_get_agent_login` (`current_agent_is_admin()`) |
+| Remove a deleted agent's login | ✗ | ✓ (automatic on delete); never their own, never a login an agent still uses | **server**: `agent-account` (`delete-login`) |
+| Change own password (email code) | ✓ | ✓ | Supabase Auth (the code proves the email) |
+| "Initial password" reminder | ✓ | ✓ | `dashboardService.buildDashboard` (`needsPasswordChange`) |
+| Promote, edit thresholds | ✗ intended, but ⚠ currently visible to everyone | ✓ | **no gating yet** (admin-only confirmed by the team, 2026-10-28) |
 | Add / edit / delete developers and promos | ✗ intended, but ⚠ currently visible to everyone | ✓ | **no gating yet** (admin-only confirmed by the team, 2026-10-28) |
 | Profile, Settings | own | own | — |
 
@@ -414,16 +475,17 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 
 ### 7.1 Authentication and login
 - **Route / entry point:** `/` (`LoginForm.vue`); logout from the Sidebar.
-- **Who:** everyone with an account. Accounts are Supabase Auth users linked to an `agents` row through `agents.user_id`.
+- **Who:** everyone with an account. Accounts are Supabase Auth users linked to an `agents` row through `agents.user_id`. Since 2026-11-04 an admin creates them from Add Agent (7.19); nobody links a UID by hand anymore.
 - **When it is used:** starting a session.
 - **Flow:**
-  1. `supabase.auth.signInWithPassword({ email, password })`.
+  1. The email is cleaned (`normalizeEmail` + `isValidEmail`); the password is sent exactly as typed. `supabase.auth.signInWithPassword({ email, password })`.
   2. Read `agents.configs` for that `user_id`, merge it over `defaultSettings.configs`, and save the result to `localStorage['app_user_settings']`.
   3. `router.push('/dashboard')`.
   4. Logout: `authService.logoutUser()` → `supabase.auth.signOut()` → `router.push('/')`.
+  5. **"Forgot or change password?"** (next to Remember Email) opens `ChangePasswordModal` with `signOutWhenDone` (7.20). When done, the email is filled in and a green "Password changed. Sign in with your new password." shows.
 - **Data:** R `agents.configs`.
-- **Code:** `src/views/LoginForm.vue`, `src/router/index.ts` (guard), `authService.logoutUser()`, `src/components/Sidebar.vue` (`handleLogout`).
-- **Rules and edge cases:** "Remember Email" and "Data Privacy Act" are UI only. There is no sign-up or password reset. Agents created from the Genealogy page have no login (`user_id = null`) until someone creates the Supabase Auth user and links `user_id` by hand.
+- **Code:** `src/views/LoginForm.vue`, `src/router/index.ts` (guard), `authService.logoutUser()`, `src/components/Sidebar.vue` (`handleLogout`), `components/auth/ChangePasswordModal.vue`.
+- **Rules and edge cases:** "Remember Email" and "Data Privacy Act" are UI only. There is no public sign-up (turn it off in Supabase too, 3.3 step 6).
 
 ### 7.2 App shell and navigation
 - **Route / entry point:** every page except `/` and `/shared/listing/:token` (`meta.hideSidebar`).
@@ -447,11 +509,11 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   - **Sales Performance:** approved sales per month for the 7 months ending at the selected month, plus the average deal. Click → `/sales`.
   - **Commission History:** every tab in view, filterable by sale and status, 6 per page, "Payment n of N".
   - **Genealogy card:** the whole upline chain (direct upline first, top 3 shown) and the downline at any depth (top 4 shown). Click → `/genealogy`.
-  - **Reminders:** clickable, collapsible after 3.
+  - **Reminders:** clickable, collapsible after 3. **Initial password reminder** (since 2026-11-04): while the signed-in user (agent or admin) still uses the initial password an admin gave them (`accountService.needsPasswordChange()` → `current_agent_needs_password_change()`), a **solid red** reminder sits first ("Important · Account security", "Change password →") and the count badge turns red. Clicking it opens `ChangePasswordModal` locked to the user's login email (`lockEmail`); after the change the Dashboard reloads and the reminder is gone.
   - **Recent Activity:** hidden (commented out in the template and import). `activities` is still computed.
-- **Header buttons:** "+ Add Listing" → `/propertymanagement` (⚠ without `?edit=0`, see 11.1). "+ Add Agent" opens the **placeholder** `components/dashboard/AddAgent.vue`, which does nothing. The real Add Agent is on the Genealogy page.
-- **Data:** R `sales`, `main_listings`, `commissions` (+ joins), `genealogy`, `agents`, `positions`.
-- **Code:** `src/views/Dashboard.vue`, `src/services/dashboardService.ts` (`getDashboardData`, `buildDashboard`), `components/dashboard/*`, `genealogyService.getUplineChain(id, 20)`, `genealogyService.getDownline(id, 20)`.
+- **Header buttons:** "+ Add Listing" → `/propertymanagement` (⚠ without `?edit=0`, see 11.1). **"+ Add Agent" is admins only** and opens the Genealogy page's `AddAgentModal` (same login creation, 7.19); saving refreshes the Genealogy card. (The old placeholder `components/dashboard/AddAgent.vue` was deleted on 2026-11-04.)
+- **Data:** R `sales`, `main_listings`, `commissions` (+ joins), `genealogy`, `agents`, `positions`; RPC `current_agent_needs_password_change`.
+- **Code:** `src/views/Dashboard.vue` (`openAddAgent`, `onAgentSaved`, `openReminder`, `onPasswordChanged`, `loginEmail`), `src/services/dashboardService.ts` (`getDashboardData`, `buildDashboard` with `needsPasswordChange`), `components/dashboard/*`, `components/genealogy/AddAgentModal.vue`, `components/auth/ChangePasswordModal.vue`, `genealogyService.getUplineChain(id, 20)`, `genealogyService.getDownline(id, 20)`.
 
 ### 7.4 Project Listings (browse, filter, details)
 - **Route / entry point:** `/listings`.
@@ -654,10 +716,10 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 
 ### 7.13 Genealogy (team tree and agent management)
 - **Route / entry point:** `/genealogy`.
-- **Who:** everyone can view. The management actions (add, edit, delete, promote, thresholds) are meant to be **admin-only**, but they are not gated yet (11.3).
-- **When it is used:** seeing who is in whose team, adding or onboarding an agent, changing someone's upline or position, removing an agent.
+- **Who:** everyone can view. **Add, Edit and Delete agent are admin-only** (since 2026-11-04: buttons hidden for agents, handlers check `isAdmin`; logins and passwords are also checked on the server). Promote and thresholds are meant to be admin-only too but are not gated yet (11.3).
+- **When it is used:** seeing who is in whose team, adding or onboarding an agent (which now also creates their login), changing someone's upline or position, removing an agent.
 - **Page sections:**
-  1. Header: search (filters the Teams, Recently Added and Manage Agents lists) and **Add Agent**.
+  1. Header: search (filters the Teams, Recently Added and Manage Agents lists) and **Add Agent** (admins). The static profile picture that sat beside it was removed on 2026-11-04.
   2. Stats (`getStats`):
      - Total Agents.
      - Team Leaders: agents with at least one downline.
@@ -665,17 +727,19 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
      - New This Month: `hire_date` in the current month.
   3. **Teams:** one entry per root agent with its subtree size.
   4. **Recently Added:** 5 agents, newest `hire_date` first.
-  5. **Manage Agents:** Edit opens `AddAgentModal` in edit mode. Delete calls `deleteAgent`, which is **blocked** if the agent has sales, listings or share links; otherwise their direct downlines move up to the deleted agent's upline (or become roots), the edges are removed, and the agent row is deleted.
+  5. **Manage Agents** (Edit / Delete buttons for admins only): Edit opens `AddAgentModal` in edit mode. Delete (hidden on the admin's own row) calls `deleteAgent`, which is **blocked** if the agent has sales, listings or share links; otherwise their direct downlines move up to the deleted agent's upline (or become roots), the edges are removed, the agent row is deleted (`.select()` check), and **their login is removed** (`accountService.deleteLogin` → Edge Function).
   6. **Roles, Overrides and Promotion** (`TeamInsights`, 7.14).
   7. **Tree** (`genealogymodal.vue`): Vue Flow with a top-to-bottom dagre layout. Each node shows the name, position, commission rate %, accumulated sales and "% to next" rank. It redraws on sales changes and is remounted (`reloadKey`) after edits.
-- **`AddAgentModal`:**
-  - Fields: first/middle/last name, sex, birth and hire dates, contact, email, home address, position (from `positionMap`), upline, and "Grant admin access".
+- **`AddAgentModal`** (also opened from the Dashboard; has dark mode):
+  - **Login account · Important** box at the top (amber, red `CircleAlert` icons): the **email** (the login) and, in add mode, the generated **initial password** (`PasswordReveal`: dots, eye, copy, regenerate). See 7.19.
+  - Fields: first/middle/last name, sex (Male, Female, Non-Binary, Other, same as ProfileEdit), birth and hire dates, contact, position (from `positionMap`), home address, upline, and "Grant admin access".
+  - Every value is cleaned and validated before saving (`cleanForm`: `cleanText`, `normalizeEmail`, `isValidEmail`, `isValidPhone`, `isIsoDate`, birth date not in the future).
   - The upline list is filtered by `allowedUplineRanks(selected rank)`; it is disabled for Partner Brokers.
-  - Add: `genealogyService.addAgent(payload, uplineId)`. `age` is derived from the birth date, `user_id` is null, `configs` gets the defaults. The hierarchy rules are checked before inserting.
-  - Edit: `updateAgentAndUpline(id, patch, uplineId)`. If a promotion makes the current upline invalid, the agent is **detached** and an alert explains it.
+  - Add: `genealogyService.addAgent(payload, uplineId, initialPassword)`. The hierarchy rules are checked first; the Edge Function then creates the login, the agent row (`user_id` linked), the edge and the stored password. `configs` gets the defaults; `age` is derived again on the server. The modal then shows **"Login Created"** with the email and password (+ "Copy login details").
+  - Edit: `updateAgentAndUpline(id, patch, uplineId)`. If a promotion makes the current upline invalid, the agent is **detached** and an alert explains it. The login box shows the login status (7.19) and can create a login for an agent without one.
 - **Hierarchy rules:** see 8.5.
-- **Data:** R/W `agents`, `genealogy`; R `positions`, `sales`, `main_listings`, `shared_listings` (delete checks).
-- **Code:** `src/views/Genealogy-landingpage.vue`, `components/genealogy/{genealogymodal,AddAgentModal,TeamInsights}.vue`, `src/services/genealogyService.ts`, `src/utils/ranks.ts`.
+- **Data:** R/W `agents`, `genealogy`; R `positions`, `sales`, `main_listings`, `shared_listings` (delete checks); through the Edge Function / RPC: `auth.users`, `agent_credentials`.
+- **Code:** `src/views/Genealogy-landingpage.vue` (`isAdmin`, `currentAgentId`, `loadCurrentAgent`), `components/genealogy/{genealogymodal,AddAgentModal,PasswordReveal,TeamInsights}.vue`, `src/services/genealogyService.ts`, `src/services/accountService.ts`, `src/utils/ranks.ts`.
 
 ### 7.14 Ranks, overrides and promotion (Team Insights)
 - **Where:** the `TeamInsights.vue` panel on the Genealogy page.
@@ -720,7 +784,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   1. `getCurrentAgentProfile()` → `ProfileCard` shows the name (+ admin badge), sex, age (computed from the birth date), birth date, address, contact, email, agent ID, position and hire date.
   2. **EDIT** → `ProfileEdit`: first/middle/last name, sex (Male, Female, Non-Binary, Other), birth date, address, contact number, email, and the profile picture (Upload/Change, Delete, Revert).
   3. Save: if a new picture was chosen, `uploadProfileImage` (to `images/agents/`) and delete the old one; if the picture was removed, `deleteProfileImage`; then `updateProfile` (with `age` recomputed) → `router.go(0)` (full reload).
-- **Rules:** position, hire date and admin access can't be edited here; they are edited from Genealogy → Manage Agents. Changing the email here doesn't change the Supabase Auth login email.
+- **Rules:** position, hire date and admin access can't be edited here; they are edited from Genealogy → Manage Agents. Changing the email here doesn't change the Supabase Auth login email (11.3). Passwords are changed from the Login page or the Dashboard reminder (7.20), not here.
 - **Code:** `src/views/Profile.vue`, `components/profile/{ProfileCard,ProfileEdit}.vue`, `agentService.*`.
 
 ### 7.18 Settings
@@ -729,6 +793,40 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 - **Flow:** every change calls `updateSetting()` (localStorage) and takes effect immediately for the theme and animations. **SAVE SETTINGS** writes the configs to `agents.configs` (`agentService.updateConfigs`). CANCEL goes back in history but does not undo changes already applied.
 - **Code:** `src/views/Settings.vue`, `components/settings/{configDropdown,configToggleSlider}.vue`, `src/utils/useSettings.ts`, `App.vue`.
 - **Rules and edge cases:** see 11.6 (the default currency only applies after a reload; Save shows no feedback).
+
+### 7.19 Agent accounts (logins and initial passwords)
+- **Route / entry point:** Genealogy → **Add Agent** / **Edit** (Manage Agents); Dashboard → **+ Add Agent**. All open `AddAgentModal`.
+- **Who:** admins only (UI gating + server checks in the Edge Function and SQL functions).
+- **When it is used:** onboarding a new agent (they get a working login immediately), giving an older agent a login, or looking up the initial password for an agent who hasn't changed it yet.
+- **Flow (add):**
+  1. The modal builds the **initial password** with `src/utils/password.ts`: the agent's initials (first letter of first, middle and last name, accents dropped) followed by random characters, **14 characters in total** (e.g. `JSDk7#Pm2xQ9vR`). Secure random (`crypto.getRandomValues`), no look-alike characters, always an upper-case letter, lower-case letter, digit and symbol. The random part stays while the name is typed; "regenerate" makes a new one.
+  2. Email and password sit in the amber **Login account · Important** box. The password is dots until the eye is pressed; copy and regenerate buttons sit beside it.
+  3. Save → `cleanForm()` → `genealogyService.addAgent(payload, uplineId, password)` → `checkPlacement` (hierarchy rules) → `accountService.createAgentWithLogin` → Edge Function `agent-account` (`create`): validates and whitelists the fields, `auth.admin.createUser({ email, password, email_confirm: true })`, inserts `agents` with `user_id`, inserts the `genealogy` edge, `store_agent_initial_password(...)` (pgcrypto + Vault key). Any failure undoes the earlier steps (edge, agent, auth user).
+  4. The modal switches to **Login Created** (email + password, "Copy login details"). Closing it reloads the page that opened it.
+- **Flow (edit), login box states** (`accountService.getAgentLogin(id)` → `admin_get_agent_login(id, false)`):
+  - **Initial password not changed:** dots + eye. Pressing the eye calls `admin_get_agent_login(id, true)` and shows the password (copy button). Works for any agent, admins included.
+  - **Changed by the agent:** "Changed by the agent on <date>"; the stored copy was deleted, nothing to reveal.
+  - **Login linked by hand** before this feature (no `agent_credentials` row): "can't be shown"; the agent can use "Forgot or change password?".
+  - **No login:** "Create a login with this email when I save" → after the fields are saved, `accountService.createLoginForAgent(id, password)` → Edge Function `create-login` (uses the saved `agents.email_address`, links `user_id` only if still null). Then the Login Created screen.
+  - If the email field no longer matches the login email, a note says the login email does not change (11.3).
+- **Flow (delete):** `genealogyService.deleteAgent` → after the agent row is gone, `accountService.deleteLogin(user_id)` → Edge Function `delete-login` (refuses the caller's own login and any login an agent still uses). `agent_credentials` goes with the agent (cascade).
+- **Data:** W `auth.users` (Edge Function), `agents`, `genealogy`, `agent_credentials`; R the same through `admin_get_agent_login`. Vault secret `agent_password_key`.
+- **Code:** `components/genealogy/AddAgentModal.vue` (`initialPassword`, `regeneratePassword`, `cleanForm`, `loadLogin`, `revealPassword`, `createLogin`, `created`), `components/genealogy/PasswordReveal.vue`, `accountService.*`, `genealogyService.addAgent/deleteAgent`, `src/utils/password.ts`, `src/utils/sanitize.ts`, `supabase/functions/agent-account/index.ts`, `supabase/migrations/20261104120000_agent_accounts.sql`.
+- **Rules and edge cases:** only the **initial** password can ever be revealed (decided with the team on 2026-11-04); passwords agents choose are never readable. Logins are created with `email_confirm: true`, so no confirmation email is sent and the agent can sign in at once. The admin hands the credentials over themselves; the app sends no welcome email.
+
+### 7.20 Change password (email one-time code)
+- **Route / entry point:** Login page → **Forgot or change password?**; Dashboard → red **initial password** reminder.
+- **Who:** anyone with a login (signed out on the Login page, signed in from the Dashboard).
+- **When it is used:** a new agent replacing the initial password, or anyone who forgot theirs.
+- **Flow (`components/auth/ChangePasswordModal.vue`):**
+  1. **Email:** cleaned and validated → `accountService.sendPasswordCode(email)` → `supabase.auth.resetPasswordForEmail(email)`. Supabase answers the same way whether or not the email has a login (no account discovery). From the Dashboard the email is locked to the user's own login email.
+  2. **Code:** digits only (`digitsOnly`, 6–10 digits) → `verifyPasswordCode` → `supabase.auth.verifyOtp({ email, token, type: 'recovery' })`, which starts a session for that user. "Resend code" waits 60 seconds.
+  3. **New password:** new + confirm (eye toggles) with a live checklist from `passwordRules` (8–72 characters, upper case, lower case, number, no spaces, both match) → `changePassword` → `supabase.auth.updateUser({ password })`. The password fields are cleared afterwards.
+  4. The `on_agent_password_changed` trigger on `auth.users` sets `agent_credentials.password_changed_at` and deletes the stored initial password, so the reminder ends and admins can no longer reveal it.
+  5. Login page (`signOutWhenDone`): the code's session is ended when the flow finishes **or** the modal is closed halfway; the user then signs in with the new password. Dashboard: the user stays signed in and the Dashboard reloads.
+- **Data:** Supabase Auth only (+ the trigger's update of `agent_credentials`).
+- **Code:** `components/auth/ChangePasswordModal.vue`, `accountService.sendPasswordCode/verifyPasswordCode/changePassword`, `src/views/LoginForm.vue`, `src/views/Dashboard.vue`.
+- **Rules and edge cases:** needs the **Reset password** email template to contain `{{ .Token }}` and a working SMTP sender (3.3 steps 3–5). Supabase error codes are reworded in `authErrorMessage` (rate limit, expired code, same password, weak password). The project's own Auth password rules (if any are set in Supabase) apply on top of the checklist.
 
 ---
 
@@ -839,8 +937,22 @@ Inputs: `commissionableAmount` = **`sales.gross_commission`** (which the form co
 | AWAITING APPROVAL | Tabs with `pending_approval` status. |
 | Trend | % change against the previous month when a month is selected; "-" and "All Time" otherwise. |
 | Sales Performance | Approved sales per month by reservation date, 7 months ending at the selected month; Avg Deal = mean contract price of the selected month's approved sales. |
-| Reminders | Admin: sales pending approval, commissions awaiting approval. Agent: tabs ready to request, approved tabs due within 7 days. |
+| Reminders | Everyone: **initial password still in use** (critical, first; `needsPasswordChange`). Admin: sales pending approval, commissions awaiting approval. Agent: tabs ready to request, approved tabs due within 7 days. |
 | Alerts | Agent: payment released (check proof and confirm), commissions approved. Admin: payment requests to release, commissions waiting for approval. |
+
+### 8.7 Accounts and passwords
+
+| Rule | Value | Where |
+|---|---|---|
+| Who creates logins | Admins only, from Add Agent / Edit Agent | `agent-account` Edge Function (`requireAdmin`) |
+| Login email | `agents.email_address`, trimmed and lower-cased; must be unique in Supabase Auth | `normalizeEmail`, Edge Function `cleanEmail` |
+| Initial password | `<initials><random>`, **14 characters in total**. Initials = first letter of first, middle and last name (max 3). Random part from `crypto.getRandomValues`, alphabet without `0 O 1 l I`, always an upper-case letter, a lower-case letter, a digit and a symbol (`!@#$%&*?`) | `src/utils/password.ts` (`INITIAL_PASSWORD_LENGTH`, `agentInitials`, `generatePasswordTail`, `buildInitialPassword`) |
+| Server check of any initial password | 8–72 characters, no spaces | Edge Function `cleanPassword`, SQL `store_agent_initial_password` |
+| Password an agent chooses | 8–72 characters, upper case, lower case, number, no spaces (+ any rules set in Supabase Auth) | `passwordRules`, `isStrongPassword` |
+| Who can reveal a password | Admins; **initial password only**, and only until the agent changes it | `admin_get_agent_login` |
+| "Changed" | Any update of `auth.users.encrypted_password` (the app's modal or a reset in the Supabase dashboard) | trigger `on_agent_password_changed` |
+| Reminder | Shown while `agent_credentials.password_changed_at is null` for the signed-in user | `current_agent_needs_password_change()` |
+| Deleting an agent | Deletes their login too; an admin can't delete their own record or login | `genealogyService.deleteAgent`, Edge Function `delete-login`, Genealogy page |
 
 ---
 
@@ -850,7 +962,9 @@ Inputs: `commissionableAmount` = **`sales.gross_commission`** (which the form co
 
 | Table | Purpose | Written by | Read by |
 |---|---|---|---|
-| `agents` | Agent accounts, profile, rank, admin flag, settings (`configs`) | Genealogy (add/edit/delete), Profile, Settings | almost everything |
+| `agents` | Agent accounts, profile, rank, admin flag, settings (`configs`); `user_id` = the Supabase Auth login | Genealogy (edit/delete), `agent-account` Edge Function (add, link login), Profile, Settings | almost everything |
+| `agent_credentials` | **Locked** (RLS on, no policies). One row per login the app created: encrypted initial password, when the agent changed it, who created it | Edge Function (through `store_agent_initial_password`), trigger on `auth.users` | `admin_get_agent_login`, `current_agent_needs_password_change` only |
+| `auth.users` (Supabase Auth) | Logins (bcrypt password hashes). Not a public table | `agent-account` Edge Function, Supabase Auth (password changes) | Supabase Auth, `admin_get_agent_login` (email) |
 | `positions` | The 4 ranks, their rate and promotion threshold | TeamInsights (threshold) | genealogyService |
 | `genealogy` | Upline → downline edges | genealogyService | Genealogy, Dashboard, sales tab generation |
 | `main_listings` | Listing header (price, location, status, developer, incentives, POI cache) | PropertyManagement, Listings, sale form, poiService | Listings, Sales, Dashboard, Developers, Shared |
@@ -884,10 +998,16 @@ positions (position_ID int PK identity, position varchar, commission_rate float8
 agents (agent_ID int PK identity, first_name varchar NN, middle_name varchar, last_name varchar NN,
         age smallint NN, sex varchar NN, birth_date date NN, home_address text NN, contact_number varchar NN,
         email_address varchar NN, hire_date date NN, position_ID int NN → positions, admin_access bool NN,
-        user_id uuid → auth.users(id) /* NULL until a login is linked */, profile_url text UNIQUE,
+        user_id uuid → auth.users(id) /* the login; set by the agent-account Edge Function. NULL = no login (older agents) */, profile_url text UNIQUE,
         configs jsonb /* user settings; the app always sets it */)
 genealogy (relationship_ID bigint PK identity, upline_agent_ID int NN → agents,
            downline_agent_ID int NN UNIQUE → agents, created_at timestamptz default now())
+agent_credentials ("agent_ID" int PK → agents ON DELETE CASCADE, user_id uuid NN UNIQUE → auth.users ON DELETE CASCADE,
+                   initial_password_enc bytea /* pgp_sym_encrypt(initial password, Vault 'agent_password_key'); NULL once changed */,
+                   password_changed_at timestamptz /* NULL = still on the initial password */,
+                   created_by int → agents ON DELETE SET NULL /* admin who created the login */,
+                   created_at timestamptz NN default now())
+                  -- RLS enabled, NO policies; revoke all from anon, authenticated (migration 20261104120000)
 
 -- Developers
 developers (dev_ID bigint PK identity, name varchar NN, contact_number varchar NN, contact_email varchar NN,
@@ -1010,8 +1130,35 @@ Property type strings come in three forms: DB `house_and_lot`, form label `House
 | `20260720120100_create_developer_promos.sql` | `developer_promos` table |
 | `20260906120000_add_pending_listing_status.sql` | `pending` value on `listing_status` |
 | `20261014140000_sales_payment_scheme_and_commissions.sql` | Combined and idempotent: sales financing, scheme and DP columns, `completed_at`, `sale_dp_divisions`, `commissions` (+ approval, balance, rank, role check), positions rates and thresholds, `Partner Broker` row, `sales.commission_rate`, Deferred-Cash, realtime publication, commission payment-flow columns, `sales.commissionable_amount`. **Re-run the whole file, then `notify pgrst, 'reload schema';`.** |
+| `20261104120000_agent_accounts.sql` | Idempotent: `pgcrypto` (schema `extensions`), Vault secret `agent_password_key` (created once, never replaced), table `agent_credentials` (locked), functions `current_agent_is_admin`, `store_agent_initial_password`, `admin_get_agent_login`, `current_agent_needs_password_change`, `handle_agent_password_change` + trigger `on_agent_password_changed` on `auth.users`. No changes to existing tables. Ends with `notify pgrst`. **Part of 3.3 step 1.** |
 
 Tables that existed before migrations were introduced (`agents`, `main_listings`, the sub-tables, `developers`, ...) have no migration file. Their shape is the PDF schema.
+
+### 9.7 SQL functions, triggers and Vault (agent accounts)
+
+All are `SECURITY DEFINER` with `set search_path = ''`, use no dynamic SQL, and are defined in `20261104120000_agent_accounts.sql`.
+
+| Object | Callable by | Does | Called from |
+|---|---|---|---|
+| `current_agent_is_admin()` → boolean | authenticated, service_role | `agents.admin_access` of the row whose `user_id = auth.uid()` (false if none) | the functions below |
+| `store_agent_initial_password(p_agent_id, p_user_id, p_password, p_created_by)` → void | **service_role only** | Checks 8–72 characters, encrypts with `pgp_sym_encrypt` and the Vault key, upserts `agent_credentials` (resets `password_changed_at`) | `agent-account` Edge Function |
+| `admin_get_agent_login(p_agent_id, p_reveal = false)` → one row (`has_login`, `login_email`, `has_initial_password`, `initial_password`, `password_changed_at`, `login_created_at`) | authenticated; **raises 42501 unless admin** | Login status; with `p_reveal` also decrypts the initial password if it is still stored | `accountService.getAgentLogin` |
+| `current_agent_needs_password_change()` → boolean | authenticated | True if the caller has an `agent_credentials` row with `password_changed_at is null` | `accountService.needsPasswordChange` |
+| `handle_agent_password_change()` + trigger `on_agent_password_changed` (`after update of encrypted_password on auth.users`, only when the hash changes) | trigger only | Sets `password_changed_at = now()` and `initial_password_enc = null` for that user | Supabase Auth password updates |
+| Vault secret `agent_password_key` | Postgres only (read through `vault.decrypted_secrets` inside the functions) | 32 random bytes (hex) that encrypt the initial passwords | — |
+
+⚠ **Do not delete or rotate `agent_password_key`.** Stored initial passwords would become unreadable (agents can still sign in; admins just can't reveal them).
+
+### 9.8 Edge Functions (`supabase/functions/`)
+
+| Function | Auth | Actions (POST JSON `{ action, ... }`) | Writes | Called from |
+|---|---|---|---|---|
+| `agent-account` (`index.ts`, Deno, `npm:@supabase/supabase-js@2`, service-role client) | Bearer token of a signed-in agent with `admin_access = true` (checked with `auth.getUser(token)` + `agents`); otherwise 401/403. CORS allows any origin (the token is the protection). | `create` `{ agent, uplineId, password }` → `{ agent_ID, user_id, email }`; `create-login` `{ agentId, password }` → same; `delete-login` `{ userId }` → `{ deleted }` | `auth.users` (admin API), `agents` (whitelisted columns only: names, sex, dates, contact, email, address, position, admin flag, configs; `age` derived on the server), `genealogy`, `agent_credentials` (via RPC) | `accountService.createAgentWithLogin/createLoginForAgent/deleteLogin` |
+
+- **Errors** come back as `{ error: "<message for the admin>" }` with 400/401/403/404/409/500; `accountService` shows that message, and maps 404 (not deployed) and network failures to setup hints.
+- **Rollback:** `create` deletes the edge, agent and auth user if a later step fails; `create-login` unlinks `user_id` and deletes the auth user.
+- **Hierarchy rules are not re-checked** in the function (they live in `genealogyService.checkPlacement`, which runs first in the browser).
+- **Deploying:** 3.3 step 2. The file is not covered by `vue-tsc` (Deno); check it by deploying or with `deno check`.
 
 ---
 
@@ -1025,8 +1172,22 @@ Tables that existed before migrations were introduced (`agents`, `main_listings`
 
 | Function | Purpose | Used by |
 |---|---|---|
-| `getCurrentAgent()` | Signed-in agent: `agent_ID`, first/middle/last name, `admin_access` (or null) | Listings, PropertyManagement, SalesReport, Commission, SalesUploadModal |
-| `logoutUser()` | `auth.signOut()` → `{ success, error? }` | Sidebar |
+| `getCurrentAgent()` | Signed-in agent: `agent_ID`, first/middle/last name, `admin_access` (or null) | Listings, PropertyManagement, SalesReport, Commission, SalesUploadModal, Genealogy page |
+| `logoutUser()` | `auth.signOut()` → `{ success, error? }` | Sidebar, ChangePasswordModal (login page) |
+
+**`src/services/accountService.ts`** (`accountService`; types `NewAgentAccount`, `AgentLogin`). Logins and passwords; see 7.19, 7.20, 9.7, 9.8.
+
+| Function | Purpose | Used by |
+|---|---|---|
+| `createAgentWithLogin(agent, uplineId, password)` | Edge Function `create`: login + agent + edge + stored initial password → `{ agent_ID, user_id, email }` | genealogyService.addAgent |
+| `createLoginForAgent(agentId, password)` | Edge Function `create-login` for an agent without a login | AddAgentModal (edit) |
+| `deleteLogin(userId)` | Edge Function `delete-login` (only logins no agent uses) | genealogyService.deleteAgent |
+| `getAgentLogin(agentId, reveal=false)` | RPC `admin_get_agent_login` → `AgentLogin` (status; password only when `reveal`) | AddAgentModal (edit) |
+| `needsPasswordChange()` | RPC `current_agent_needs_password_change` (never throws; false on error) | Dashboard |
+| `sendPasswordCode(email)` | `auth.resetPasswordForEmail` (emails the one-time code) | ChangePasswordModal |
+| `verifyPasswordCode(email, code)` | `auth.verifyOtp({ type: 'recovery' })` (starts a session) | ChangePasswordModal |
+| `changePassword(newPassword)` | `auth.updateUser({ password })` | ChangePasswordModal |
+| `functionErrorMessage()`, `callAccountFunction()`, `authErrorMessage()` | Module-private: Edge Function call + readable errors | internal |
 
 **`src/services/agentService.ts`** (`agentService`)
 
@@ -1112,7 +1273,7 @@ Tables that existed before migrations were introduced (`agents`, `main_listings`
 | Function | Purpose | Used by |
 |---|---|---|
 | `getDashboardData(agentId?)` | Loads sales, listings and tabs (scoped, or all) | Dashboard |
-| `buildDashboard(data, { month, agentId, isAdmin, now? })` | Pure builder → `DashboardView` (alerts, metrics, commissionMetrics, history, performance, activities, reminders) | Dashboard |
+| `buildDashboard(data, { month, agentId, isAdmin, now?, needsPasswordChange? })` | Pure builder → `DashboardView` (alerts, metrics, commissionMetrics, history, performance, activities, reminders). `Reminder` has optional `critical` and `action: 'change-password'` | Dashboard |
 
 **`src/services/genealogyService.ts`** (`genealogyService`; types `GenealogyAgent`, `GenealogyNode`, `GenealogyStats`, `AgentDetail`, `TeamMember`, `RankPosition`, `OverrideLine`)
 
@@ -1125,7 +1286,7 @@ Tables that existed before migrations were introduced (`agents`, `main_listings`
 | `getStats()` | Total agents, team leaders, active teams, new this month | Genealogy page |
 | `getAgents()` | Flat agent list (dropdowns) | Genealogy page, AddAgentModal |
 | `getRecentAgents(limit=5)` | Newest by `hire_date` | Genealogy page |
-| `addAgent(data, uplineId?)` | Check rules, insert agent and edge | AddAgentModal |
+| `addAgent(data, uplineId, initialPassword)` | Check hierarchy rules, then `accountService.createAgentWithLogin` (login + agent + edge in the Edge Function) → `{ success, agent_ID, user_id, email }` | AddAgentModal |
 | `getAgentById(id)` | Full editable record | Genealogy page |
 | `updateAgent(id, patch)` | Patch fields only (no rule checks) | internal |
 | `setUpline(downlineId, uplineId)` | Check rules and loops, replace edge | unused (prefer `updateAgentAndUpline`) |
@@ -1136,7 +1297,7 @@ Tables that existed before migrations were introduced (`agents`, `main_listings`
 | `getRankPositions()` | The 4 ranks with rate and threshold | TeamInsights |
 | `setPromotionThreshold(positionId, value)` | Save a threshold | TeamInsights |
 | `getAgentReferences(id)` | Counts of sales, listings, share links | internal |
-| `deleteAgent(id)` | Blocked delete with downline re-parenting | Genealogy page |
+| `deleteAgent(id)` | Blocked delete with downline re-parenting; `.select()` check on the agent delete; then removes the login (`accountService.deleteLogin`) | Genealogy page |
 | `fetchGraph()`, `checkPlacement()`, `toAgent()` | Module-private helpers | internal |
 
 **`src/services/developerService.ts`** (`developerService`, `reformatHours`)
@@ -1166,6 +1327,8 @@ Tables that existed before migrations were introduced (`agents`, `main_listings`
 | `utils/conversion.ts` | `currentCurrency`, `currentUnit` (refs), `currencySymbols`, `areaUnits`, `SQM_TO_SQFT`, `convertPrice`, `formatPrice`, `convertArea`, `formatArea`, `convertPriceToPHP`, `convertAreaToSqm` | Listings, PropertyManagement, PropertyCard, PropertyDetails, SalesReport, SharedListing, Settings |
 | `utils/useSettings.ts` | `useSettings()` → `{ configs, updateSetting, loadSettings }` | App, Settings, conversion, ProfileCard, genealogy tree |
 | `utils/liveRefresh.ts` | `useLiveRefresh(reload, tables, opts)` | Dashboard, Commission, Genealogy page, tree, TeamInsights |
+| `utils/sanitize.ts` | `cleanText(value, max)`, `normalizeEmail`, `isValidEmail`, `isValidPhone`, `isIsoDate`, `digitsOnly`, `EMAIL_PATTERN`, `PHONE_PATTERN` | AddAgentModal, LoginForm, ChangePasswordModal (the Edge Function repeats the same rules) |
+| `utils/password.ts` | `INITIAL_PASSWORD_LENGTH` (14), `MIN_PASSWORD_LENGTH` (8), `MAX_PASSWORD_LENGTH` (72), `agentInitials`, `generatePasswordTail`, `buildInitialPassword`, `passwordRules`, `isStrongPassword`, type `PasswordRule` | AddAgentModal, PasswordReveal, ChangePasswordModal |
 
 ### 10.3 Classes and constants (`src/assets/classes/`)
 
@@ -1195,10 +1358,12 @@ Tables that existed before migrations were introduced (`agents`, `main_listings`
 | `dashboard/SalesPerfromance` | `bars`, `sold`, `avgDeal` | `open-details` | Dashboard |
 | `dashboard/CommissionHistory` | `history: HistoryItem[]` | — | Dashboard |
 | `dashboard/GenealogyCard` | `upline`, `downline` (`{ name, meta }[]`) | `view-full` | Dashboard |
-| `dashboard/Reminders` | `reminders` | `open` | Dashboard |
+| `dashboard/Reminders` | `reminders: Reminder[]` (critical ones render solid red) | `open` (`Reminder`) | Dashboard |
 | `dashboard/RecentActivity` | `activities` | `view-item`, `view-all` | (hidden) |
 | `genealogy/genealogymodal` | — | — | Genealogy page |
-| `genealogy/AddAgentModal` | `agent?: AgentDetail` (edit mode) | `close`, `saved` | Genealogy page |
+| `genealogy/AddAgentModal` | `agent?: AgentDetail` (edit mode) | `close`, `saved` (also on close after a save or a created login) | Genealogy page, Dashboard |
+| `genealogy/PasswordReveal` | `value: string \| null` (null = not loaded), `loading?`, `regenerable?` | `reveal` (eye pressed while `value` is null), `regenerate` | AddAgentModal |
+| `auth/ChangePasswordModal` | `email?`, `lockEmail?`, `signOutWhenDone?` | `close`, `changed` (email) | LoginForm, Dashboard |
 | `genealogy/TeamInsights` | — | `changed` | Genealogy page |
 | `developer/developerCard` | `dev: Developer` | `delete-developer`, `edit-developer`, `contact-developer`, `open-listing`, `open-promo` | developerlist |
 | `developer/addDeveloper` | `dev?: Developer` | `close-add-developer` | developerlist |
@@ -1236,11 +1401,13 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 - `/commissions` has no `meta.requiresAuth` (the data still needs a session).
 - Proof-of-payment images are public URLs.
 
-### 11.3 Genealogy
-- **Missing admin gating.** Add, edit and delete agent, Promote, and threshold editing are visible to **all** users. The team confirmed they should be admin-only; gate them with `authService.getCurrentAgent().admin_access`.
-- New agents have no login (`user_id` null). Linking a login is a manual step in Supabase.
+### 11.3 Genealogy and agent accounts
+- **Missing admin gating (partly fixed 2026-11-04).** Add, Edit and Delete agent are now admin-only. **Promote and threshold editing** in `TeamInsights.vue` are still visible to **all** users; gate them with `authService.getCurrentAgent().admin_access`.
+- **The login email doesn't follow email edits.** Editing `agents.email_address` (Edit Agent or Profile) doesn't change the Supabase Auth email. Edit Agent shows a note when they differ. To change a login email today: Authentication → Users in Supabase. (A possible fix: an `update-email` action in the `agent-account` Edge Function.)
+- **Nothing works until the Supabase setup is done** (3.3): without the migration, Edit Agent says to run it; without the Edge Function, Add Agent says it is not deployed; without the `{{ .Token }}` email template and SMTP, password codes don't arrive.
+- **The recovery code is also a sign-in.** After the code is verified, the user has a session. On the Login page the modal ends it when finished or closed, but reloading the page mid-flow leaves the user signed in without having changed the password (the Dashboard reminder still shows for an initial password).
+- The Edge Function doesn't re-check the hierarchy rules; it trusts `genealogyService.checkPlacement`, which runs first in the browser.
 - The tree's heading says "Developer Genealogy"; it shows agents.
-- The Dashboard "+ Add Agent" button opens a placeholder (`components/dashboard/AddAgent.vue`).
 
 ### 11.4 Developers
 - **Missing admin gating.** Add Developer, Edit, Delete and promo management are visible to all users. The team confirmed they should be admin-only.
@@ -1258,12 +1425,14 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 ### 11.6 Settings and UI
 - `currentCurrency` and `currentUnit` are set once, at module load. Changing the default in Settings only applies after a reload; the Listings dropdowns change them for the session only.
 - Settings Save shows no success or error message to the user. Logout doesn't clear `localStorage['app_user_settings']`.
-- The Commissions page, its request/release/proof modals and `AddAgentModal` have no dark-mode styling. (`ConfirmActionModal` and the Commissions toast have it, so they turn dark over a light page when dark mode is on.)
+- The Commissions page and its request/release/proof modals have no dark-mode styling. (`ConfirmActionModal` and the Commissions toast have it, so they turn dark over a light page when dark mode is on. `AddAgentModal` got dark mode on 2026-11-04.)
 - The Commissions page still uses `alert()` after a payment request, a release and a receipt; only Approve uses the toast.
 - `bg-maurealty-red` (Listings confirmation toast) isn't a defined theme color.
 
 ### 11.7 Security (pre-launch)
-- RLS is wide open on every table (dev policy). Every role rule is frontend-only. Hardening (admins see everything, agents see their own) is planned "before go-live" according to the migration comments.
+- RLS is wide open on every table (dev policy) except `agent_credentials` (locked). Most role rules are frontend-only; creating/removing logins and revealing passwords are checked on the server (9.7, 9.8). Hardening (admins see everything, agents see their own) is planned "before go-live" according to the migration comments. When it happens, the Edge Function keeps working (it uses the service role).
+- **Public sign-ups** must be turned off in Supabase (3.3 step 6). Otherwise anyone with the anon key can create a login and read the open tables.
+- Admins can read an agent's **initial** password until it is changed (by design, 7.19). It is encrypted at rest with a Vault key and only decrypted by `admin_get_agent_login` for an admin.
 
 ### 11.8 Dead code and unused dependencies
 - Unrouted or unused files: `views/DashboardPrevious.vue`, `components/test.vue`, `components/modal.vue`, `components/dashboard/AddListing.vue`, `components/dashboard/Calculator.vue`, `services/lookupService.ts`, `babel.config.js`.
@@ -1278,6 +1447,11 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 | Term | Meaning |
 |---|---|
 | **Agent** | A user of the portal (a row in `agents`). Admins are agents with `admin_access`. |
+| **Login** | The Supabase Auth user an agent signs in with (`auth.users`), linked by `agents.user_id`. |
+| **Initial password** | The 14-character `<initials><random>` password an admin's Add Agent generates. Admins can reveal it until the agent changes it. |
+| **One-time code (OTP)** | The numeric code Supabase emails for a password change (recovery OTP, `{{ .Token }}` in the Reset password template). |
+| **Edge Function** | Server-side Deno code hosted by Supabase (`supabase/functions/`). `agent-account` holds the service-role key for creating logins. |
+| **Vault** | Supabase's encrypted secret store; holds `agent_password_key`. |
 | **Rank / Position** | Specialist, Supervisor, Investment Manager or Partner Broker (`positions`). Sets the commission rate and the override rules. |
 | **Upline / Downline** | The agent someone reports to, and the agents below them (`genealogy`). |
 | **Team / Team root** | Everything below the topmost non-broker agent; a root is an agent with no upline. |
@@ -1311,6 +1485,7 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 
 | `documentation.md` entry | Summary | See |
 |---|---|---|
+| 2026-11-04: Agent accounts and password changes | Add Agent creates the Supabase login (Edge Function `agent-account`), encrypted initial password that admins can reveal until it is changed, create login for older agents, login removed on delete, admin-only agent management, Dashboard Add Agent = Genealogy modal, red initial-password reminder, change password with an email code on the Login page, input cleaning helpers | 3.3, 5.1, 5.8, 6, 7.1, 7.3, 7.13, 7.19, 7.20, 8.7, 9.7, 9.8, 10 |
 | 2026-11-03: Commission confirmations, admin filter, shared listing | Other Agents switch, "You" badge, Approve popup + toast, admins request/receive on own tabs, typed "I have received payment", `ConfirmActionModal`; shared page shows bulk price range, hides bulk features, orders photos, dark mode | 5.8, 6, 7.7, 7.12, 8.3, 10.4 |
 | 2026-10-15: Dashboard cards, genealogy card, commissions page | New card rows, live Sales Performance, full upline and any-depth downline, Recent Activity hidden, single grid of commission cards with "n/N", ordered payment requests, editable request details, per-agent vs all sale numbering | 7.3, 7.12, 7.9 |
 | 2026-10-14: Commission payment flow | `claimTab` replaced by the 5-status flow, request/release/proof modals, proof images, role restrictions, `agents!recipient_agent_ID` fix | 7.12, 8.3 |
@@ -1339,6 +1514,8 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 ## 14. Changelog of this file
 
 Add one line per update, newest first: `YYYY-MM-DD: what changed (sections)`.
+
+- **2026-11-04:** Agent accounts: login creation through the `agent-account` Edge Function, `agent_credentials` + Vault + SQL functions + `auth.users` trigger, initial-password reveal, create login for older agents, login removal on delete, admin-only Add/Edit/Delete agent, Dashboard Add Agent uses the Genealogy modal (placeholder deleted), red initial-password reminder, change password with an email code, `sanitize.ts` / `password.ts`, new Supabase setup section (header, 1.2–1.5, 2, 3, 3.3, 4, 5.1, 5.3, 5.8, 6, 7.1, 7.3, 7.13, 7.19, 7.20, 8.6, 8.7, 9.1, 9.2, 9.6, 9.7, 9.8, 10.1, 10.2, 10.4, 11.3, 11.6, 11.7, 12, 13.1).
 
 - **2026-11-03:** Commissions: admin "Other Agents" view, "You" badge, Approve confirmation popup + bottom-right toast, admins can request/receive payment on their own tabs, typed "I have received payment" check, new `ConfirmActionModal` (2.1, 4, 5.8, 6, 7.12, 8.3, 10.4, 11.6). Shared listing: bulk price range, single-only type features, photo order, dark mode (5.8, 7.7, 10.1, 11.6).
 - **2026-11-03:** Sale form fills DP division dates automatically (7.10).
