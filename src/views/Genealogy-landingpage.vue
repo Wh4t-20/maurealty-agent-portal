@@ -27,9 +27,10 @@
             />
           </div>
 
-          <!-- ACTIONS -->
+          <!-- ACTIONS (admins only: adding an agent also creates their login) -->
           <div class="flex items-center gap-4">
             <button
+              v-if="isAdmin"
               @click="openAdd"
               class="flex items-center gap-2 bg-[#07407B] text-white
                      px-4 py-2 rounded-[10px] hover:bg-blue-700 text-sm cursor-pointer">
@@ -108,12 +109,14 @@
               {{ a.first_name }} {{ a.last_name }}<br>
               <span class="text-sm text-gray-500 dark:text-gray-400">{{ positionLabel(a) }}</span>
             </div>
-            <div class="flex items-center gap-2">
+            <!-- Edit (incl. revealing the initial password) and Delete are admin-only.
+                 An admin can't delete their own record (it would also remove their login). -->
+            <div v-if="isAdmin" class="flex items-center gap-2">
               <button @click="openEdit(a.agent_ID)"
                       class="px-3 py-1 rounded-lg border border-[#07407B] text-[#07407B] dark:border-maurealty-light-blue dark:text-maurealty-light-blue text-sm hover:bg-[#07407B] dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue transition cursor-pointer">
                 Edit
               </button>
-              <button @click="confirmDelete(a)" :disabled="deletingId === a.agent_ID"
+              <button v-if="a.agent_ID !== currentAgentId" @click="confirmDelete(a)" :disabled="deletingId === a.agent_ID"
                       class="px-3 py-1 rounded-lg border border-red-500 text-red-600 text-sm hover:bg-red-500 hover:text-white transition cursor-pointer disabled:opacity-50">
                 {{ deletingId === a.agent_ID ? 'Deleting…' : 'Delete' }}
               </button>
@@ -141,6 +144,7 @@ import TeamInsights from '@/components/genealogy/TeamInsights.vue'
 import { useLiveRefresh } from '@/utils/liveRefresh'
 import { genealogyService, type GenealogyStats, type GenealogyAgent, type GenealogyNode, type AgentDetail } from '@/services/genealogyService'
 import { positionMap } from '@/assets/classes/agent'
+import { authService } from '@/services/authService'
 
 const stats = ref<GenealogyStats>({ totalAgents: 0, teamLeaders: 0, activeTeams: 0, newThisMonth: 0 })
 const recent = ref<(GenealogyAgent & { hire_date: string | null })[]>([])
@@ -153,6 +157,17 @@ const editing = ref<AgentDetail | null>(null) // null = add mode, set = edit mod
 const deletingId = ref<number | null>(null)
 const deleteError = ref('')
 const reloadKey = ref(0) // bump to remount the tree after a change
+
+// Signed-in agent. Add / Edit / Delete are admin-only (the agent-account Edge Function and the
+// admin_get_agent_login SQL function check this again on the server).
+const isAdmin = ref(false)
+const currentAgentId = ref<number | null>(null)
+
+async function loadCurrentAgent() {
+  const me = await authService.getCurrentAgent()
+  isAdmin.value = !!me?.admin_access
+  currentAgentId.value = me?.agent_ID ?? null
+}
 
 // Count a root's whole subtree (incl. itself) = team size.
 function countMembers(node: GenealogyNode): number {
@@ -214,11 +229,13 @@ async function load() {
 }
 
 function openAdd() {
+  if (!isAdmin.value) return
   editing.value = null
   showModal.value = true
 }
 
 async function openEdit(id: number) {
+  if (!isAdmin.value) return
   deleteError.value = ''
   try {
     editing.value = await genealogyService.getAgentById(id)
@@ -235,6 +252,7 @@ function closeModal() {
 }
 
 async function confirmDelete(a: GenealogyAgent) {
+  if (!isAdmin.value || a.agent_ID === currentAgentId.value) return
   deleteError.value = ''
   if (!window.confirm(`Delete ${a.first_name} ${a.last_name}? Their downlines move up to their upline. This cannot be undone.`)) return
   deletingId.value = a.agent_ID
@@ -256,7 +274,10 @@ function onSaved() {
   load()
 }
 
-onMounted(load)
+onMounted(() => {
+  load()
+  loadCurrentAgent()
+})
 
 // Agents added, moved or promoted elsewhere refresh the page without a reload.
 useLiveRefresh(async () => { await load(); reloadKey.value++ }, ['agents', 'genealogy'])
