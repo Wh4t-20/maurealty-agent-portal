@@ -239,7 +239,7 @@
                 <span :class="['inline-block px-2.5 py-1 rounded-full text-xs font-bold mt-1', statusClass(comm.status)]">
                   {{ STATUS_LABEL[comm.status] }}
                 </span>
-                <span v-if="comm.status === 'approved' && blockedBy(comm) !== null && !isAdmin" class="block text-[10px] text-amber-700 mt-0.5">Receive payment {{ blockedBy(comm) }} first</span>
+                <span v-if="comm.status === 'approved' && blockedBy(comm) !== null && canAgentAct(comm)" class="block text-[10px] text-amber-700 mt-0.5">Receive payment {{ blockedBy(comm) }} first</span>
                 <span v-else-if="comm.status === 'approved' && !isDue(comm)" class="block text-[10px] text-gray-500 mt-0.5">Request opens on the due date</span>
               </div>
             </div>
@@ -403,10 +403,11 @@ function isDue(tab: CommissionTab): boolean {
   return tab.sale_status === 'complete' || isDateReached(tab.due_date);
 }
 
-// Requesting and receiving payment is for the agent only: the recipient of the tab, never an admin.
+// Requesting and receiving payment is for the recipient of the tab only. That includes an admin
+// on their own tabs, but never an admin on someone else's.
 // (Approving and releasing payment are the admin-only steps.)
 function canAgentAct(tab: CommissionTab): boolean {
-  return !isAdmin.value && isOwnTab(tab);
+  return isOwnTab(tab);
 }
 
 // Payments of a sale are received in order: a later payment can't be requested until the
@@ -448,7 +449,7 @@ async function loadCommissions(silent = false) {
     isAdmin.value = !!agent?.admin_access;
     currentAgentId.value = agent?.agent_ID ?? null;
     me.value = agent ? { first_name: agent.first_name, middle_name: (agent as any).middle_name ?? null, last_name: agent.last_name } : null;
-    // An admin has no payouts of their own to act on, so they start on everyone's commissions.
+    // An admin mostly approves and releases payments, so they start on everyone's commissions.
     if (isAdmin.value && !adminScopeSet) { scope.value = 'all'; adminScopeSet = true; }
     loadError.value = '';
     const tabs = await commissionService.getTabs(isAdmin.value ? undefined : agent?.agent_ID);

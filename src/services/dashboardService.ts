@@ -350,7 +350,8 @@ export function buildDashboard(data: DashboardData, opts: BuildOptions): Dashboa
     if (pending > 0) reminders.push({ text: `${plural(pending, 'sale')} waiting for your approval`, urgent: true, to: '/sales' });
     if (awaitingApproval.length > 0) reminders.push({ text: `${plural(awaitingApproval.length, 'commission')} waiting for your approval`, urgent: true, to: '/commissions' });
   }
-  // Requesting and receiving payment is agent-only, so an admin has no personal payout alerts.
+  // An admin can request and receive payment on their own tabs from the Commissions page, but
+  // gets no personal payout alerts or reminders here (their dashboard is about approvals).
   const mine = opts.isAdmin ? [] : data.tabs.filter(t => t.recipient_agent_ID === opts.agentId);
   const myReady = mine.filter(t => isReady(t, now));
   if (myReady.length > 0) reminders.push({ text: `${plural(myReady.length, 'commission')} approved: request payment (${peso(sum(myReady))})`, urgent: true, to: '/commissions' });
