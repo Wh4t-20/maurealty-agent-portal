@@ -61,7 +61,53 @@
               </span>
               <input type="email" v-model.trim="form.email_address" required maxlength="254" autocomplete="off" spellcheck="false"
                      class="form-input important-input" />
+              <span v-if="loginEmailChanged" class="text-xs text-amber-800 dark:text-amber-200">
+                This agent signs in with <b>{{ login?.loginEmail }}</b>. Changing the email here doesn't change their login email.
+              </span>
             </label>
+
+            <!-- Edit mode: the agent's current login. Admins can reveal the initial password
+                 until the agent changes it; after that only the agent knows it. -->
+            <div v-if="isEdit" class="flex flex-col gap-1.5">
+              <span class="flex items-center gap-1 font-medium text-gray-700 dark:text-gray-200">
+                <CircleAlert class="w-4 h-4 text-red-600 dark:text-red-400" aria-hidden="true" />
+                Password
+              </span>
+
+              <p v-if="loginLoading" class="text-xs text-gray-500 dark:text-gray-400">Checking the login…</p>
+
+              <template v-else-if="login?.hasLogin">
+                <template v-if="login.hasInitialPassword">
+                  <PasswordReveal :value="revealedPassword" :loading="revealing" @reveal="revealPassword" />
+                  <span class="text-xs text-gray-500 dark:text-gray-400">Initial password, not changed yet. Press the eye to reveal it.</span>
+                </template>
+                <p v-else-if="login.passwordChangedAt" class="flex items-center gap-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-background-dark-gray px-3 py-2 text-gray-600 dark:text-gray-300">
+                  <KeyRound class="w-4 h-4 shrink-0" aria-hidden="true" />
+                  Changed by the agent on {{ formatDateTime(login.passwordChangedAt) }}. Only the agent knows it now, so it can't be shown.
+                </p>
+                <p v-else class="flex items-center gap-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-background-dark-gray px-3 py-2 text-gray-600 dark:text-gray-300">
+                  <KeyRound class="w-4 h-4 shrink-0" aria-hidden="true" />
+                  This login was set up by hand before automatic accounts, so its password can't be shown. The agent can change it from the login page ("Forgot or change password?").
+                </p>
+              </template>
+
+              <!-- Agents added before automatic accounts have no login: create one here -->
+              <template v-else-if="login && !login.hasLogin">
+                <p class="text-xs text-gray-600 dark:text-gray-300">This agent has no login yet, so they can't sign in.</p>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" v-model="createLogin" />
+                  <span class="text-gray-700 dark:text-gray-200">Create a login with this email when I save</span>
+                </label>
+                <template v-if="createLogin">
+                  <PasswordReveal :value="initialPassword" regenerable @regenerate="regeneratePassword" />
+                  <span class="text-xs text-gray-500 dark:text-gray-400">
+                    Generated: the agent's initials followed by random characters ({{ INITIAL_PASSWORD_LENGTH }} in total).
+                  </span>
+                </template>
+              </template>
+
+              <p v-if="loginError" class="text-xs text-red-600 dark:text-red-400">{{ loginError }}</p>
+            </div>
 
             <!-- Initial password (new agent): <initials><random>, 14 characters -->
             <div v-if="!isEdit" class="flex flex-col gap-1">
@@ -158,9 +204,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
-import { CircleAlert, ShieldCheck, TriangleAlert } from 'lucide-vue-next'
+import { CircleAlert, KeyRound, ShieldCheck, TriangleAlert } from 'lucide-vue-next'
 import PasswordReveal from '@/components/genealogy/PasswordReveal.vue'
 import { genealogyService, type GenealogyAgent, type AgentDetail } from '@/services/genealogyService'
+import { accountService, type AgentLogin } from '@/services/accountService'
 import { positionMap, getAge } from '@/assets/classes/agent'
 import { rankOf, rankLabel, allowedUplineRanks } from '@/utils/ranks'
 import { cleanText, normalizeEmail, isValidEmail, isValidPhone, isIsoDate } from '@/utils/sanitize'
@@ -215,6 +262,56 @@ const copiedDetails = ref(false)
 
 const title = computed(() => created.value ? 'Login Created' : isEdit.value ? 'Edit Agent' : 'Add Agent')
 
+// ---------- Edit mode: the agent's login ----------
+// Status comes from admin_get_agent_login (admins only, checked in SQL). The password itself is
+// only fetched when the eye is pressed.
+const login = ref<AgentLogin | null>(null)
+const loginLoading = ref(false)
+const loginError = ref('')
+const revealedPassword = ref<string | null>(null)
+const revealing = ref(false)
+const createLogin = ref(false)   // agent without a login: create one on save
+const changesSaved = ref(false)  // the fields were saved; closing must still reload the parent
+
+const loginEmailChanged = computed(() =>
+  isEdit.value && !!login.value?.loginEmail && normalizeEmail(form.value.email_address) !== login.value.loginEmail,
+)
+
+async function loadLogin() {
+  if (!props.agent) return
+  loginLoading.value = true
+  loginError.value = ''
+  try {
+    login.value = await accountService.getAgentLogin(props.agent.agent_ID)
+  } catch (e: any) {
+    loginError.value = e?.message || 'Could not load the login.'
+  } finally {
+    loginLoading.value = false
+  }
+}
+
+async function revealPassword() {
+  if (!props.agent || revealedPassword.value != null) return
+  revealing.value = true
+  loginError.value = ''
+  try {
+    const details = await accountService.getAgentLogin(props.agent.agent_ID, true)
+    login.value = details
+    revealedPassword.value = details.initialPassword
+    if (details.hasInitialPassword && details.initialPassword == null) {
+      loginError.value = 'The password could not be decrypted. Check the agent_password_key secret in Supabase Vault.'
+    }
+  } catch (e: any) {
+    loginError.value = e?.message || 'Could not reveal the password.'
+  } finally {
+    revealing.value = false
+  }
+}
+
+function formatDateTime(value: string): string {
+  return new Date(value).toLocaleString('en-PH', { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+}
+
 // Any existing agent can be an upline, except the agent being edited (no self-parent).
 // The position chosen decides who can be the upline: a Partner Broker has none, an Investment
 // Manager can only report to a Partner Broker.
@@ -260,6 +357,7 @@ onMounted(async () => {
       position_ID: a.position_ID,
       admin_access: a.admin_access,
     }
+    void loadLogin() // runs alongside the upline lookup
     try {
       const chain = await genealogyService.getUplineChain(a.agent_ID, 1)
       uplineId.value = chain[0]?.agent_ID ?? null
@@ -311,6 +409,7 @@ async function save() {
   }
 
   saving.value = true
+  let fieldsSaved = false
   try {
     if (isEdit.value) {
       const patch = {
@@ -319,6 +418,16 @@ async function save() {
       }
       const { detached } = await genealogyService.updateAgentAndUpline(props.agent!.agent_ID, patch, uplineId.value)
       if (detached) alert('This agent was detached from their previous upline because of the new position.')
+      fieldsSaved = true
+      changesSaved.value = true
+
+      // Agent without a login: create it now, with the email just saved.
+      if (createLogin.value && login.value && !login.value.hasLogin) {
+        const password = initialPassword.value
+        const account = await accountService.createLoginForAgent(props.agent!.agent_ID, password)
+        created.value = { name: `${values.first_name} ${values.last_name}`, email: account.email, password }
+        return
+      }
       emit('saved')
     } else {
       const payload = {
@@ -333,16 +442,17 @@ async function save() {
     }
   } catch (e: any) {
     console.error(isEdit.value ? 'Edit agent failed:' : 'Add agent failed:', e)
-    error.value = e?.message || 'Failed to save agent. You may not have permission.'
+    const message = e?.message || 'Failed to save agent. You may not have permission.'
+    error.value = fieldsSaved ? `Changes saved, but the login could not be created: ${message}` : message
   } finally {
     saving.value = false
   }
 }
 
-// Closing after a login was created still tells the parent to reload.
+// Closing after a save (or after a login was created) still tells the parent to reload.
 function close() {
   if (saving.value) return
-  if (created.value) emit('saved')
+  if (created.value || changesSaved.value) emit('saved')
   else emit('close')
 }
 
