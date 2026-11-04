@@ -22,14 +22,18 @@ const BUCKET = 'support_attachments';
 const SIGNED_URL_SECONDS = 60 * 60; // screenshot links work for an hour after the ticket is opened
 
 // support_tickets has three links to agents (raised by, reviewed by, resolved by), so each embed
-// names its column, like commissions' agents!recipient_agent_ID.
+// names its foreign key constraint. A column hint like agents!agent_ID is NOT enough here:
+// PostgREST also matches the hint against the agents side, and all three keys point at
+// agents."agent_ID", so it fails with PGRST201 "more than one relationship was found".
+// (commissions' agents!recipient_agent_ID works because that name is only on one side.)
+// The names are the ones Postgres generated for the inline references in the migration.
 const TICKET_COLUMNS = `
   ticket_ID, agent_ID, category, title, area, frequency, description, steps_to_reproduce,
   expected_result, occurred_at, device_info, attachment_paths, status, resolution_note,
   reviewed_by, reviewed_at, resolved_by, resolved_at, reopen_count, reopened_at, created_at, updated_at,
-  raiser:agents!agent_ID (first_name, last_name),
-  reviewer:agents!reviewed_by (first_name, last_name),
-  resolver:agents!resolved_by (first_name, last_name)
+  raiser:agents!support_tickets_agent_ID_fkey (first_name, last_name),
+  reviewer:agents!support_tickets_reviewed_by_fkey (first_name, last_name),
+  resolver:agents!support_tickets_resolved_by_fkey (first_name, last_name)
 `;
 
 // A 1:1 embed can come back as an object or an array (see project-context.md 5.3).
