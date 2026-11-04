@@ -2,9 +2,9 @@
 
 > **What this file is:** the single reference for how the Maureal Realty and Brokerage (MRB) web portal works today: its features, the processes behind them, and where each piece of logic lives in the code. It is written for AI assistants and for the dev team.
 >
-> **Last verified against the code:** 2026-11-04 · branch `feat/account-creation` · commit `7167f3c` · `npx vue-tsc --build --force` passes with **0 errors** · `npx vite build` passes · the Edge Function type-checks against a Deno shim.
+> **Last verified against the code:** 2026-11-04 · branch `feature/ticketing-system` (IT support tickets, on top of `9e0d396`) · `npx vue-tsc --build --force` passes with **0 errors** · `npx vite build` passes · the Edge Function type-checks against a Deno shim · the support tickets migration was run (twice) and its RLS/trigger rules tested on a local PostgreSQL 18 with stubbed `auth`/`storage` schemas.
 >
-> **Supabase changes need manual steps.** Agent accounts (2026-11-04) need a migration, an Edge Function deploy and some dashboard settings. See [3.3 Supabase project setup](#33-supabase-project-setup-manual-steps).
+> **Supabase changes need manual steps.** Agent accounts (2026-11-04) need a migration, an Edge Function deploy and some dashboard settings. IT support tickets (2026-11-04) need one more migration, run after the agent accounts one. See [3.3 Supabase project setup](#33-supabase-project-setup-manual-steps).
 >
 > **Related docs:** `documentation.md` (running log of changes, newest first) · `changelog.md` (early frontend notes, Dec 2025 to Jan 2026, historical only) · `README.md` (setup and branch naming).
 
@@ -64,13 +64,14 @@ Read this section before writing any code for this project.
 - Comments are short and plain: they say *why*, not *what*. Match the density of the file you are in.
 - Money is stored in **PHP**; areas are stored in **square metres**. Convert only for display (see 5.5).
 - Dates are plain `YYYY-MM-DD` strings. Compare them as strings and do month math with `src/utils/paySchedule.ts`, so there are no timezone shifts. When you must build a `Date` from a date-only string, append `T00:00:00`.
-- **Input cleaning / SQL injection:** never build SQL or PostgREST filter strings from user text. supabase-js sends values as JSON and PostgREST binds them as parameters; SQL functions must not use `EXECUTE`/`format()` with user input. On top of that, clean form values with `src/utils/sanitize.ts` (`cleanText`, `normalizeEmail`, `isValidEmail`, `isValidPhone`, `isIsoDate`, `digitsOnly`) before sending them, and re-validate on the server when an Edge Function is involved.
+- **Input cleaning / SQL injection:** never build SQL or PostgREST filter strings from user text. supabase-js sends values as JSON and PostgREST binds them as parameters; SQL functions must not use `EXECUTE`/`format()` with user input. On top of that, clean form values with `src/utils/sanitize.ts` (`cleanText`, `cleanMultilineText` for long answers that keep line breaks, `normalizeEmail`, `isValidEmail`, `isValidPhone`, `isIsoDate`, `digitsOnly`) before sending them, and re-validate on the server when an Edge Function is involved. Search boxes filter loaded rows in the browser; they never become a query.
+- **User-written text is shown with `{{ }}`** (Vue escapes it), with `whitespace-pre-line` when line breaks matter. Only Markdown that went through `compileMarkdown()` (DOMPurify) may use `v-html`.
 
 ### 1.4 Guardrails
 
 - **Do not change commission formulas, rank rates, override percentages or hierarchy rules** (Section 8) without explicit confirmation from the team. They are business rules from the client, not implementation details.
 - Keep `commissions.claimed`, `claimed_at` and `admin_approved` in step with `commissions.status`. Older queries still read them.
-- **Role checks happen mostly in the app.** RLS is the open dev policy on every table except `agent_credentials`. Any new admin-only action must be gated in the UI *and*, where possible, guarded in the service (for example by checking the expected previous status, as `commissionService._advance` does). **Exceptions (checked on the server):** the `agent-account` Edge Function and the SQL functions `admin_get_agent_login` / `store_agent_initial_password` (see 9.7, 9.8).
+- **Role checks happen mostly in the app.** RLS is the open dev policy on every table except `agent_credentials` and `support_tickets`. Any new admin-only action must be gated in the UI *and*, where possible, guarded in the service (for example by checking the expected previous status, as `commissionService._advance` does). **Exceptions (checked on the server):** the `agent-account` Edge Function, the SQL functions `admin_get_agent_login` / `store_agent_initial_password` (see 9.7, 9.8), and **support tickets** (real RLS + the `support_tickets_guard` trigger + storage policies on the private `support_attachments` bucket, see 7.21 and 9.7). Don't replace the support ticket policies with the open dev policy.
 - **Passwords:** never store, log or send a password anywhere except Supabase Auth. The only copy the app keeps is the **encrypted initial password** in `agent_credentials` (deleted as soon as the agent changes it). Don't add RLS policies to `agent_credentials`, don't select it from the browser, and don't print `agent_password_key` from Vault.
 - Some features are hidden by being **commented out on purpose**: Net Commission input, Voucher Series input, the Recent Activity panel. Do not delete them, and do not restore them unless asked.
 - Do not commit, push or create branches unless the user asks. The main branch is `mainer`. The branch naming rule is `<feat/fix>/<frontend/backend>/<featureName>`.
@@ -80,7 +81,7 @@ Read this section before writing any code for this project.
 
 1. Write an **idempotent** migration (`add column if not exists`, `create table if not exists`, `drop policy if exists`, and `do $$ ... $$` blocks for constraints). The team re-runs migrations by hand in the Supabase SQL editor.
 2. Quote mixed-case identifiers (`"agent_ID"`, `"listing_ID"`). Lower-case column names stay unquoted.
-3. New tables get RLS enabled plus the same open dev policy as the others (see `20261014140000_...sql`, section 4). **Exception:** a table holding secrets gets RLS with **no** policies plus `revoke all ... from anon, authenticated`, and is reached only through `SECURITY DEFINER` functions with `set search_path = ''` (see `20261104120000_agent_accounts.sql`). Revoke `execute` on such functions from `public, anon` and grant only the roles that need them.
+3. New tables get RLS enabled plus the same open dev policy as the others (see `20261014140000_...sql`, section 4). **Exception:** a table holding secrets gets RLS with **no** policies plus `revoke all ... from anon, authenticated`, and is reached only through `SECURITY DEFINER` functions with `set search_path = ''` (see `20261104120000_agent_accounts.sql`). Revoke `execute` on such functions from `public, anon` and grant only the roles that need them. **Real per-user rules** (who may read/write which rows) use `public.current_agent_id()` and `public.current_agent_is_admin()` wrapped in `(select ...)`, as `20261104160000_support_tickets.sql` does.
 4. If a page should refresh live from the new table, add it to the `supabase_realtime` publication (see section 5d of the same migration) and to that page's `useLiveRefresh([...])` list.
 5. End the migration with `notify pgrst, 'reload schema';`.
 6. Update Section 9 of this file, and 3.3 if the team has to do anything by hand in the Supabase dashboard.
@@ -126,9 +127,10 @@ Use this template for a new feature in Section 7:
 - see the **commissions** they will receive (their own and overrides from their downline) and go through the payment process for each payout,
 - see their **genealogy** (upline and downline team),
 - use **calculators** (loan amortization, net commission, property tax),
-- browse the **developers** the company works with, including their promo posters.
+- browse the **developers** the company works with, including their promo posters,
+- raise **IT support tickets** (problems, requests, feedback) with optional screenshots and follow them until they are resolved.
 
-**Admins** are agents with `agents.admin_access = true`. They approve listings, sales and commissions, release commission payments with proof, and manage agents, ranks and promotion thresholds. **Adding an agent also creates their login** (Supabase Auth user + generated initial password); agents change that password themselves with a code sent by email.
+**Admins** are agents with `agents.admin_access = true`. They approve listings, sales and commissions, release commission payments with proof, manage agents, ranks and promotion thresholds, and act as **IT support** (review and resolve everyone's tickets). **Adding an agent also creates their login** (Supabase Auth user + generated initial password); agents change that password themselves with a code sent by email.
 
 ### 2.1 Core lifecycle at a glance
 
@@ -210,6 +212,8 @@ Things that live in the Supabase project, not in the frontend build. Do them onc
 | 5 | Authentication → Emails → **SMTP Settings**, then **Rate Limits** | Set up a custom SMTP sender (company mail, Resend, SendGrid, ...) and raise *emails per hour*. | Supabase's built-in sender only delivers to members of the Supabase team and allows only a few emails per hour, so agents would not receive their codes. |
 | 6 | Authentication → **Sign In / Providers** | Turn **off** *Allow new users to sign up*. | Logins are created only by admins (through the Edge Function, which isn't affected). With sign-ups on, anyone holding the anon key could make a login and, with the open dev RLS, read the data. |
 | 7 | App: Genealogy → Edit Agent | For agents with **no login**, tick *Create a login with this email when I save*. Logins linked by hand earlier keep working (their password can't be shown). | Older agents have `user_id = null`. |
+| 8 | SQL Editor | **IT support tickets:** run `supabase/migrations/20261104160000_support_tickets.sql` (safe to re-run; needs step 1 first, it stops with a clear message otherwise). Check: `select id, public from storage.buckets where id = 'support_attachments';` returns one row with `public = false`. | Creates `support_tickets` (real RLS + `support_tickets_guard` trigger), `current_agent_id()`, the private `support_attachments` bucket with its storage policies, and adds the table to realtime (7.21, 9.7). Until it runs, the IT Support page says the table is missing. |
+| 9 | Storage → **Policies** (or SQL: `select policyname, cmd, qual from pg_policies where schemaname = 'storage' and tablename = 'objects';`) | Make sure every older policy on `storage.objects` is limited to its own bucket (`bucket_id = 'images'` / `'fact_sheets'`). | Policies are OR-ed: a policy with no `bucket_id` condition would also open the private ticket screenshots to other users. |
 
 Reset password email template (step 3), subject e.g. *Your MauRealty password code*:
 
@@ -221,6 +225,8 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
 ```
 
 **Smoke test after setup:** as an admin, add a test agent → the success screen shows the email and password; Authentication → Users lists the email; `agents.user_id` is filled; `select "agent_ID", password_changed_at from agent_credentials;` shows a row with `password_changed_at` null. Sign in as that agent → red reminder on the Dashboard → change the password with the emailed code → the reminder disappears and Edit Agent shows "Changed by the agent on ...". Delete the test agent → their user disappears from Authentication → Users.
+
+**Smoke test for IT support tickets (step 8):** as an agent, open IT Support → Raise a Ticket → fill in a "Something isn't working" ticket with a screenshot → it appears as **Raised** in My Tickets, and Storage → `support_attachments` has a file under that user's uid folder. As another agent, the ticket is not listed. As an admin: All Tickets lists it → **Review** → **Resolve** (needs a note) → **Reopen**. Back as the agent: the ticket shows the admin's note, and a 4th open ticket is refused.
 
 ---
 
@@ -241,7 +247,7 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
 ├─ public/                    favicon.ico, profile.png (barely used)
 ├─ supabase/
 │  ├─ config.toml             Supabase CLI local config
-│  ├─ migrations/             Versioned schema changes (see 9.6)
+│  ├─ migrations/             Versioned schema changes (see 9.6), incl. 20261104160000_support_tickets.sql
 │  └─ functions/              Edge Functions (Deno, deployed by hand, see 3.3 and 9.8)
 │     └─ agent-account/index.ts  Creates/removes agent logins with the service-role key (admins only)
 └─ src/
@@ -255,7 +261,8 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
    │  │  ├─ agent.ts          AgentProfile, positionMap (id → title), getAge()
    │  │  ├─ commission.ts     PayUnit, DpDivision, CommissionChain, schedule/result types
    │  │  ├─ developers.ts     Developer, DeveloperProject, DeveloperPromo, OfficeHourSlot, days[]
-   │  │  └─ listings.ts       Property (+ Lot, HouseAndLot, Condominium, Memorial), Images, formattedPropertyType()
+   │  │  ├─ listings.ts       Property (+ Lot, HouseAndLot, Condominium, Memorial), Images, formattedPropertyType()
+   │  │  └─ ticket.ts         SupportTicket, NewTicket, statuses, categories, areas, limits, ticket helpers
    │  ├─ images/              Logos, badges (MauBadgeLight/Dark.svg), placeholders, login background
    │  ├─ defaultSettings.json Default user configs (currency, unit, animations, dark mode)
    │  └─ questions.json       Suggested FAQ questions per property type (Property Management)
@@ -271,6 +278,7 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
    │  ├─ dashboardService.ts  Loads and builds every Dashboard number
    │  ├─ genealogyService.ts  Hierarchy tree, chains, hierarchy rules, agent CRUD, team insights, promotion
    │  ├─ developerService.ts  Developers, office hours, promo posters
+   │  ├─ ticketService.ts     IT support tickets: list, raise (+ private screenshots), review / resolve / reopen
    │  └─ lookupService.ts     Empty placeholder
    ├─ utils/                  Frontend-only helpers
    │  ├─ commissionAllocation.ts  Splits one payment between seller and uplines (allocatePayouts)
@@ -279,8 +287,9 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
    │  ├─ conversion.ts            Currency and area conversion/formatting (global refs)
    │  ├─ useSettings.ts           Reactive user settings backed by localStorage
    │  ├─ liveRefresh.ts           useLiveRefresh(): realtime + focus + polling reloads
-   │  ├─ sanitize.ts              Form input cleaning: cleanText, normalizeEmail, isValidEmail/Phone, isIsoDate, digitsOnly
-   │  └─ password.ts              Initial password (<initials><random>, 14 chars) + password rules checklist
+   │  ├─ sanitize.ts              Form input cleaning: cleanText, cleanMultilineText, normalizeEmail, isValidEmail/Phone, isIsoDate, digitsOnly
+   │  ├─ password.ts              Initial password (<initials><random>, 14 chars) + password rules checklist
+   │  └─ deviceInfo.ts            describeDevice(): browser, OS, window/screen size (attached to support tickets)
    ├─ views/                  Pages (one per route)
    │  ├─ LoginForm.vue        /                     Login + "Forgot or change password?"
    │  ├─ Dashboard.vue        /dashboard            KPIs, alerts, charts, history, genealogy card, reminders
@@ -294,6 +303,7 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
    │  ├─ Accounting.vue       /accounting           Calculators
    │  ├─ Profile.vue          /profile              View/edit own profile
    │  ├─ Settings.vue         /settings             User defaults and graphics
+   │  ├─ Support.vue          /support              IT support tickets: raise, track; admins review and resolve
    │  └─ DashboardPrevious.vue (unrouted legacy mock-up, keep only for reference)
    └─ components/
       ├─ Sidebar.vue          Desktop hover sidebar + phone bottom nav
@@ -312,6 +322,9 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
       ├─ profile/ProfileCard.vue, ProfileEdit.vue
       ├─ sales/SalesUploadModal.vue       Sale create / confirm (Sold) / edit form
       ├─ settings/configDropdown.vue, configToggleSlider.vue
+      ├─ support/RaiseTicketModal.vue     Guided ticket form + live checklist + screenshots
+      │          TicketDetailsModal.vue   Ticket, progress, screenshots, admin review / resolve / reopen
+      │          TicketStatusBadge.vue    Raised / In Review / Resolved pill
       ├─ modal.vue (empty), test.vue (static mock-up), shims-vue.d.ts
 ```
 
@@ -333,6 +346,8 @@ View (src/views)  ──calls──►  Service (src/services)  ──supabase-j
 AddAgentModal ─► genealogyService.addAgent (hierarchy rules) ─► accountService ─► Edge Function agent-account ─► Auth admin API + agents + genealogy + agent_credentials
 AddAgentModal (edit) ─► accountService.getAgentLogin ─► rpc admin_get_agent_login ─► agents + auth.users + agent_credentials (decrypts with the Vault key)
 ChangePasswordModal ─► accountService ─► supabase.auth (resetPasswordForEmail → verifyOtp 'recovery' → updateUser) ─► trigger on auth.users updates agent_credentials
+RaiseTicketModal ─► ticketService.createTicket ─► storage support_attachments (<uid>/<uuid>.<ext>) ─► insert support_tickets ─► trigger support_tickets_guard + RLS
+TicketDetailsModal ─► ticketService.startReview/resolveTicket/reopenTicket ─► update support_tickets (RLS: admins only; trigger: flow + stamps)
 ```
 
 There is **no global store** (no Pinia). Each page fetches what it needs on mount, including the current agent. To know who is signed in:
@@ -354,6 +369,7 @@ All of them resolve `supabase.auth.getUser()` → `agents.user_id`.
 | `/shared/listing/:token` | SharedListing | SharedListing | **public** | hidden |
 | `/sales` | SalesReport | SalesReport | required | yes |
 | `/commissions` | Commission | Commission (lazy import) | **no `meta` set** ⚠ | yes |
+| `/support` | Support | Support (lazy import) | required | yes |
 | `/genealogy` | Genealogy | Genealogy-landingpage | required | yes |
 | `/developerlist` | DeveloperList | developerlist | required | yes |
 | `/accounting` | Accounting | Accounting | required | yes |
@@ -366,7 +382,7 @@ All of them resolve `supabase.auth.getUser()` → `agents.user_id`.
 
 - **Mixed-case column names** (`agent_ID`, `listing_ID`, `sale_ID`, `dev_ID`, `property_type_ID`, `recipient_agent_ID`, ...) are used exactly as written in supabase-js: `.eq('agent_ID', id)`. In raw SQL they must be double-quoted.
 - **Embeds** (PostgREST joins) are used heavily, for example `agents (first_name, last_name)`, `main_listings (listing_title, developers (name))`. A 1:1 sub-table embed can come back as an object *or* an array, so code normalizes with `Array.isArray(x) ? x[0] : x`.
-- **Ambiguous embed:** `commissions` has two foreign keys to `agents` (`recipient_agent_ID`, `released_by`), so it must be embedded as `agents!recipient_agent_ID (...)`.
+- **Ambiguous embed:** `commissions` has two foreign keys to `agents` (`recipient_agent_ID`, `released_by`), so it must be embedded as `agents!recipient_agent_ID (...)`. `support_tickets` has three (`agent_ID`, `reviewed_by`, `resolved_by`) and names their constraints: `raiser:agents!support_tickets_agent_ID_fkey (...)`, `reviewer:agents!support_tickets_reviewed_by_fkey (...)`, `resolver:agents!support_tickets_resolved_by_fkey (...)`. **A column hint only works if no other key uses that name on either side.** PostgREST matches the hint against the foreign key column *and* the column it points to, so `agents!agent_ID` matches all three keys (each points at `agents."agent_ID"`) and fails with PGRST201 "more than one relationship was found". When in doubt, use the constraint name; the PGRST201 error lists them.
 - **Numeric columns** are wrapped with `Number(...)` before doing math (existing pattern).
 - **Silent RLS blocks:** `.update(...).select()` / `.delete().select()` and check `data.length` (see 1.3).
 - **RPC functions** are called with `supabase.rpc('name', { p_arg: value })`; arguments are bound parameters. A missing function returns error code `PGRST202` (usually: the migration wasn't run).
@@ -383,8 +399,11 @@ All of them resolve `supabase.auth.getUser()` → `agents.user_id`.
 | `images` | `developer_promos/{devId}-{ts}.{ext}` | `developerService.uploadPromoImage` | `developer_promos.image_url` |
 | `images` | `payment-proofs/{commissionId}-{ts}-{i}.{ext}` | `commissionService.releasePayment` | `commissions.proof_urls[]` |
 | `fact_sheets` | `{listingId}-{ts}-{fileName}` (upsert) | `listingsService.uploadFactSheet` | `main_listings.fact_sheet` |
+| `support_attachments` (**private**) | `{auth uid}/{uuid}.{png\|jpg\|webp\|gif}` | `ticketService.createTicket` | `support_tickets.attachment_paths[]` (paths, not URLs) |
 
-All files are served through **public URLs** (`getPublicUrl`). Deletes recover the storage path by splitting the URL on `/object/public/images/` (or `/images/` for profile pictures).
+The `images` and `fact_sheets` files are served through **public URLs** (`getPublicUrl`). Deletes recover the storage path by splitting the URL on `/object/public/images/` (or `/images/` for profile pictures).
+
+**`support_attachments` is private** (created by `20261104160000_support_tickets.sql`, 5 MB limit, PNG/JPEG/WEBP/GIF only). Storage policies: upload only into your own `{auth uid}/` folder; read your own files, admins read all; delete only your own files that no ticket uses (cleanup after a failed save). The app shows them with `createSignedUrls` (valid 1 hour), never with public URLs.
 
 ### 5.5 Settings, currency and units
 
@@ -413,8 +432,9 @@ All files are served through **public URLs** (`getPublicUrl`). Deletes recover t
 | `Genealogy-landingpage.vue` | agents, genealogy |
 | `genealogymodal.vue` (tree) | sales |
 | `TeamInsights.vue` | sales, agents, genealogy, positions |
+| `Support.vue` | support_tickets |
 
-The realtime publication (migration section 5d) covers `sales`, `commissions`, `main_listings`, `genealogy`, `agents`. `positions` is not in it, so polling covers that one.
+The realtime publication (migration section 5d) covers `sales`, `commissions`, `main_listings`, `genealogy`, `agents`, plus `support_tickets` (support tickets migration, section 6; realtime applies its RLS, so a non-admin only hears about their own tickets). `positions` is not in it, so polling covers that one.
 
 ### 5.7 Markdown
 
@@ -431,12 +451,16 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 - **Important fields** (a login email, a password): an amber box (`border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700`) titled with a `TriangleAlert` icon, a red `CircleAlert` icon before each label, and a 2px amber border on the input. See the "Login account · Important" section of `AddAgentModal.vue`.
 - **Secrets on screen**: show dots until an eye button is pressed (`PasswordReveal.vue`); fetch the secret only when it is revealed.
 - **Critical reminder**: solid red (`bg-red-600 text-white`, `ShieldAlert` icon, "Important · Account security" label, call to action) for account-security items; normal urgent reminders stay light red. See `Reminders.vue`.
+- **Cards and tables** (Sales Report, IT Support): `bg-white dark:bg-black rounded-xl border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)]`; table head `bg-maurealty-blue dark:bg-[#072339] text-white`; status filter pills like the Commissions page (`bg-maurealty-blue text-white` active, `bg-background-gray text-sidebar-hover` otherwise).
+- **Status pills**: `px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider border` + a colour pair (blue = waiting, yellow = in progress, green = done, red = cancelled). `support/TicketStatusBadge.vue` and `SalesReport.getStatusClass` use it.
+- **Guided forms** (`support/RaiseTicketModal.vue`): numbered sections, a live checklist beside the form that unlocks the submit button (like the password checklist in `ChangePasswordModal`), and a `ConfirmActionModal` "Discard?" before closing a form with typed content.
+- The IT Support page and its modals have full dark-mode classes.
 
 ---
 
 ## 6. Roles and permissions
 
-"Agent" means a signed-in user with `admin_access = false`. **Most rules below are enforced only in the frontend.** All tables use an open RLS policy (`using (true) with check (true)` for `anon` and `authenticated`), except `agent_credentials` (no policies at all). The login rules marked **server** are also checked by the `agent-account` Edge Function or a SQL function.
+"Agent" means a signed-in user with `admin_access = false`. **Most rules below are enforced only in the frontend.** All tables use an open RLS policy (`using (true) with check (true)` for `anon` and `authenticated`), except `agent_credentials` (no policies at all) and `support_tickets` (real per-user policies). The rules marked **server** are also checked by the `agent-account` Edge Function, a SQL function, or RLS / a trigger.
 
 | Action | Agent | Admin | Enforced in |
 |---|---|---|---|
@@ -467,6 +491,11 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 | "Initial password" reminder | ✓ | ✓ | `dashboardService.buildDashboard` (`needsPasswordChange`) |
 | Promote, edit thresholds | ✗ intended, but ⚠ currently visible to everyone | ✓ | **no gating yet** (admin-only confirmed by the team, 2026-10-28) |
 | Add / edit / delete developers and promos | ✗ intended, but ⚠ currently visible to everyone | ✓ | **no gating yet** (admin-only confirmed by the team, 2026-10-28) |
+| Raise an IT support ticket | ✓ as themselves, max **3 open** (Raised + In Review) | ✓ same limit for their own tickets | `Support.canRaise`, `RaiseTicketModal` + **server**: RLS insert policy, `support_tickets_guard` (raiser forced, limit, status) |
+| See tickets | own only | all (own ones carry a "You" pill) + "Your Tickets" list | `Support.load` → `ticketService.getTickets` + **server**: RLS select policy |
+| Start review / Resolve (note required) / Reopen | ✗ (no buttons) | ✓ any ticket, including their own | `Support.vue` / `TicketDetailsModal` (`isAdmin`) + **server**: RLS update policy (admins), trigger (flow, stamps, note) |
+| Edit or delete a ticket after raising it | ✗ | ✗ (only the status changes) | **server**: trigger locks the details; no delete grant or policy |
+| Open ticket screenshots | own tickets | all | **server**: storage policies on `support_attachments` + signed URLs |
 | Profile, Settings | own | own | — |
 
 ---
@@ -489,7 +518,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 
 ### 7.2 App shell and navigation
 - **Route / entry point:** every page except `/` and `/shared/listing/:token` (`meta.hideSidebar`).
-- **Flow:** `App.vue` renders `Sidebar` + `RouterView`. The Sidebar loads the agent profile and shows the logo, the profile picture (links to `/profile`), the name, an admin badge (`MauBadgeLight.svg`) and the position from `positionMap`. Links come from `topItems`: Dashboard, Project Listing, Accounting, Sales Report, Developer List, Property Management, Genealogy, Commissions; Settings and Logout sit at the bottom. On desktop the bar expands on hover; on phones it becomes a scrollable bottom bar.
+- **Flow:** `App.vue` renders `Sidebar` + `RouterView`. The Sidebar loads the agent profile and shows the logo, the profile picture (links to `/profile`), the name, an admin badge (`MauBadgeLight.svg`) and the position from `positionMap`. Links come from `topItems`: Dashboard, Project Listing, Accounting, Sales Report, Developer List, Property Management, Genealogy, Commissions, IT Support (`LifeBuoy` icon); Settings and Logout sit at the bottom. On desktop the bar expands on hover; on phones it becomes a scrollable bottom bar.
 - **Code:** `src/App.vue`, `src/components/Sidebar.vue`, `agentService.getCurrentAgentProfile()`.
 
 ### 7.3 Dashboard
@@ -828,6 +857,27 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 - **Code:** `components/auth/ChangePasswordModal.vue`, `accountService.sendPasswordCode/verifyPasswordCode/changePassword`, `src/views/LoginForm.vue`, `src/views/Dashboard.vue`.
 - **Rules and edge cases:** needs the **Reset password** email template to contain `{{ .Token }}` and a working SMTP sender (3.3 steps 3–5). Supabase error codes are reworded in `authErrorMessage` (rate limit, expired code, same password, weak password). The project's own Auth password rules (if any are set in Supabase) apply on top of the checklist.
 
+### 7.21 IT support tickets
+- **Route / entry point:** `/support` (Sidebar and phone bottom bar → **IT Support**).
+- **Who:** everyone raises tickets and sees **their own**; admins act as IT support, see **every** ticket and change statuses. Enforced in the UI **and** on the server (RLS + trigger + storage policies, 9.7).
+- **When it is used:** reporting something broken, slow, wrong or confusing in the portal, or sending a feature request or feedback, in a form detailed enough for IT to recreate the problem.
+- **Page layout (`Support.vue`):**
+  1. Header (gradient bar, "IT SUPPORT") with **Raise a Ticket**.
+  2. Left: **Raise a Ticket** card (open-ticket meter "n of 3 used", amber when full; "A good ticket has" tips; button). Below it, admins get **Your Tickets** (their 5 newest) and agents get **How tickets move** (status guide).
+  3. Right: **All Tickets (Admin)** / **My Tickets** table: ID (`#T-<id>`, a button), Ticket (title, category · page, paperclip + screenshot count), Raised By (admins, "You" pill on their own), Submitted ("5 minutes ago", full date on hover), Status pill, Actions. Status filter pills with counts (All / Raised / In Review / Resolved) and a search box (number, title, category, page, raiser; in the browser only). Open tickets first (newest first), then resolved ones (latest resolved first). 10 per page.
+  4. Table actions: admins get the next step (**Review** on Raised starts the review and opens the ticket; **Resolve** on In Review opens it with the cursor in the note; **Reopen** on Resolved opens it with the reopen confirmation); agents get **View**. Clicking a row opens the ticket.
+  5. Bottom-right toast (green, or red for errors). `useLiveRefresh(['support_tickets'])`.
+- **Raise a Ticket form (`RaiseTicketModal.vue`):** built to make tickets specific and reproducible.
+  1. **What is it about?** Category (Problems: *Something isn't working*, *Login or account*, *Slow or not loading*, *Wrong or missing data*; Requests: *Feature request*, *Feedback*, *Other*) with a hint, the page/feature (`TICKET_AREAS`), and a one-line title (8–120 characters, example placeholder per category).
+  2. **Problems** (`isIssue`): **steps to recreate it** (at least 2; the box starts with "1. " and Enter adds the next number, Enter on an empty number ends the list), **what you expected**, **what happened instead** (20+ characters), **how often** (Every time / Sometimes / Only once) and optionally **when it happened** (not in the future). **Requests:** one detailed answer (20+ characters).
+  3. **Screenshots** (optional, up to 3, 5 MB each, PNG/JPG/WEBP/GIF): file picker, drag and drop, or Ctrl+V paste; previews with remove. The browser, OS, window/screen size and dark mode are added automatically (`describeDevice()`, shown to the user).
+  4. A **live checklist** beside the form ("4 of 7 done", progress bar, optional "makes it faster" items); **Raise Ticket** stays disabled until every required item is done and `ticketProblems()` is empty. Closing with typed content asks "Discard this ticket?" (`ConfirmActionModal`).
+  5. Save: `ticketService.createTicket(agentId, draft, files)` cleans and checks everything again, uploads the screenshots to `support_attachments/<uid>/<uuid>.<ext>`, inserts the row, and removes the uploads if the insert fails.
+- **Ticket popup (`TicketDetailsModal.vue`):** number, status pill, "Reopened ×n"; a Raised → In Review → Resolved strip with who and when; facts (raised by, category, page, how often, when, device); the user's text as plain text (`whitespace-pre-line`); screenshots through signed links (1 hour); the resolution note (green when resolved, grey "Last resolution" while a reopened ticket is back in review). Admins: **Start review** (Raised); a **required resolution note** (10–2000 characters) + **Resolve ticket** with a confirmation (In Review); **Reopen** with a confirmation (Resolved). Agents see a short "what happens next" note.
+- **Data:** R/W `support_tickets` (+ `agents` embeds); storage `support_attachments` (private).
+- **Code:** `src/views/Support.vue`, `components/support/{RaiseTicketModal,TicketDetailsModal,TicketStatusBadge}.vue`, `ticketService.getTickets/createTicket/startReview/resolveTicket/reopenTicket/getAttachmentUrls`, `cleanTicket`, `ticketProblems`, `src/assets/classes/ticket.ts`, `utils/sanitize.ts` (`cleanMultilineText`), `utils/deviceInfo.ts`, `supabase/migrations/20261104160000_support_tickets.sql`.
+- **Rules and edge cases:** status flow and stamps in 8.8. A ticket's text, category, page and screenshots can't be edited or deleted after it is raised (by anyone, admins included); only the status moves. Admins can review and resolve their own tickets. Reopening can leave a user with more than 3 open tickets (the limit only blocks raising new ones). A ticket raised by an agent who is later deleted stays, with "Removed agent" as the raiser. No email or Dashboard notifications yet (11.9).
+
 ---
 
 ## 8. Business rules reference
@@ -954,6 +1004,39 @@ Inputs: `commissionableAmount` = **`sales.gross_commission`** (which the form co
 | Reminder | Shown while `agent_credentials.password_changed_at is null` for the signed-in user | `current_agent_needs_password_change()` |
 | Deleting an agent | Deletes their login too; an admin can't delete their own record or login | `genealogyService.deleteAgent`, Edge Function `delete-login`, Genealogy page |
 
+### 8.8 IT support ticket status (`support_tickets.status`, text with a check constraint)
+
+```
+raised ──admin startReview──► in_review ──admin resolveTicket (note ≥ 10 chars)──► resolved
+                                  ▲                                                  │
+                                  └──────────────── admin reopenTicket ──────────────┘
+```
+
+| Step | The server sets (trigger `support_tickets_guard`) | Guard |
+|---|---|---|
+| raise (insert) | `agent_ID` = the signed-in agent, `status = 'raised'`, every stamp empty, `created_at` | RLS insert as yourself; **max 3 open** (not `resolved`) tickets per agent, with an advisory lock; screenshot paths must be `<own auth uid>/<uuid>.<png\|jpg\|webp\|gif>`; check constraints (below) |
+| `startReview` | `reviewed_by` = the admin, `reviewed_at` | only from `raised`; RLS update = admins only |
+| `resolveTicket` | `resolved_by`, `resolved_at`, keeps the note | only from `in_review`; note required (trigger + check constraint) |
+| `reopenTicket` | `reopen_count + 1`, `reopened_at`, `reviewed_by`/`reviewed_at` = this admin, clears `resolved_by`/`resolved_at`; **keeps the last note** | only from `resolved` |
+| anything else | — | raised → resolved, resolved → raised, editing the text/category/page/screenshots/raiser, or editing a stamp or the note without a status change all raise an error |
+
+The app also passes the expected previous status (`ticketService._advance(id, from, patch)` → `.eq('status', from)`), so two admins can't move the same ticket twice; zero rows = "not changed".
+
+| Field | Rule (app and database) |
+|---|---|
+| Category | `bug`, `login_account`, `performance`, `data` (**issues**: steps, expected result and frequency required) · `feature_request`, `feedback`, `other` (requests) |
+| Title | 8–120 characters |
+| Page / area | 2–60 characters; the app only offers `TICKET_AREAS` |
+| Description | 20–2000 (issues: "what happened instead"; requests: the details) |
+| Steps | 10–2000 characters; the app also wants **2+ steps** (`countSteps`) |
+| Expected result | 5–1000 |
+| Frequency | `every_time`, `sometimes`, `once` |
+| Device info | up to 300 (filled in by the app) |
+| Screenshots | up to 3 per ticket, 5 MB each, PNG/JPEG/WEBP/GIF (bucket limits + check constraint) |
+| Resolution note | 10–2000, required to resolve |
+
+Characters are counted like Postgres counts them (`charCount`: an emoji is one).
+
 ---
 
 ## 9. Database reference
@@ -978,6 +1061,8 @@ Inputs: `commissionableAmount` = **`sales.gross_commission`** (which the form co
 | `sales` | One row per sale (reservation) | Sale form, Sales Report | Sales, Dashboard, Commissions, TeamInsights |
 | `sale_dp_divisions` | DP payment plan of a sale | Sale form | Sales details, tab generation |
 | `commissions` | Commission tabs: one per payment per recipient, plus the payment-flow state | tab generation, Commissions page | Commissions, Dashboard |
+| `support_tickets` | **Real RLS** (own rows; admins all; admins update; no delete). IT support tickets: what the user wrote, screenshot paths, status and who/when stamps | IT Support page (raise; admin status changes), trigger `support_tickets_guard` (stamps) | IT Support page |
+| `storage.objects` in bucket `support_attachments` | Private ticket screenshots | `ticketService.createTicket` | `ticketService.getAttachmentUrls` (signed URLs) |
 
 ### 9.2 Schema
 
@@ -1074,6 +1159,24 @@ commissions (commission_ID bigint PK identity, sale_ID bigint NN → sales ON DE
              claimed bool NN default false, claimed_at timestamptz /* set only on 'received' */,
              created_at timestamptz default now(),
              UNIQUE (sale_ID, role, payment_no))
+
+-- IT support (migration 20261104160000; RLS: own rows / admins all / admins update / no delete)
+support_tickets (ticket_ID bigint PK identity /* shown as #T-<id> */,
+                 agent_ID int → agents ON DELETE SET NULL /* who raised it */,
+                 category text NN CHECK IN ('bug','login_account','performance','data','feature_request','feedback','other'),
+                 title text NN /* 8-120 */, area text NN /* 2-60, page or feature */,
+                 frequency text CHECK IN ('every_time','sometimes','once') /* issues only */,
+                 description text NN /* 20-2000 */, steps_to_reproduce text /* 10-2000, issues only */,
+                 expected_result text /* 5-1000, issues only */, occurred_at timestamptz, device_info text /* <= 300 */,
+                 attachment_paths text[] NN default '{}' /* <= 3 paths in bucket support_attachments */,
+                 status text NN default 'raised' CHECK IN ('raised','in_review','resolved'),
+                 resolution_note text /* <= 2000; >= 10 when resolved */,
+                 reviewed_by int → agents ON DELETE SET NULL, reviewed_at timestamptz,
+                 resolved_by int → agents ON DELETE SET NULL, resolved_at timestamptz,
+                 reopen_count int NN default 0, reopened_at timestamptz,
+                 created_at timestamptz NN default now(), updated_at timestamptz NN default now())
+                 -- CHECK: issue categories need steps_to_reproduce, expected_result and frequency
+                 -- trigger support_tickets_guard (before insert or update), see 9.7
 ```
 
 </details>
@@ -1090,6 +1193,9 @@ commissions (commission_ID bigint PK identity, sale_ID bigint NN → sales ON DE
 | `commissions.role` | `Agent`, `Upline 1`, `Upline 2`, `Upline 3` |
 | `commissions.status` | `pending_approval`, `approved`, `payment_requested`, `payment_released`, `received` (underscores) |
 | `opening_days.day` | `Monday` … `Sunday`, `Holiday` |
+| `support_tickets.status` | `raised`, `in_review`, `resolved` (labels Raised / In Review / Resolved, `TICKET_STATUS_LABEL`) |
+| `support_tickets.category` | `bug`, `login_account`, `performance`, `data`, `feature_request`, `feedback`, `other` (labels in `TICKET_CATEGORIES`) |
+| `support_tickets.frequency` | `every_time`, `sometimes`, `once` |
 
 ### 9.4 Hard-coded lookup ids
 
@@ -1131,12 +1237,13 @@ Property type strings come in three forms: DB `house_and_lot`, form label `House
 | `20260906120000_add_pending_listing_status.sql` | `pending` value on `listing_status` |
 | `20261014140000_sales_payment_scheme_and_commissions.sql` | Combined and idempotent: sales financing, scheme and DP columns, `completed_at`, `sale_dp_divisions`, `commissions` (+ approval, balance, rank, role check), positions rates and thresholds, `Partner Broker` row, `sales.commission_rate`, Deferred-Cash, realtime publication, commission payment-flow columns, `sales.commissionable_amount`. **Re-run the whole file, then `notify pgrst, 'reload schema';`.** |
 | `20261104120000_agent_accounts.sql` | Idempotent: `pgcrypto` (schema `extensions`), Vault secret `agent_password_key` (created once, never replaced), table `agent_credentials` (locked), functions `current_agent_is_admin`, `store_agent_initial_password`, `admin_get_agent_login`, `current_agent_needs_password_change`, `handle_agent_password_change` + trigger `on_agent_password_changed` on `auth.users`. No changes to existing tables. Ends with `notify pgrst`. **Part of 3.3 step 1.** |
+| `20261104160000_support_tickets.sql` | Idempotent (check constraints dropped and re-added, `drop ... if exists` for policies and the trigger). Stops early if `current_agent_is_admin()` is missing. Function `current_agent_id()`; table `support_tickets` + check constraints + indexes; trigger `support_tickets_guard`; **real RLS** policies; `revoke all` from `anon`, `select/insert/update` for `authenticated`; private bucket `support_attachments` (5 MB, images only) + 3 storage policies; `support_tickets` added to `supabase_realtime`. No changes to existing tables. Ends with `notify pgrst`. **3.3 step 8.** |
 
 Tables that existed before migrations were introduced (`agents`, `main_listings`, the sub-tables, `developers`, ...) have no migration file. Their shape is the PDF schema.
 
-### 9.7 SQL functions, triggers and Vault (agent accounts)
+### 9.7 SQL functions, triggers, Vault and policies (agent accounts, support tickets)
 
-All are `SECURITY DEFINER` with `set search_path = ''`, use no dynamic SQL, and are defined in `20261104120000_agent_accounts.sql`.
+All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no dynamic SQL. The agent account ones are defined in `20261104120000_agent_accounts.sql`; `current_agent_id` and `support_tickets_guard` in `20261104160000_support_tickets.sql`.
 
 | Object | Callable by | Does | Called from |
 |---|---|---|---|
@@ -1146,6 +1253,10 @@ All are `SECURITY DEFINER` with `set search_path = ''`, use no dynamic SQL, and 
 | `current_agent_needs_password_change()` → boolean | authenticated | True if the caller has an `agent_credentials` row with `password_changed_at is null` | `accountService.needsPasswordChange` |
 | `handle_agent_password_change()` + trigger `on_agent_password_changed` (`after update of encrypted_password on auth.users`, only when the hash changes) | trigger only | Sets `password_changed_at = now()` and `initial_password_enc = null` for that user | Supabase Auth password updates |
 | Vault secret `agent_password_key` | Postgres only (read through `vault.decrypted_secrets` inside the functions) | 32 random bytes (hex) that encrypt the initial passwords | — |
+| `current_agent_id()` → integer | authenticated, service_role | `agents."agent_ID"` of the row whose `user_id = auth.uid()` (NULL if none) | support ticket policies and trigger |
+| `support_tickets_guard()` + trigger `support_tickets_guard` (`before insert or update on support_tickets`) | trigger only | Insert: raiser = signed-in agent, status `raised`, stamps cleared, 3-open-ticket limit (advisory lock), screenshot path check. Update: details locked, only the allowed status moves, stamps and note set here (8.8) | every write to `support_tickets` |
+| RLS on `support_tickets` | — | `read own or admin` (select: `"agent_ID" = current_agent_id()` or admin), `raise as yourself` (insert), `admins update` (update). No delete policy | ticketService |
+| Storage policies on `storage.objects` (bucket `support_attachments`) | authenticated | `read own or admin` (folder = `auth.uid()` or admin), `upload own` (into your folder), `delete own unused` (your file, used by no ticket) | ticketService |
 
 ⚠ **Do not delete or rotate `agent_password_key`.** Stored initial passwords would become unreadable (agents can still sign in; admins just can't reveal them).
 
@@ -1172,7 +1283,7 @@ All are `SECURITY DEFINER` with `set search_path = ''`, use no dynamic SQL, and 
 
 | Function | Purpose | Used by |
 |---|---|---|
-| `getCurrentAgent()` | Signed-in agent: `agent_ID`, first/middle/last name, `admin_access` (or null) | Listings, PropertyManagement, SalesReport, Commission, SalesUploadModal, Genealogy page |
+| `getCurrentAgent()` | Signed-in agent: `agent_ID`, first/middle/last name, `admin_access` (or null) | Listings, PropertyManagement, SalesReport, Commission, SalesUploadModal, Genealogy page, Support |
 | `logoutUser()` | `auth.signOut()` → `{ success, error? }` | Sidebar, ChangePasswordModal (login page) |
 
 **`src/services/accountService.ts`** (`accountService`; types `NewAgentAccount`, `AgentLogin`). Logins and passwords; see 7.19, 7.20, 9.7, 9.8.
@@ -1315,6 +1426,21 @@ All are `SECURITY DEFINER` with `set search_path = ''`, use no dynamic SQL, and 
 | `deletePromo(promo)` | Delete the storage file + row | addDeveloper |
 | `reformatHours("9:00 AM - 5:00 PM")` | → `['09:00','17:00']` | imported, never called |
 
+**`src/services/ticketService.ts`** (`ticketService`, `cleanTicket`, `ticketProblems`). IT support tickets; see 7.21, 8.8, 9.7.
+
+| Function | Purpose | Used by |
+|---|---|---|
+| `getTickets(agentId?)` | Tickets newest first with raiser/reviewer/resolver names, mapped to `SupportTicket` (RLS already limits non-admins to their own) | Support |
+| `createTicket(agentId, input, files)` | Clean + check (`cleanTicket`, `ticketProblems`, `imageProblem`), upload screenshots to `support_attachments/<uid>/<uuid>.<ext>`, insert; removes the uploads if the insert fails → `ticket_ID` | RaiseTicketModal |
+| `startReview(id)` | `raised → in_review` → updated ticket or null | Support (table Review), TicketDetailsModal |
+| `resolveTicket(id, note)` | Cleans the note (10–2000); `in_review → resolved` | TicketDetailsModal |
+| `reopenTicket(id)` | `resolved → in_review` | TicketDetailsModal |
+| `getAttachmentUrls(paths)` | Signed URLs (1 hour), same order, null where a file can't be opened | TicketDetailsModal |
+| `cleanTicket(input)` | Exported pure helper: trims, removes control characters, caps lengths, drops issue-only answers from requests, `occurred_at` → ISO | RaiseTicketModal, createTicket |
+| `ticketProblems(ticket)` | Exported pure helper: list of what is missing or wrong (empty = ready) | RaiseTicketModal, createTicket |
+| `_advance(id, from, patch)` | Guarded status update with `.select()` (0 rows → null) | internal |
+| `toTicket()`, `ticketErrorMessage()`, `randomFileId()` | Module-private: row mapping, readable errors (missing migration/bucket, limit, permissions, size, type), uuid with a fallback | internal |
+
 **`src/services/lookupService.ts`**: empty placeholder.
 
 ### 10.2 Utils
@@ -1326,8 +1452,9 @@ All are `SECURITY DEFINER` with `set search_path = ''`, use no dynamic SQL, and 
 | `utils/paySchedule.ts` | `UNIT_MONTHS`, `addMonthsClamped`, `dueDateAt`, `lastDueDate` | commissionService, salesService, SalesUploadModal |
 | `utils/conversion.ts` | `currentCurrency`, `currentUnit` (refs), `currencySymbols`, `areaUnits`, `SQM_TO_SQFT`, `convertPrice`, `formatPrice`, `convertArea`, `formatArea`, `convertPriceToPHP`, `convertAreaToSqm` | Listings, PropertyManagement, PropertyCard, PropertyDetails, SalesReport, SharedListing, Settings |
 | `utils/useSettings.ts` | `useSettings()` → `{ configs, updateSetting, loadSettings }` | App, Settings, conversion, ProfileCard, genealogy tree |
-| `utils/liveRefresh.ts` | `useLiveRefresh(reload, tables, opts)` | Dashboard, Commission, Genealogy page, tree, TeamInsights |
-| `utils/sanitize.ts` | `cleanText(value, max)`, `normalizeEmail`, `isValidEmail`, `isValidPhone`, `isIsoDate`, `digitsOnly`, `EMAIL_PATTERN`, `PHONE_PATTERN` | AddAgentModal, LoginForm, ChangePasswordModal (the Edge Function repeats the same rules) |
+| `utils/liveRefresh.ts` | `useLiveRefresh(reload, tables, opts)` | Dashboard, Commission, Genealogy page, tree, TeamInsights, Support |
+| `utils/sanitize.ts` | `cleanText(value, max)`, `cleanMultilineText(value, max=2000)` (keeps line breaks; drops control characters and invisible direction overrides, trims each line, max one blank line), `normalizeEmail`, `isValidEmail`, `isValidPhone`, `isIsoDate`, `digitsOnly`, `EMAIL_PATTERN`, `PHONE_PATTERN` | AddAgentModal, LoginForm, ChangePasswordModal (the Edge Function repeats the same rules); ticketService, TicketDetailsModal (`cleanMultilineText`) |
+| `utils/deviceInfo.ts` | `describeDevice()` → e.g. "Chrome 130 · Windows · window 1536×730 · screen 1920×1080 · dark mode" | RaiseTicketModal |
 | `utils/password.ts` | `INITIAL_PASSWORD_LENGTH` (14), `MIN_PASSWORD_LENGTH` (8), `MAX_PASSWORD_LENGTH` (72), `agentInitials`, `generatePasswordTail`, `buildInitialPassword`, `passwordRules`, `isStrongPassword`, type `PasswordRule` | AddAgentModal, PasswordReveal, ChangePasswordModal |
 
 ### 10.3 Classes and constants (`src/assets/classes/`)
@@ -1338,6 +1465,7 @@ All are `SECURITY DEFINER` with `set search_path = ''`, use no dynamic SQL, and 
 | `commission.ts` | `PayUnit`, `DpDivision`, `CommissionPaymentScheme`, `CommissionChain`, `CalculateCommissionPayload`, `CommissionScheduleItem`, `CommissionSummary`, `CommissionCalculationResult` |
 | `developers.ts` | `DeveloperProject` (declared twice, harmless), `DeveloperPromo`, `Developer`, `DayOption`, `days`, `OfficeHourSlot` |
 | `listings.ts` | `Property`, `Lot`, `HouseAndLot`, `Condominium`, `Memorial`, `Images`, `formattedPropertyType(type)` |
+| `ticket.ts` | `TicketStatus`, `TICKET_STATUS_LABEL`, `TicketCategory`, `TICKET_CATEGORIES` (label, hint, title example, `isIssue`), `TicketFrequency`, `TICKET_FREQUENCIES`, `TICKET_AREAS`, `MAX_OPEN_TICKETS` (3), `MAX_TICKET_IMAGES` (3), `MAX_TICKET_IMAGE_MB` (5), `MIN_TICKET_STEPS` (2), `TICKET_IMAGE_TYPES`, `TICKET_TEXT_LIMITS`, `NewTicket`, `SupportTicket`, `ticketNumber`, `categoryOption`, `categoryLabel`, `isIssueCategory`, `frequencyLabel`, `charCount`, `countSteps`, `imageProblem`. **Keep the limits in step with the migration.** |
 
 ### 10.4 Components (props → emits)
 
@@ -1353,7 +1481,7 @@ All are `SECURITY DEFINER` with `set search_path = ''`, use no dynamic SQL, and 
 | `commissions/PaymentRequestModal` | `tab`, `agent` | `close`, `submitted` | Commission |
 | `commissions/ReleasePaymentModal` | `tab`, `adminAgentId` | `close`, `released` | Commission |
 | `commissions/ProofModal` | `tab`, `canConfirm` | `close`, `received` | Commission |
-| `commissions/ConfirmActionModal` | `title`, `message`, `confirmLabel?` ('Yes'), `cancelLabel?` ('No'), `busyLabel?`, `tone?` ('blue' \| 'green'), `busy?`, `error?`, `requiredPhrase?`; default slot = summary box | `confirm`, `cancel` | Commission (approve), ProofModal (received) |
+| `commissions/ConfirmActionModal` | `title`, `message`, `confirmLabel?` ('Yes'), `cancelLabel?` ('No'), `busyLabel?`, `tone?` ('blue' \| 'green'), `busy?`, `error?`, `requiredPhrase?`; default slot = summary box | `confirm`, `cancel` | Commission (approve), ProofModal (received), RaiseTicketModal (discard), TicketDetailsModal (resolve, reopen) |
 | `dashboard/DashboardStatCard` | `stat: Metric` | `click` | Dashboard |
 | `dashboard/SalesPerfromance` | `bars`, `sold`, `avgDeal` | `open-details` | Dashboard |
 | `dashboard/CommissionHistory` | `history: HistoryItem[]` | — | Dashboard |
@@ -1373,6 +1501,9 @@ All are `SECURITY DEFINER` with `set search_path = ''`, use no dynamic SQL, and 
 | `profile/ProfileEdit` | `agent` | `cancel` | Profile |
 | `settings/configDropdown` | `choices`, `modelValue` | `update:modelValue` | Settings |
 | `settings/configToggleSlider` | `modelValue: boolean` | `update:modelValue` | Settings |
+| `support/RaiseTicketModal` | `agentId: number`, `openCount: number` | `close`, `created` (ticket id) | Support |
+| `support/TicketDetailsModal` | `ticket: SupportTicket`, `isAdmin`, `currentAgentId`, `intent?: 'resolve' \| 'reopen' \| null` | `close`, `changed` (updated ticket, toast message) | Support |
+| `support/TicketStatusBadge` | `status: TicketStatus` | — | Support, TicketDetailsModal |
 
 ---
 
@@ -1430,7 +1561,7 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 - `bg-maurealty-red` (Listings confirmation toast) isn't a defined theme color.
 
 ### 11.7 Security (pre-launch)
-- RLS is wide open on every table (dev policy) except `agent_credentials` (locked). Most role rules are frontend-only; creating/removing logins and revealing passwords are checked on the server (9.7, 9.8). Hardening (admins see everything, agents see their own) is planned "before go-live" according to the migration comments. When it happens, the Edge Function keeps working (it uses the service role).
+- RLS is wide open on every table (dev policy) except `agent_credentials` (locked) and `support_tickets` (real per-user rules, the pattern to copy when hardening the others). Most role rules are frontend-only; creating/removing logins, revealing passwords and every support ticket rule are checked on the server (9.7, 9.8). Hardening (admins see everything, agents see their own) is planned "before go-live" according to the migration comments. When it happens, the Edge Function keeps working (it uses the service role).
 - **Public sign-ups** must be turned off in Supabase (3.3 step 6). Otherwise anyone with the anon key can create a login and read the open tables.
 - Admins can read an agent's **initial** password until it is changed (by design, 7.19). It is encrypted at rest with a Vault key and only decrypted by `admin_get_agent_login` for an admin.
 
@@ -1439,6 +1570,14 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 - Unused functions: `salesService.getSaleById`, `getTotalSales`, `generateSchedulePreview`, `calculateCommissionableAmount`; `genealogyService.setUpline`; `reformatHours`.
 - Unused dependencies: `chart.js`, `@types/chart.js`, `lucide`, `next`, `dagre`, `@types/dagre`, `@vue-flow/background`.
 - `.env.example` is missing `VITE_MAPBOX_TOKEN`.
+
+### 11.9 IT support tickets
+- **No notifications.** Nobody is told when a ticket is raised or changes status: no email and no Dashboard alert or reminder. Admins have to open IT Support, and users have to check their tickets. (Possible next step: an admin reminder "n tickets waiting for review" and an agent alert "your ticket was resolved" in `dashboardService.buildDashboard`.)
+- **No conversation.** There is one resolution note per resolution; users can't reply on a ticket. A user whose problem came back asks IT to reopen it, or raises a new ticket that mentions the number (the 3-open limit still applies).
+- **Orphan uploads.** Screenshots are uploaded before the ticket row is inserted. If the browser closes between the two steps, the files stay in the user's folder of `support_attachments` without a ticket (only readable by that user and admins). Clean up by hand if needed.
+- **Storage policies are OR-ed.** An older `storage.objects` policy without a `bucket_id` condition would widen access to the private screenshots (3.3 step 9).
+- `TICKET_AREAS` exists only in the app (the database only checks the length), so a new page needs a new entry there.
+- Signed screenshot links expire after an hour; an admin who keeps a ticket open longer gets broken images and has to open it again.
 
 ---
 
@@ -1476,6 +1615,11 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 | **Voucher series** | Receipt or voucher number of a sale; the input is hidden for now. |
 | **Fact sheet** | A downloadable document (pdf, doc, docx, md) attached to a listing. |
 | **POI** | A nearby point of interest (hospital, school, ...) shown on the map. |
+| **IT support** | The admins, when they handle tickets on the IT Support page. |
+| **Ticket** | One IT support request (`support_tickets`), numbered `#T-<id>`. Raised → In Review → Resolved; a resolved ticket can be reopened. |
+| **Issue vs request (ticket)** | Issue categories (something isn't working, login, slow, wrong data) must give steps, expected result and frequency so IT can recreate them; requests (feature request, feedback, other) only need details. |
+| **Open ticket** | A ticket that is not resolved (Raised or In Review). Each person may have 3 when raising a new one. |
+| **Resolution note** | IT support's answer on a ticket, required to resolve it and shown to the person who raised it. |
 
 ---
 
@@ -1485,6 +1629,7 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 
 | `documentation.md` entry | Summary | See |
 |---|---|---|
+| 2026-11-04: IT support tickets | New `/support` page; guided Raise a Ticket form with checklist, auto-numbered steps, screenshots (private bucket), device details; admin review / resolve (required note) / reopen; 3 open tickets per person; `support_tickets` with real RLS + guard trigger; `cleanMultilineText`, `describeDevice` | 3.3, 5.4, 5.6, 5.8, 6, 7.21, 8.8, 9, 10, 11.9 |
 | 2026-11-04: Agent accounts and password changes | Add Agent creates the Supabase login (Edge Function `agent-account`), encrypted initial password that admins can reveal until it is changed, create login for older agents, login removed on delete, admin-only agent management, Dashboard Add Agent = Genealogy modal, red initial-password reminder, change password with an email code on the Login page, input cleaning helpers | 3.3, 5.1, 5.8, 6, 7.1, 7.3, 7.13, 7.19, 7.20, 8.7, 9.7, 9.8, 10 |
 | 2026-11-03: Commission confirmations, admin filter, shared listing | Other Agents switch, "You" badge, Approve popup + toast, admins request/receive on own tabs, typed "I have received payment", `ConfirmActionModal`; shared page shows bulk price range, hides bulk features, orders photos, dark mode | 5.8, 6, 7.7, 7.12, 8.3, 10.4 |
 | 2026-10-15: Dashboard cards, genealogy card, commissions page | New card rows, live Sales Performance, full upline and any-depth downline, Recent Activity hidden, single grid of commission cards with "n/N", ordered payment requests, editable request details, per-agent vs all sale numbering | 7.3, 7.12, 7.9 |
@@ -1514,6 +1659,8 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 ## 14. Changelog of this file
 
 Add one line per update, newest first: `YYYY-MM-DD: what changed (sections)`.
+
+- **2026-11-04:** IT support tickets: `/support` page, Raise a Ticket form, ticket popup with admin review / resolve / reopen, `ticketService`, `ticket.ts`, `cleanMultilineText`, `deviceInfo.ts`, migration `20261104160000_support_tickets.sql` (`support_tickets` with real RLS, `support_tickets_guard`, `current_agent_id`, private `support_attachments` bucket, realtime), new setup steps 8–9 (header, 1.3, 1.4, 1.5, 2, 3.3, 4, 5.1, 5.2, 5.3, 5.4, 5.6, 5.8, 6, 7.2, 7.21, 8.8, 9.1, 9.2, 9.3, 9.6, 9.7, 10.1, 10.2, 10.3, 10.4, 11.7, 11.9, 12, 13.1).
 
 - **2026-11-04:** Agent accounts: login creation through the `agent-account` Edge Function, `agent_credentials` + Vault + SQL functions + `auth.users` trigger, initial-password reveal, create login for older agents, login removal on delete, admin-only Add/Edit/Delete agent, Dashboard Add Agent uses the Genealogy modal (placeholder deleted), red initial-password reminder, change password with an email code, `sanitize.ts` / `password.ts`, new Supabase setup section (header, 1.2–1.5, 2, 3, 3.3, 4, 5.1, 5.3, 5.8, 6, 7.1, 7.3, 7.13, 7.19, 7.20, 8.6, 8.7, 9.1, 9.2, 9.6, 9.7, 9.8, 10.1, 10.2, 10.4, 11.3, 11.6, 11.7, 12, 13.1).
 

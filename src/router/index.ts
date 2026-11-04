@@ -85,7 +85,14 @@ const routes: Array<RouteRecordRaw> = [
   path: '/commissions',
   name: 'Commission',
   component: () => import('@/views/Commission.vue')
-  }     
+  },
+  {
+    // IT support tickets: everyone raises tickets; admins (IT support) review and resolve them.
+    path: '/support',
+    name: 'Support',
+    component: () => import('@/views/Support.vue'),
+    meta: { requiresAuth: true }
+  }
 ]
 
 const router = createRouter({

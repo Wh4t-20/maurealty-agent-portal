@@ -17,6 +17,34 @@ export function cleanText(value: unknown, maxLength = 255): string {
   return String(value).replace(CONTROL_CHARS, ' ').replace(/\s+/g, ' ').trim().slice(0, maxLength);
 }
 
+// Same as CONTROL_CHARS but keeps the line break (\n), for multi-line answers.
+const CONTROL_CHARS_EXCEPT_NEWLINE = /[\u0000-\u0009\u000B-\u001F\u007F]/g;
+// Invisible direction overrides (U+202A-U+202E, U+2066-U+2069) can make text read differently
+// from what it really says, so long texts drop them.
+const BIDI_CONTROLS = /[\u202A-\u202E\u2066-\u2069]/g;
+
+/**
+ * Like cleanText, but keeps line breaks, for long answers such as the steps of a support
+ * ticket or a resolution note. Normalizes line endings, removes control characters, collapses
+ * repeated spaces, trims each line, allows at most one blank line in a row, and caps the length.
+ * (The app shows these texts with `white-space: pre-line`, which drops leading spaces anyway.)
+ */
+export function cleanMultilineText(value: unknown, maxLength = 2000): string {
+  if (value == null) return '';
+  return String(value)
+    .replace(/\r\n?/g, '\n')
+    .replace(/\t/g, ' ')
+    .replace(CONTROL_CHARS_EXCEPT_NEWLINE, ' ')
+    .replace(BIDI_CONTROLS, '')
+    .split('\n')
+    .map(line => line.replace(/ {2,}/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+    .slice(0, maxLength)
+    .trimEnd();
+}
+
 /** Lower-case email with no spaces (Supabase Auth stores login emails in lower case). */
 export function normalizeEmail(value: unknown): string {
   return cleanText(value, 254).replace(/\s/g, '').toLowerCase();
