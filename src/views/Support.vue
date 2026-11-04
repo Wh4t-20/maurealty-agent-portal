@@ -24,12 +24,12 @@
           </div>
           <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">Report a problem or send feedback, then follow it from Raised to Resolved.</p>
         </div>
-        <button type="button" :disabled="!canRaise"
+        <!-- <button type="button" :disabled="!canRaise"
                 :title="canRaise ? '' : raiseBlockedReason"
                 class="flex items-center gap-1 bg-maurealty-blue text-white px-4 py-1.5 rounded-full cursor-pointer hover:opacity-70 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:opacity-40"
                 @click="openRaise">
           <Plus class="size-4" aria-hidden="true" /> Raise a Ticket
-        </button>
+        </button> -->
       </div>
     </header>
 
