@@ -138,22 +138,29 @@ function mapToSale(item: any): Sale {
   };
 }
 
-// "Sale 1 ... n": numbered automatically by when the sale was created, earliest first.
-//   perAgent = true  (an agent's own view): counted only among that agent's sales.
-//   perAgent = false (admin, all agents):   counted across every sale.
-// Numbers come from all sales in the table, so filtering the list never changes them.
-async function applySaleNumbers(sales: Sale[], perAgent: boolean): Promise<Sale[]> {
-  if (sales.length === 0) return sales;
-  const { data } = await supabase
+// Every sale's id, seller and creation time, oldest first: the order the "Sale n" numbers follow.
+// It doesn't depend on the list being loaded, so callers run it alongside their main query
+// (Promise.all) instead of after it, saving one round trip on every Sales Report load.
+function fetchSaleOrder() {
+  return supabase
     .from('sales')
     .select('sale_ID, agent_ID, created_at')
     .order('created_at', { ascending: true })
     .order('sale_ID', { ascending: true });
+}
+
+// "Sale 1 ... n": numbered automatically by when the sale was created, earliest first.
+//   perAgent = true  (an agent's own view): counted only among that agent's sales.
+//   perAgent = false (admin, all agents):   counted across every sale.
+// Numbers come from all sales in the table (`order`, from fetchSaleOrder), so filtering the list
+// never changes them. If that query failed (`order` null), the stored agent_sale_seq is kept.
+function applySaleNumbers(sales: Sale[], order: any[] | null, perAgent: boolean): Sale[] {
+  if (sales.length === 0) return sales;
 
   const numbers = new Map<number, number>();
   const perAgentCount = new Map<number, number>();
   let all = 0;
-  for (const r of (data || []) as any[]) {
+  for (const r of (order || []) as any[]) {
     if (perAgent) {
       const n = (perAgentCount.get(r.agent_ID) ?? 0) + 1;
       perAgentCount.set(r.agent_ID, n);
@@ -199,7 +206,8 @@ export const salesService = {
       query = query.eq('agent_ID', agentId);
     }
 
-    const { data, error } = await query;
+    // The sales and the numbering order load together (see fetchSaleOrder).
+    const [{ data, error }, { data: order }] = await Promise.all([query, fetchSaleOrder()]);
 
     if (error) {
       console.error('Error fetching sales:', error);
@@ -207,16 +215,19 @@ export const salesService = {
     }
 
     // An agent's own list is numbered among their own sales; the all-agents (admin) list across every sale.
-    return applySaleNumbers(await fillMissingAgentNames((data || []).map(mapToSale)), agentId !== undefined);
+    return applySaleNumbers(await fillMissingAgentNames((data || []).map(mapToSale)), order, agentId !== undefined);
   },
 
   // Single sale by ID.
   async getSaleById(id: number): Promise<Sale | null> {
-    const { data, error } = await supabase
-      .from('sales')
-      .select(SALE_SELECT)
-      .eq('sale_ID', id)
-      .single();
+    const [{ data, error }, { data: order }] = await Promise.all([
+      supabase
+        .from('sales')
+        .select(SALE_SELECT)
+        .eq('sale_ID', id)
+        .single(),
+      fetchSaleOrder(),
+    ]);
 
     if (error) {
       console.error('Error fetching sale by ID:', error);
@@ -224,7 +235,7 @@ export const salesService = {
     }
 
     if (!data) return null;
-    const [numbered] = await applySaleNumbers([mapToSale(data)], false);
+    const [numbered] = applySaleNumbers([mapToSale(data)], order, false);
     return numbered ?? null;
   },
 
