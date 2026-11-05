@@ -4,7 +4,8 @@
 		<!-- Profile -->
 		<div class="flex items-center gap-4 mb-4 ">
 
-			<img :src="dev.image_url || placeholder" class="w-16 h-16 rounded-full object-cover"/>
+			<!-- loading="lazy": pictures of cards further down the page download only when scrolled near -->
+			<img :src="dev.image_url || placeholder" loading="lazy" decoding="async" class="w-16 h-16 rounded-full object-cover"/>
 			<div>
 				<h2 class="font-bold text-2xl dark:text-white">{{ dev.name }}</h2>
 				<span class="bg-[#41BE0126] text-[#41BE01] text-xs font-semibold px-2 py-1 rounded">Active</span>
@@ -72,7 +73,8 @@
 					:title="promo.title"
 					@click="$emit('open-promo', promo)"
 				>
-					<img :src="promo.image_url" :alt="promo.title" class="w-full h-24 object-cover group-hover:scale-105 transition-transform" />
+					<!-- Posters are full-size images shown as thumbnails: load them only when near the screen -->
+					<img :src="promo.image_url" :alt="promo.title" loading="lazy" decoding="async" class="w-full h-24 object-cover group-hover:scale-105 transition-transform" />
 					<figcaption v-if="promo.title || promo.valid_until"
 						class="absolute inset-x-0 bottom-0 bg-black/60 text-white text-[10px] px-1.5 py-1 leading-tight">
 						<span v-if="promo.title" class="block truncate font-semibold">{{ promo.title }}</span>
