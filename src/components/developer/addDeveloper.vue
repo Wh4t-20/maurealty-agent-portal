@@ -451,12 +451,10 @@ async function saveDeveloper() {
                 payload.image_url = ''; // picture removed
             }
             await developerService.updateDeveloper(payload, oldOfficeHours.value);
-            console.log("Updated Developer ID: ", payload.dev_ID);
             await persistPromos(payload.dev_ID);
         }
         else{
             const devID = await developerService.addDeveloper(payload);
-            console.log("New Developer ID: ", devID);
 
             let imageUrl = '';
             if (currentImage.value && currentImage.value.file) {

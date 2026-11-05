@@ -88,12 +88,8 @@ const developers = ref<Developer[]>([])
 const devToEdit = ref<Developer | null>(null);
 const selectedProject = ref<DeveloperProject | null>(null)
 const selectedPromo = ref<DeveloperPromo | null>(null)
-const openListing = (project: DeveloperProject) => {
-
-  selectedProject.value = project
-  console.log('OPENED LISTING: ', selectedProject.value, '        ', project)
-
- }
+// Recent Projects chip -> the listing overlay (read-only); promo thumbnail -> the poster lightbox.
+const openListing = (project: DeveloperProject) => { selectedProject.value = project }
 const openPromo = (promo: DeveloperPromo) => { selectedPromo.value = promo }
 
 // Skeleton cards are shown until the first load finishes (two rows on wide screens).

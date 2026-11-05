@@ -131,7 +131,6 @@ export const agentService = {
 
       if (error) throw error;
       
-      console.log('Old profile image deleted successfully');
     } catch (error) {
       console.error('Error deleting old image:', error);
       // We usually don't throw here so a failed deletion doesn't block the profile save

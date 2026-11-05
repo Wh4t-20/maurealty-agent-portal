@@ -617,7 +617,7 @@
 
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
-import { ref, watch, onMounted, computed } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import type { HouseAndLot, Lot, Condominium, Memorial } from '@/assets/classes/listings';
 import { listingsService } from '@/services/listingsServices';
@@ -631,7 +631,6 @@ const displayMaps = ref(false);
 
 function toggleMaps() {
   displayMaps.value = !displayMaps.value;
-  console.log("Map display status: " + displayMaps.value);
 }
 
 // utilities
@@ -650,7 +649,6 @@ const isAdmin = ref(false); // gates whether a new listing skips the approval qu
 
 function toggleDescriptionMarkdown() {
   displayDescriptionMarkdown.value = !displayDescriptionMarkdown.value;
-  console.log("Description Markdown display status: " + displayDescriptionMarkdown.value);
 }
 
 // for the FAQ stuff
@@ -660,12 +658,10 @@ const displayQuestions = ref(false);
 
 function toggleFAQMarkdown() {
   displayFAQMarkdown.value = !displayFAQMarkdown.value;
-  console.log("FAQ Markdown display status: " + displayFAQMarkdown.value);
 }
 
 function toggleQuestions() {
   displayQuestions.value = !displayQuestions.value;
-  console.log("Question display status: " + displayQuestions.value);
 }
 
 // Combine all interfaces for the form state
@@ -720,9 +716,6 @@ const loadProperties = async () => {
       form.value.agent_incentive = data.agent_incentive || '';
       form.value.realty_incentive = data.realty_incentive || '';
 
-      console.log(data.longitude, data.latitude);
-      console.log("^Data | vForm\n");
-      console.log(form.value.lng, form.value.lat);
 
       const images = Array.isArray(data.listing_images) ? data.listing_images : [];
       existingImages.value = [...images]
@@ -911,7 +904,6 @@ const removeExistingImage = (index: number) => {
   const image = existingImages.value[index];
   if (!image) return;
   removedImageUrls.value.push(image.url);
-  console.log(`[DEBUG] Queued existing image for deletion: ${image.url}`); // debugging
 
   existingImages.value.splice(index, 1);
 };
@@ -940,7 +932,6 @@ const handleFactSheetFileUpload = (event: Event) => {
         file: file,
         name: file.name
       };
-      console.log("Fact sheet staged:", file.name);
     }
   }
   if (factSheetInput.value) factSheetInput.value.value = '';
@@ -949,10 +940,6 @@ const handleFactSheetFileUpload = (event: Event) => {
 const types: string[] = ['House And Lot', 'Lot Only', 'Condominium', 'Memorial', 'Clubshare', 'Golfshare'];
 const lotClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Farm Lot'];
 const condoClasses: string[] = ['Residential', 'Commercial', 'Industrial', 'Condotel', 'Timeshare'];
-
-watch(() => form.value.property_type, (newType) => {
-  console.log(`Switching layout to: ${newType}`);
-});
 
 // Text fields are cleaned before they are saved (trimmed, no control characters, length caps);
 // values reach the database as bound parameters through supabase-js. Markdown keeps its indentation.
@@ -1063,7 +1050,6 @@ const saveProperty = async () => {
         };
       }
 // 4. Send to supabase via our service
-      console.log("Sending payload to Supabase...");
       const response = await listingsService.createListing(mainData, specificData, propertyTypeId);
       if (response.success) {
         if (imageFiles.value.length > 0) {
@@ -1072,11 +1058,9 @@ const saveProperty = async () => {
         }
 
         if (factSheetFile.value) {
-          console.log("[DEBUG] Uploading fact sheet for new listing...");
           try {
             // The new listing's id (propertyId is -1 when creating, which saved the file nowhere).
             await listingsService.uploadFactSheet(response.data.listing_ID, factSheetFile.value.file);
-            console.log("[DEBUG] Fact sheet uploaded successfully.");
           } catch (err) {
             console.error("[DEBUG] Failed to upload fact sheet:", err);
             alert('The listing was saved, but the fact sheet could not be uploaded. Edit the listing to try again.');
@@ -1180,7 +1164,6 @@ const saveProperty = async () => {
       if (response.success) {
         // --- Image Deletion Logic ---
         if (removedImageUrls.value.length > 0) {
-          console.log(`[DEBUG] Attempting to delete ${removedImageUrls.value.length} image(s)...`);
           
           // Deep copy array to sever reactive proxy bindings before passing to service
           const cleanUrls = JSON.parse(JSON.stringify(removedImageUrls.value));
@@ -1189,8 +1172,6 @@ const saveProperty = async () => {
             const deleteResult = await listingsService.deleteListingImages(cleanUrls);
             if (!deleteResult.success) {
               alert("Warning: Images were removed from storage but the database records could not be deleted. Please verify your Supabase RLS delete policy on the 'listing_images' table.");
-            } else {
-              console.log("[DEBUG] Image deletion transaction finished successfully.");
             }
           } catch (deleteError) {
             console.error("[DEBUG] Image deletion threw an error:", deleteError);
@@ -1204,12 +1185,9 @@ const saveProperty = async () => {
           await listingsService.uploadPropertyImages(propertyId, filesToUpload, lastImageOrder.value + 1);
         }
 
-        console.log(factSheetFile.value);
         if (factSheetFile.value) {
-          console.log("[DEBUG] Uploading fact sheet for new listing...");
           try {
             await listingsService.uploadFactSheet(propertyId, factSheetFile.value.file);
-            console.log("[DEBUG] Fact sheet uploaded successfully.");
           } catch (err) {
             console.error("[DEBUG] Failed to upload fact sheet:", err);
             alert('The listing was saved, but the fact sheet could not be uploaded. Please try again.');

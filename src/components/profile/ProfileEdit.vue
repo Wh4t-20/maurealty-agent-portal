@@ -266,7 +266,6 @@ function cleanForm() {
 }
 
 const saveAgentDetails = async () => {
-    console.log('Saving new account details...');
     error.value = '';
 
     const { values, problem } = cleanForm();
@@ -288,7 +287,6 @@ const saveAgentDetails = async () => {
     try {
         // SCENARIO 1: A new image file was uploaded
         if (currentImage.value?.file) {
-            console.log('Uploading new image...');
             const newUrl = await agentService.uploadProfileImage(agentID, currentImage.value.file);
             agentData.profile_url = newUrl;
             uploadedUrl = newUrl;
@@ -300,7 +298,6 @@ const saveAgentDetails = async () => {
         }
         // SCENARIO 2: The image was explicitly removed by the user (no new file, but URL is empty)
         else if (!form.value.profile_url && props.agent.profile_url) {
-            console.log('Removing old image...');
             oldImageToDelete = props.agent.profile_url;
             // NULL, not '': agents.profile_url is UNIQUE, so two agents without a picture would clash on ''.
             agentData.profile_url = null;
@@ -314,7 +311,6 @@ const saveAgentDetails = async () => {
         const response = await agentService.updateProfile(agentID, agentData);
 
         if (response.success) {
-            console.log('Profile updated successfully!');
             // Only now is the old picture unused. (Deleting it first left a broken picture when the save failed.)
             if (oldImageToDelete) await agentService.deleteProfileImage(oldImageToDelete);
             router.go(0); // refresh to see changes

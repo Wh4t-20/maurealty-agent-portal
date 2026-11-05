@@ -399,9 +399,6 @@ const loadProperties = async () => {
         ...subTableData
       };
 
-      console.log(data.longitude, data.latitude);
-      console.log("^Data | vForm\n");
-      console.log(details.value.lng, details.value.lat);
 
       if (data.listing_images && data.listing_images.length > 0) {
         const sortedImages = data.listing_images.sort((a: any, b: any) => a.display_order - b.display_order);

@@ -388,7 +388,6 @@ const memorialTypes: string[] = ['None', 'Urn', 'Vault', 'Garden', 'Estate', 'Fa
 
 // Connect to backend and fetch properties
 const loadProperties = async () => {
-  console.log('Attempt to get listings imnida');
 
   isFetchingData.value = true;
 
@@ -401,7 +400,6 @@ const loadProperties = async () => {
     } else {
       data = await listingsService.getListings(20, ['active'], currentAgentId.value ?? undefined);
     }
-    console.log('Naa na ang data bai:', data);
     properties.value = data;
     currentPage.value = 1;
   } catch (error) { 
@@ -460,7 +458,6 @@ const triggerConfirm = (listingId: number, actionType: string) => {
       : 'This will mark all bulk properties in this listing as completely sold.',
     targetListingId: listingId
   }
-  console.log("triggerConfirm called with listingId:", listingId, "and actionType:", actionType, "Visibility is: ", toastConfirm.value.visible);
 }
 const confirmToastAction = async () => {
   
@@ -536,7 +533,6 @@ async function handleEdit(property: Property) {
   const currentAgentID = await agentService.getCurrentAgentID();
   const listingAgentId = await listingsService.getAgentFromListing(property.listing_id);
   if(currentAgentID !== listingAgentId) {
-    console.log("NOT ALLOWED TO EDIT THIS", currentAgentID,"  ", listingAgentId, ": ", currentAgentID !== listingAgentId);
     alert("You are not authorized to edit this listing.");
     return;
   }
@@ -561,7 +557,6 @@ const processDelete = async (id: number) => {
       showConfirmedMessage("Success! The listing has been deleted.")
       properties.value = properties.value.filter(p => p.listing_id !== id)
 
-      console.log("Deleted successfully from DB and UI")
 
     } else {
       // 0 rows deleted: only the listing's owner or an admin can delete it.

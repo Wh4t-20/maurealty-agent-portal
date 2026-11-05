@@ -135,7 +135,6 @@ const handleLogin = async () => {
       return
     }
 
-    console.log("Logging in...")
 
     if (data.user) {
       // for getting the config settings from Supabase 
@@ -151,7 +150,6 @@ const handleLogin = async () => {
         console.warn('Could not fetch user settings, applying defaults.');
         finalConfigs = defaultSettings.configs;
       } else {
-        console.log('Fetch successful! Applying configs into local storage!');
         // Merge fetched configs with defaults to ensure no keys are missing
         finalConfigs = { ...defaultSettings.configs, ...(userConfigs?.configs || {}) };
       }

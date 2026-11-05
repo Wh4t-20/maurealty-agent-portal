@@ -131,5 +131,4 @@ const formatDays = (days: DayOption[] = []) => {
 	return days.map((day) => day.shortcut || day.name).join(', ');
 }
 
-console.log("Dev_ID: " + props.dev.dev_ID + "\nImg_Url: " + props.dev.image_url + "\nName: " + props.dev.name + "\nPhone: " + props.dev.phone + "\nEmail: " + props.dev.email + "\nLocation: " + props.dev.location + "\nHours: " + props.dev.OfficeHours);
 </script>
