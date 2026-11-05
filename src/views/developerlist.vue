@@ -20,7 +20,8 @@
         <h1 class="text-xl sm:text-3xl font-bold">DEVELOPERS</h1>
 
         <div class="flex gap-3 sm:gap-5 w-full sm:w-auto">
-          <button @click="showAddDeveloper = true" class="flex items-center gap-1 bg-maurealty-blue text-md text-white px-4 py-1.5 rounded-full cursor-pointer hover:opacity-70 transition-opacity whitespace-nowrap">
+          <!-- Adding, editing and deleting developers is admin-only -->
+          <button v-if="isAdmin" @click="showAddDeveloper = true" class="flex items-center gap-1 bg-maurealty-blue text-md text-white px-4 py-1.5 rounded-full cursor-pointer hover:opacity-70 transition-opacity whitespace-nowrap">
             <Plus class="size-4" /> Add Developer
           </button>
           <input type="text" placeholder="Search Developer"
@@ -32,7 +33,7 @@
     <!-- Developer Cards -->
     <div class="flex-1 overflow-y-auto">
       <div class="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 sm:p-8">
-        <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" @edit-developer = "handleEditDeveloper" @delete-developer = "handleDeleteDeveloper" @open-listing="openListing" @open-promo="openPromo"/>
+        <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" :can-manage="isAdmin" @edit-developer = "handleEditDeveloper" @delete-developer = "handleDeleteDeveloper" @open-listing="openListing" @open-promo="openPromo"/>
       </div>
     </div>
   </div>
@@ -66,8 +67,12 @@ import { developerService } from "@/services/developerService";
 import DeveloperCard from "@/components/developer/developerCard.vue";
 import AddDeveloperTab from "@/components/developer/addDeveloper.vue";
 import PropertyDetails from "@/components/listings/PropertyDetails.vue";
+import { authService } from "@/services/authService";
 import { Plus, XIcon } from "lucide-vue-next";
 
+// Developer management (add / edit / delete, promos) is admin-only: the buttons are hidden for
+// agents and the database (RLS) refuses their changes anyway.
+const isAdmin = ref(false);
 
 const developers = ref<Developer[]>([])
 const devToEdit = ref<Developer | null>(null);
@@ -109,9 +114,9 @@ watch(showAddDeveloper, (isOpen) => {
   }
 }); 
 
-onMounted(() => {
+onMounted(async () => {
   loadDevelopers();
-
+  isAdmin.value = !!(await authService.getCurrentAgent())?.admin_access;
 });
 
 </script>
