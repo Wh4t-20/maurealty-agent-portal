@@ -67,7 +67,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, defineAsyncComponent } from "vue";
-import { type Developer, type OfficeHourSlot, type DeveloperProject, type DeveloperPromo } from "@/assets/classes/developers.ts";
+import { type Developer, type DeveloperProject, type DeveloperPromo } from "@/assets/classes/developers.ts";
 import { developerService } from "@/services/developerService";
 import DeveloperCard from "@/components/developer/developerCard.vue";
 import DeveloperCardSkeleton from "@/components/developer/DeveloperCardSkeleton.vue";

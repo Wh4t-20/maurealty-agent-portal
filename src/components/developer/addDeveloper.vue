@@ -245,12 +245,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted} from 'vue';
+import { ref, watch } from 'vue';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue';
 import { type DayOption, type OfficeHourSlot, days } from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
 import { CheckIcon, XIcon } from 'lucide-vue-next';
-import { developerService, reformatHours } from '@/services/developerService';
+import { developerService } from '@/services/developerService';
 import { type Developer, type DeveloperPromo } from '@/assets/classes/developers';
 import { cleanText, normalizeEmail, isValidEmail, isValidPhone, isIsoDate } from '@/utils/sanitize';
 

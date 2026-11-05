@@ -107,7 +107,7 @@
 <script setup lang="ts">
 import { type DayOption, type Developer, type DeveloperProject, type DeveloperPromo 	} from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
-import { PhoneIcon, MailIcon, MapPinIcon, CalendarCheck2Icon, CalendarOffIcon, ClockIcon, TagIcon  } from 'lucide-vue-next';
+import { PhoneIcon, MailIcon, MapPinIcon, CalendarCheck2Icon, CalendarOffIcon, TagIcon } from 'lucide-vue-next';
 
 // canManage: show Edit / Delete (admins).
 const props = defineProps<{ dev: Developer; canManage?: boolean }>()

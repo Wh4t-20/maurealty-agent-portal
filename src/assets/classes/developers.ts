@@ -1,11 +1,5 @@
 // A recent listing/project by a developer, shown as a chip on the card.
-export interface DeveloperProject {
-    listing_ID: number;
-    listing_title: string;
-    property_type: string;
-}
-
-// developer list interface
+// (It was declared twice with the same fields; TypeScript merged the two, so one is enough.)
 export interface DeveloperProject {
     listing_ID: number;
     listing_title: string;

@@ -1,6 +1,6 @@
 <template>
   <div 
-    class="min-h-screen w-screen m-0 p-6 box-border flex items-center justify-center bg-cover bg-center bg-no-repeat font-[Arial,sans-serif] login-bg bg-cover bg-center"
+    class="min-h-screen w-screen m-0 p-6 box-border flex items-center justify-center bg-cover bg-center bg-no-repeat font-[Arial,sans-serif] login-bg"
   >
     <div class="w-full flex flex-col items-center -mt-30">
       

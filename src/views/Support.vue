@@ -394,6 +394,7 @@ const myOpenCount = computed(() => myTickets.value.filter(t => t.status !== 'res
 const atLimit = computed(() => myOpenCount.value >= MAX_OPEN_TICKETS)
 const openPercent = computed(() => Math.min(100, Math.round((myOpenCount.value / MAX_OPEN_TICKETS) * 100)))
 const canRaise = computed(() => !loading.value && currentAgentId.value !== null && !atLimit.value)
+// Tooltip of the header's Raise a Ticket button, which is commented out in the template for now.
 const raiseBlockedReason = computed(() =>
   atLimit.value ? `You have ${myOpenCount.value} open tickets. Wait for one to be resolved.` : 'Loading…'
 )

@@ -131,7 +131,7 @@ import {
   LayoutDashboard,
   LayoutList,
   Calculator,
-  Ticket,
+  Ticket, // Ticket, Mail and Trophy: icons of the commented-out Voucher / Inbox / Leaderboards links
   Mail,
   Trophy,
   ContactRound,
