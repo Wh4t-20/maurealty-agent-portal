@@ -39,6 +39,25 @@ export const reformatHours = (time: string): string[] => {
 const dayGetter = (dayName: string): DayOption | undefined => {
     return days.find(day => day.name === dayName);
 };
+
+// opening_days rows for a developer: one per day. opening_days.open_hours / close_hours are
+// NOT NULL time columns, so slots without days, marked "Unavailable" or missing a time are
+// skipped (their '' used to fail the whole insert, losing every slot). A day picked in two slots
+// keeps the first slot's hours, since (id, day) is the primary key.
+const officeHourRows = (devId: number, slots: OfficeHourSlot[] | undefined) => {
+    const rows: { id: number; day: string; open_hours: string; close_hours: string }[] = [];
+    const seen = new Set<string>();
+    for (const slot of slots ?? []) {
+        if (slot.isOpenUnavailable || slot.isCloseUnavailable || !slot.openTime || !slot.closeTime) continue;
+        for (const day of slot.selectedDays ?? []) {
+            const name = days[day.id - 1]?.name;
+            if (!name || seen.has(name)) continue;
+            seen.add(name);
+            rows.push({ id: devId, day: name, open_hours: slot.openTime, close_hours: slot.closeTime });
+        }
+    }
+    return rows;
+};
 export const developerService = {
     async getDevelopers(): Promise<Developer[]> {
         // Embed each developer's listings in one query (avoids an N+1 per card).
@@ -146,40 +165,31 @@ export const developerService = {
             )
             .select('dev_ID')
             .single();
-        if (error) {
+        if (error || !inserted) {
             console.error('Error adding developer:', error);
+            // The caller shows this (it used to carry on with an undefined id).
+            throw new Error(error?.message || 'The developer could not be added.');
         }
-        if(inserted && developer.OfficeHours && developer.OfficeHours.length > 0) {
-            const officeHoursData = developer.OfficeHours.flatMap(slot => {
-                return slot.selectedDays.map(day => ({
-                    id: inserted.dev_ID,
-                    day: days[day.id-1]?.name || '',
-                    open_hours: slot.openTime,
-                    close_hours: slot.closeTime
-                }));
-            });
+        const officeHoursData = officeHourRows(inserted.dev_ID, developer.OfficeHours);
+        if (officeHoursData.length > 0) {
             console.log('Office hours data to insert:', officeHoursData);
             const { data: insertedHours, error: officeHoursError } = await supabase
                 .from('opening_days')
-                .insert(officeHoursData); 
-               
+                .insert(officeHoursData);
+
             if (officeHoursError) {
                 console.error('Error adding office hours:', officeHoursError);
+                throw new Error(`The developer was added, but the office hours were not saved: ${officeHoursError.message}`);
             }
             else if (insertedHours) {
                 console.log('Office hours added to developer', developer.dev_ID, ':', insertedHours);
             }
-            return inserted.dev_ID;
-        }   
-        if (inserted) {
-            console.log('Developer added with ID:', inserted.dev_ID, inserted);
-            return inserted.dev_ID;
-
         }
-        
+        console.log('Developer added with ID:', inserted.dev_ID, inserted);
+        return inserted.dev_ID;
     },
     async updateDeveloper(developer: Developer, oldOfficeHours: OfficeHourSlot[]): Promise<void> {
-        const {error} = await supabase
+        const {data: updated, error} = await supabase
         .from('developers')
         .update({
                     profile_url: developer.image_url,
@@ -189,9 +199,14 @@ export const developerService = {
                     location: developer.location,
                 })
         .eq("dev_ID", developer.dev_ID)
+        .select('dev_ID')
         .throwOnError();
         if (error) {
             console.error('Error updating developer:', error);
+        }
+        // 0 rows: RLS refused the update (developers are admin-only) or the developer is gone.
+        if (!updated || updated.length === 0) {
+            throw new Error('The developer was not saved. Only admins can change developers.');
         }
         console.log("Attempting to delete opening_days for developer ID:", developer.dev_ID);
 
@@ -201,28 +216,20 @@ export const developerService = {
             .eq('id', developer.dev_ID);
         if (deleteError) {
             console.error('Error deleting old office hours:', deleteError);
+            throw new Error(`The office hours could not be updated: ${deleteError.message}`);
         }
         else {
             console.log('Old office hours deleted for developer', developer.dev_ID);
         }
-        if(developer.OfficeHours && developer.OfficeHours.length > 0) {
-            
-            
-            
+        const officeHoursData = officeHourRows(developer.dev_ID, developer.OfficeHours);
+        if (officeHoursData.length > 0) {
             console.log("Attempting to add new opening_days for developer ID:", JSON.stringify(developer.OfficeHours));
-            const officeHoursData = developer.OfficeHours.flatMap(slot => {
-                return slot.selectedDays.map(day => ({
-                    id: developer.dev_ID,
-                    day: days[day.id-1]?.name || '',
-                    open_hours: slot.openTime,
-                    close_hours: slot.closeTime
-                }));
-            });
             const { data: insertedHours, error: officeHoursError } = await supabase
                 .from('opening_days')
                 .insert(officeHoursData);
             if (officeHoursError) {
                 console.error('Error adding office hours:', officeHoursError);
+                throw new Error(`The office hours could not be saved: ${officeHoursError.message}`);
             }
             else if (insertedHours) {
                 console.log('Office hours added to developer', developer.dev_ID, ':', insertedHours);
@@ -249,25 +256,41 @@ export const developerService = {
 
         return publicUrl;
     },
+    // Throws a message the page can show. A developer that listings still point to is not deleted
+    // (checked first, so its office hours aren't removed for nothing).
     async deleteDeveloper(developer: Developer): Promise<void> {
+        const { count, error: countError } = await supabase
+            .from('main_listings')
+            .select('listing_ID', { count: 'exact', head: true })
+            .eq('dev_ID', developer.dev_ID);
+        if (countError) throw countError;
+        if ((count ?? 0) > 0) {
+            throw new Error(`${developer.name} can't be deleted: ${count} listing(s) use this developer.`);
+        }
+
         const { error: deleteError } = await supabase
                 .from('opening_days')
                 .delete()
                 .eq('id', developer.dev_ID);
             if (deleteError) {
                 console.error('Error deleting old office hours:', deleteError);
+                throw deleteError;
             }
 
-        const { error: devDeleteError } = await supabase
+        // .select(): a delete refused by RLS (not an admin) removes 0 rows without an error.
+        const { data: deleted, error: devDeleteError } = await supabase
             .from('developers')
             .delete()
-            .eq('dev_ID', developer.dev_ID);
+            .eq('dev_ID', developer.dev_ID)
+            .select('dev_ID');
         if (devDeleteError) {
             console.error('Error deleting developer:', devDeleteError);
+            throw devDeleteError;
         }
-        else if (developer.dev_ID) {
-            console.log('Developer deleted with ID:', developer.dev_ID);
+        if (!deleted || deleted.length === 0) {
+            throw new Error('The developer was not deleted. Only admins can delete developers.');
         }
+        console.log('Developer deleted with ID:', developer.dev_ID);
     },
 
     // --- Developer promos (posters) ---

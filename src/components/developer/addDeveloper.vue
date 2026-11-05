@@ -4,7 +4,7 @@
         <div class="custom-scrollbar bg-white dark:bg-black w-full sm:w-10/12 max-h-full overflow-y-auto rounded-3xl border border-gray-400 dark:border-gray-800 p-5 sm:p-10 shadow-xl">
             <header class="relative">
                 <h1 class="text-2xl sm:text-4xl max-w-19/20 font-extrabold text-maurealty-blue dark:text-white mb-4 ml-5">
-                    ADD NEW DEVELOPER
+                    {{ editMode ? 'EDIT DEVELOPER' : 'ADD NEW DEVELOPER' }}
                 </h1>
 
                 <button class="absolute top-0 right-0 p-3 rounded-full dark:text-white hover:bg-gray-200/40 dark:hover:bg-gray-200/20 transition-colors cursor-pointer" @click="$emit('close-add-developer')">
@@ -232,8 +232,10 @@
                 </section>
 
                 <section class="col-span-full w-full">
-                    <button type="submit" class="w-full border-2 py-3 border-maurealty-blue dark:border-maurealty-light-blue rounded-xl flex flex-col items-center justify-center bg-maurealty-blue dark:bg-maurealty-light-blue text-white dark:text-maurealty-blue hover:bg-maurealty-blue/5 hover:text-maurealty-blue dark:hover:text-maurealty-light-blue transition">
-                        <span class="text-2xl font-semibold">★ SAVE DEVELOPER</span>
+                    <!-- What is wrong with the form, or why the save failed -->
+                    <p v-if="error" class="mb-3 text-red-600 dark:text-red-400 text-sm" role="alert">{{ error }}</p>
+                    <button type="submit" :disabled="saving" class="w-full border-2 py-3 border-maurealty-blue dark:border-maurealty-light-blue rounded-xl flex flex-col items-center justify-center bg-maurealty-blue dark:bg-maurealty-light-blue text-white dark:text-maurealty-blue hover:bg-maurealty-blue/5 hover:text-maurealty-blue dark:hover:text-maurealty-light-blue transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="text-2xl font-semibold">{{ saving ? 'SAVING…' : '★ SAVE DEVELOPER' }}</span>
                     </button>
 
                 </section>
@@ -250,6 +252,7 @@ import placeholder from '@/assets/images/default_placeholder.png'
 import { CheckIcon, XIcon } from 'lucide-vue-next';
 import { developerService, reformatHours } from '@/services/developerService';
 import { type Developer, type DeveloperPromo } from '@/assets/classes/developers';
+import { cleanText, normalizeEmail, isValidEmail, isValidPhone, isIsoDate } from '@/utils/sanitize';
 
 // A poster the user picked but hasn't saved yet (holds the File + preview URL).
 interface StagedPromo { file: File; preview: string; title: string; valid_until: string }
@@ -260,6 +263,8 @@ interface StagedPromo { file: File; preview: string; title: string; valid_until:
 // Image Handling Logic
 
 const props = defineProps<{ dev?: Developer }>()
+// saved: the developer was added or updated (the page closes this form and reloads the list).
+const emit = defineEmits<{ (e: 'close-add-developer'): void; (e: 'saved'): void }>()
 const editMode = ref(false);
 const oldDev = ref<Partial<Developer>>({});
 const form = ref<Partial<Developer>>({});
@@ -276,13 +281,23 @@ const promoFileInput = ref<HTMLInputElement | null>(null);
 const existingPromos = ref<DeveloperPromo[]>([]);
 const stagedPromos = ref<StagedPromo[]>([]);
 const removedPromos = ref<DeveloperPromo[]>([]);
+// A copy of the office hour slots. Each day stays the shared `days` entry: the Listbox compares
+// days by reference, so a plain copy would show the saved days as unselected.
+const copySlots = (slots: OfficeHourSlot[] | undefined): OfficeHourSlot[] =>
+    (slots ?? []).map(slot => ({
+        ...slot,
+        selectedDays: (slot.selectedDays ?? []).map(day => days.find(d => d.id === day.id) ?? day),
+    }));
+
 watch(() => props.dev, (newDev) => {
         if (newDev) {
         editMode.value = true;
         oldDev.value = { ...newDev }; //this is for comparing if the dev has been changed or not in edit mode when saving
-        form.value = newDev;
-        currentImage.value = { file: null as any, preview: newDev.image_url };
-        officeHours.value = newDev.OfficeHours;
+        // Copies, not the card's own objects: typing here used to change the developer card right
+        // away, and the change stayed on the card after Cancel.
+        form.value = { ...newDev };
+        currentImage.value = newDev.image_url ? { file: null as any, preview: newDev.image_url } : undefined;
+        officeHours.value = copySlots(newDev.OfficeHours);
         if (newDev.OfficeHours && newDev.OfficeHours.length > 0) { //change in office hours is checked separately from the rest
 
             oldOfficeHours.value = JSON.parse(JSON.stringify(newDev.OfficeHours));
@@ -362,68 +377,103 @@ const removeExistingPromo = (promo: DeveloperPromo) => {
 };
 
 // Persist promo changes once we have a real dev_ID (upload new, delete removed).
+// Throws if a poster could not be saved, so the form can say so.
 async function persistPromos(devID: number) {
   for (const promo of removedPromos.value) {
     await developerService.deletePromo(promo);
   }
+  let failed = 0;
   for (const staged of stagedPromos.value) {
     const url = await developerService.uploadPromoImage(devID, staged.file);
-    if (!url) continue;
-    await developerService.addPromo(devID, {
+    if (!url) { failed++; continue; }
+    const promoId = await developerService.addPromo(devID, {
       image_url: url,
-      title: staged.title,
+      title: cleanText(staged.title, 150),
       valid_until: staged.valid_until || null,
     });
+    if (promoId == null) failed++;
     URL.revokeObjectURL(staged.preview);
   }
   stagedPromos.value = [];
   removedPromos.value = [];
+  if (failed) throw new Error(`The developer was saved, but ${failed} poster(s) could not be saved.`);
+}
+
+const error = ref('');
+const saving = ref(false);
+
+// Cleans the fields and returns the first problem found. Every developer column is required
+// (NOT NULL in the database); values reach it as bound parameters through supabase-js.
+function cleanForm() {
+    const values = {
+        name: cleanText(form.value.name, 150),
+        location: cleanText(form.value.location, 300),
+        phone: cleanText(form.value.phone, 30),
+        email: normalizeEmail(form.value.email),
+    };
+    let problem = '';
+    if (!values.name) problem = 'Enter the developer name.';
+    else if (!values.location) problem = 'Enter the location.';
+    else if (!isValidPhone(values.phone)) problem = 'The phone number can only have digits, spaces and + ( ) - .';
+    else if (!isValidEmail(values.email)) problem = 'Enter a valid email address.';
+    else if (stagedPromos.value.some(p => p.valid_until && !isIsoDate(p.valid_until))) problem = 'Enter a valid "valid until" date for each new poster.';
+    return { values, problem };
 }
 
 async function saveDeveloper() {
+    error.value = '';
+    const { values, problem } = cleanForm();
+    if (problem) {
+        error.value = problem;
+        return;
+    }
+
     const payload: Developer = {
         dev_ID: form.value.dev_ID ?? -1, // Placeholder, will be replaced after creation
-        image_url: form.value.image_url ?? '',  
-        name: form.value.name ?? '',
-        phone: form.value.phone ?? '',
-        email: form.value.email ?? '',
-        location: form.value.location ?? '',
+        image_url: form.value.image_url ?? '',
+        name: values.name,
+        phone: values.phone,
+        email: values.email,
+        location: values.location,
         OfficeHours: officeHours.value ?? [],
         projects: form.value.projects ?? [] // Ensure projects is included in the payload
     };
-    
-    
-    if (oldDev.value !== undefined && oldDev.value !== payload && editMode.value) {
-        await developerService.updateDeveloper(payload, oldOfficeHours.value);
-        console.log("Updated Developer ID: ", payload.dev_ID);
-        await persistPromos(payload.dev_ID);
-        form.value = {
-            dev_ID: -1,
-            image_url: '',
-            name: '',
-            phone: '',
-            email: '',
-            OfficeHours: [],
-            projects: []
-        }
-        return;
-    }
-    else if (oldDev.value !== undefined && oldDev.value === payload && editMode.value) {
-        console.error("No change detected. Developer not updated.");
-        return;
-    }
-    else{
-        const devID = await developerService.addDeveloper(payload);
-        console.log("New Developer ID: ", devID);
 
-        let imageUrl = '';
-        if (currentImage.value && currentImage.value.file) {
-            imageUrl = await developerService.uploadImage(devID,currentImage.value.file);
-            await developerService.updateDeveloper({ ...payload, dev_ID: devID, image_url: imageUrl }, oldOfficeHours.value); //second parameter is kinda irrelevant for adding new dev, but its genuinely needed to track if office hours has been changed from editing in edit mode
+    saving.value = true;
+    try {
+        if (editMode.value) {
+            // A picture chosen while editing is uploaded now (edit mode used to keep the old one).
+            if (currentImage.value?.file) {
+                const url = await developerService.uploadImage(payload.dev_ID, currentImage.value.file);
+                if (!url) throw new Error('The new picture could not be uploaded.');
+                payload.image_url = url;
+            } else if (!currentImage.value) {
+                payload.image_url = ''; // picture removed
+            }
+            await developerService.updateDeveloper(payload, oldOfficeHours.value);
+            console.log("Updated Developer ID: ", payload.dev_ID);
+            await persistPromos(payload.dev_ID);
         }
-        if (devID != null) await persistPromos(devID);
+        else{
+            const devID = await developerService.addDeveloper(payload);
+            console.log("New Developer ID: ", devID);
+
+            let imageUrl = '';
+            if (currentImage.value && currentImage.value.file) {
+                imageUrl = await developerService.uploadImage(devID,currentImage.value.file);
+                if (imageUrl) await developerService.updateDeveloper({ ...payload, dev_ID: devID, image_url: imageUrl }, oldOfficeHours.value); //second parameter is kinda irrelevant for adding new dev, but its genuinely needed to track if office hours has been changed from editing in edit mode
+            }
+            await persistPromos(devID);
+        }
+        // The page closes this form and reloads the list. (It used to stay open with the values
+        // still filled in, so pressing Save again added the same developer twice.)
+        emit('saved');
+    } catch (e: any) {
+        console.error('Failed to save developer:', e);
+        error.value = e?.message || 'The developer could not be saved.';
+    } finally {
+        saving.value = false;
     }
-    
 }
 
 
