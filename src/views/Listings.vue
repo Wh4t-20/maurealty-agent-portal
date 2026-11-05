@@ -23,7 +23,7 @@
           <button class="flex items-center gap-1 bg-maurealty-blue text-md text-white h-full px-4 rounded-full cursor-pointer hover:opacity-70 transition-opacity" @click="addListing">
             <Plus class="size-4" /> Add Listing
           </button>
-          <input id="search" type="text" name="search" placeholder="Search" v-model="searchQuery"
+          <input id="search" type="text" name="search" maxlength="100" placeholder="Search" v-model="searchQuery"
             class="block min-w-0 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 dark:placeholder:text-gray-400 border border-blue-950 dark:border-blue-50 rounded-sm focus:outline-none sm:text-sm/6" />
         </div>
       </div>

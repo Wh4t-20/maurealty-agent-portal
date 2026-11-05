@@ -35,7 +35,7 @@
             <Plus class="size-4" /> Add Sale
           </button>
           <input
-            id="search" type="text" name="search" placeholder="Search client / project / voucher"
+            id="search" type="text" name="search" maxlength="100" placeholder="Search client / project / voucher"
             v-model="searchQuery"
             class="block min-w-0 flex-1 sm:flex-none sm:min-w-72 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 dark:border-blue-50 rounded-sm focus:outline-none sm:text-sm/6"
           />
