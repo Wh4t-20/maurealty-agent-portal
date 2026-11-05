@@ -50,6 +50,8 @@
 </template>
 
 <script setup lang="ts">
+// GenealogyCard: Dashboard card with the agent's upline chain (first 3 shown) and their downline at
+// any depth (first 4 shown); "view full" goes to the Genealogy page.
 defineProps<{
   upline: { name: string; meta: string }[];     // direct upline first, then each upline above
   downline: { name: string; meta: string }[];   // everyone below, any depth

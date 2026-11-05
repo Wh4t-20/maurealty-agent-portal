@@ -231,6 +231,9 @@
 </template>
 
 <script setup lang="ts">
+// Shared listing page (/shared/listing/:token): the public page a client opens from a share link, no
+// login needed. Loads through get_shared_listing (public fields only: never the commission, incentives
+// or contact details) and mirrors the listing details overlay.
 import { ref, onMounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { getSharedListing } from '@/services/shareService';

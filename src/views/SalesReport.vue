@@ -14,9 +14,11 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full gap-2">
         <div class="flex items-baseline gap-3">
           <h1 class="text-xl sm:text-3xl font-bold">SALES REPORT</h1>
-          <span class="text-sm font-medium text-maurealty-blue/70 dark:text-white/70">
+          <!-- Whose sales these are; a placeholder until we know if the viewer is an admin -->
+          <span v-if="agentResolved" class="text-sm font-medium text-maurealty-blue/70 dark:text-white/70">
             {{ isAdmin ? 'All agents' : 'Your sales' }}
           </span>
+          <span v-else class="self-center h-4 w-20 rounded bg-gray-300 dark:bg-gray-700 animate-pulse" aria-hidden="true"></span>
         </div>
         <div class="flex flex-wrap gap-3 items-center w-full sm:w-auto">
           <button
@@ -33,7 +35,7 @@
             <Plus class="size-4" /> Add Sale
           </button>
           <input
-            id="search" type="text" name="search" placeholder="Search client / project / voucher"
+            id="search" type="text" name="search" maxlength="100" placeholder="Search client / project / voucher"
             v-model="searchQuery"
             class="block min-w-0 flex-1 sm:flex-none sm:min-w-72 py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 border border-blue-950 dark:border-blue-50 rounded-sm focus:outline-none sm:text-sm/6"
           />
@@ -62,23 +64,13 @@
         </button>
       </div>
 
-      <!-- SUMMARY STRIP -->
+      <!-- SUMMARY STRIP: totals of the filtered rows. Until the first load finishes each value is
+           a pulsing placeholder instead of a misleading 0 / ₱0.00. -->
       <div class="flex flex-wrap gap-4 mt-4">
-        <div class="flex flex-col min-w-40 rounded-xl bg-white dark:bg-black border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] px-5 py-3">
-          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Sales</span>
-          <span class="text-xl font-extrabold text-maurealty-blue dark:text-white">{{ totals.count }}</span>
-        </div>
-        <div class="flex flex-col min-w-40 rounded-xl bg-white dark:bg-black border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] px-5 py-3">
-          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Contract Price</span>
-          <span class="text-xl font-extrabold text-maurealty-blue dark:text-white">{{ formatPeso(totals.tcp) }}</span>
-        </div>
-        <div class="flex flex-col min-w-40 rounded-xl bg-white dark:bg-black border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] px-5 py-3">
-          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Gross Commission</span>
-          <span class="text-xl font-extrabold text-maurealty-blue dark:text-white">{{ formatPeso(totals.gross) }}</span>
-        </div>
-        <div class="flex flex-col min-w-40 rounded-xl bg-white dark:bg-black border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] px-5 py-3">
-          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Net Commission</span>
-          <span class="text-xl font-extrabold text-maurealty-blue dark:text-white">{{ formatPeso(totals.net) }}</span>
+        <div v-for="card in summaryCards" :key="card.label" class="flex flex-col min-w-40 rounded-xl bg-white dark:bg-black border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] px-5 py-3">
+          <span class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ card.label }}</span>
+          <span v-if="hasLoaded" class="text-xl font-extrabold text-maurealty-blue dark:text-white">{{ card.value }}</span>
+          <span v-else class="block mt-1 h-6 w-24 rounded bg-gray-300 dark:bg-gray-700 animate-pulse" aria-hidden="true"></span>
         </div>
       </div>
     </header>
@@ -90,21 +82,20 @@
       <section class="custom-scrollbar flex-1 min-w-0 overflow-y-auto">
         <div class="p-4 sm:p-10 flex flex-col min-w-0 min-h-full">
 
-          <!-- LOADING -->
-          <div v-if="loading" class="flex-1 flex items-center justify-center text-maurealty-blue/60 dark:text-maurealty-light-blue/60">
-            Loading sales…
-          </div>
+          <!-- LOADING: announced to screen readers; the table below shows skeleton rows meanwhile -->
+          <p v-if="loading" class="sr-only" role="status">Loading sales…</p>
 
-          <!-- EMPTY -->
-          <div v-else-if="filteredSales.length === 0" class="flex-1 flex flex-col items-center justify-center text-center text-gray-500 gap-2">
+          <!-- EMPTY (only once loading has finished) -->
+          <div v-if="!loading && filteredSales.length === 0" class="flex-1 flex flex-col items-center justify-center text-center text-gray-500 gap-2">
             <ClipboardList class="size-10 opacity-40" />
             <p class="font-medium">{{ hasActiveFilters ? 'No sales match your filters.' : 'No sales recorded yet.' }}</p>
             <button v-if="hasActiveFilters" @click="clearFilters" class="text-sm text-maurealty-blue dark:text-white underline hover:opacity-70 cursor-pointer">Clear filters</button>
           </div>
 
           <!-- TABLE: this box scrolls sideways on its own so the table's minimum
-               width never stretches the rest of the page -->
-          <div v-else class="w-full bg-white dark:bg-black rounded-xl border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] max-h-[calc(100vh-19rem)] overflow-auto">
+               width never stretches the rest of the page. While the sales load it keeps its
+               header and shows skeleton rows (same columns as a real row). -->
+          <div v-else :aria-busy="loading" class="w-full bg-white dark:bg-black rounded-xl border border-[#A9D6FF]/40 dark:border-[#A9D6FF]/20 shadow-[0_4px_6px_rgba(0,0,0,0.05)] max-h-[calc(100vh-19rem)] overflow-auto">
             <table class="w-full min-w-[720px] text-sm text-left">
               <thead class="bg-maurealty-blue dark:bg-[#072339] text-white sticky top-0 z-10">
                 <tr>
@@ -128,7 +119,26 @@
                   <th class="px-4 py-3"></th>
                 </tr>
               </thead>
-              <tbody>
+
+              <!-- SKELETON ROWS: one page of placeholders shaped like the real rows below.
+                   Keep the cells in step with the real row when a column is added or removed. -->
+              <tbody v-if="loading" class="animate-pulse" aria-hidden="true">
+                <tr v-for="n in itemsPerPage" :key="'skeleton-' + n" class="border-b border-gray-100 last:border-0">
+                  <td class="px-4 py-3"><div class="h-4 w-24 rounded bg-gray-300 dark:bg-gray-700"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 w-32 rounded bg-gray-300 dark:bg-gray-700"></div></td>
+                  <td class="px-4 py-3"><div class="h-4 w-40 rounded bg-gray-300 dark:bg-gray-700"></div></td>
+                  <td v-if="isAdmin" class="px-4 py-3"><div class="h-4 w-28 rounded bg-gray-300 dark:bg-gray-700"></div></td>
+                  <td class="px-4 py-3"><div class="h-5 w-28 rounded-full bg-gray-300 dark:bg-gray-700"></div></td>
+                  <td class="px-4 py-3"><div class="ml-auto h-4 w-24 rounded bg-gray-300 dark:bg-gray-700"></div></td>
+                  <td class="px-4 py-3"><div class="ml-auto h-4 w-20 rounded bg-gray-300 dark:bg-gray-700"></div></td>
+                  <td class="px-4 py-3"><div class="ml-auto h-4 w-20 rounded bg-gray-300 dark:bg-gray-700"></div></td>
+                  <td class="px-4 py-3"><div class="mx-auto h-4 w-5 rounded bg-gray-300 dark:bg-gray-700"></div></td>
+                  <td class="px-2 py-3"></td>
+                </tr>
+              </tbody>
+
+              <!-- REAL ROWS: click a row for the Sale Details popup -->
+              <tbody v-else>
                 <tr
                   v-for="sale in paginatedSales"
                   :key="sale.sale_ID"
@@ -227,6 +237,9 @@
 </template>
 
 <script setup lang="ts">
+// Sales Report (/sales): admins see every sale, agents their own. Search, date and agent filters,
+// summary totals, a sortable table (12 per page), CSV export, the Sale Details popup, and add / edit /
+// delete through the sale form. Skeleton rows show while the sales load.
 import { ref, shallowRef, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ClipboardList, Plus, Download, Pencil, Trash2, AlertTriangle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-vue-next'
 import { salesService, type Sale } from '@/services/salesService'
@@ -237,7 +250,9 @@ import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
 import SaleDetailsModal from '@/components/sales/SaleDetailsModal.vue'
 
 const sales = shallowRef<Sale[]>([])
-const loading = ref(true)
+const loading = ref(true)        // true during every load: the table shows skeleton rows
+const hasLoaded = ref(false)     // the first load has finished: the summary strip shows real totals
+const agentResolved = ref(false) // we know whether the viewer is an admin (header label, Agent column)
 const isAdmin = ref(false)
 const searchQuery = ref('')
 const showUpload = ref(false)
@@ -256,6 +271,7 @@ async function loadSales() {
   try {
     const agent = await authService.getCurrentAgent()
     isAdmin.value = !!agent?.admin_access
+    agentResolved.value = true
     if (isAdmin.value) {
       sales.value = await salesService.getSales()
     } else if (agent?.agent_ID !== undefined) {
@@ -269,6 +285,8 @@ async function loadSales() {
     console.error('Failed to load sales report:', e)
   } finally {
     loading.value = false
+    hasLoaded.value = true
+    agentResolved.value = true
   }
 }
 
@@ -465,6 +483,14 @@ const pesoFmt = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'P
 const formatPeso = (n: number) => pesoFmt.format(n || 0)
 const formatDate = (d: string) =>
   new Date(d).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })
+
+// The four summary strip cards in the header (label + formatted total of the filtered rows).
+const summaryCards = computed(() => [
+  { label: 'Sales', value: String(totals.value.count) },
+  { label: 'Total Contract Price', value: formatPeso(totals.value.tcp) },
+  { label: 'Gross Commission', value: formatPeso(totals.value.gross) },
+  { label: 'Net Commission', value: formatPeso(totals.value.net) },
+])
 
 // for checking if user can edit sale
 function canEditSale(sale: Sale) {

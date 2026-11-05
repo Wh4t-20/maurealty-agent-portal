@@ -50,6 +50,8 @@
 </template>
 
 <script setup lang="ts">
+// ListingsFilter: the small dropdown used by the Project Listings filters (headlessui Listbox,
+// v-model = the chosen value).
 // https://headlessui.com/v1/vue/listbox
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import { ChevronDown } from 'lucide-vue-next';

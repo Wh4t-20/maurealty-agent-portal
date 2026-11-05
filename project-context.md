@@ -2,9 +2,9 @@
 
 > **What this file is:** the single reference for how the Maureal Realty and Brokerage (MRB) web portal works today: its features, the processes behind them, and where each piece of logic lives in the code. It is written for AI assistants and for the dev team.
 >
-> **Last verified against the code:** 2026-11-05 · branch `fix/bug-catches-and-rls-fixes` (RLS hardening, bug fixes, modal components, on top of `229aa94`) · `npx vue-tsc --build --force` passes with **0 errors** · `npm run build` passes · the RLS hardening migration was built on a local PostgreSQL 18 from every migration plus the exported live policies, run twice, and checked with 159 role-by-role tests (signed out, login without agent, agent, upline, admin, service role).
+> **Last verified against the code:** 2026-11-05 · branch `fix/code-cleanup-and-optimizations` (skeleton loading, faster loading, code cleanup; on top of `551d550`) · `npx vue-tsc --build --force` passes with **0 errors** · `npm run build` passes · every page was opened in headless Chrome against a mock Supabase (light / dark, desktop / phone, admin / agent, skeleton and loaded states) with no Vue warnings, see 1.6. (Earlier, on `fix/bug-catches-and-rls-fixes`: the RLS hardening migration was checked on a local PostgreSQL 18 with 159 role-by-role tests.)
 >
-> **Supabase changes need manual steps.** Agent accounts (2026-11-04) need a migration, an Edge Function deploy and some dashboard settings. IT support tickets (2026-11-04) need one more migration, run after the agent accounts one. **RLS hardening (2026-11-05)** needs one more migration: deploy the frontend first, then run it (3.3 step 10). See [3.3 Supabase project setup](#33-supabase-project-setup-manual-steps).
+> **Supabase changes need manual steps.** Agent accounts (2026-11-04) need a migration, an Edge Function deploy and some dashboard settings. IT support tickets (2026-11-04) need one more migration, run after the agent accounts one. **RLS hardening (2026-11-05)** needs one more migration: deploy the frontend first, then run it (3.3 step 10). See [3.3 Supabase project setup](#33-supabase-project-setup-manual-steps). The team confirmed on 2026-11-05 that these migrations have been run (the `support_tickets` table exists). The skeleton / speed / cleanup branch changes **no** database objects.
 >
 > **Related docs:** `documentation.md` (running log of changes, newest first) · `changelog.md` (early frontend notes, Dec 2025 to Jan 2026, historical only) · `README.md` (setup and branch naming).
 
@@ -47,7 +47,9 @@ Read this section before writing any code for this project.
 | A Supabase query, insert, update, delete, upload | `src/services/<domain>Service.ts` | Views and components call services; they should not call `supabase` directly. (`Dashboard.vue` and `LoginForm.vue` still do; don't add more.) |
 | A TypeScript interface for DB data | `src/assets/classes/<domain>.ts` | Service-specific shapes may be exported from the service (existing practice: `Sale` in `salesService.ts`, `CommissionTab` in `commissionService.ts`). |
 | A pure frontend helper (formatting, math, dates) | `src/utils/` | No Supabase calls, except `liveRefresh.ts`, which subscribes to realtime. |
-| A full page | `src/views/<Name>.vue` + a route in `src/router/index.ts` (with `meta: { requiresAuth: true }`) + an entry in `topItems` in `src/components/Sidebar.vue` | Both the desktop sidebar and the phone bottom bar read `topItems`. |
+| A full page | `src/views/<Name>.vue` + a **lazy** route in `src/router/index.ts` (a `() => import(...)` loader, `meta: { requiresAuth: true }`, and the loader in `PORTAL_PAGES` so it is prefetched) + an entry in `topItems` in `src/components/Sidebar.vue` | Both the desktop sidebar and the phone bottom bar read `topItems` (keyed by `path`). Never import a view statically in the router: it would go back into the entry bundle (5.2). |
+| A loading state for a page or list | Skeleton placeholders in the same component, shaped like the real content (5.8) | A separate `<Name>Skeleton.vue` beside the real component when the markup is large (`developer/DeveloperCardSkeleton.vue`); inline rows / cards next to the real ones for tables. |
+| A heavy component that opens on demand (map, PDF, chart libraries) | `defineAsyncComponent(() => import(...))` in the page that opens it | So the page's first render doesn't wait for the library (example: `PropertyDetails` in Listings and the Developer List, 5.2). |
 | A reusable or page-specific component | `src/components/<page-folder>/<Name>.vue` | One folder per page (`listings/`, `sales/`, `commissions/`, ...). |
 | A modal / popup / lightbox | `src/components/<page-folder>/<Name>Modal.vue` | **Never inline in a view** (team convention). The view keeps the open/close state (`v-if`), any `<transition>` around it, and the actions; the modal gets props and emits `close` (+ its actions). Examples: `sales/SaleDetailsModal.vue`, `dashboard/MetricDetailsModal.vue`, `developer/PromoPosterModal.vue`, `listings/MapPickerModal.vue`. |
 | A DB schema change | a new file in `supabase/migrations/` named `YYYYMMDDHHMMSS_description.sql` | See 1.5. |
@@ -62,7 +64,9 @@ Read this section before writing any code for this project.
 - Icons come from `lucide-vue-next`. Dropdowns use `@headlessui/vue` `Listbox`.
 - Services are exported as object literals (`export const fooService = { async getX() {...} }`) and log errors with `console.error(...)` before re-throwing or returning a fallback.
 - After any `update` or `delete`, chain `.select()` and treat **zero returned rows as a failure** (`return { success: false }`). With RLS this is the only way to notice a silently blocked write. Every existing service does this.
-- Comments are short and plain: they say *why*, not *what*. Match the density of the file you are in.
+- Comments are short and plain: they say *why*, not *what*. Match the density of the file you are in. **Every view, component and service opens with a short header comment** (what it is, where it is used, anything non-obvious), and long templates mark their parts (`<!-- HEADER -->`, `<!-- TABLE -->`, ...). Put template comments *inside* a component's root element, not before it (a root-level comment makes a dev-mode fragment). Keep existing comments.
+- **No `console.log` in committed code.** Failures are reported with `console.error` / `console.warn` (services log before re-throwing or returning a fallback); debug output is removed before committing (2026-11-05 cleanup removed 57 of them, one printed every developer's contact details).
+- **Who is signed in:** `getSessionUser()` (`authService.ts`) reads the user from the stored session (`supabase.auth.getSession()`, no network unless the token needs refreshing). Use it, or `authService.getCurrentAgent()`, rather than `supabase.auth.getUser()`, which asks the auth server every time. Exception: code that builds a storage path from the uid on a write (`ticketService.createTicket`) keeps `getUser()`.
 - Money is stored in **PHP**; areas are stored in **square metres**. Convert only for display (see 5.5).
 - Dates are plain `YYYY-MM-DD` strings. Compare them as strings and do month math with `src/utils/paySchedule.ts`, so there are no timezone shifts. When you must build a `Date` from a date-only string, append `T00:00:00`.
 - **Input cleaning / SQL injection:** never build SQL or PostgREST filter strings from user text. supabase-js sends values as JSON and PostgREST binds them as parameters; SQL functions must not use `EXECUTE`/`format()` with user input. On top of that, clean form values with `src/utils/sanitize.ts` (`cleanText`, `cleanMultilineText` for long answers that keep line breaks, `cleanMarkdownText` for Markdown (keeps indentation), `normalizeEmail`, `isValidEmail`, `isValidPhone`, `isIsoDate`, `digitsOnly`, `finiteNumber`) before sending them, and re-validate on the server when an Edge Function is involved. Search boxes filter loaded rows in the browser; they never become a query. The one `.or()` filter string left (`listingsService.getListings`) only takes known status words and a whole-number id.
@@ -95,7 +99,8 @@ Read this section before writing any code for this project.
 
 - `npx vue-tsc --build` must stay at 0 errors (it was clean on 2026-11-05).
 - `npm run build` runs the type-check and `vite build`.
-- There are no automated tests. For logic-heavy code (commission math, hierarchy rules), past sessions checked behaviour with small stubbed Node scripts (Node 22 runs the `.ts` utils directly with `--experimental-strip-types`).
+- There are no automated tests. For logic-heavy code (commission math, hierarchy rules), past sessions checked behaviour with small stubbed Node scripts (Node 22 runs the `.ts` utils directly with `--experimental-strip-types`). For a refactor, compare the old and new logic on random data (how `blockedBy` and the sale numbering were checked on 2026-11-05, 13,000+ checks).
+- **UI checks without real credentials** (how the 2026-11-05 skeletons, lazy routes and cleanup were checked): run Vite with `VITE_SUPABASE_URL=http://localhost:<port>` (environment variables override `.env.local`) pointing at a small local mock that answers the REST calls (`/rest/v1/<table>`, with a configurable delay to hold the skeleton on screen), put a fake session in `localStorage['sb-localhost-auth-token']` (`access_token`, `refresh_token`, far-future `expires_at`, `user.id`), and drive headless Chrome over its DevTools protocol (screenshots, console errors, clicks). Use `vite preview` on a build made with the same variables to test the real chunk loading. Mapbox calls fail with a fake token; that is expected.
 - **RLS / SQL changes:** test them on a local PostgreSQL (18 is installed on the dev machine) with stub `auth` (`auth.users`, `auth.uid()` reading `request.jwt.claims`), `storage` (`buckets`, `objects`, `foldername`, `filename`), `vault` and the `anon` / `authenticated` / `service_role` (bypassrls) roles; build the schema from the migrations, recreate the live policies, run the migration twice, then act as each role with `set_config('role', ...)` + `set_config('request.jwt.claims', ...)` and check every allowed and refused action (how the 2026-11-04 and 2026-11-05 migrations were checked).
 
 ### 1.7 Keeping this file up to date (mandatory)
@@ -261,10 +266,10 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
 │     └─ agent-account/index.ts  Creates/removes agent logins with the service-role key (admins only)
 └─ src/
    ├─ main.ts                 createApp(App).use(router).mount('#app')
-   ├─ App.vue                 Layout: Sidebar (unless route.meta.hideSidebar) + RouterView; applies dark mode / no-animation classes
-   ├─ style.css               Tailwind import, theme tokens, custom utilities, dark variant, vue-flow CSS
+   ├─ App.vue                 Layout: Sidebar (once the first route is resolved, unless route.meta.hideSidebar) + RouterView; applies dark mode / no-animation classes
+   ├─ style.css               Tailwind import, theme tokens, custom utilities, dark variant, vue-flow CSS (theme first, then base)
    ├─ supabaseClient.ts       The single Supabase client
-   ├─ router/index.ts         Routes + auth guard
+   ├─ router/index.ts         Routes (every page lazy-loaded) + auth guard + background prefetch of the portal pages + reload on a stale chunk
    ├─ assets/
    │  ├─ classes/             Shared TS interfaces and constants
    │  │  ├─ agent.ts          AgentProfile, positionMap (id → title), getAge()
@@ -272,7 +277,8 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
    │  │  ├─ developers.ts     Developer, DeveloperProject, DeveloperPromo, OfficeHourSlot, days[]
    │  │  ├─ listings.ts       Property (+ Lot, HouseAndLot, Condominium, Memorial), Images, formattedPropertyType()
    │  │  └─ ticket.ts         SupportTicket, NewTicket, statuses, categories, areas, limits, ticket helpers
-   │  ├─ images/              Logos, badges (MauBadgeLight/Dark.svg), placeholders, login background
+   │  ├─ images/              Logos (maureal.png 840 px, Maurealty.png 540 px wide), badges (MauBadgeLight/Dark.svg),
+   │  │                       placeholders, login background (LoginFormBg.jpg, ~290 kB; the file name's case matters)
    │  ├─ defaultSettings.json Default user configs (currency, unit, animations, dark mode)
    │  └─ questions.json       Suggested FAQ questions per property type (Property Management)
    ├─ services/               Everything that talks to Supabase or external APIs (Section 10)
@@ -327,7 +333,8 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
       │           GenealogyCard.vue, Reminders.vue, RecentActivity.vue (hidden),
       │           MetricDetailsModal.vue (a card's "Analysis" popup),
       │           AddListing.vue & Calculator.vue (unused placeholders)
-      ├─ developer/developerCard.vue, addDeveloper.vue, PromoPosterModal.vue (poster lightbox)
+      ├─ developer/developerCard.vue, addDeveloper.vue, PromoPosterModal.vue (poster lightbox),
+      │            DeveloperCardSkeleton.vue (loading placeholder shaped like developerCard)
       ├─ genealogy/genealogymodal.vue (tree), AddAgentModal.vue (add/edit agent + login), PasswordReveal.vue
       │           (dots + eye / copy / regenerate), TeamInsights.vue
       ├─ listings/PropertyCard.vue, PropertyDetails.vue, ListingsFilter.vue, MapHolder.vue, MapInteractive.vue,
@@ -373,8 +380,9 @@ There is **no global store** (no Pinia). Each page fetches what it needs on moun
 - `authService.getCurrentAgent()` returns `{ agent_ID, first_name, middle_name, last_name, admin_access }`. Use it for permission checks.
 - `agentService.getCurrentAgentProfile()` returns the full `agents` row (Sidebar, Profile).
 - `agentService.getCurrentAgentID()` returns just the id.
+- `getSessionUser()` (exported from `authService.ts`) returns the Supabase Auth user (id, email) from the stored session (the Dashboard uses it for the login email).
 
-All of them resolve `supabase.auth.getUser()` → `agents.user_id`.
+All of them resolve the stored session (`getSessionUser()` → `supabase.auth.getSession()`) → `agents.user_id`. Since 2026-11-05 they no longer call `supabase.auth.getUser()`, which asked the auth server on every call (one extra round trip before every page's first query and on every live refresh). This is not a security change: the user id is only the lookup key; every query carries the access token, which PostgREST verifies, and RLS decides what it returns.
 
 ### 5.2 Routing and auth guard (`src/router/index.ts`)
 
@@ -386,8 +394,8 @@ All of them resolve `supabase.auth.getUser()` → `agents.user_id`.
 | `/propertymanagement` | PropertyManagement | PropertyManagement | required | yes |
 | `/shared/listing/:token` | SharedListing | SharedListing | **public** | hidden |
 | `/sales` | SalesReport | SalesReport | required | yes |
-| `/commissions` | Commission | Commission (lazy import) | required (since 2026-11-05) | yes |
-| `/support` | Support | Support (lazy import) | required | yes |
+| `/commissions` | Commission | Commission | required (since 2026-11-05) | yes |
+| `/support` | Support | Support | required | yes |
 | `/genealogy` | Genealogy | Genealogy-landingpage | required | yes |
 | `/developerlist` | DeveloperList | developerlist | required | yes |
 | `/accounting` | Accounting | Accounting | required | yes |
@@ -395,6 +403,12 @@ All of them resolve `supabase.auth.getUser()` → `agents.user_id`.
 | `/settings` | Settings | Settings | required | yes |
 
 `router.beforeEach` calls `supabase.auth.getSession()` on every navigation. If the route needs auth and there is no session, it redirects to Landing. A signed-in user who opens Landing is redirected to **Listing** (`/listings`); a successful login itself pushes `/dashboard`.
+
+**Every page is lazy-loaded (since 2026-11-05).** Each route uses a `() => import('@/views/...')` loader, so each view is its own chunk. Before, all pages and their libraries (Mapbox, Vue Flow, jsPDF) were one 3.4 MB bundle (985 kB gzipped) that even the login page waited for; the entry chunk is now about 320 kB (99 kB gzipped) and a portal page needs about 110–160 kB gzipped before it renders.
+- **Prefetch:** after the first signed-in page renders (`router.afterEach`, `meta.requiresAuth`), `prefetchPortalPages()` waits 2 s, then fetches every loader in `PORTAL_PAGES` (the Sidebar pages + `PropertyDetails`) while the browser is idle. Later navigation is instant; signed-out visitors (login page, shared links) never download the portal. Add new pages to `PORTAL_PAGES`.
+- **Stale chunks after a deploy:** `router.onError` catches "Failed to fetch dynamically imported module" (and the Safari / Firefox / CSS-preload variants) and loads the target page with a full reload, at most once every 10 s (`sessionStorage['mau_chunk_reload_at']`), so an outage can't loop.
+- **Sidebar timing:** `App.vue` shows the Sidebar only after `router.isReady()` (`routerReady`), because the first route's `meta.hideSidebar` is unknown until its chunk loads; without this the Sidebar flashed on the login page and shared links.
+- **Overlays loaded on demand:** `PropertyDetails` (Mapbox + jsPDF, about 640 kB gzipped) is a `defineAsyncComponent` in `Listings.vue` and `developerlist.vue`, so those pages render (and show their skeletons) without waiting for it; it is also in the prefetch list.
 
 ### 5.3 Supabase query conventions
 
@@ -405,7 +419,7 @@ All of them resolve `supabase.auth.getUser()` → `agents.user_id`.
 - **Silent RLS blocks:** `.update(...).select()` / `.delete().select()` and check `data.length` (see 1.3).
 - **RPC functions** are called with `supabase.rpc('name', { p_arg: value })`; arguments are bound parameters. A missing function returns error code `PGRST202` (usually: the migration wasn't run). `get_shared_listing` and `team_completed_sales` callers fall back to the old table reads on `PGRST202`, so the frontend can ship before 3.3 step 10.
 - **Edge Functions** are called with `supabase.functions.invoke('name', { body })`; supabase-js adds the signed-in user's token. A non-2xx answer comes back as `FunctionsHttpError` whose `context` is the `Response`: read `await error.context.json()` for the function's `{ error }` message (see `functionErrorMessage` in `accountService.ts`).
-- **Supabase calls outside services** (legacy): `Dashboard.vue` (`onMounted` agent lookup, also reads the login email), `LoginForm.vue` (sign in + configs), `router/index.ts` (session check).
+- **Supabase calls outside services** (legacy): `Dashboard.vue` (`onMounted` agent lookup; the login email comes from `getSessionUser()`), `LoginForm.vue` (sign in + configs), `router/index.ts` (session check).
 
 ### 5.4 Storage buckets
 
@@ -465,6 +479,13 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 - Page header: a gradient bar `bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black` with an uppercase title (Listings, Sales Report, Developers, Accounting, Profile).
 - Modals: a fixed overlay `bg-[rgba(10,61,98,0.7)] backdrop-blur-sm`. The commission and agent modals use `<Teleport to="body">`. **Every modal is a component under `components/<page>/`** (1.2); since 2026-11-05 no view has an inline modal (`sales/SaleDetailsModal`, `dashboard/MetricDetailsModal`, `developer/PromoPosterModal`, `listings/MapPickerModal` were moved out unchanged).
 - Confirmations: for an action that can't be undone, use `components/commissions/ConfirmActionModal.vue` (same look as the other modals, `z-60` so it can open on top of one). It moves keyboard focus into itself, keeps Tab inside, closes on Escape or a click outside, and can require a typed phrase (`requiredPhrase`). New code should use it instead of `confirm()`.
+- **Loading skeletons** (Project Listings, Sales Report, Developer List, Commissions, IT Support): pulsing gray blocks shaped like the real content, so nothing jumps when the data arrives. Style: `animate-pulse` + `bg-gray-300 dark:bg-gray-700` blocks (`bg-gray-400 dark:bg-gray-600` for badges on PropertyCard), `rounded` / `rounded-full` like the element they stand for; a count inside a filter button uses `bg-current/30` so it follows the button's text colour. Rules used on those pages:
+  - Tables keep their real header and show one page of skeleton rows (`<tbody v-if="loading">`); keep the skeleton cells in step with the real row's columns (role-dependent columns use the same `v-if="isAdmin"`).
+  - Numbers that would flash `0` / `₱0.00` (summary strips, counts, meters) show a placeholder until the first load finishes; text that depends on the viewer's role (header labels, table titles, admin-only cards) waits on `agentResolved` (the agent lookup), not on the data.
+  - Empty states and "no results" messages only show once loading has finished (`!loading && ...`).
+  - Live / silent refreshes never bring the skeleton back; the Sales Report shows it again when it reloads after a save or delete (its table was hidden then before too). The Developer List shows skeleton cards only until the first load.
+  - Accessibility: skeletons are `aria-hidden="true"`; the page adds an `sr-only` `role="status"` text ("Loading sales…") and `aria-busy` on the container.
+  - The Commissions page has no dark mode, so its skeletons are light only (`bg-gray-300`), like its white cards.
 - Feedback: small toasts (`Transition name="toast"`), `alert()` and `confirm()` in older code. Success toasts are top-right on Listings and Sales Report; the Commissions page toast is **bottom-right** (`bottom-20 md:bottom-6`, so it clears the phone bottom nav). The Listings result toast turns **red with "!"** for a failed action (`showConfirmedMessage(text, 'error')`, same look as the IT Support toast). Forms show save errors inline in red under the form (`text-red-600 dark:text-red-400`, `role="alert"`): Profile edit, Add/Edit Developer, Settings (green "Settings saved." / red error).
 - Responsive: Sidebar is `hidden md:flex`; phones get a bottom nav (`App.vue` adds `pb-16`). Grids and tables are built mobile-first.
 - `Commission.vue` and its three original modals (`PaymentRequestModal`, `ReleasePaymentModal`, `ProofModal`) have **no dark-mode classes** yet. `ConfirmActionModal.vue`, the Commissions toast, `AddAgentModal.vue` (since 2026-11-04), `PasswordReveal.vue` and `ChangePasswordModal.vue` do. `SharedListing.vue` has had them since 2026-11-03 (copied from `PropertyDetails.vue`).
@@ -540,11 +561,11 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   5. **"Forgot or change password?"** (next to Remember Email) opens `ChangePasswordModal` with `signOutWhenDone` (7.20). When done, the email is filled in and a green "Password changed. Sign in with your new password." shows.
 - **Data:** R `agents.configs`.
 - **Code:** `src/views/LoginForm.vue`, `src/router/index.ts` (guard), `authService.logoutUser()`, `src/components/Sidebar.vue` (`handleLogout`), `components/auth/ChangePasswordModal.vue`.
-- **Rules and edge cases:** "Remember Email" and "Data Privacy Act" are UI only. There is no public sign-up (turn it off in Supabase too, 3.3 step 6).
+- **Rules and edge cases:** "Remember Email" and "Data Privacy Act" are UI only. There is no public sign-up (turn it off in Supabase too, 3.3 step 6). The background photo is `assets/images/LoginFormBg.jpg` (~290 kB; it was a 2.4 MB PNG, and the CSS asked for `LoginFormBG.png`, which only resolved on case-insensitive Windows, fixed 2026-11-05); the logo `maureal.png` is 840 px wide (2× its largest display size).
 
 ### 7.2 App shell and navigation
 - **Route / entry point:** every page except `/` and `/shared/listing/:token` (`meta.hideSidebar`).
-- **Flow:** `App.vue` renders `Sidebar` + `RouterView`. The Sidebar loads the agent profile and shows the logo, the profile picture (links to `/profile`), the name, an admin badge (`MauBadgeLight.svg`) and the position from `positionMap`. Links come from `topItems`: Dashboard, Project Listing, Accounting, Sales Report, Developer List, Property Management, Genealogy, Commissions, IT Support (`LifeBuoy` icon); Settings and Logout sit at the bottom. On desktop the bar expands on hover; on phones it becomes a scrollable bottom bar.
+- **Flow:** `App.vue` renders `Sidebar` + `RouterView` (the Sidebar only once the router's first navigation has finished, 5.2). The Sidebar loads the agent profile and shows the logo, the profile picture (links to `/profile`), the name, an admin badge (`MauBadgeLight.svg`) and the position from `positionMap`. Links come from `topItems`: Dashboard, Project Listing, Accounting, Sales Report, Developer List, Property Management, Genealogy, Commissions, IT Support (`LifeBuoy` icon); Settings and Logout sit at the bottom. On desktop the bar expands on hover; on phones it becomes a scrollable bottom bar. Both lists are keyed by `path` (Sales Report and Genealogy shared `id: 9` until 2026-11-05).
 - **Code:** `src/App.vue`, `src/components/Sidebar.vue`, `agentService.getCurrentAgentProfile()`.
 
 ### 7.3 Dashboard
@@ -579,7 +600,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   2. Client-side filters (the `filteredProperties` computed): Pending Only (admin), Type, search (title, location or developer), Developer, price min/max (typed in the current currency and converted to PHP). Pending listings are sorted first, then newest first.
   3. Grid of `PropertyCard`s with 2/3/4 columns and 3 rows per page; skeleton cards while loading.
   4. Clicking a card opens the `PropertyDetails` overlay.
-- **`PropertyDetails` overlay** (`components/listings/PropertyDetails.vue`):
+- **`PropertyDetails` overlay** (`components/listings/PropertyDetails.vue`; a `defineAsyncComponent` since 2026-11-05, downloaded on first open or by the background prefetch, because it holds Mapbox and jsPDF):
   - Loads the full row with `getListingById(id, typeId)`, including the sub-table, images, agent and developer.
   - Shows an image carousel, the price (a min–max range for bulk listings), type, location, a `MapHolder` map with POI chips, agent, created date, developer, type-specific features (single listings only), the Markdown description and FAQ.
   - Buttons (since 2026-11-05 only the ones the viewer may use are shown; props `isAdmin`, `currentAgentId`, `readOnly`):
@@ -676,8 +697,9 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 - **When it is used:** recording sales, checking their status, exporting a report, and (for admins) approving or completing sales by changing their status.
 - **Flow:**
   1. `loadSales()`: an admin gets `salesService.getSales()`; an agent gets `getSales({ agentId })`; someone without an agent record gets an empty list.
-  2. `getSales` fills blank agent names (`fillMissingAgentNames`, falling back to "Agent #id") and numbers the sales (`applySaleNumbers`): per agent for an agent's own list, across every sale for the admin list. These numbers are computed for display; `agent_sale_seq` is not written.
-  3. Client-side search (client, project, voucher), date range on the reservation date, and an Agent filter for admins.
+  2. `getSales` fills blank agent names (`fillMissingAgentNames`, falling back to "Agent #id") and numbers the sales (`applySaleNumbers`): per agent for an agent's own list, across every sale for the admin list. These numbers are computed for display; `agent_sale_seq` is not written. The numbering order (`fetchSaleOrder`) is fetched in parallel with the sales (since 2026-11-05; it used to wait for them).
+  3. Client-side search (client, project, voucher; max 100 characters), date range on the reservation date, and an Agent filter for admins.
+  - **Loading (since 2026-11-05):** the table keeps its header and shows 12 skeleton rows during every load (first load, and the reload after a save or delete); the summary strip shows placeholders until the first load finishes; the "All agents / Your sales" label waits for `agentResolved`. The four summary cards are one `v-for` over `summaryCards`.
   4. A summary strip shows the count, total contract price, gross and net commission of the filtered rows.
   5. Sortable table (reservation date, client, contract price, gross), 12 per page. ⚠ marks rows with no gross commission. Edit and delete icons appear on hover when `canEditSale` (admin, or status `pending approval`).
   6. **Sale Details** popup (`components/sales/SaleDetailsModal.vue`; props `sale`, `isAdmin`, `canEdit`; emits `close`, `edit`, `delete`; it loads its own data):
@@ -756,13 +778,14 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   3. **Status filter tabs with counts:** All, Awaiting Approval, Approved, Payment Requested, Payment Released, Received.
   4. **Cards** in one shared grid: Payment `n/N`, project/developer, agent, role (+ rank), amount (+ "Remaining balance"), due date with a badge (Due Date Reached, Pending Date or Sale Complete), status, and a hint ("Receive payment k first" or "Request opens on the due date").
      - **"You" badge:** in the admin All Agents view, a blue `YOU` pill sits right of the agent name on the admin's own tabs (`showOwnBadge`). It is not shown in My Commissions (all theirs) or Other Agents (none).
-  5. Sort order: not received first, then due date, then developer name.
+  5. Sort order: not received first, then due date (compared as `YYYY-MM-DD` strings), then developer name.
+  6. **Loading (since 2026-11-05):** on the first load the list shows 4 skeleton cards on the same grid as a real card, and the receivables amounts, the status tab counts and the "(n Items)" count show placeholders (light colours only; live refreshes stay silent).
 - **Actions** (state machine in 8.3). "Recipient" = the signed-in person is `recipient_agent_ID` (`canAgentAct`), a non-admin or an admin on their own tab:
 
   | Status | Admin sees (someone else's tab) | Recipient sees (own tab, admin or not) |
   |---|---|---|
   | `pending_approval` | **Approve commission** → confirmation popup "Are you sure you want to approve this commission?" (No / Yes, with a summary) → `approveTab` → toast "Commission approved." (bottom right) | (waiting); an admin on their own tab sees Approve too |
-  | `approved` | "Waiting for the agent to request payment" | **Request payment**: enabled when due (due date reached or sale complete) and every earlier payment of the same sale for the same person is received. Opens `PaymentRequestModal`. |
+  | `approved` | "Waiting for the agent to request payment" | **Request payment**: enabled when due (due date reached or sale complete) and every earlier payment of the same sale for the same person is received (`blockedBy`, which looks up the computed `firstOpenPayment` map: the lowest payment not yet received per sale and recipient). Opens `PaymentRequestModal`. |
   | `payment_requested` | **Release payment** → `ReleasePaymentModal` | "Request sent..." (an admin on their own tab sees Release payment instead) |
   | `payment_released` | View proof of payment | **View proof / Confirm** → `ProofModal` → **Received payment** → typed confirmation popup |
   | `received` | ✓ Received + date, View proof | same |
@@ -824,7 +847,8 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
      - Projects: the 3 newest listings that are not drafts.
      - Promos: newest first.
   2. **Search** (header): filters the loaded developers in the browser by name, location, email or phone.
-  3. **Card:** picture, name, a static "Active" badge, phone, email, location, office hours, Recent Projects chips (click → `PropertyDetails` overlay, read-only), Promotions thumbnails (click → lightbox `components/developer/PromoPosterModal.vue`; shows "Expired" or "Until" based on `valid_until`), Delete and Edit (admins, `canManage`) and Contact.
+  - **Loading (since 2026-11-05):** 4 skeleton cards (`components/developer/DeveloperCardSkeleton.vue`, mirrors the card) until the first load finishes; reloads after a save or delete keep the current cards. Loaded with no developers and no search typed: "No developers to show." (it used to stay blank); "No developers match your search." waits for the first load.
+  3. **Card:** picture, name, a static "Active" badge, phone, email, location, office hours, Recent Projects chips (click → `PropertyDetails` overlay, read-only, loaded on first open), Promotions thumbnails (click → lightbox `components/developer/PromoPosterModal.vue`; shows "Expired" or "Until" based on `valid_until`), Delete and Edit (admins, `canManage`) and Contact. The picture and the posters use `loading="lazy"` (cards below the screen don't download their images up front).
   4. **Add / Edit modal (`addDeveloper.vue`):** name, location, phone, email, office-hour slots (a multi-select of Monday to Sunday plus Holiday, and open/close time or "Unavailable"), profile picture, and promo posters (new posters are staged with an optional title and valid-until date; saved posters can be removed). The form edits **copies** of the developer (the card doesn't change until it is saved). Fields are cleaned and required (name, location, a valid phone and email; poster titles cleaned, dates checked); errors show above Save.
      - **Add:** `addDeveloper` (inserts the developer and its `opening_days` rows; throws if either fails) → `uploadImage` → `updateDeveloper` with the image URL (rewrites `opening_days`) → `persistPromos` (upload and insert new posters, delete removed ones; throws if a poster fails).
      - **Edit:** a newly chosen picture is uploaded first (a removed one is saved as removed) → `updateDeveloper` (update with a 0-rows check, then delete and reinsert `opening_days`) → `persistPromos`.
@@ -905,6 +929,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   3. Right: **All Tickets (Admin)** / **My Tickets** table: ID (`#T-<id>`, a button), Ticket (title, category · page, paperclip + screenshot count), Raised By (admins, "You" pill on their own), Submitted ("5 minutes ago", full date on hover), Status pill, Actions. Status filter pills with counts (All / Raised / In Review / Resolved) and a search box (number, title, category, page, raiser; in the browser only). Open tickets first (newest first), then resolved ones (latest resolved first). 10 per page.
   4. Table actions: admins get the next step (**Review** on Raised starts the review and opens the ticket; **Resolve** on In Review opens it with the cursor in the note; **Reopen** on Resolved opens it with the reopen confirmation); agents get **View**. Clicking a row opens the ticket.
   5. Bottom-right toast (green, or red for errors). `useLiveRefresh(['support_tickets'])`.
+  6. **Loading (since 2026-11-05):** on the first load the table keeps its header and shows 10 skeleton rows, and the open-ticket meter and status counts show placeholders. The header label, the table title and the left card ("Your Tickets" for admins, "How tickets move" for agents) show a placeholder until `agentResolved`, so an admin no longer sees the agent version first; the admin's "Your Tickets" list has its own placeholder rows.
 - **Raise a Ticket form (`RaiseTicketModal.vue`):** built to make tickets specific and reproducible.
   1. **What is it about?** Category (Problems: *Something isn't working*, *Login or account*, *Slow or not loading*, *Wrong or missing data*; Requests: *Feature request*, *Feedback*, *Other*) with a hint, the page/feature (`TICKET_AREAS`), and a one-line title (8–120 characters, example placeholder per category).
   2. **Problems** (`isIssue`): **steps to recreate it** (at least 2; the box starts with "1. " and Enter adds the next number, Enter on an empty number ends the list), **what you expected**, **what happened instead** (20+ characters), **how often** (Every time / Sometimes / Only once) and optionally **when it happened** (not in the future). **Requests:** one detailed answer (20+ characters).
@@ -1352,11 +1377,12 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 
 ### 10.1 Services
 
-**`src/services/authService.ts`** (`authService`)
+**`src/services/authService.ts`** (`authService`, `getSessionUser`)
 
 | Function | Purpose | Used by |
 |---|---|---|
-| `getCurrentAgent()` | Signed-in agent: `agent_ID`, first/middle/last name, `admin_access` (or null) | Listings, PropertyManagement, SalesReport, Commission, SalesUploadModal, Genealogy page, Support |
+| `getSessionUser()` | Exported function (not on `authService`): the Supabase Auth user from the stored session (`auth.getSession()`; network only to refresh an expired token) or null | authService, agentService, Dashboard |
+| `getCurrentAgent()` | Signed-in agent: `agent_ID`, first/middle/last name, `admin_access` (or null). One `agents` query (the user comes from `getSessionUser`) | Listings, PropertyManagement, SalesReport, Commission, SalesUploadModal, Genealogy page, Support, developerlist |
 | `logoutUser()` | `auth.signOut()` → `{ success, error? }` | Sidebar, ChangePasswordModal (login page) |
 
 **`src/services/accountService.ts`** (`accountService`; types `NewAgentAccount`, `AgentLogin`). Logins and passwords; see 7.19, 7.20, 9.7, 9.8.
@@ -1421,7 +1447,7 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 
 | Function | Purpose | Used by |
 |---|---|---|
-| `getSales({ agentId? })` | Sales (newest reservation first) with names filled in and sale numbers. (The unused `search` option, which built an `or()` filter from text, was removed on 2026-11-05.) | SalesReport |
+| `getSales({ agentId? })` | Sales (newest reservation first) with names filled in and sale numbers; the numbering order loads in parallel (`Promise.all`). (The unused `search` option, which built an `or()` filter from text, was removed on 2026-11-05.) | SalesReport |
 | `getSaleById(id)` | One sale | unused |
 | `createSale(payload)` | Insert, return `{ success, data: { sale_ID } }` | SalesUploadModal |
 | `updateSale(id, payload)` | Update (0 rows → `{success:false}`) | SalesUploadModal |
@@ -1434,7 +1460,7 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | `generateCommissionTabs(saleId)` | Build and save commission tabs on approval (7.11) | SalesUploadModal |
 | `getListingDeveloperName(listingId)` | Developer name of a listing | SalesUploadModal |
 | `calculateCommissionableAmount(tcp, rate)`, `generateSchedulePreview(payload)` | Older preview helpers | unused |
-| `applySaleNumbers()`, `fillMissingAgentNames()`, `mapToSale()` | Module-private helpers | internal |
+| `fetchSaleOrder()`, `applySaleNumbers(sales, order, perAgent)`, `fillMissingAgentNames()`, `mapToSale()` | Module-private helpers. `fetchSaleOrder` = every sale's id / seller / creation time, oldest first; `applySaleNumbers` is pure (takes that order; keeps `agent_sale_seq` if the order couldn't be read) | internal |
 
 **`src/services/commissionService.ts`** (`commissionService`, `summarizeTabs`, `STATUS_LABEL`; types `CommissionTab`, `CommissionTabRow`, `CommissionStatus`, `PaymentRequestDetails`, `ReceivablesSummary`)
 
@@ -1539,7 +1565,7 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 |---|---|
 | `agent.ts` | `AgentProfile`, `positionMap`, `getAge(birthDate)` |
 | `commission.ts` | `PayUnit`, `DpDivision`, `CommissionPaymentScheme`, `CommissionChain`, `CalculateCommissionPayload`, `CommissionScheduleItem`, `CommissionSummary`, `CommissionCalculationResult` |
-| `developers.ts` | `DeveloperProject` (declared twice, harmless), `DeveloperPromo`, `Developer`, `DayOption`, `days`, `OfficeHourSlot` |
+| `developers.ts` | `DeveloperProject`, `DeveloperPromo`, `Developer`, `DayOption`, `days`, `OfficeHourSlot` |
 | `listings.ts` | `Property`, `Lot`, `HouseAndLot`, `Condominium`, `Memorial`, `Images`, `formattedPropertyType(type)` |
 | `ticket.ts` | `TicketStatus`, `TICKET_STATUS_LABEL`, `TicketCategory`, `TICKET_CATEGORIES` (label, hint, title example, `isIssue`), `TicketFrequency`, `TICKET_FREQUENCIES`, `TICKET_AREAS`, `MAX_OPEN_TICKETS` (3), `MAX_TICKET_IMAGES` (3), `MAX_TICKET_IMAGE_MB` (5), `MIN_TICKET_STEPS` (2), `TICKET_IMAGE_TYPES`, `TICKET_TEXT_LIMITS`, `NewTicket`, `SupportTicket`, `ticketNumber`, `categoryOption`, `categoryLabel`, `isIssueCategory`, `frequencyLabel`, `charCount`, `countSteps`, `imageProblem`. **Keep the limits in step with the migration.** |
 
@@ -1549,7 +1575,7 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 |---|---|---|---|
 | `Sidebar` | — | — | App |
 | `listings/PropertyCard` | `details?: Property`, `isLoading?` | — | Listings |
-| `listings/PropertyDetails` | `prop_id`, `prop_type`, `isAdmin?`, `currentAgentId?` (owner check for EDIT / DELETE), `readOnly?` (hides edit / delete / sold / approve) | `close-details`, `edit`, `delete`, `sold`, `approve`, `share` | Listings, developerlist (read-only) |
+| `listings/PropertyDetails` | `prop_id`, `prop_type`, `isAdmin?`, `currentAgentId?` (owner check for EDIT / DELETE), `readOnly?` (hides edit / delete / sold / approve) | `close-details`, `edit`, `delete`, `sold`, `approve`, `share` | Listings, developerlist (read-only); both through `defineAsyncComponent` (loaded on first open) |
 | `listings/ListingsFilter` | `choices`, `modelValue` | `update:modelValue` | Listings |
 | `listings/MapHolder` | `targetLocation?`, `listingId?`, `cachedPois?`, `readOnlyCache?` (shared page: use `cachedPois`, never write the cache) | — | PropertyDetails, SharedListing |
 | `listings/MapInteractive` | `targetLocation?` (`lng`, `lat`, `loc`) | `update:targetLocation` (`lng`, `lat`, `name`) | MapPickerModal |
@@ -1573,6 +1599,7 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | `auth/ChangePasswordModal` | `email?`, `lockEmail?`, `signOutWhenDone?` | `close`, `changed` (email) | LoginForm, Dashboard |
 | `genealogy/TeamInsights` | — | `changed` | Genealogy page |
 | `developer/developerCard` | `dev: Developer`, `canManage?` (shows Edit / Delete) | `delete-developer`, `edit-developer`, `contact-developer`, `open-listing`, `open-promo` | developerlist |
+| `developer/DeveloperCardSkeleton` | — (layout only; mirrors developerCard) | — | developerlist (first load) |
 | `developer/addDeveloper` | `dev?: Developer` | `close-add-developer`, `saved` | developerlist |
 | `developer/PromoPosterModal` | `promo: DeveloperPromo` | `close` | developerlist |
 | `calculator/CalculatorPanel` | `prefillPrice?` | — | Accounting, PropertyDetails |
@@ -1615,6 +1642,7 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 - The Contact button's event isn't handled (what it should do, email or call, isn't decided).
 - `developers.available_days`, `open_hours` and `close_hours` are unused (office hours live in `opening_days`). `reformatHours` is unused.
 - An office-hours slot marked "Unavailable" is not stored (the `opening_days` times are NOT NULL), so the day simply doesn't appear on the card. Showing "Unavailable" would need nullable times (a migration) and a mapping in `getDevelopers`.
+- Office hours are shown as stored, with seconds (`Mon, Tue • 08:00:00 - 17:00:00`). `developerService.ts` has an unused private `formatHours()` ("8:00 AM") that could format them; not changed on 2026-11-05 because it would change what users see.
 
 ### 11.5 Data-shape traps
 - UI and DB field names differ (9.5), and the lookup ids are hard-coded in many files (9.4).
@@ -1628,6 +1656,7 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 - Logout doesn't clear `localStorage['app_user_settings']`.
 - The Commissions page and its request/release/proof modals have no dark-mode styling. (`ConfirmActionModal` and the Commissions toast have it, so they turn dark over a light page when dark mode is on. `AddAgentModal` got dark mode on 2026-11-04.)
 - The Commissions page still uses `alert()` after a payment request, a release and a receipt; only Approve uses the toast.
+- **Lazy-loaded pages (2026-11-05):** a page opened before the background prefetch has fetched it (in the first ~2 s after sign-in, or on a slow connection) downloads its chunk first, so the click waits a moment. A tab left open across a deploy reloads the page once when it next navigates (5.2). The shared listing page still waits for Mapbox before it renders (its map is part of the page).
 
 ### 11.7 Security (pre-launch)
 - **RLS is real on every table since 2026-11-05** (9.7) once 3.3 step 10 is run. What it doesn't cover:
@@ -1640,8 +1669,9 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 - Admins are trusted: RLS lets them change most columns of any row (the UI still follows the business rules).
 
 ### 11.8 Dead code and unused dependencies
-- Unrouted or unused files: `views/DashboardPrevious.vue`, `components/test.vue`, `components/modal.vue`, `components/dashboard/AddListing.vue`, `components/dashboard/Calculator.vue`, `services/lookupService.ts`, `babel.config.js`.
-- Unused functions: `salesService.getSaleById`, `getTotalSales`, `generateSchedulePreview`, `calculateCommissionableAmount`; `genealogyService.setUpline`; `reformatHours`.
+- Unrouted or unused files: `views/DashboardPrevious.vue`, `components/test.vue`, `components/modal.vue`, `components/dashboard/AddListing.vue`, `components/dashboard/Calculator.vue` (both now say so in a comment), `services/lookupService.ts`, `babel.config.js`, and the images `src/assets/images/profile.png`, `sample-house.jpg`, `public/profile.png` (not imported, so not bundled).
+- Unused functions: `salesService.getSaleById`, `getTotalSales`, `generateSchedulePreview`, `calculateCommissionableAmount`; `genealogyService.setUpline`; `reformatHours` and the private `formatHours` in `developerService.ts`.
+- Intentionally kept "unused" imports: the Sidebar's `Ticket` / `Mail` / `Trophy` icons (commented-out links) and Support's `raiseBlockedReason` (commented-out header button); both are labelled in the code. Unused imports elsewhere were removed on 2026-11-05.
 - Unused dependencies: `chart.js`, `@types/chart.js`, `lucide`, `next`, `dagre`, `@types/dagre`, `@vue-flow/background`.
 - `.env.example` is missing `VITE_MAPBOX_TOKEN`.
 
@@ -1706,6 +1736,7 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 
 | `documentation.md` entry | Summary | See |
 |---|---|---|
+| 2026-11-05: Skeleton loading, faster page loads, code cleanup | Skeletons on Sales Report, Developer List (`DeveloperCardSkeleton.vue`), Commissions, IT Support; every page lazy-loaded + background prefetch + stale-chunk reload; `PropertyDetails` loaded on first open; session read locally (`getSessionUser`); parallel sale numbering; `firstOpenPayment` map; lazy developer images; smaller login background and logos; font preconnect; login background path case fix; unique sidebar keys; debug logs, unused imports and duplicates removed; header comments everywhere. No database changes | 1.2, 1.3, 1.6, 4, 5.1, 5.2, 5.8, 7.1, 7.2, 7.4, 7.9, 7.12, 7.15, 7.21, 10, 11 |
 | 2026-11-05: RLS hardening, bug fixes, modal components | Real RLS on every table + guard triggers + storage policies (`20261105120000_harden_rls.sql`), `get_shared_listing` for signed-out clients, `team_completed_sales`; POI popup XSS fix; admin-only developers / thresholds / promote in the UI; owner/admin listing actions; Property Management, sale form (bulk unit details), Sales Report, Profile (address), developer list, Settings, amortization fixes; input cleaning everywhere (`cleanMarkdownText`, file names); four inline modals moved into components | 1.2–1.6, 3.3, 4, 5.1–5.8, 6, 7.3–7.18, 8.1–8.3, 9.1, 9.6–9.8, 10, 11, 12 |
 | 2026-11-04: IT support tickets | New `/support` page; guided Raise a Ticket form with checklist, auto-numbered steps, screenshots (private bucket), device details; admin review / resolve (required note) / reopen; 3 open tickets per person; `support_tickets` with real RLS + guard trigger; `cleanMultilineText`, `describeDevice` | 3.3, 5.4, 5.6, 5.8, 6, 7.21, 8.8, 9, 10, 11.9 |
 | 2026-11-04: Agent accounts and password changes | Add Agent creates the Supabase login (Edge Function `agent-account`), encrypted initial password that admins can reveal until it is changed, create login for older agents, login removed on delete, admin-only agent management, Dashboard Add Agent = Genealogy modal, red initial-password reminder, change password with an email code on the Login page, input cleaning helpers | 3.3, 5.1, 5.8, 6, 7.1, 7.3, 7.13, 7.19, 7.20, 8.7, 9.7, 9.8, 10 |
@@ -1737,6 +1768,8 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 ## 14. Changelog of this file
 
 Add one line per update, newest first: `YYYY-MM-DD: what changed (sections)`.
+
+- **2026-11-05:** Skeleton loading on the Sales Report, Developer List, Commissions and IT Support pages (+ the skeleton convention); lazy-loaded pages with background prefetch, stale-chunk reload and the Sidebar's `routerReady`; `PropertyDetails` as an async component; `getSessionUser()` instead of `auth.getUser()`; parallel sale numbering; `firstOpenPayment`; lazy developer images; compressed login background and logos (and the `LoginFormBG.png` case fix); unique sidebar keys; debug logs and unused imports removed; header-comment and no-`console.log` conventions; UI testing with a mock Supabase; team confirmed the migrations (incl. `support_tickets`) are applied (header, 1.2, 1.3, 1.6, 4, 5.1, 5.2, 5.8, 7.1, 7.2, 7.4, 7.9, 7.12, 7.15, 7.21, 10.1, 10.3, 10.4, 11.4, 11.6, 11.8, 13.1).
 
 - **2026-11-05:** RLS hardening (migration `20261105120000_harden_rls.sql`: real policies on every table and the `images` / `fact_sheets` buckets, `agents_guard` / `main_listings_guard` / `commissions_guard`, helpers, `get_shared_listing`, `team_completed_sales`, setup step 10, verification and smoke test); shared page through the function with a read-only POI cache; POI popup XSS fix; admin-only developer management, thresholds and promotion in the UI; owner/admin listing buttons; bug fixes in Property Management, the sale form, Sales Report, Listings, Profile, developers, Settings, amortization, `/commissions` guard; input cleaning helpers and file-name cleaning; Sale Details, Dashboard metric, promo poster and map picker modals moved into components; known issues re-checked (header, 1.2, 1.3, 1.4, 1.5, 1.6, 3.3, 4, 5.1, 5.3, 5.4, 5.6, 5.8, 6, 7.3–7.8, 7.9, 7.10, 7.12–7.18, 8.1, 8.2, 8.3, 9.1, 9.6, 9.7, 9.8, 10.1, 10.2, 10.4, 11, 12, 13.1).
 

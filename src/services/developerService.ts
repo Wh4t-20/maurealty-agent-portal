@@ -1,3 +1,8 @@
+// src/services/developerService.ts
+// Developers for the Developer List and the listing / sale forms: the developer rows, their office
+// hours (opening_days, one row per day) and promo posters (developer_promos + the images bucket).
+// Adding, editing and deleting are admin-only; the database refuses agents too (RLS).
+
 import { supabase } from '../supabaseClient';
 import { type Developer, type DeveloperPromo, type OfficeHourSlot, type DayOption, days } from '../assets/classes/developers';
 import { safeFileExtension } from '../utils/sanitize';
@@ -64,7 +69,6 @@ export const developerService = {
         const { data, error } = await supabase
             .from('developers')
             .select('dev_ID, profile_url, name, contact_number, contact_email, location, opening_days(day, open_hours, close_hours),  main_listings(listing_ID, listing_title, created_at, status, property_type(property_type)), developer_promos("promo_ID", image_url, title, valid_until, created_at)');
-            console.log('Fetched developers:', data);
         if (error || !data) {
             console.error('Fetch error:', error);
             return [];
@@ -128,7 +132,6 @@ export const developerService = {
                 }
             });
             dev.OfficeHours = newOfficeHours;
-            console.log(dev);
         });
 
         return developers;
@@ -172,8 +175,7 @@ export const developerService = {
         }
         const officeHoursData = officeHourRows(inserted.dev_ID, developer.OfficeHours);
         if (officeHoursData.length > 0) {
-            console.log('Office hours data to insert:', officeHoursData);
-            const { data: insertedHours, error: officeHoursError } = await supabase
+            const { error: officeHoursError } = await supabase
                 .from('opening_days')
                 .insert(officeHoursData);
 
@@ -181,11 +183,7 @@ export const developerService = {
                 console.error('Error adding office hours:', officeHoursError);
                 throw new Error(`The developer was added, but the office hours were not saved: ${officeHoursError.message}`);
             }
-            else if (insertedHours) {
-                console.log('Office hours added to developer', developer.dev_ID, ':', insertedHours);
-            }
         }
-        console.log('Developer added with ID:', inserted.dev_ID, inserted);
         return inserted.dev_ID;
     },
     async updateDeveloper(developer: Developer, oldOfficeHours: OfficeHourSlot[]): Promise<void> {
@@ -208,7 +206,6 @@ export const developerService = {
         if (!updated || updated.length === 0) {
             throw new Error('The developer was not saved. Only admins can change developers.');
         }
-        console.log("Attempting to delete opening_days for developer ID:", developer.dev_ID);
 
         const { error: deleteError } = await supabase
             .from('opening_days')
@@ -218,21 +215,14 @@ export const developerService = {
             console.error('Error deleting old office hours:', deleteError);
             throw new Error(`The office hours could not be updated: ${deleteError.message}`);
         }
-        else {
-            console.log('Old office hours deleted for developer', developer.dev_ID);
-        }
         const officeHoursData = officeHourRows(developer.dev_ID, developer.OfficeHours);
         if (officeHoursData.length > 0) {
-            console.log("Attempting to add new opening_days for developer ID:", JSON.stringify(developer.OfficeHours));
-            const { data: insertedHours, error: officeHoursError } = await supabase
+            const { error: officeHoursError } = await supabase
                 .from('opening_days')
                 .insert(officeHoursData);
             if (officeHoursError) {
                 console.error('Error adding office hours:', officeHoursError);
                 throw new Error(`The office hours could not be saved: ${officeHoursError.message}`);
-            }
-            else if (insertedHours) {
-                console.log('Office hours added to developer', developer.dev_ID, ':', insertedHours);
             }
         }
     },
@@ -290,7 +280,6 @@ export const developerService = {
         if (!deleted || deleted.length === 0) {
             throw new Error('The developer was not deleted. Only admins can delete developers.');
         }
-        console.log('Developer deleted with ID:', developer.dev_ID);
     },
 
     // --- Developer promos (posters) ---

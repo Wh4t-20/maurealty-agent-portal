@@ -29,6 +29,9 @@
 </template>
 
 <script setup lang="ts">
+// MapHolder: read-only Mapbox map of a listing (listing details overlay and the shared listing page)
+// with nearby-place chips (poiService, cached per listing for 30 days). Popups are built with
+// textContent, never HTML strings, so a place name can't run script.
 import { onMounted, onUnmounted, ref, shallowRef, watch, nextTick } from 'vue';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';

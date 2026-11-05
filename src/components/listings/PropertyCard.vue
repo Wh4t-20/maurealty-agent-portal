@@ -69,6 +69,9 @@
 </template>
 
 <script setup lang="ts">
+// PropertyCard: one listing card in the Project Listings grid (photo, type and pending badges, title,
+// price or bulk price range, location, developer, created date). With isLoading it renders the
+// pulsing skeleton version shown while the listings load.
 import { computed, ref, watch } from 'vue' // Don't forget to import this
 import { type Property, formattedPropertyType }  from '@/assets/classes/listings'
 import placeholder from '@/assets/images/default_placeholder.png'

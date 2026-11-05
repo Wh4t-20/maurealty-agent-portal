@@ -78,7 +78,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+// Settings page (/settings): default currency and area unit, animations and dark mode. Changes apply at
+// once (localStorage through useSettings); SAVE SETTINGS also stores them in agents.configs.
+import { ref, onBeforeUnmount } from 'vue';
 import { currencySymbols, areaUnits } from '@/utils/conversion';
 import ConfigDropdown from '@/components/settings/configDropdown.vue';
 import ConfigToggleSlider from '@/components/settings/configToggleSlider.vue';
@@ -86,10 +88,6 @@ import { useSettings } from '@/utils/useSettings';
 import { agentService } from '@/services/agentService';
 
 const { configs, updateSetting } = useSettings();
-
-onMounted(async () => {
-    console.log(configs);
-});
 
 // Save feedback, shown for a few seconds under the settings.
 const saving = ref(false);
@@ -123,7 +121,6 @@ const saveCurrentSettings = async () => {
             return;
         }
 
-        console.log('Settings updated successfully!');
         showSaveMessage('Settings saved.', false);
     } catch (error) {
       console.error('Failed to save current settings:', error);

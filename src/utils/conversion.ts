@@ -1,3 +1,8 @@
+// src/utils/conversion.ts
+// Currency and area conversion for listings. Prices are stored in PHP and areas in square metres;
+// these helpers convert for display (formatPrice, formatArea) and back when a form is saved
+// (convertPriceToPHP, convertAreaToSqm). currentCurrency / currentUnit start from the user's settings.
+
 import { ref } from 'vue';
 
 import { useSettings } from './useSettings';

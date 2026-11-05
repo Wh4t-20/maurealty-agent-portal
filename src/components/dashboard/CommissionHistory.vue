@@ -44,6 +44,8 @@
 </template>
 
 <script setup lang="ts">
+// CommissionHistory: Dashboard panel listing every commission tab in view, filterable by sale and by
+// status, 6 per page ("Payment n of N"). The rows come from dashboardService.buildDashboard.
 import { ref, computed, watch } from 'vue';
 import type { HistoryItem, HistoryStatus } from '@/services/dashboardService';
 

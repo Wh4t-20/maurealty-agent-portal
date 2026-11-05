@@ -1,3 +1,7 @@
+// src/assets/classes/agent.ts
+// AgentProfile (one row of the agents table), positionMap (position_ID -> rank title) and getAge().
+// Used by the Sidebar, Profile, Dashboard and the Genealogy page.
+
 export interface AgentProfile {
     agent_ID: number;
     first_name: string;

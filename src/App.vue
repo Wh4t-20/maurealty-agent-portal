@@ -1,6 +1,8 @@
 <template>
   <div class="flex">
-    <Sidebar v-if="!route.meta.hideSidebar" />
+    <!-- routerReady: wait for the first page before deciding, so the sidebar doesn't flash on the
+         login page or a shared listing link while that page's code downloads -->
+    <Sidebar v-if="routerReady && !route.meta.hideSidebar" />
     
     <!-- min-w-0 stops wide page content (like a big table) from stretching this
          box past the browser width. Without it, a flex item never shrinks smaller
@@ -15,10 +17,20 @@
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router';
+// App shell: the Sidebar (desktop) / bottom bar (phones) beside the current page, plus the
+// dark-mode and no-animation classes from the user's settings.
+import { ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import Sidebar from './components/Sidebar.vue';
 
 const route = useRoute();
+
+// Pages load on demand (src/router/index.ts), so the first route's meta (hideSidebar) is only
+// known once its navigation finishes. Until then the route is a blank start location that would
+// show the sidebar. Shown even if that first navigation failed (second handler).
+const routerReady = ref(false);
+const markRouterReady = () => { routerReady.value = true; };
+useRouter().isReady().then(markRouterReady, markRouterReady);
 
 // for graphic settings
 import { watchEffect } from 'vue';

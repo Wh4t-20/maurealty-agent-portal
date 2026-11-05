@@ -1,5 +1,7 @@
 @import "tailwindcss";
-@import "@vue-flow/core/dist/style.css";
+/* Vue Flow (genealogy tree). The base style.css comes AFTER the theme on purpose: where both set
+   the same property, the base wins (e.g. tree nodes keep cursor: default, not the theme's grab).
+   It used to be imported twice, before and after the theme; only the copy that counted is kept. */
 @import "@vue-flow/core/dist/theme-default.css";
 @import '@vue-flow/core/dist/style.css';
 @plugin "@tailwindcss/typography";

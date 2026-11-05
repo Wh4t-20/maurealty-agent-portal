@@ -1,5 +1,7 @@
 <template>
   <div class="form-modal">
+    <!-- Unused placeholder (nothing imports it): listings are added on the Property Management page.
+         Kept for reference; see project-context.md 11.8 (dead code). -->
     <h2>Add New Property Listing</h2>
     <input type="text" placeholder="Property Name" class="form-input" />
     <input type="number" placeholder="Price" class="form-input" />

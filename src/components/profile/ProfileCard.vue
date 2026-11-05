@@ -94,6 +94,8 @@
 </template>
 
 <script setup lang="ts">
+// ProfileCard: read-only view of the signed-in agent's profile on /profile (name, admin badge,
+// personal details, agent ID, position, hire date).
 import placeholder from '@/assets/images/default_placeholder.png'
 import MauBadgeLight from '@/assets/images/MauBadgeLight.svg'
 import MauBadgeDark from '@/assets/images/MauBadgeDark.svg'

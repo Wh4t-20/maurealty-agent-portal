@@ -245,12 +245,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted} from 'vue';
+// addDeveloper: the Add / Edit Developer form on the Developer List (admins only): name, location,
+// contact details, office-hour slots, picture and promo posters. It edits copies until Save, cleans
+// every field, then emits "saved" so the page reloads the list.
+import { ref, watch } from 'vue';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue';
 import { type DayOption, type OfficeHourSlot, days } from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
 import { CheckIcon, XIcon } from 'lucide-vue-next';
-import { developerService, reformatHours } from '@/services/developerService';
+import { developerService } from '@/services/developerService';
 import { type Developer, type DeveloperPromo } from '@/assets/classes/developers';
 import { cleanText, normalizeEmail, isValidEmail, isValidPhone, isIsoDate } from '@/utils/sanitize';
 
@@ -451,12 +454,10 @@ async function saveDeveloper() {
                 payload.image_url = ''; // picture removed
             }
             await developerService.updateDeveloper(payload, oldOfficeHours.value);
-            console.log("Updated Developer ID: ", payload.dev_ID);
             await persistPromos(payload.dev_ID);
         }
         else{
             const devID = await developerService.addDeveloper(payload);
-            console.log("New Developer ID: ", devID);
 
             let imageUrl = '';
             if (currentImage.value && currentImage.value.file) {

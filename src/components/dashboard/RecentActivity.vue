@@ -40,6 +40,8 @@
 </template>
 
 <script setup lang="ts">
+// RecentActivity: Dashboard activity feed. Hidden for now (commented out in Dashboard.vue);
+// dashboardService still builds the activities, so it can come back unchanged.
 defineProps<{ activities: any[] }>();
 defineEmits(['view-item', 'view-all']);
 </script>

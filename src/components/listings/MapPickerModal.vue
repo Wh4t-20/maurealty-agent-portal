@@ -19,6 +19,8 @@
 </template>
 
 <script setup lang="ts">
+// MapPickerModal: Property Management's full-screen location picker overlay around MapInteractive.
+// Emits "picked" ({ lng, lat, name }) and "close"; the page writes them into its form.
 // location: where the pin starts (the form's current coordinates and location text).
 // picked: the place the user searched for or pinned ({ lng, lat, name }).
 import { XIcon } from 'lucide-vue-next';

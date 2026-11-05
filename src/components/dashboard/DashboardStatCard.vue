@@ -29,6 +29,8 @@
 </template>
 
 <script setup lang="ts">
+// DashboardStatCard: one Dashboard number card (label, value, trend, sub-line). Clicking emits
+// "click"; the Dashboard opens the card's page (Total Sales) or its "Analysis" popup.
 defineProps<{ stat: any }>();
 defineEmits(['click']);
 </script>

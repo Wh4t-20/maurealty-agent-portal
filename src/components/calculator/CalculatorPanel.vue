@@ -132,6 +132,9 @@
 </template>
 
 <script setup lang="ts">
+// CalculatorPanel: the Loan / Sales / Property Tax calculators. Used on the Accounting page and by the
+// listing details overlay's CALCULATOR button (prefillPrice = the listing price). Loan mode can open
+// the amortization schedule (accounting/amortSched.vue).
 import { ref, computed } from 'vue'
 import amortSched from '@/components/accounting/amortSched.vue'
 

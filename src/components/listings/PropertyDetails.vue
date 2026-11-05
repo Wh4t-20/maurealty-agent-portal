@@ -283,6 +283,10 @@
 </template>
 
 <script setup lang="ts">
+// PropertyDetails: the listing details overlay (Project Listings, and read-only from the Developer
+// List): photos, price, map and nearby places, features, description, FAQ, fact sheet, and the
+// EDIT / DELETE / SHARE / CALCULATOR / SOLD / APPROVE buttons the viewer may use.
+// The pages load it on first open (defineAsyncComponent), since it brings Mapbox and jsPDF.
 import { ref, watch, computed } from 'vue'
 import { formattedPropertyType } from '@/assets/classes/listings'
 import { listingsService, compileMarkdown } from '@/services/listingsServices' 
@@ -399,9 +403,6 @@ const loadProperties = async () => {
         ...subTableData
       };
 
-      console.log(data.longitude, data.latitude);
-      console.log("^Data | vForm\n");
-      console.log(details.value.lng, details.value.lat);
 
       if (data.listing_images && data.listing_images.length > 0) {
         const sortedImages = data.listing_images.sort((a: any, b: any) => a.display_order - b.display_order);

@@ -18,9 +18,11 @@
         <div>
           <div class="flex flex-wrap items-baseline gap-x-3">
             <h1 class="text-xl sm:text-3xl font-bold">IT SUPPORT</h1>
-            <span class="text-sm font-medium text-maurealty-blue/70 dark:text-white/70">
+            <!-- Whose tickets these are; a placeholder until we know if the viewer is an admin -->
+            <span v-if="agentResolved" class="text-sm font-medium text-maurealty-blue/70 dark:text-white/70">
               {{ isAdmin ? 'All tickets · you are IT support' : 'Your tickets' }}
             </span>
+            <span v-else class="self-center h-4 w-40 rounded bg-gray-300 dark:bg-gray-700 animate-pulse" aria-hidden="true"></span>
           </div>
           <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">Report a problem or send feedback, then follow it from Raised to Resolved.</p>
         </div>
@@ -44,11 +46,16 @@
             <h2 class="text-lg font-bold text-maurealty-blue dark:text-white">Raise a Ticket</h2>
 
             <div class="mt-3">
-              <div class="flex items-center justify-between gap-3 text-sm text-gray-700 dark:text-gray-200">
+              <!-- Open-ticket meter: placeholders until the tickets load (it would read "0 of 3" meanwhile) -->
+              <div v-if="loading" class="h-5 flex items-center justify-between gap-3 animate-pulse" aria-hidden="true">
+                <div class="h-4 w-48 rounded bg-gray-300 dark:bg-gray-700"></div>
+                <div class="h-4 w-8 rounded bg-gray-300 dark:bg-gray-700"></div>
+              </div>
+              <div v-else class="flex items-center justify-between gap-3 text-sm text-gray-700 dark:text-gray-200">
                 <span>Your open tickets ({{ myOpenCount }} of {{ MAX_OPEN_TICKETS }} used)</span>
                 <span class="font-semibold tabular-nums">{{ myOpenCount }}/{{ MAX_OPEN_TICKETS }}</span>
               </div>
-              <div class="h-2 rounded-full bg-background-gray dark:bg-background-dark-gray overflow-hidden mt-1.5">
+              <div class="h-2 rounded-full bg-background-gray dark:bg-background-dark-gray overflow-hidden mt-1.5" :class="{ 'animate-pulse': loading }">
                 <div class="h-full transition-all" :class="atLimit ? 'bg-amber-500' : 'bg-maurealty-blue dark:bg-maurealty-light-blue'"
                      :style="{ width: openPercent + '%' }"></div>
               </div>
@@ -72,10 +79,33 @@
             </button>
           </section>
 
+          <!-- LOADING: a neutral placeholder card until we know which of the two cards below to show -->
+          <section v-if="!agentResolved" :class="[card, 'p-5']" aria-hidden="true">
+            <div class="animate-pulse">
+              <div class="h-6 w-36 rounded bg-gray-300 dark:bg-gray-700"></div>
+              <div class="mt-4 flex flex-col gap-3">
+                <div v-for="n in 3" :key="'side-skeleton-' + n" class="flex items-center justify-between gap-3">
+                  <div class="h-4 w-3/5 rounded bg-gray-300 dark:bg-gray-700"></div>
+                  <div class="h-5 w-20 rounded-full bg-gray-300 dark:bg-gray-700"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <!-- ADMINS: their own tickets (the table on the right holds everyone's) -->
-          <section v-if="isAdmin" :class="[card, 'p-5']">
+          <section v-else-if="isAdmin" :class="[card, 'p-5']">
             <h2 class="text-lg font-bold text-maurealty-blue dark:text-white">Your Tickets</h2>
-            <p v-if="!loading && myTickets.length === 0" class="mt-2 text-xs text-gray-500 dark:text-gray-400">You haven't raised any tickets.</p>
+            <!-- Placeholder rows while the tickets load -->
+            <ul v-if="loading" class="mt-2 animate-pulse" aria-hidden="true">
+              <li v-for="n in 3" :key="'mine-skeleton-' + n" class="flex items-center justify-between gap-3 py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                <span class="flex flex-col gap-1.5 w-3/5">
+                  <span class="block h-3 w-12 rounded bg-gray-300 dark:bg-gray-700"></span>
+                  <span class="block h-4 w-full rounded bg-gray-300 dark:bg-gray-700"></span>
+                </span>
+                <span class="block h-5 w-20 rounded-full bg-gray-300 dark:bg-gray-700"></span>
+              </li>
+            </ul>
+            <p v-else-if="myTickets.length === 0" class="mt-2 text-xs text-gray-500 dark:text-gray-400">You haven't raised any tickets.</p>
             <ul v-else class="mt-2">
               <li v-for="t in myTickets.slice(0, 5)" :key="t.id" class="border-b border-gray-100 dark:border-gray-800 last:border-0">
                 <button type="button" class="w-full flex items-center justify-between gap-3 py-2.5 text-left cursor-pointer group" @click="openTicket(t)">
@@ -104,10 +134,15 @@
         <section :class="[card, 'min-w-0 overflow-hidden']">
           <div class="p-5 pb-4 flex flex-col gap-4 border-b border-gray-100 dark:border-gray-800">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <h2 class="text-lg font-bold text-maurealty-blue dark:text-white">
+              <!-- Title waits for the viewer's role, the count for the tickets -->
+              <h2 v-if="agentResolved" class="text-lg font-bold text-maurealty-blue dark:text-white">
                 {{ isAdmin ? 'All Tickets (Admin)' : 'My Tickets' }}
-                <span class="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">({{ statusFiltered.length }})</span>
+                <span v-if="loading" class="inline-block align-middle ml-1 h-3 w-6 rounded bg-gray-300 dark:bg-gray-700 animate-pulse" aria-hidden="true"></span>
+                <span v-else class="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">({{ statusFiltered.length }})</span>
               </h2>
+              <div v-else class="h-7 flex items-center" aria-hidden="true">
+                <div class="h-5 w-40 rounded bg-gray-300 dark:bg-gray-700 animate-pulse"></div>
+              </div>
               <!-- Search runs in the browser over the loaded tickets; nothing is sent to the database -->
               <div class="relative w-full sm:w-64">
                 <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-gray-400" aria-hidden="true" />
@@ -124,22 +159,25 @@
                                  ? 'bg-maurealty-blue text-white shadow-md dark:bg-maurealty-light-blue dark:text-maurealty-blue'
                                  : 'bg-background-gray text-sidebar-hover hover:bg-sidebar-hover/20 dark:bg-background-dark-gray dark:text-gray-300 dark:hover:bg-gray-800']"
                       @click="statusFilter = f.id">
-                {{ f.label }} ({{ countByStatus(f.id) }})
+                {{ f.label }}
+                <!-- The count waits for the tickets; a placeholder in the text colour until then -->
+                <span v-if="loading" class="inline-block align-middle h-3 w-5 rounded-sm bg-current/30 animate-pulse" aria-hidden="true"></span>
+                <template v-else>({{ countByStatus(f.id) }})</template>
               </button>
             </div>
           </div>
 
-          <!-- LOADING -->
-          <div v-if="loading" class="py-16 text-center text-sm text-maurealty-blue/60 dark:text-maurealty-light-blue/60">Loading tickets…</div>
+          <!-- LOADING: announced to screen readers; the table below shows skeleton rows meanwhile -->
+          <p v-if="loading" class="sr-only" role="status">Loading tickets…</p>
 
           <!-- LOAD ERROR: shown instead of an empty list so the cause is visible -->
-          <div v-else-if="loadError" class="py-12 px-4 text-center">
+          <div v-if="!loading && loadError" class="py-12 px-4 text-center">
             <p class="text-sm font-semibold text-red-600 dark:text-red-400">Tickets could not be loaded.</p>
             <p class="text-xs text-gray-600 dark:text-gray-300 mt-1 break-words">{{ loadError }}</p>
           </div>
 
-          <!-- EMPTY -->
-          <div v-else-if="statusFiltered.length === 0" class="py-16 px-4 flex flex-col items-center text-center text-gray-500 dark:text-gray-400 gap-2">
+          <!-- EMPTY (only once loading has finished) -->
+          <div v-else-if="!loading && statusFiltered.length === 0" class="py-16 px-4 flex flex-col items-center text-center text-gray-500 dark:text-gray-400 gap-2">
             <LifeBuoy class="size-10 opacity-40" aria-hidden="true" />
             <p class="font-medium">
               {{ search || statusFilter !== 'all' ? 'No tickets match your filters.' : (isAdmin ? 'No tickets yet.' : "You haven't raised any tickets yet.") }}
@@ -149,9 +187,10 @@
             </button>
           </div>
 
-          <!-- TABLE: scrolls sideways on its own on small screens -->
+          <!-- TABLE: scrolls sideways on its own on small screens. While the tickets load it keeps
+               its header and shows skeleton rows (same columns as a real row). -->
           <template v-else>
-            <div class="overflow-x-auto">
+            <div class="overflow-x-auto" :aria-busy="loading">
               <table class="w-full min-w-[680px] text-sm text-left">
                 <thead class="bg-maurealty-blue dark:bg-[#072339] text-white">
                   <tr>
@@ -163,7 +202,25 @@
                     <th class="px-4 py-3 font-semibold text-center">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
+
+                <!-- SKELETON ROWS: one page of placeholders shaped like the real rows below.
+                     Keep the cells in step with the real row when a column is added or removed. -->
+                <tbody v-if="loading" class="animate-pulse" aria-hidden="true">
+                  <tr v-for="n in PAGE_SIZE" :key="'skeleton-' + n" class="border-b border-gray-100 dark:border-gray-800 last:border-0">
+                    <td class="px-4 py-3"><div class="h-4 w-12 rounded bg-gray-300 dark:bg-gray-700"></div></td>
+                    <td class="px-4 py-3 max-w-0 w-full">
+                      <div class="h-4 w-3/4 rounded bg-gray-300 dark:bg-gray-700"></div>
+                      <div class="mt-1.5 h-3 w-1/2 rounded bg-gray-300 dark:bg-gray-700"></div>
+                    </td>
+                    <td v-if="isAdmin" class="px-4 py-3"><div class="h-4 w-28 rounded bg-gray-300 dark:bg-gray-700"></div></td>
+                    <td class="px-4 py-3"><div class="h-4 w-24 rounded bg-gray-300 dark:bg-gray-700"></div></td>
+                    <td class="px-4 py-3"><div class="h-5 w-20 rounded-full bg-gray-300 dark:bg-gray-700"></div></td>
+                    <td class="px-4 py-3"><div class="mx-auto h-7 w-22 rounded-lg bg-gray-300 dark:bg-gray-700"></div></td>
+                  </tr>
+                </tbody>
+
+                <!-- REAL ROWS: click a row (or its ID) to open the ticket -->
+                <tbody v-else>
                   <tr v-for="t in paginated" :key="t.id"
                       class="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-background-gray/60 dark:hover:bg-background-dark-gray/80 transition-colors cursor-pointer"
                       @click="openTicket(t)">
@@ -222,7 +279,7 @@
             </div>
 
             <!-- PAGINATION -->
-            <footer v-if="totalPages > 1" class="py-4 flex justify-center items-center gap-4 border-t border-gray-100 dark:border-gray-800">
+            <footer v-if="!loading && totalPages > 1" class="py-4 flex justify-center items-center gap-4 border-t border-gray-100 dark:border-gray-800">
               <button type="button" :disabled="currentPage === 1" :class="pageBtn" aria-label="Previous page" @click="currentPage--">&lt;</button>
               <span class="text-sm font-medium text-maurealty-blue dark:text-maurealty-light-blue">Page {{ currentPage }} of {{ totalPages }}</span>
               <button type="button" :disabled="currentPage >= totalPages" :class="pageBtn" aria-label="Next page" @click="currentPage++">&gt;</button>
@@ -271,7 +328,8 @@ import {
 // The database enforces the same (RLS + trigger, see ticketService).
 
 const tickets = ref<SupportTicket[]>([])
-const loading = ref(true)
+const loading = ref(true)         // first load only (live refreshes are silent): skeleton rows and counts
+const agentResolved = ref(false)  // we know whether the viewer is an admin (header, left card, table title)
 const loadError = ref('')
 const isAdmin = ref(false)
 const currentAgentId = ref<number | null>(null)
@@ -299,6 +357,7 @@ async function load(silent = false) {
     const agent = await authService.getCurrentAgent()
     isAdmin.value = !!agent?.admin_access
     currentAgentId.value = agent?.agent_ID ?? null
+    agentResolved.value = true
     if (!agent) {
       tickets.value = []
       loadError.value = "Your login isn't linked to an agent record, so tickets can't be shown. Ask an admin to check your account."
@@ -311,6 +370,7 @@ async function load(silent = false) {
     loadError.value = e?.message || String(e)
   } finally {
     loading.value = false
+    agentResolved.value = true
   }
 }
 
@@ -334,6 +394,7 @@ const myOpenCount = computed(() => myTickets.value.filter(t => t.status !== 'res
 const atLimit = computed(() => myOpenCount.value >= MAX_OPEN_TICKETS)
 const openPercent = computed(() => Math.min(100, Math.round((myOpenCount.value / MAX_OPEN_TICKETS) * 100)))
 const canRaise = computed(() => !loading.value && currentAgentId.value !== null && !atLimit.value)
+// Tooltip of the header's Raise a Ticket button, which is commented out in the template for now.
 const raiseBlockedReason = computed(() =>
   atLimit.value ? `You have ${myOpenCount.value} open tickets. Wait for one to be resolved.` : 'Loading…'
 )

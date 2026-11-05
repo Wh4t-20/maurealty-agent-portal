@@ -427,6 +427,10 @@
 </template>
 
 <script setup lang="ts">
+// SalesUploadModal: the sale form in three modes: Create (Sales Report "Add Sale"), Confirm Sale
+// (Listings SOLD button, fixed listing) and Edit (Sales Report). Payment scheme and DP divisions,
+// commission figures, field checks and cleaning; an admin's status change generates or removes the
+// commission tabs. See project-context.md 7.10.
 import { ref, reactive, onMounted, computed, watch} from 'vue'
 import { salesService, type Sale, type Financing } from '@/services/salesService'
 import { listingsService } from '@/services/listingsServices'

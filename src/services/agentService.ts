@@ -1,20 +1,26 @@
+// src/services/agentService.ts
+// The signed-in agent's own row: full profile (Sidebar, Profile), id, profile and settings updates,
+// and the profile picture in the images bucket ("agents/<agent_ID>-<time>.<ext>").
+
 import { supabase } from '../supabaseClient';
 import { safeFileExtension } from '../utils/sanitize';
+import { getSessionUser } from './authService';
 
 export const agentService = {
   // Fetch full agent profile along with position
+  // (the signed-in user comes from the stored session: see getSessionUser in authService.ts)
   async getCurrentAgentProfile() {
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const user = await getSessionUser();
 
-      if (authError || !authData?.user) {
+      if (!user) {
         return null;
       }
 
       const { data, error } = await supabase
         .from('agents')
         .select(`*`)
-        .eq('user_id', authData.user.id)
+        .eq('user_id', user.id)
         .single();
 
       if (error) {
@@ -32,16 +38,16 @@ export const agentService = {
   // just in case functions with ID alone are needed
   async getCurrentAgentID() {
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const user = await getSessionUser();
 
-      if (authError || !authData?.user) {
+      if (!user) {
         return null;
       }
 
       const { data, error } = await supabase
         .from('agents')
         .select(`agent_ID`)
-        .eq('user_id', authData.user.id)
+        .eq('user_id', user.id)
         .single();
 
       if (error) {
@@ -129,7 +135,6 @@ export const agentService = {
 
       if (error) throw error;
       
-      console.log('Old profile image deleted successfully');
     } catch (error) {
       console.error('Error deleting old image:', error);
       // We usually don't throw here so a failed deletion doesn't block the profile save

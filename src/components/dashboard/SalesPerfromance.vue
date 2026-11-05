@@ -44,6 +44,8 @@
 </template>
 
 <script setup lang="ts">
+// SalesPerformance (the file name's typo is kept so imports don't break): Dashboard bar chart of
+// approved sales per month (7 months ending at the selected month) and the average deal.
 import { computed } from 'vue';
 
 const props = defineProps<{

@@ -50,10 +50,15 @@
         </p>
       </div>
 
-      <!-- RECEIVABLES: claimed vs total commission (everyone's in the admin "All Agents" / "Other Agents" views) -->
+      <!-- RECEIVABLES: claimed vs total commission (everyone's in the admin "All Agents" / "Other Agents" views).
+           While the tabs load, pulsing placeholders stand in for the amounts (no ₱0.00 flash). -->
       <div class="bg-white rounded-2xl p-5 shadow-sm mb-3 border border-sidebar-hover/20">
         <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-          <div>
+          <div v-if="loading" class="animate-pulse" aria-hidden="true">
+            <div class="h-3 w-40 rounded bg-gray-300"></div>
+            <div class="mt-2 h-7 w-72 max-w-full rounded bg-gray-300"></div>
+          </div>
+          <div v-else>
             <span class="text-[11px] uppercase tracking-wider text-gray-500 font-medium">
               {{ isAdmin && scope === 'all' ? 'Total Receivables (All Agents)'
                 : isAdmin && scope === 'others' ? 'Total Receivables (Other Agents)'
@@ -64,12 +69,16 @@
               <span class="text-base font-semibold text-gray-500">received of {{ peso(receivables.totalAmount) }}</span>
             </p>
           </div>
-          <div class="text-xs text-gray-600 sm:text-right">
+          <div v-if="loading" class="flex flex-col gap-1.5 sm:items-end animate-pulse" aria-hidden="true">
+            <div class="h-3 w-36 rounded bg-gray-300"></div>
+            <div class="h-3 w-28 rounded bg-gray-300"></div>
+          </div>
+          <div v-else class="text-xs text-gray-600 sm:text-right">
             <p>{{ receivables.claimedCount }} of {{ receivables.totalCount }} payouts received</p>
             <p>Yet to collect: <span class="font-semibold text-amber-600">{{ peso(receivables.pendingAmount) }}</span></p>
           </div>
         </div>
-        <div class="h-2 bg-background-gray rounded-full overflow-hidden mt-3">
+        <div class="h-2 bg-background-gray rounded-full overflow-hidden mt-3" :class="{ 'animate-pulse': loading }">
           <div class="h-full bg-maurealty-green transition-all" :style="{ width: receivablesPercent + '%' }"></div>
         </div>
 
@@ -131,7 +140,10 @@
                 : 'bg-background-gray text-sidebar-hover hover:bg-sidebar-hover/20'
             ]"
           >
-            {{ tab.label }} ({{ countCommissionsByStatus(tab.id) }})
+            {{ tab.label }}
+            <!-- The count waits for the tabs to load; a placeholder in the text colour until then -->
+            <span v-if="loading" class="inline-block align-middle h-3 w-5 rounded-sm bg-current/30 animate-pulse" aria-hidden="true"></span>
+            <template v-else>({{ countCommissionsByStatus(tab.id) }})</template>
           </button>
         </div>
       </div>
@@ -140,15 +152,50 @@
       <div class="bg-white rounded-2xl p-6 shadow-sm border border-sidebar-hover/20 min-h-[500px]">
         <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
           <h2 class="text-lg font-bold text-maurealty-blue">
-            {{ getActiveTabLabel }} 
-            <span class="text-xs font-normal text-gray-500 ml-2">({{ filteredCommissions.length }} Items)</span>
+            {{ getActiveTabLabel }}
+            <span v-if="loading" class="inline-block align-middle ml-2 h-3 w-14 rounded bg-gray-300 animate-pulse" aria-hidden="true"></span>
+            <span v-else class="text-xs font-normal text-gray-500 ml-2">({{ filteredCommissions.length }} Items)</span>
           </h2>
           <div class="text-xs text-gray-500">
             Current Date: <span class="font-semibold text-gray-700">{{ current_date_string }}</span>
           </div>
         </div>
 
-        <div v-if="loading" class="py-16 text-center text-sm text-gray-500">Loading commissions…</div>
+        <!-- LOADING: skeleton cards on the same grid as a real commission card (payment, project,
+             agent, role, amount, due date, status, action) so nothing jumps when the tabs arrive.
+             Keep the cells in step with the card below when its columns change. -->
+        <template v-if="loading">
+          <p class="sr-only" role="status">Loading commissions…</p>
+          <div class="space-y-4 animate-pulse" aria-hidden="true">
+            <div
+              v-for="n in SKELETON_CARDS"
+              :key="'skeleton-' + n"
+              class="bg-background-gray/40 border border-sidebar-hover/20 rounded-xl p-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-[4.5rem_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.1fr)_11rem] gap-x-4 gap-y-3 items-center"
+            >
+              <!-- Payment n/N -->
+              <div class="col-span-2 sm:col-span-3 lg:col-span-1 flex lg:flex-col items-center lg:items-start gap-2">
+                <div class="h-2.5 w-14 rounded bg-gray-300"></div>
+                <div class="h-6 w-10 rounded bg-gray-300"></div>
+              </div>
+              <!-- Project / Developer -->
+              <div class="col-span-2 sm:col-span-1 flex flex-col gap-1.5">
+                <div class="h-2.5 w-24 rounded bg-gray-300"></div>
+                <div class="h-4 w-4/5 rounded bg-gray-300"></div>
+                <div class="h-3 w-1/2 rounded bg-gray-300"></div>
+              </div>
+              <!-- Agent, Role, Commission, Due Date, Status -->
+              <div v-for="cell in SKELETON_CELLS" :key="cell" class="flex flex-col gap-1.5">
+                <div class="h-2.5 w-14 rounded bg-gray-300"></div>
+                <div :class="['h-4 bg-gray-300', cell === 'status' ? 'w-24 rounded-full' : 'w-20 rounded']"></div>
+                <div v-if="cell === 'due'" class="h-3 w-16 rounded bg-gray-300"></div>
+              </div>
+              <!-- Action button -->
+              <div class="col-span-2 sm:col-span-3 lg:col-span-1 flex justify-center border-t lg:border-t-0 border-gray-200 pt-3 lg:pt-0">
+                <div class="h-9 w-full max-w-44 rounded-xl bg-gray-300"></div>
+              </div>
+            </div>
+          </div>
+        </template>
 
         <!-- LOAD ERROR: shown instead of an empty list so the cause is visible -->
         <div v-else-if="loadError" class="py-12 px-4 text-center">
@@ -312,6 +359,9 @@
 </template>
 
 <script setup lang="ts">
+// Commissions page (/commissions): commission tabs and their payment flow (approve -> request ->
+// release -> received). Agents see the tabs they receive; admins switch between everyone's, their
+// own and other agents'. Skeleton cards show while the tabs load.
 
 import { ref, computed, onMounted, watch } from 'vue';
 import { commissionService, summarizeTabs, STATUS_LABEL, type CommissionTab, type CommissionStatus } from '@/services/commissionService';
@@ -327,8 +377,13 @@ import { authService } from '@/services/authService';
 type CommissionItem = CommissionTab;
 
 const commissions_list = ref<CommissionItem[]>([]);
-const loading = ref(true);
+const loading = ref(true); // first load only (live refreshes are silent): shows the skeletons
 const loadError = ref('');
+
+// Skeleton layout while loading: how many placeholder cards, and the plain label + value cells
+// between the Project and Action columns of a card.
+const SKELETON_CARDS = 4;
+const SKELETON_CELLS = ['agent', 'role', 'amount', 'due', 'status'] as const;
 
 // Who is looking. Admins can see and approve everything, but only claim their own tabs.
 const isAdmin = ref(false);
@@ -411,14 +466,27 @@ function canAgentAct(tab: CommissionTab): boolean {
 }
 
 // Payments of a sale are received in order: a later payment can't be requested until the
-// earlier ones (same sale, same person) are received. Returns the first earlier payment still
-// open, or null when nothing blocks.
+// earlier ones (same sale, same person) are received.
+//
+// firstOpenPayment: for each sale + recipient, the lowest payment number not yet received. It is
+// worked out once whenever the list changes; blockedBy() used to scan every tab for every card,
+// up to three times per card on each render (n x n work for an admin with many tabs).
+const firstOpenPayment = computed(() => {
+  const first = new Map<string, number>();
+  for (const t of commissions_list.value) {
+    if (t.status === 'received') continue;
+    const key = `${t.sale_ID}:${t.recipient_agent_ID}`;
+    const current = first.get(key);
+    if (current === undefined || t.payment_no < current) first.set(key, t.payment_no);
+  }
+  return first;
+});
+
+// The first earlier payment still open, or null when nothing blocks. (If the lowest open payment
+// of the sale comes before this tab, it is also the lowest of the earlier ones.)
 function blockedBy(tab: CommissionTab): number | null {
-  const open = commissions_list.value
-    .filter(t => t.sale_ID === tab.sale_ID && t.recipient_agent_ID === tab.recipient_agent_ID
-      && t.payment_no < tab.payment_no && t.status !== 'received')
-    .map(t => t.payment_no);
-  return open.length ? Math.min(...open) : null;
+  const first = firstOpenPayment.value.get(`${tab.sale_ID}:${tab.recipient_agent_ID}`);
+  return first !== undefined && first < tab.payment_no ? first : null;
 }
 
 const canRequest = (tab: CommissionTab) => isDue(tab) && blockedBy(tab) === null;
@@ -556,11 +624,10 @@ const filteredCommissions = computed(() => {
         return aClaimed - bClaimed;
         }
 
-        // 2nd Priority: Due Date (Earliest first)
-        const dateA = new Date(a.due_date).getTime();
-        const dateB = new Date(b.due_date).getTime();
-        if (dateA !== dateB) {
-        return dateA - dateB;
+        // 2nd Priority: Due Date (Earliest first). YYYY-MM-DD strings sort like the dates
+        // themselves, so no Date objects are created per comparison.
+        if (a.due_date !== b.due_date) {
+        return a.due_date < b.due_date ? -1 : 1;
         }
 
         // 3rd Priority: Developer Name (Alphabetical A-Z)

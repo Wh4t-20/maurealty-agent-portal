@@ -165,7 +165,8 @@ export const listingsService = {
         .select('agent_ID')
         .eq('listing_ID', listingId)
         .single();
-      console.log("Agent ID from listing:", data?.agent_ID, "for listing ID:", listingId);
+      // A listing this account can't read comes back as an error: no owner id, so the edit check refuses.
+      if (error) console.error('Error fetching agent from listing:', error);
       return data?.agent_ID;
       
     } catch (error) {
@@ -337,13 +338,10 @@ async deleteListingImages(imageUrls: string[]) {
         .filter((path): path is string => path !== null);
 
       if (storagePaths.length > 0) {
-        console.log("[DEBUG] Sending storage removal paths:", storagePaths);
-        const { data: storageData, error: storageError } = await supabase.storage.from('images').remove(storagePaths);
+        const { error: storageError } = await supabase.storage.from('images').remove(storagePaths);
         if (storageError) throw storageError;
-        console.log("[DEBUG] Storage removal response data:", storageData);
       }
 
-      console.log("[DEBUG] Executing database DELETE query for URLs:", rawUrls);
       const { data: dbData, error: dbError } = await supabase
         .from('listing_images')
         .delete()
@@ -357,7 +355,6 @@ async deleteListingImages(imageUrls: string[]) {
         return { success: false };
       }
 
-      console.log(`[DEBUG] Database delete successful. Removed ${dbData.length} row(s).`);
       return { success: true };
     } catch (error) {
       console.error('[DEBUG] Critical error inside deleteListingImages:', error);

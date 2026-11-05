@@ -58,6 +58,8 @@
 </template>
 
 <script setup lang="ts">
+// Reminders: Dashboard reminder list, collapsible after 3. A critical reminder (initial password still
+// in use) renders solid red and comes first. Clicking one emits "open"; the Dashboard handles it.
 import { computed, ref } from 'vue';
 import { ShieldAlert } from 'lucide-vue-next';
 import type { Reminder } from '@/services/dashboardService';

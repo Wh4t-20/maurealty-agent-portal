@@ -12,6 +12,7 @@
 </template>
 
 <script setup lang="ts">
+// configToggleSlider: an on / off switch on the Settings page (v-model = true / false).
 // https://headlessui.com/v1/vue/listbox
 import { computed } from 'vue'
 

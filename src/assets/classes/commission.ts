@@ -1,3 +1,7 @@
+// src/assets/classes/commission.ts
+// Shapes shared by the commission engine (commissionService.calculateSchedule) and the sale form:
+// pay units, DP divisions, the seller's upline chain and the generated payment schedule.
+
 import type { CommissionPayout, ChainMember, PayoutRole } from '@/utils/commissionAllocation';
 
 export type PayUnit = 'months' | 'quarters' | 'years';

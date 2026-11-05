@@ -15,6 +15,8 @@
 </template>
 
 <script setup lang="ts">
+// MapInteractive: the Mapbox location picker inside MapPickerModal (Property Management). Search with
+// the geocoder, or turn on the pin and click the map; emits the coordinates and the place name.
 import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -36,7 +38,6 @@ const enablePin = ref(false);
 
 function togglePinning() {
   enablePin.value = !enablePin.value;
-  console.log(enablePin.value ? "Pin enabled" : "Pin disabled");
 }
 
 // Emit the new coordinates back to the parent when searched
@@ -49,7 +50,6 @@ onMounted(() => {
 
   if (!mapContainer.value) return;
   
-  console.log(props.targetLocation?.lng, props.targetLocation?.lat)
 
   // fallback coords to Fuente
   const lng = props.targetLocation?.lng ?? 123.89313980;
@@ -92,7 +92,6 @@ onMounted(() => {
         .addTo(map.value);
     }
 
-    console.log(newLng, newLat, locationName )
     // Inform the parent component of the new state
     emit('update:targetLocation', { lng: newLng, lat: newLat, name: locationName });
   });

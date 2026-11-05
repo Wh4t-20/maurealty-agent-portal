@@ -75,6 +75,10 @@
 </template>
 
 <script setup lang="ts">
+// PaymentRequestModal: the recipient's "Request payment" popup on the Commissions page. Prefills their
+// name and the sale details; "Edit details" unlocks the names, client, project, developer and
+// reservation date (cleaned before saving). Saves request_details and moves the tab to
+// payment_requested (commissionService.requestPayment).
 import { ref, reactive, computed } from 'vue'
 import { commissionService, type CommissionTab, type PaymentRequestDetails } from '@/services/commissionService'
 import { cleanText } from '@/utils/sanitize'

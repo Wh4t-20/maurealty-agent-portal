@@ -28,7 +28,7 @@
 
     <div class="flex flex-col overflow-y-auto space-y-2 px-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">      <router-link
         v-for="item in topItems"
-        :key="item.id"
+        :key="item.path"
         :to="item.path"
         class="flex items-center  text-white text-[clamp(0.5rem,2vw,1rem)] font-light
                 p-3 rounded-lg hover:bg-sidebar-hover dark:hover:bg-[#05365b] transition"
@@ -87,7 +87,7 @@
   <nav class="fixed bottom-0 left-0 right-0 z-50 flex md:hidden bg-maurealty-blue dark:bg-[#031a2b] border-t border-white/10 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
     <router-link
       v-for="item in topItems"
-      :key="item.id + item.path"
+      :key="item.path"
       :to="item.path"
       class="flex flex-col items-center justify-center gap-0.5 px-4 py-2 text-white/60 hover:text-white transition-colors shrink-0"
       active-class="text-white bg-white/10"
@@ -116,6 +116,9 @@
 </template>
 
 <script lang="ts" setup>
+// Sidebar: the desktop navigation (expands on hover) and the phone bottom bar, both built from
+// topItems. Shows the signed-in agent's picture, name, admin badge and rank (links to /profile).
+// Rendered by App.vue on every page except the login page and shared listing links.
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { authService } from '@/services/authService';
@@ -131,7 +134,7 @@ import {
   LayoutDashboard,
   LayoutList,
   Calculator,
-  Ticket,
+  Ticket, // Ticket, Mail and Trophy: icons of the commented-out Voucher / Inbox / Leaderboards links
   Mail,
   Trophy,
   ContactRound,
@@ -167,11 +170,13 @@ const isAdmin = computed(() => {
   return agent.value?.admin_access || false;
 });
 
+  // Links of the desktop sidebar and the phone bottom bar. Both lists are keyed by path (unique);
+  // add a new page here (see project-context.md 1.2).
   const topItems = [
     { id: 1, icon: LayoutDashboard, path: "/dashboard", label: "Dashboard" },
     { id: 2, icon: LayoutList, path: "/listings", label: "Project Listing" },
     { id: 3, icon: Calculator, path: "/accounting", label: "Accounting" },
-    { id: 9, icon: ReceiptText, path: "/sales", label: "Sales Report" },
+    { id: 12, icon: ReceiptText, path: "/sales", label: "Sales Report" }, // was id 9, the same as Genealogy
     // { id: 4, icon: Ticket, path: "/voucher", label: "Voucher" },
     // { id: 5, icon: Mail, path: "/inbox", label: "Inbox" },
     // { id: 6, icon: Trophy, path: "/leaderboards", label: "Leaderboards" },

@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+// configDropdown: a dropdown on the Settings page (headlessui Listbox, v-model = the chosen value).
 // https://headlessui.com/v1/vue/listbox
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'
 import { computed } from 'vue'

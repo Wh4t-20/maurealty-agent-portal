@@ -203,6 +203,9 @@
 </template>
 
 <script setup lang="ts">
+// AddAgentModal: Add / Edit Agent (admins only), opened from the Genealogy page and the Dashboard.
+// Adding also creates the agent's login with a generated initial password (agent-account Edge
+// Function); editing shows the login status and can reveal the initial password.
 import { ref, onMounted, computed, watch } from 'vue'
 import { CircleAlert, KeyRound, ShieldCheck, TriangleAlert } from 'lucide-vue-next'
 import PasswordReveal from '@/components/genealogy/PasswordReveal.vue'

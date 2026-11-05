@@ -59,6 +59,9 @@
 </template>
 
 <script setup lang="ts">
+// ReleasePaymentModal: the admin's "Release payment" popup on the Commissions page. Shows the agent's
+// request and needs at least one proof image (file picker or Ctrl+V paste) before
+// commissionService.releasePayment uploads them and marks the tab payment_released.
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { commissionService, type CommissionTab } from '@/services/commissionService'
 
