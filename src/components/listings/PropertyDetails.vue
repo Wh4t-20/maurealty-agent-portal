@@ -205,13 +205,16 @@
           <section class="markdownTypography text-black dark:text-white" v-html="compiledFAQMarkdown" />
         </section>
         
-        <!-- Action buttons wrap to the next line when the screen is narrow -->
+        <!-- Action buttons wrap to the next line when the screen is narrow.
+             Only the actions the viewer may take are shown (the database enforces the same):
+             edit = the listing's owner; delete = the owner or an admin; sold = active bulk listings;
+             approve = admins. readOnly (Developer List) hides the actions its page doesn't handle. -->
         <section class="w-full flex flex-wrap mt-4 px-3 gap-3">
-          <button @click="$emit('edit', details)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+          <button v-if="!readOnly && isOwner" @click="$emit('edit', details)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><SquarePen class="size-4" /> EDIT</span>
           </button>
 
-          <button @click="$emit('delete', details.listing_id)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-red-600 text-red-600 font-bold hover:bg-red-600 hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+          <button v-if="!readOnly && (isOwner || props.isAdmin)" @click="$emit('delete', details.listing_id)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-red-600 text-red-600 font-bold hover:bg-red-600 hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><Trash2 class="size-4" /> DELETE</span>
           </button>
 
@@ -233,7 +236,7 @@
           </button>
 
           <button
-            v-if="details.status !== 'sold' && details.is_bulk"
+            v-if="!readOnly && details.status === 'active' && details.is_bulk"
             @click="$emit('sold', details.listing_id)"
             class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-green text-maurealty-green font-bold hover:bg-maurealty-green hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
           >
@@ -241,7 +244,7 @@
           </button>
 
           <button
-            v-if="details.status === 'pending' && props.isAdmin"
+            v-if="!readOnly && details.status === 'pending' && props.isAdmin"
             @click="$emit('approve', details.listing_id)"
             class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-green text-maurealty-green font-bold hover:bg-maurealty-green hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
           >
@@ -296,12 +299,18 @@ import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRig
 // Toggles the calculator popup for this listing.
 const showCalc = ref(false)
 
+// currentAgentId: the signed-in agent, to know whether they own this listing.
+// readOnly: hide edit / delete / sold / approve (pages that don't handle those events).
 const props = withDefaults(defineProps<{
   prop_id: number,
   prop_type: string,
-  isAdmin?: boolean
+  isAdmin?: boolean,
+  currentAgentId?: number | null,
+  readOnly?: boolean
  }>(), {
-  isAdmin: false
+  isAdmin: false,
+  currentAgentId: null,
+  readOnly: false
 })
 
 const emit = defineEmits(['close-details', 'edit', 'delete', 'share', 'sold', 'approve'])
@@ -331,6 +340,12 @@ const lotClassesMap: Record<number, string> = {
 };
 
 const details = ref<any>(null)
+
+// The signed-in agent listed this property (edit is owner-only, admins included).
+const isOwner = computed(() =>
+  props.currentAgentId != null && details.value?.agent_ID != null && Number(details.value.agent_ID) === props.currentAgentId
+)
+
 const thumbnails = ref<string[]>([]);
 const activeImage = ref<string>(''); 
 const currentImageIndex = ref(0);

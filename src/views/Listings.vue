@@ -147,6 +147,7 @@
           :prop_id="prop_id"
           :prop_type="prop_type"
           :is-admin="isAdmin"
+          :current-agent-id="currentAgentId"
           @close-details="showDetails = false"
           @edit="handleEdit"
           @delete="triggerConfirm($event, 'delete')"

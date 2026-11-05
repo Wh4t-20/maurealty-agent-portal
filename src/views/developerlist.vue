@@ -37,10 +37,12 @@
       </div>
     </div>
   </div>
+  <!-- read-only: this page doesn't handle edit / delete / sold / approve (use Project Listings) -->
   <PropertyDetails
     v-if="selectedProject"
     :prop_id="selectedProject.listing_ID"
     :prop_type="selectedProject.property_type"
+    read-only
     @closeDetails="selectedProject = null"
   />
 
