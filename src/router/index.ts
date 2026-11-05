@@ -24,10 +24,13 @@ const Settings = () => import('@/views/Settings.vue')
 const Commission = () => import('@/views/Commission.vue')
 const Support = () => import('@/views/Support.vue')
 
-// Pages a signed-in agent can open from the Sidebar (prefetched after the first one renders).
+// Pages a signed-in agent can open from the Sidebar (prefetched after the first one renders), plus
+// the listing details overlay, which Listings and the Developer List load on first open (it holds
+// the Mapbox and jsPDF libraries).
 const PORTAL_PAGES = [
   Dashboard, Listings, SalesReport, Commission, Support, DeveloperList,
   PropertyManagement, GenealogyLandingpage, Accounting, Profile, Settings,
+  () => import('@/components/listings/PropertyDetails.vue'),
 ]
 
 const routes: Array<RouteRecordRaw> = [

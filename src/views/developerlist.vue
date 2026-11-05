@@ -66,14 +66,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, defineAsyncComponent } from "vue";
 import { type Developer, type OfficeHourSlot, type DeveloperProject, type DeveloperPromo } from "@/assets/classes/developers.ts";
 import { developerService } from "@/services/developerService";
 import DeveloperCard from "@/components/developer/developerCard.vue";
 import DeveloperCardSkeleton from "@/components/developer/DeveloperCardSkeleton.vue";
 import AddDeveloperTab from "@/components/developer/addDeveloper.vue";
-import PropertyDetails from "@/components/listings/PropertyDetails.vue";
 import PromoPosterModal from "@/components/developer/PromoPosterModal.vue";
+
+// The listing overlay (Recent Projects chips) brings the Mapbox and jsPDF libraries, so it downloads
+// when a project is first opened instead of holding up the cards (also prefetched by the router).
+const PropertyDetails = defineAsyncComponent(() => import("@/components/listings/PropertyDetails.vue"));
 import { authService } from "@/services/authService";
 import { Plus } from "lucide-vue-next";
 

@@ -244,15 +244,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, shallowRef, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, shallowRef, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 // Property instance
 import { type Property }  from '@/assets/classes/listings'
 import PropertyCard from '@/components/listings/PropertyCard.vue'
 import ListingsFilter from '@/components/listings/ListingsFilter.vue'
-import PropertyDetails from '@/components/listings/PropertyDetails.vue'
 import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
+
+// The details overlay brings the map (Mapbox) and calculator (jsPDF) libraries, so it downloads
+// the first time a card is opened instead of holding up the grid (the router also prefetches it
+// in the background, see src/router/index.ts).
+const PropertyDetails = defineAsyncComponent(() => import('@/components/listings/PropertyDetails.vue'))
 
 // Supabase service import
 import { listingsService } from '@/services/listingsServices'
