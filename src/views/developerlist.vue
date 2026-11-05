@@ -49,19 +49,8 @@
     @closeDetails="selectedProject = null"
   />
 
-  <!-- Promo poster lightbox -->
-  <div v-if="selectedPromo" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" @click.self="selectedPromo = null">
-    <div class="relative max-w-3xl w-full max-h-full flex flex-col items-center">
-      <button class="absolute -top-3 -right-3 bg-white text-black p-2 rounded-full shadow hover:bg-gray-200 transition cursor-pointer" @click="selectedPromo = null">
-        <XIcon class="size-5" stroke-width="3" />
-      </button>
-      <img :src="selectedPromo.image_url" :alt="selectedPromo.title" class="max-h-[80vh] w-auto rounded-xl object-contain" />
-      <div v-if="selectedPromo.title || selectedPromo.valid_until" class="mt-3 text-center text-white">
-        <p v-if="selectedPromo.title" class="font-semibold text-lg">{{ selectedPromo.title }}</p>
-        <p v-if="selectedPromo.valid_until" class="text-sm text-gray-300">Valid until {{ selectedPromo.valid_until }}</p>
-      </div>
-    </div>
-  </div>
+  <!-- Promo poster lightbox: components/developer/PromoPosterModal.vue -->
+  <PromoPosterModal v-if="selectedPromo" :promo="selectedPromo" @close="selectedPromo = null" />
   </main>
 </template>
 
@@ -72,8 +61,9 @@ import { developerService } from "@/services/developerService";
 import DeveloperCard from "@/components/developer/developerCard.vue";
 import AddDeveloperTab from "@/components/developer/addDeveloper.vue";
 import PropertyDetails from "@/components/listings/PropertyDetails.vue";
+import PromoPosterModal from "@/components/developer/PromoPosterModal.vue";
 import { authService } from "@/services/authService";
-import { Plus, XIcon } from "lucide-vue-next";
+import { Plus } from "lucide-vue-next";
 
 // Developer management (add / edit / delete, promos) is admin-only: the buttons are hidden for
 // agents and the database (RLS) refuses their changes anyway.
