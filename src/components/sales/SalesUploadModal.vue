@@ -76,15 +76,17 @@
         <!-- Spot-Cash: the whole Total Contract Price is due, no divisions -->
         <div v-if="isSpotCash"
              class="sm:col-span-2 rounded-lg border border-maurealty-blue/20 bg-blue-50/40 dark:bg-maurealty-light-blue/10 p-3 text-sm text-gray-700 dark:text-gray-200">
-          Spot-Cash: full payment of <span class="font-semibold">₱{{ formatMoney(form.total_contract_price) }}</span> (Total Contract Price)
-          <template v-if="firstDueLabel">, due on <span class="font-semibold">{{ firstDueLabel }}</span> (one month after the reservation)</template>. No DP divisions, no financing.
+          <!-- The commission is due one month after an admin approves the sale (the date the tabs are
+               created, salesService.generateCommissionTabs), not after the reservation: confirmed by the team. -->
+          Spot-Cash: full payment of <span class="font-semibold">₱{{ formatMoney(form.total_contract_price) }}</span> (Total Contract Price),
+          due one month after an admin approves the sale. No DP divisions, no financing.
         </div>
 
         <!-- Deferred Cash: the Total Contract Price paid in 12 equal monthly installments -->
         <div v-if="form.payment_scheme === 'Deferred-Cash'"
              class="sm:col-span-2 rounded-lg border border-maurealty-blue/20 bg-blue-50/40 dark:bg-maurealty-light-blue/10 p-3 text-sm text-gray-700 dark:text-gray-200">
           Deferred Cash: <span class="font-semibold">₱{{ formatMoney(form.total_contract_price) }}</span> paid in 12 monthly installments of
-          <span class="font-semibold">₱{{ formatMoney((form.total_contract_price || 0) / 12) }}</span><template v-if="firstDueLabel">, the first due on <span class="font-semibold">{{ firstDueLabel }}</span></template>.
+          <span class="font-semibold">₱{{ formatMoney((form.total_contract_price || 0) / 12) }}</span>, the first due one month after an admin approves the sale.
           One commission tab per installment.
         </div>
 
@@ -594,11 +596,9 @@ watch(() => form.payment_scheme, (scheme) => {
 
 const isSpotCash = computed(() => form.payment_scheme === 'Spot-Cash')
 
-// Spot-Cash is due, and Deferred-Cash starts, one month after the reservation.
+// DP Division 1 starts one month after the reservation. (Spot-Cash and Deferred-Cash commissions are
+// due from the approval date instead, so the form no longer previews a reservation-based date for them.)
 const firstDueDate = computed(() => form.reservation_date ? addMonthsClamped(form.reservation_date, 1) : '')
-const firstDueLabel = computed(() => firstDueDate.value
-  ? new Date(firstDueDate.value + 'T00:00:00').toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })
-  : '')
 
 // The commissionable amount starts as the contract price until the agent types their own.
 const commissionableTouched = ref(!!props.editSale)
