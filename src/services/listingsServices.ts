@@ -251,8 +251,10 @@ export const listingsService = {
     }
   },
 
-// Upload images to Supabase Storage and link them to the listing
-  async uploadPropertyImages(listingId: number, files: File[]) {
+// Upload images to Supabase Storage and link them to the listing.
+// startOrder: display_order of the first new photo (edit mode passes the next free number, so new
+// photos go after the listing's saved ones instead of tying with them).
+  async uploadPropertyImages(listingId: number, files: File[], startOrder: number = 1) {
     try {
       const uploadedRecords = [];
 
@@ -280,7 +282,7 @@ export const listingsService = {
         uploadedRecords.push({
           listing_ID: listingId,
           image_url: publicUrl,
-          display_order: i + 1 
+          display_order: startOrder + i
         });
       }
 

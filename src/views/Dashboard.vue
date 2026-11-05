@@ -449,7 +449,8 @@ onMounted(async () => {
   }
 });
 
+// edit: 0 = a new listing (Property Management also treats a missing edit flag as create mode)
 const addListing = () => {
-  router.push({ path: '/propertymanagement' });
+  router.push({ path: '/propertymanagement', query: { edit: 0 } });
 }
 </script>
