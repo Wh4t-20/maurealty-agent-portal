@@ -106,6 +106,8 @@
 </template>
 
 <script setup lang="ts">
+// amortSched: the loan amortization schedule popup, opened from CalculatorPanel's Loan mode.
+// Monthly rows starting one month from today (interest by actual days / 365), paging, and Export PDF.
 import { ref, computed, onMounted, onUnmounted} from 'vue'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'

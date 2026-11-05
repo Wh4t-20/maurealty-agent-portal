@@ -1,4 +1,6 @@
 // src/services/salesService.ts
+// Sales: the list (Sales Report), create / edit / delete (sale form), DP divisions, "Sale n"
+// numbering, and the commission tabs generated when an admin approves a sale (generateCommissionTabs).
 import { supabase } from '../supabaseClient';
 
 //change Imported commissionService to handle commission math

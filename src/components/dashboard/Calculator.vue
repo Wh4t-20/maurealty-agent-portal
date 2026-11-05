@@ -1,5 +1,7 @@
 <template>
   <div class="calculator-panel">
+    <!-- Unused placeholder (nothing imports it): the calculators live in calculator/CalculatorPanel.vue.
+         Kept for reference; see project-context.md 11.8 (dead code). -->
     <h2>Commission Calculator</h2>
     <div class="calc-grid">
       <input type="number" placeholder="Total Sale Price" class="form-input" />

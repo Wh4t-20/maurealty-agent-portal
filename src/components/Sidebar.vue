@@ -116,6 +116,9 @@
 </template>
 
 <script lang="ts" setup>
+// Sidebar: the desktop navigation (expands on hover) and the phone bottom bar, both built from
+// topItems. Shows the signed-in agent's picture, name, admin badge and rank (links to /profile).
+// Rendered by App.vue on every page except the login page and shared listing links.
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { authService } from '@/services/authService';

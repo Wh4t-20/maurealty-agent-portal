@@ -137,6 +137,9 @@
   </template>
 
 <script setup lang ="ts">
+// Genealogy page (/genealogy): team stats, Teams, Recently Added, Manage Agents (admins edit and
+// delete), the Roles / Overrides / Promotion panel (TeamInsights) and the tree (genealogymodal).
+// Adding an agent also creates their login (AddAgentModal -> agent-account Edge Function).
 import { ref, computed, onMounted } from 'vue'
 import Gen from '@/components/genealogy/genealogymodal.vue'
 import AddAgentModal from '@/components/genealogy/AddAgentModal.vue'

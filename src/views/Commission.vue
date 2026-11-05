@@ -359,6 +359,9 @@
 </template>
 
 <script setup lang="ts">
+// Commissions page (/commissions): commission tabs and their payment flow (approve -> request ->
+// release -> received). Agents see the tabs they receive; admins switch between everyone's, their
+// own and other agents'. Skeleton cards show while the tabs load.
 
 import { ref, computed, onMounted, watch } from 'vue';
 import { commissionService, summarizeTabs, STATUS_LABEL, type CommissionTab, type CommissionStatus } from '@/services/commissionService';

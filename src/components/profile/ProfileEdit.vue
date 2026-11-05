@@ -148,6 +148,9 @@
 </template>
 
 <script setup lang="ts">
+// ProfileEdit: the edit form on /profile for the agent's own details and picture. Every field is cleaned
+// and checked (cleanForm) before saving; the old picture is deleted only after the row is saved, and
+// a failed save removes the newly uploaded picture again.
 import { ref } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue';
 import { agentService } from '@/services/agentService';

@@ -200,6 +200,9 @@
 </template>
 
 <script setup lang="ts">
+// TicketDetailsModal: one ticket on the IT Support page: progress (Raised -> In Review -> Resolved),
+// facts, the user's text, screenshots (signed links) and the resolution note. Admins start the
+// review, resolve (note required) and reopen; agents only read.
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick, useId } from 'vue'
 import { CircleCheck, Info, RotateCcw } from 'lucide-vue-next'
 import ConfirmActionModal from '@/components/commissions/ConfirmActionModal.vue'

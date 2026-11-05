@@ -1,3 +1,8 @@
+// src/services/developerService.ts
+// Developers for the Developer List and the listing / sale forms: the developer rows, their office
+// hours (opening_days, one row per day) and promo posters (developer_promos + the images bucket).
+// Adding, editing and deleting are admin-only; the database refuses agents too (RLS).
+
 import { supabase } from '../supabaseClient';
 import { type Developer, type DeveloperPromo, type OfficeHourSlot, type DayOption, days } from '../assets/classes/developers';
 import { safeFileExtension } from '../utils/sanitize';

@@ -1,3 +1,7 @@
+// src/services/agentService.ts
+// The signed-in agent's own row: full profile (Sidebar, Profile), id, profile and settings updates,
+// and the profile picture in the images bucket ("agents/<agent_ID>-<time>.<ext>").
+
 import { supabase } from '../supabaseClient';
 import { safeFileExtension } from '../utils/sanitize';
 import { getSessionUser } from './authService';

@@ -78,6 +78,8 @@
 </template>
 
 <script setup lang="ts">
+// Settings page (/settings): default currency and area unit, animations and dark mode. Changes apply at
+// once (localStorage through useSettings); SAVE SETTINGS also stores them in agents.configs.
 import { ref, onBeforeUnmount } from 'vue';
 import { currencySymbols, areaUnits } from '@/utils/conversion';
 import ConfigDropdown from '@/components/settings/configDropdown.vue';

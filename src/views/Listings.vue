@@ -7,6 +7,7 @@
        that extra padding back out, so this box is exactly one screen tall again. -->
     
   <div class="w-full h-[calc(100vh-4rem)] md:h-screen bg-background-gray dark:bg-background-dark-gray flex flex-col items-center overflow-hidden">
+    <!-- SAVED NOTICE: "Listing saved / updated / submitted" after Property Management (?saved=...) -->
     <Transition name="toast">
       <div v-if="savedNotice" class="fixed top-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-maurealty-green/40 dark:border-maurealty-green/60 shadow-lg px-5 py-3">
         <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-green text-white text-sm font-bold">✓</span>
@@ -14,6 +15,7 @@
       </div>
     </Transition>
 
+    <!-- HEADER: title, Add Listing, search, and the filter bar (collapsed with the chevron button) -->
     <header class="flex flex-col py-5 px-4 sm:px-10 pb-0 w-full bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black text-maurealty-blue dark:text-white shadow-md sticky z-20">
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full pb-3 mb-3 gap-2">
         <h1 class="text-xl sm:text-3xl font-bold">PROJECT LISTINGS</h1>
@@ -133,7 +135,8 @@
     </header>
   
   <main class="relative flex-1 overflow-hidden flex flex-col w-full">
-    
+
+      <!-- LISTING DETAILS OVERLAY (components/listings/PropertyDetails.vue, downloaded on first open) -->
       <transition
             enter-active-class="transition duration-200 ease-out"
             enter-from-class="transform translate-y-4 scale-95 opacity-0"
@@ -156,6 +159,7 @@
         />
       </transition>
       
+      <!-- GRID: listing cards (skeleton cards while loading), then the pagination footer -->
       <section class="custom-scrollbar flex-1 overflow-y-auto">
         <div class="p-4 sm:p-10 flex flex-col min-h-full">
           
@@ -187,6 +191,7 @@
 
           </div>
 
+          <!-- PAGINATION -->
           <footer class="bg-transparent pt-5 pb--12 flex justify-center items-center gap-4 w-full mt-auto">
             <button 
               @click="currentPage--" 
@@ -216,6 +221,7 @@
       @close="soldListing = null"
       @saved="onSaleSaved"
     />
+    <!-- CONFIRM TOAST: Delete and Mark as Sold ask here first (confirmToastAction runs the action) -->
     <Transition name="toast">
       <div v-if="toastConfirm.visible" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-red-500 shadow-2xl px-5 py-3">
         <span class="flex items-center justify-center size-6 rounded-full bg-red-600 text-white text-sm font-bold">!</span>
@@ -244,6 +250,8 @@
 </template>
 
 <script setup lang="ts">
+// Project Listings (/listings): the listing grid with filters and search (in the browser), skeleton
+// cards while loading, the details overlay, and the delete / sold / approve actions it emits.
 import { ref, shallowRef, computed, onMounted, onUnmounted, watch, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 

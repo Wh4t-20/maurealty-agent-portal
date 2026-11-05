@@ -15,6 +15,8 @@
 </template>
 
 <script setup lang="ts">
+// MapInteractive: the Mapbox location picker inside MapPickerModal (Property Management). Search with
+// the geocoder, or turn on the pin and click the map; emits the coordinates and the place name.
 import { onMounted, onUnmounted, ref, shallowRef, watch } from 'vue';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';

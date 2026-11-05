@@ -616,6 +616,9 @@
 </template>
 
 <script setup lang="ts">
+// Property Management (/propertymanagement): create a listing (?edit=0, or no query) or edit one
+// (?edit=1&id=..&type=..): photos, Markdown description and FAQ, price, location picker, type fields
+// and fact sheet. A non-admin's new listing waits for approval (status 'pending').
 import { useRoute, useRouter } from 'vue-router';
 import { ref, onMounted, computed } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue'

@@ -283,6 +283,10 @@
 </template>
 
 <script setup lang="ts">
+// PropertyDetails: the listing details overlay (Project Listings, and read-only from the Developer
+// List): photos, price, map and nearby places, features, description, FAQ, fact sheet, and the
+// EDIT / DELETE / SHARE / CALCULATOR / SOLD / APPROVE buttons the viewer may use.
+// The pages load it on first open (defineAsyncComponent), since it brings Mapbox and jsPDF.
 import { ref, watch, computed } from 'vue'
 import { formattedPropertyType } from '@/assets/classes/listings'
 import { listingsService, compileMarkdown } from '@/services/listingsServices' 

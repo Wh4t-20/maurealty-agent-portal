@@ -5,6 +5,7 @@
 </template>
 
 <script setup lang="ts">
+// TicketStatusBadge: the Raised / In Review / Resolved pill on the IT Support page and in the ticket popup.
 import { TICKET_STATUS_LABEL, type TicketStatus } from '@/assets/classes/ticket'
 
 defineProps<{ status: TicketStatus }>()

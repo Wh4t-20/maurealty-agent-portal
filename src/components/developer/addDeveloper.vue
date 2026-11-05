@@ -245,6 +245,9 @@
 </template>
 
 <script setup lang="ts">
+// addDeveloper: the Add / Edit Developer form on the Developer List (admins only): name, location,
+// contact details, office-hour slots, picture and promo posters. It edits copies until Save, cleans
+// every field, then emits "saved" so the page reloads the list.
 import { ref, watch } from 'vue';
 import { Listbox, ListboxButton, ListboxOptions, ListboxOption } from '@headlessui/vue';
 import { type DayOption, type OfficeHourSlot, days } from '@/assets/classes/developers';

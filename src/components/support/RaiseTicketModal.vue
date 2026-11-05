@@ -280,6 +280,9 @@
 </template>
 
 <script setup lang="ts">
+// RaiseTicketModal: the guided Raise a Ticket form on the IT Support page: category, page, title,
+// steps / expected / actual result for problems, optional screenshots, and a live checklist that
+// unlocks the submit button. ticketService.createTicket cleans and checks everything again.
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, useId } from 'vue'
 import { LifeBuoy, Lightbulb, TriangleAlert, ImagePlus, MonitorSmartphone, ListChecks, CircleCheck, Circle, CirclePlus, Send, X } from 'lucide-vue-next'
 import ConfirmActionModal from '@/components/commissions/ConfirmActionModal.vue'

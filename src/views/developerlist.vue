@@ -66,6 +66,8 @@
 </template>
 
 <script setup lang="ts">
+// Developer List (/developerlist): developer cards with search, skeleton cards on the first load, the
+// read-only listing overlay and the promo lightbox. Admins add, edit and delete developers.
 import { ref, computed, onMounted, watch, defineAsyncComponent } from "vue";
 import { type Developer, type DeveloperProject, type DeveloperPromo } from "@/assets/classes/developers.ts";
 import { developerService } from "@/services/developerService";

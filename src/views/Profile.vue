@@ -39,6 +39,8 @@
 </template>
 
 <script setup lang="ts">
+// Profile page (/profile): ProfileCard, or ProfileEdit after EDIT, for the signed-in agent's full row
+// (agentService.getCurrentAgentProfile).
 import { ref, onMounted } from 'vue'
 import { agentService } from '@/services/agentService'
 import { SquarePen } from 'lucide-vue-next'

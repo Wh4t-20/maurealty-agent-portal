@@ -64,6 +64,8 @@
 </template>
 
 <script setup lang="ts">
+// ProofModal: the proof-of-payment gallery on the Commissions page. The recipient confirms receipt here
+// ("Received payment" asks them to type "I have received payment"); everyone else only views the images.
 import { ref } from 'vue'
 import { commissionService, type CommissionTab } from '@/services/commissionService'
 import ConfirmActionModal from '@/components/commissions/ConfirmActionModal.vue'

@@ -81,6 +81,9 @@
 </template>
 
 <script setup lang="ts">
+// TeamInsights: the "Roles, Overrides and Promotion" panel on the Genealogy page. Per agent: rank,
+// rate, downline counts, accumulated sales, progress to the next rank and the override split.
+// Admins edit the promotion thresholds and promote eligible agents; agents only read them.
 import { ref, computed, onMounted } from 'vue'
 import { genealogyService, type TeamMember, type RankPosition } from '@/services/genealogyService'
 import { authService } from '@/services/authService'

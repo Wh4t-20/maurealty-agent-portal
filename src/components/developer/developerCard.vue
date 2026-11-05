@@ -105,6 +105,9 @@
 </template>
 
 <script setup lang="ts">
+// developerCard: one developer on the Developer List: picture, contact details, office hours, Recent
+// Projects chips (open the listing overlay) and promo posters (open the lightbox).
+// DeveloperCardSkeleton.vue mirrors this layout for the loading state; change both together.
 import { type DayOption, type Developer, type DeveloperProject, type DeveloperPromo 	} from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
 import { PhoneIcon, MailIcon, MapPinIcon, CalendarCheck2Icon, CalendarOffIcon, TagIcon } from 'lucide-vue-next';

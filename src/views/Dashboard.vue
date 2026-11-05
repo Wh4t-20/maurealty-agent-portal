@@ -2,6 +2,7 @@
   <div class="flex min-h-screen bg-background-gray dark:bg-background-dark-gray w-full">
     <div class="flex-1 flex flex-col">
       
+      <!-- HEADER: welcome + rank, Add Listing / Add Agent (admins), admin scope switch, month filter -->
       <header class="flex flex-col py-5 px-10 pb-0 w-full bg-gradient-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black shadow-md sticky top-0 z-20">
         <div class="flex justify-between items-center w-full pb-5">
           <div class="font-['Poppins']">
@@ -61,9 +62,10 @@
             <span class="text-sm font-semibold underline shrink-0">Open</span>
           </button>
         </div>
+        <!-- ROW 1: Total Sales, Total Received Commission, Listings (follow the month filter) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <StatCard 
-            v-for="stat in metrics" 
+          <StatCard
+            v-for="stat in metrics"
             :key="stat.label" 
             :stat="stat" 
             @click="expandMetric(stat)" 
@@ -81,7 +83,8 @@
           />
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8"> 
+        <!-- MAIN: Sales Performance and Commission History (left); Genealogy card and Reminders (right) -->
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8">
           <div class="flex flex-col gap-8">
             <SalesPerformance
               :bars="performance.bars"
@@ -135,6 +138,9 @@
 </template>
 
 <script setup lang="ts">
+// Dashboard (/dashboard): the landing page after login. Number cards, alerts, sales performance,
+// commission history, the genealogy card and reminders, all built by dashboardService; admins switch
+// between their own numbers and the whole company's.
 import { ref, watch, onMounted, computed } from 'vue';
 import { supabase } from '@/supabaseClient';
 import { type AgentProfile, positionMap } from '@/assets/classes/agent';

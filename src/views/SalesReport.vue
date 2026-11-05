@@ -237,6 +237,9 @@
 </template>
 
 <script setup lang="ts">
+// Sales Report (/sales): admins see every sale, agents their own. Search, date and agent filters,
+// summary totals, a sortable table (12 per page), CSV export, the Sale Details popup, and add / edit /
+// delete through the sale form. Skeleton rows show while the sales load.
 import { ref, shallowRef, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ClipboardList, Plus, Download, Pencil, Trash2, AlertTriangle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-vue-next'
 import { salesService, type Sale } from '@/services/salesService'

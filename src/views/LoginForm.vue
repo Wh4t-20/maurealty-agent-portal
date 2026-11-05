@@ -78,6 +78,9 @@
 </template>
 
 <script setup lang="ts">
+// Login page (/): email + password sign-in through Supabase Auth; the agent's saved settings are then
+// copied to localStorage and the Dashboard opens. "Forgot or change password?" opens the email-code
+// flow (ChangePasswordModal).
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '../supabaseClient'
