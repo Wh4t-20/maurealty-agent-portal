@@ -165,8 +165,9 @@
                 <main class="text-sm px-2 flex flex-col">
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><Hash /> Unit No. <b>{{ details.unit_number }}</b></span>
-                    <span class="flex items-center-safe gap-1"><Bed /> {{ details.bedroom_count }} bedroom{{ details.carpark_count != 1 ? 's' : '' }}</span>
-                    <span class="flex items-center-safe gap-1"><BookImage /> {{ details.balcony_count }} balcon{{ details.carpark_count != 1 ? 'ies' : 'y' }}</span>
+                    <!-- Plurals follow their own count (they used to follow carpark_count) -->
+                    <span class="flex items-center-safe gap-1"><Bed /> {{ details.bedroom_count }} bedroom{{ details.bedroom_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1"><BookImage /> {{ details.balcony_count }} balcon{{ details.balcony_count != 1 ? 'ies' : 'y' }}</span>
                     <span class="flex items-center-safe gap-1"><Car /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}</span>
                     <span class="flex items-center-safe gap-1 sm:col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
                   </div>
@@ -487,9 +488,9 @@ const compiledDescriptionMarkdown = computed(() => {
   return compileMarkdown(details.value?.description)
 });
 
-// FAQ markdown conversion and input
+// FAQ markdown conversion and input (details is null while the listing loads)
 const compiledFAQMarkdown = computed(() => {
-  if (details.value.faq)
+  if (details.value?.faq)
     return compileMarkdown("# FREQUENTLY ASKED QUESTIONS\n\n" + details.value.faq);
   else
     return '';
