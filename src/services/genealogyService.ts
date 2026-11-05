@@ -247,6 +247,30 @@ function checkPlacement(
 }
 
 // ---------- Team insights (accumulated sales, promotion progress, override map) ----------
+
+// Each agent's own completed sales (sum of contract prices). Since the RLS migration an agent can
+// only read their own sales rows, so the totals come from the team_completed_sales() SQL function
+// (supabase/migrations/20261105120000_harden_rls.sql), which returns totals only.
+async function completedSalesByAgent(): Promise<Map<number, number>> {
+  const own = new Map<number, number>();
+  const { data, error } = await supabase.rpc('team_completed_sales');
+  if (!error) {
+    for (const r of (data || []) as any[]) own.set(Number(r.agent_ID), Number(r.completed_sales) || 0);
+    return own;
+  }
+  // PGRST202 = the function doesn't exist yet (migration not run): add up the sales rows like before.
+  if (error.code !== 'PGRST202') throw error;
+  const { data: saleRows, error: salesError } = await supabase
+    .from('sales')
+    .select('agent_ID, total_contract_price, status');
+  if (salesError) throw salesError;
+  for (const r of (saleRows || []) as any[]) {
+    if ((r.status || '').toString().toLowerCase().trim() !== 'complete') continue;
+    own.set(r.agent_ID, (own.get(r.agent_ID) ?? 0) + (Number(r.total_contract_price) || 0));
+  }
+  return own;
+}
+
 export interface OverrideLine {
   agent_ID: number;
   name: string;
@@ -565,17 +589,7 @@ export const genealogyService = {
   // Everyone with their rank, accumulated sales (own + all below), promotion progress and the
   // override split that applies to their own sales.
   async getTeamInsights(): Promise<TeamMember[]> {
-    const g = await fetchGraph();
-    const { data: saleRows, error } = await supabase
-      .from('sales')
-      .select('agent_ID, total_contract_price, status');
-    if (error) throw error;
-
-    const own = new Map<number, number>();
-    for (const r of (saleRows || []) as any[]) {
-      if ((r.status || '').toString().toLowerCase().trim() !== 'complete') continue;
-      own.set(r.agent_ID, (own.get(r.agent_ID) ?? 0) + (Number(r.total_contract_price) || 0));
-    }
+    const [g, own] = await Promise.all([fetchGraph(), completedSalesByAgent()]);
 
     const byId = new Map(g.agents.map(a => [a.agent_ID, a] as const));
     const uplineOf = new Map<number, number>();
