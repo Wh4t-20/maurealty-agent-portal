@@ -1,5 +1,9 @@
 import { supabase } from '../supabaseClient';
 import { type Property } from '../assets/classes/listings';
+import { safeFileExtension, safeFileName } from '../utils/sanitize';
+
+// Every value of the listing_status enum (draft is the DB default; pending added by 20260906120000).
+const LISTING_STATUSES = ['draft', 'pending', 'active', 'sold'];
 
 //added a subtable
 const SUB_TABLE_MAP: Record<number, string> = {
@@ -10,12 +14,8 @@ const SUB_TABLE_MAP: Record<number, string> = {
 
 };
 
-export const listingsService = {
-  // Fetch listings. Defaults to active-only (public/agent view); pass
-  // statuses to widen the set — e.g. ['active', 'pending'] for the admin
-  // view that also surfaces listings awaiting approval.
-  async getListings(limit: number = 20, statuses: string[] = ['active'], ownPendingAgentId?: number): Promise<Property[]> {
-    const selectFields = `
+// The columns a listing card needs (mapped by mapToProperty).
+const LISTING_CARD_FIELDS = `
         listing_ID,
         listing_title,
         price,
@@ -36,15 +36,27 @@ export const listingsService = {
         listing_images (image_url, display_order)
       `;
 
+export const listingsService = {
+  // Fetch listings. Defaults to active-only (public/agent view); pass
+  // statuses to widen the set — e.g. ['active', 'pending'] for the admin
+  // view that also surfaces listings awaiting approval.
+  async getListings(limit: number = 20, statuses: string[] = ['active'], ownPendingAgentId?: number): Promise<Property[]> {
+    const selectFields = LISTING_CARD_FIELDS;
+
     let query = supabase
       .from('main_listings')
       .select(selectFields);
 
-    if (ownPendingAgentId) {
+    // The or() filter below is a PostgREST filter string, so it may only ever hold known status
+    // words and a whole-number id: never text a user typed.
+    const safeStatuses = statuses.filter(s => LISTING_STATUSES.includes(s));
+    const ownId = Number(ownPendingAgentId);
+
+    if (ownPendingAgentId && Number.isInteger(ownId) && ownId > 0) {
       // Non-admin agents: show all active listings + their own pending ones
-      query = query.or(`status.in.(${statuses.join(',')}),and(status.eq.pending,agent_ID.eq.${ownPendingAgentId})`);
+      query = query.or(`status.in.(${safeStatuses.join(',')}),and(status.eq.pending,agent_ID.eq.${ownId})`);
     } else {
-      query = query.in('status', statuses);
+      query = query.in('status', safeStatuses);
     }
 
     const { data, error } = await query
@@ -57,6 +69,22 @@ export const listingsService = {
     }
 
     return (data || []).map((item: any) => this.mapToProperty(item));
+  },
+
+  // One listing as a card (same fields as getListings), whatever its status. null if it can't be read.
+  // The sale form uses it when its project is fixed (Sold button, editing a sale).
+  async getListingSummary(listingId: number): Promise<Property | null> {
+    const { data, error } = await supabase
+      .from('main_listings')
+      .select(LISTING_CARD_FIELDS)
+      .eq('listing_ID', listingId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching listing summary:', error);
+      return null;
+    }
+    return data ? this.mapToProperty(data) : null;
   },
 
   // Map database payload to Property interface
@@ -229,7 +257,7 @@ export const listingsService = {
 
           // Detects if RLS blocked the update
           if (!subData || subData.length === 0) {
-            console.error('Update failed silently. Zero rows modified in ${subTable}.');
+            console.error(`Update failed silently. Zero rows modified in ${subTable}.`);
             return { success: false };
           }
         }
@@ -242,8 +270,10 @@ export const listingsService = {
     }
   },
 
-// Upload images to Supabase Storage and link them to the listing
-  async uploadPropertyImages(listingId: number, files: File[]) {
+// Upload images to Supabase Storage and link them to the listing.
+// startOrder: display_order of the first new photo (edit mode passes the next free number, so new
+// photos go after the listing's saved ones instead of tying with them).
+  async uploadPropertyImages(listingId: number, files: File[], startOrder: number = 1) {
     try {
       const uploadedRecords = [];
 
@@ -251,8 +281,8 @@ export const listingsService = {
         const file = files[i];
         if (!file) continue;
         
-        // create a unique, safe file name
-        const fileExt = file.name.split('.').pop() || 'bin';
+        // create a unique, safe file name ("listings/<id>-..." is what the storage policy expects)
+        const fileExt = safeFileExtension(file.name);
         const fileName = `${listingId}-${Date.now()}-${i}.${fileExt}`;
         
         const filePath = `listings/${fileName}`;
@@ -271,7 +301,7 @@ export const listingsService = {
         uploadedRecords.push({
           listing_ID: listingId,
           image_url: publicUrl,
-          display_order: i + 1 
+          display_order: startOrder + i
         });
       }
 
@@ -338,7 +368,8 @@ async deleteListingImages(imageUrls: string[]) {
   // fact sheet upload
   async uploadFactSheet(listingId: number, file: File) {
     try {
-      const sanitizedName = file.name.replace(/\s+/g, '_');
+      // letters, digits, . - _ only (the name is kept for the download, minus the "<id>-<ts>-" prefix)
+      const sanitizedName = safeFileName(file.name);
       const filePath = `${listingId}-${Date.now()}-${sanitizedName}`;
 
       // upload the file to the fact_sheets bucket
@@ -354,13 +385,15 @@ async deleteListingImages(imageUrls: string[]) {
         .getPublicUrl(filePath);
 
       // update the main_listings table row with this file's public URL
-      const { error: dbError } = await supabase
+      const { data: updated, error: dbError } = await supabase
         .from('main_listings')
         .update({ fact_sheet: urlData.publicUrl })
         .eq('listing_ID', listingId)
-        .select();
+        .select('listing_ID');
 
       if (dbError) throw dbError;
+      // Zero rows = the listing wasn't found or RLS blocked the update: the file is not linked.
+      if (!updated || updated.length === 0) throw new Error('The fact sheet was uploaded but could not be linked to the listing.');
 
       return { success: true, url: urlData.publicUrl };
     } catch (error) {

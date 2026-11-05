@@ -55,6 +55,10 @@ function toggleExpand() {
 const props = defineProps<{
   targetLocation?: { lng: number; lat: number } | null;
   listingId?: number | null;
+  // Public shared listing page: the cached places arrive with the listing (signed-out visitors
+  // can't read main_listings) and nothing is written back to the database.
+  cachedPois?: NearbyPois | null;
+  readOnlyCache?: boolean;
 }>();
 
 const categories = POI_CATEGORIES;
@@ -95,7 +99,10 @@ async function ensurePois(): Promise<NearbyPois | null> {
 
   poiLoading.value = true;
   try {
-    poiData.value = await poiService.getNearbyPois(props.listingId, lng, lat);
+    poiData.value = await poiService.getNearbyPois(
+      props.listingId, lng, lat,
+      props.readOnlyCache ? { cached: props.cachedPois ?? null, persist: false } : {},
+    );
     return poiData.value;
   } catch (e) {
     console.error('Failed to load nearby POIs:', e);
@@ -109,18 +116,38 @@ function categoryColor(id: string): string {
   return categories.find((c) => c.id === id)?.color ?? '#07407B';
 }
 
+// Popup body built from DOM nodes with textContent, never from an HTML string. Place names come
+// from Mapbox and from the nearby_pois cache in the database, so they are treated as plain text:
+// a name like "<img onerror=...>" shows as text instead of running as script (stored XSS).
+function popupContent(name: string, dist: number | null): HTMLElement {
+  const box = document.createElement('div');
+  const title = document.createElement('strong');
+  title.textContent = name;
+  box.appendChild(title);
+  if (dist != null) {
+    box.appendChild(document.createElement('br'));
+    const away = document.createElement('span');
+    away.style.color = '#64748b';
+    away.textContent = `${dist.toFixed(1)} km away`;
+    box.appendChild(away);
+  }
+  return box;
+}
+
 function renderCategory(id: string, data: NearbyPois) {
   if (!map.value) return;
   const origin = props.targetLocation;
   const list = data.categories[id] || [];
-  poiMarkers[id] = list.map((poi) => {
-    const dist = origin ? haversineKm(origin.lng, origin.lat, poi.lng, poi.lat) : null;
-    const popupHtml = `<strong>${poi.name}</strong>${dist != null ? ` <br/><span style="color:#64748b">${dist.toFixed(1)} km away</span>` : ''}`;
-    return new mapboxgl.Marker({ color: categoryColor(id) })
-      .setLngLat([poi.lng, poi.lat])
-      .setPopup(new mapboxgl.Popup({ offset: 18 }).setHTML(popupHtml))
-      .addTo(map.value);
-  });
+  poiMarkers[id] = list
+    // A cached place without real coordinates can't be drawn; skip it instead of breaking the map.
+    .filter((poi) => Number.isFinite(poi.lng) && Number.isFinite(poi.lat))
+    .map((poi) => {
+      const dist = origin ? haversineKm(origin.lng, origin.lat, poi.lng, poi.lat) : null;
+      return new mapboxgl.Marker({ color: categoryColor(id) })
+        .setLngLat([poi.lng, poi.lat])
+        .setPopup(new mapboxgl.Popup({ offset: 18 }).setDOMContent(popupContent(String(poi.name ?? ''), dist)))
+        .addTo(map.value);
+    });
 }
 
 function clearCategory(id: string) {

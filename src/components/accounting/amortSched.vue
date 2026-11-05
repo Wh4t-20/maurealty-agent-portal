@@ -138,9 +138,17 @@ const formatDate = (date: Date) => {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
+// Same day of the month (and time of day), `monthsToAdd` months from today, clamped to the last
+// day of shorter months: Jan 31 + 1 month = Feb 28/29. (setMonth() rolled over to Mar 3, so a
+// loan started on the 31st skipped a month.)
 const getPaymentDate = (monthsToAdd: number) => {
-  const d = new Date()
-  d.setMonth(d.getMonth() + monthsToAdd)
+  const today = new Date()
+  const d = new Date(
+    today.getFullYear(), today.getMonth() + monthsToAdd, 1,
+    today.getHours(), today.getMinutes(), today.getSeconds(), today.getMilliseconds()
+  )
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+  d.setDate(Math.min(today.getDate(), lastDay))
   return d
 }
 

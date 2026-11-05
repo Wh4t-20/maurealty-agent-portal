@@ -116,75 +116,8 @@
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
-      <div v-if="selectedMetric" class="fixed inset-0 w-full h-full bg-[#0a3d62]/70 backdrop-blur-sm flex items-center justify-center z-[9999]" @click.self="closeAll">
-
-        <div v-if="selectedMetric" class="bg-white dark:bg-black rounded-[24px] relative p-8 w-full max-w-2xl shadow-xl flex flex-col max-h-[80vh]">
-          <button class="absolute top-4 right-5 text-gray-400 dark:text-gray-700 hover:text-gray-700 dark:hover:text-gray-400 text-xl font-bold" @click="selectedMetric = null">✕</button>
-          
-          <div class="border-b border-gray-200 dark:border-gray-800 pb-4 mb-4 shrink-0">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">{{ selectedMetric.label }} Analysis</h2>
-            <p class="text-gray-500 dark:text-gray-400 mt-1">Total: <span class="font-medium text-gray-900 dark:text-white">{{ selectedMetric.value }}</span></p>
-          </div>
-
-          <div class="overflow-y-auto flex-1 pr-2">
-            <table class="w-full text-left border-collapse" v-if="selectedMetric.details && selectedMetric.details.length">
-              <thead class="sticky top-0 bg-white dark:bg-black z-10">
-                <tr class="border-b border-gray-200 dark:border-gray-800 text-sm text-gray-500 dark:text-gray-400">
-                  <th class="pb-3 font-medium">Date</th>
-                  <th class="pb-3 font-medium">Title</th>
-                  <th class="pb-3 font-medium">Status</th>
-                  <th class="pb-3 font-medium text-right" v-if="selectedMetric.showAmount">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                                <tr v-for="(item, index) in paginatedDetails" :key="index" class="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                  <td class="py-3 text-sm text-gray-700 dark:text-gray-300">{{ formatDate(item.date) }}</td>
-                  <td class="py-3 text-sm text-gray-700 dark:text-gray-300">{{ item.title }}</td>
-                  <td class="py-3 text-sm">
-                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-                      {{ item.status || 'N/A' }}
-                    </span>
-                  </td>
-                  <td class="py-3 text-sm text-right font-medium text-gray-900 dark:text-white" v-if="selectedMetric.showAmount">
-                    {{ formatCurrency(item.amount || 0) }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            
-            <div v-if="totalPages > 1" class="flex justify-between items-center px-4 py-4 mt-2 border-t border-gray-100 dark:border-gray-800 sticky bottom-0 bg-white dark:bg-black">
-              <button 
-                @click="prevPage" 
-                :disabled="currentPage === 1"
-                class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                Previous
-              </button>
-              
-              <span class="text-sm text-gray-500 dark:text-gray-400 font-medium">
-                Page {{ currentPage }} of {{ totalPages }}
-              </span>
-              
-              <button 
-                @click="nextPage" 
-                :disabled="currentPage === totalPages"
-                class="px-4 py-1.5 rounded-md text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-              >
-                Next
-              </button>
-            </div>
-
-            <div v-else-if="!selectedMetric.details || !selectedMetric.details.length" class="text-center py-12 flex flex-col items-center justify-center">
-              <div class="w-16 h-16 bg-gray-50 dark:bg-gray-800/50 rounded-full flex items-center justify-center mb-3">
-                <span class="text-2xl">📋</span>
-              </div>
-              <p class="text-gray-500 dark:text-gray-400 font-medium">No records found</p>
-              <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">There is no data available for this time period.</p>
-            </div>
-          </div>
-        </div>
-
-      </div>
+      <!-- Card breakdown ("Analysis") popup: components/dashboard/MetricDetailsModal.vue -->
+      <MetricDetailsModal v-if="selectedMetric" :metric="selectedMetric" @close="closeAll" />
     </transition>
 
     <!-- Add Agent (admins): the Genealogy page's modal, teleported to <body> with its own overlay -->
@@ -220,6 +153,7 @@ import CommissionHistory from '@/components/dashboard/CommissionHistory.vue';
 import { useLiveRefresh } from '@/utils/liveRefresh';
 import GenealogyCard from '@/components/dashboard/GenealogyCard.vue';
 import Reminders from '@/components/dashboard/Reminders.vue';
+import MetricDetailsModal from '@/components/dashboard/MetricDetailsModal.vue';
 import AddAgentModal from '@/components/genealogy/AddAgentModal.vue';
 import ChangePasswordModal from '@/components/auth/ChangePasswordModal.vue';
 import { accountService } from '@/services/accountService';
@@ -246,33 +180,6 @@ const scopes = [
 
 // Filter State
 const selectedMonth = ref('');
-
-const currentPage = ref(1);
-const itemsPerPage = 10;
-
-watch(selectedMetric, () => {
-  currentPage.value = 1; 
-});
-
-const totalPages = computed(() => {
-  if (!selectedMetric.value?.details) return 0;
-  return Math.ceil(selectedMetric.value.details.length / itemsPerPage);
-});
-
-const paginatedDetails = computed(() => {
-  if (!selectedMetric.value?.details) return [];
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  return selectedMetric.value.details.slice(start, end);
-});
-
-const prevPage = () => {
-  if (currentPage.value > 1) currentPage.value--;
-};
-
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) currentPage.value++;
-};
 
 // Data shown on the page
 const loadingStat = (label: string): Metric => ({ label, value: 'Loading', trend: '...', sub: '', type: 'neutral', details: [], showAmount: false });
@@ -326,23 +233,6 @@ const setScope = (s: 'mine' | 'all') => {
 watch([selectedMetric, showAddAgent, showChangePassword], ([metric, modal, password]) => {
   document.body.style.overflow = (metric || modal || password) ? 'hidden' : '';
 });
-
-// Helper to format dates cleanly for the modal table
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return 'N/A';
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    year: 'numeric', month: 'short', day: 'numeric'
-  });
-};
-
-// Helper to format large numbers into clean currency
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'PHP',
-    maximumFractionDigits: 0
-  }).format(value);
-};
 
 // Adds the first and last name of the agent
 const agentName = computed(() => {
@@ -449,7 +339,8 @@ onMounted(async () => {
   }
 });
 
+// edit: 0 = a new listing (Property Management also treats a missing edit flag as create mode)
 const addListing = () => {
-  router.push({ path: '/propertymanagement' });
+  router.push({ path: '/propertymanagement', query: { edit: 0 } });
 }
 </script>

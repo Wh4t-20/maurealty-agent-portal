@@ -247,6 +247,30 @@ function checkPlacement(
 }
 
 // ---------- Team insights (accumulated sales, promotion progress, override map) ----------
+
+// Each agent's own completed sales (sum of contract prices). Since the RLS migration an agent can
+// only read their own sales rows, so the totals come from the team_completed_sales() SQL function
+// (supabase/migrations/20261105120000_harden_rls.sql), which returns totals only.
+async function completedSalesByAgent(): Promise<Map<number, number>> {
+  const own = new Map<number, number>();
+  const { data, error } = await supabase.rpc('team_completed_sales');
+  if (!error) {
+    for (const r of (data || []) as any[]) own.set(Number(r.agent_ID), Number(r.completed_sales) || 0);
+    return own;
+  }
+  // PGRST202 = the function doesn't exist yet (migration not run): add up the sales rows like before.
+  if (error.code !== 'PGRST202') throw error;
+  const { data: saleRows, error: salesError } = await supabase
+    .from('sales')
+    .select('agent_ID, total_contract_price, status');
+  if (salesError) throw salesError;
+  for (const r of (saleRows || []) as any[]) {
+    if ((r.status || '').toString().toLowerCase().trim() !== 'complete') continue;
+    own.set(r.agent_ID, (own.get(r.agent_ID) ?? 0) + (Number(r.total_contract_price) || 0));
+  }
+  return own;
+}
+
 export interface OverrideLine {
   agent_ID: number;
   name: string;
@@ -491,8 +515,10 @@ export const genealogyService = {
   // Patch an existing agent's fields. Does NOT touch user_id / configs / upline;
   // upline changes go through setUpline so the genealogy edge stays consistent.
   async updateAgent(id: number, patch: Record<string, any>): Promise<void> {
-    const { error } = await supabase.from('agents').update(patch).eq('agent_ID', id);
+    // .select() so an update silently blocked by RLS (0 rows) is reported instead of looking saved.
+    const { data, error } = await supabase.from('agents').update(patch).eq('agent_ID', id).select('agent_ID');
     if (error) throw error;
+    if (!data || data.length === 0) throw new Error('The agent was not updated. You may not have permission.');
   },
 
   // Re-point an agent's upline edge. Passing null detaches it (agent becomes a
@@ -565,17 +591,7 @@ export const genealogyService = {
   // Everyone with their rank, accumulated sales (own + all below), promotion progress and the
   // override split that applies to their own sales.
   async getTeamInsights(): Promise<TeamMember[]> {
-    const g = await fetchGraph();
-    const { data: saleRows, error } = await supabase
-      .from('sales')
-      .select('agent_ID, total_contract_price, status');
-    if (error) throw error;
-
-    const own = new Map<number, number>();
-    for (const r of (saleRows || []) as any[]) {
-      if ((r.status || '').toString().toLowerCase().trim() !== 'complete') continue;
-      own.set(r.agent_ID, (own.get(r.agent_ID) ?? 0) + (Number(r.total_contract_price) || 0));
-    }
+    const [g, own] = await Promise.all([fetchGraph(), completedSalesByAgent()]);
 
     const byId = new Map(g.agents.map(a => [a.agent_ID, a] as const));
     const uplineOf = new Map<number, number>();
@@ -681,11 +697,17 @@ export const genealogyService = {
   },
 
   async setPromotionThreshold(positionId: number, threshold: number | null): Promise<void> {
-    const { error } = await supabase
+    if (threshold != null && (!Number.isFinite(threshold) || threshold < 0)) {
+      throw new Error('Enter a threshold of 0 or more, or leave it empty.');
+    }
+    // .select(): with RLS, a non-admin's update changes 0 rows without an error.
+    const { data, error } = await supabase
       .from('positions')
       .update({ promotion_sales_threshold: threshold })
-      .eq('position_ID', positionId);
+      .eq('position_ID', positionId)
+      .select('position_ID');
     if (error) throw error;
+    if (!data || data.length === 0) throw new Error('The threshold was not saved. Only admins can change it.');
   },
 
   // Count financial/listing rows that would block a hard delete.

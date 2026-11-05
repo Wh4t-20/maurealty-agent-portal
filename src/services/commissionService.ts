@@ -2,6 +2,7 @@ import { supabase } from '../supabaseClient';
 import { dueDateAt, addMonthsClamped } from '../utils/paySchedule';
 import { allocatePayouts, type PayoutRole, type CommissionPayout } from '../utils/commissionAllocation';
 import { DEFAULT_RANK_RATE } from '../utils/ranks';
+import { safeFileExtension } from '../utils/sanitize';
 import type {
   CalculateCommissionPayload,
   CommissionCalculationResult,
@@ -349,7 +350,7 @@ export const commissionService = {
 
     const urls: string[] = [];
     for (const [i, file] of files.entries()) {
-      const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+      const ext = safeFileExtension(file.name, 'png');
       const path = `payment-proofs/${id}-${Date.now()}-${i}.${ext}`;
       const { error: upErr } = await supabase.storage.from('images').upload(path, file);
       if (upErr) {

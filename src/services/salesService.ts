@@ -74,10 +74,10 @@ export interface SalesTotals {
 }
 
 // Optional filters. Pass agentId to scope to one agent (agent-sees-own);
-// omit it for the admin-sees-all view. search matches client name / voucher.
+// omit it for the admin-sees-all view. Searching (client, project, voucher) happens in the
+// Sales Report over the loaded rows, so no filter string is ever built from what a user types.
 interface GetSalesOptions {
   agentId?: number;
-  search?: string;
 }
 
 const SALE_SELECT = `
@@ -189,7 +189,7 @@ async function fillMissingAgentNames(sales: Sale[]): Promise<Sale[]> {
 export const salesService = {
   // Fetch sales, newest first. Filters are applied conditionally to keep this
   // DRY (one function, optional params) instead of separate query functions.
-  async getSales({ agentId, search }: GetSalesOptions = {}): Promise<Sale[]> {
+  async getSales({ agentId }: GetSalesOptions = {}): Promise<Sale[]> {
     let query = supabase
       .from('sales')
       .select(SALE_SELECT)
@@ -197,12 +197,6 @@ export const salesService = {
 
     if (agentId !== undefined) {
       query = query.eq('agent_ID', agentId);
-    }
-
-    if (search) {
-      // client name OR voucher series. Joined fields (listing title) are
-      // filtered client-side in the view, mirroring the Listings search.
-      query = query.or(`client_name.ilike.%${search}%,voucher_series.ilike.%${search}%`);
     }
 
     const { data, error } = await query;

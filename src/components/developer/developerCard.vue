@@ -85,14 +85,16 @@
 			<p v-else class="text-xs text-gray-400 italic">No promotions posted</p>
 		</div>
 
-		<!-- buttons -->
+		<!-- buttons (Delete / Edit are admin-only: the database only lets admins change developers) -->
 		<div class="flex gap-2 items-end justify-end">
-			<button @click="handleDelete" class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px]  border border-red-600 text-red-600 rounded-[5px] px-4 py-2 hover:bg-red-100 dark:hover:bg-red-950 flex items-center gap-2 justify-center" >
-				Delete
-			</button>
-			<button @click="handleEdit" class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px] dark:text-[#B4AFAF] border border-[#B4AFAF] rounded-[5px] px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 justify-center" >
-				Edit
-			</button>
+			<template v-if="canManage">
+				<button @click="handleDelete" class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px]  border border-red-600 text-red-600 rounded-[5px] px-4 py-2 hover:bg-red-100 dark:hover:bg-red-950 flex items-center gap-2 justify-center" >
+					Delete
+				</button>
+				<button @click="handleEdit" class="text-[clamp(0.75rem,2vw,1rem)] md:h-9 md:w-27 h-max-[36px] w-max-[108px] dark:text-[#B4AFAF] border border-[#B4AFAF] rounded-[5px] px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 justify-center" >
+					Edit
+				</button>
+			</template>
 			<button @click="handleContact" class="text-[clamp(0.75rem,2vw,1rem)] w-max-[121px] md:h-9 md:w-30.25 bg-maurealty-blue text-white rounded-[5px] px-4 py-2 hover:bg-[#045fa3] flex items-center gap-2 justify-center">
 				Contact
 			</button>
@@ -105,7 +107,8 @@ import { type DayOption, type Developer, type DeveloperProject, type DeveloperPr
 import placeholder from '@/assets/images/default_placeholder.png'
 import { PhoneIcon, MailIcon, MapPinIcon, CalendarCheck2Icon, CalendarOffIcon, ClockIcon, TagIcon  } from 'lucide-vue-next';
 
-const props = defineProps<{ dev: Developer}>()
+// canManage: show Edit / Delete (admins).
+const props = defineProps<{ dev: Developer; canManage?: boolean }>()
 const emit = defineEmits<{
 	(event: 'delete-developer', devId: Developer): void;
 	(event: 'edit-developer', developer: Developer): void;

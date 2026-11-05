@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { safeFileExtension } from '../utils/sanitize';
 
 export const agentService = {
   // Fetch full agent profile along with position
@@ -80,8 +81,8 @@ export const agentService = {
 
   async uploadProfileImage(agentId: number, file: File) {
     try {
-      // create a unique, safe file name
-      const fileExt = file.name.split('.').pop() || 'bin';
+      // create a unique, safe file name ("agents/<own id>-..." is what the storage policy expects)
+      const fileExt = safeFileExtension(file.name);
       const fileName = `${agentId}-${Date.now()}.${fileExt}`;
       
       const filePath = `agents/${fileName}`;

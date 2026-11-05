@@ -76,15 +76,17 @@
         <!-- Spot-Cash: the whole Total Contract Price is due, no divisions -->
         <div v-if="isSpotCash"
              class="sm:col-span-2 rounded-lg border border-maurealty-blue/20 bg-blue-50/40 dark:bg-maurealty-light-blue/10 p-3 text-sm text-gray-700 dark:text-gray-200">
-          Spot-Cash: full payment of <span class="font-semibold">₱{{ formatMoney(form.total_contract_price) }}</span> (Total Contract Price)
-          <template v-if="firstDueLabel">, due on <span class="font-semibold">{{ firstDueLabel }}</span> (one month after the reservation)</template>. No DP divisions, no financing.
+          <!-- The commission is due one month after an admin approves the sale (the date the tabs are
+               created, salesService.generateCommissionTabs), not after the reservation: confirmed by the team. -->
+          Spot-Cash: full payment of <span class="font-semibold">₱{{ formatMoney(form.total_contract_price) }}</span> (Total Contract Price),
+          due one month after an admin approves the sale. No DP divisions, no financing.
         </div>
 
         <!-- Deferred Cash: the Total Contract Price paid in 12 equal monthly installments -->
         <div v-if="form.payment_scheme === 'Deferred-Cash'"
              class="sm:col-span-2 rounded-lg border border-maurealty-blue/20 bg-blue-50/40 dark:bg-maurealty-light-blue/10 p-3 text-sm text-gray-700 dark:text-gray-200">
           Deferred Cash: <span class="font-semibold">₱{{ formatMoney(form.total_contract_price) }}</span> paid in 12 monthly installments of
-          <span class="font-semibold">₱{{ formatMoney((form.total_contract_price || 0) / 12) }}</span><template v-if="firstDueLabel">, the first due on <span class="font-semibold">{{ firstDueLabel }}</span></template>.
+          <span class="font-semibold">₱{{ formatMoney((form.total_contract_price || 0) / 12) }}</span>, the first due one month after an admin approves the sale.
           One commission tab per installment.
         </div>
 
@@ -434,6 +436,7 @@ import type { PayUnit } from '@/assets/classes/commission'
 import { lastDueDate, addMonthsClamped, UNIT_MONTHS } from '@/utils/paySchedule'
 import { authService } from '@/services/authService'
 import type { Property } from '@/assets/classes/listings'
+import { cleanText, isIsoDate, finiteNumber } from '@/utils/sanitize'
 
 // Sold flow passes a fixed listing (id + title + price) so the property is
 // locked and the contract price is prefilled. Omit it for the manual flow.
@@ -593,11 +596,9 @@ watch(() => form.payment_scheme, (scheme) => {
 
 const isSpotCash = computed(() => form.payment_scheme === 'Spot-Cash')
 
-// Spot-Cash is due, and Deferred-Cash starts, one month after the reservation.
+// DP Division 1 starts one month after the reservation. (Spot-Cash and Deferred-Cash commissions are
+// due from the approval date instead, so the form no longer previews a reservation-based date for them.)
 const firstDueDate = computed(() => form.reservation_date ? addMonthsClamped(form.reservation_date, 1) : '')
-const firstDueLabel = computed(() => firstDueDate.value
-  ? new Date(firstDueDate.value + 'T00:00:00').toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })
-  : '')
 
 // The commissionable amount starts as the contract price until the agent types their own.
 const commissionableTouched = ref(!!props.editSale)
@@ -752,8 +753,16 @@ onMounted(async () => {
     developerName.value = (await salesService.getListingDeveloperName(props.lockedListing.id)) ?? ''
   }
 
-  // Locked/edit flows already have their property — no dropdown needed.
-  if (propertyLocked) return
+  // Locked/edit flows already have their property — no dropdown needed. They still load that one
+  // listing: selectedListing needs it to know the sale is a bulk sale (the "Specific Unit Details"
+  // section, its prefill in the Sold flow) and to show the listing's incentives. Without it an edit
+  // saved unit_details as null, wiping the unit captured when the sale was created.
+  if (propertyLocked) {
+    const id = props.lockedListing?.id ?? props.editSale?.listing_ID
+    const listing = id != null ? await listingsService.getListingSummary(id) : null
+    if (listing) listings.value = [listing]
+    return
+  }
   developerNames.value = await developerService.getDeveloperNames()
   try {
     listings.value = await listingsService.getListings(100)
@@ -782,8 +791,32 @@ function validatePaymentScheme(): string {
   return ''
 }
 
+// Checks the main fields (the browser's `required` doesn't cover a typed-in space, a negative
+// amount or a rate over 100). Returns an error message, or '' when they are fine.
+function validateSaleFields(clientName: string): string {
+  if (!form.listing_ID) return 'Select a project.'
+  if (!clientName) return 'Enter the client (buyer) name.'
+  if (!isIsoDate(form.reservation_date)) return 'Enter a valid reservation date.'
+  const tcp = finiteNumber(form.total_contract_price)
+  if (tcp == null || tcp <= 0) return 'Enter a total contract price above 0.'
+  const amount = finiteNumber(form.commissionable_amount)
+  if (amount != null && amount < 0) return "The commissionable amount can't be negative."
+  const rate = finiteNumber(form.commission_rate)
+  if (rate != null && (rate < 0 || rate > 100)) return 'Enter a commission rate between 0 and 100%.'
+  return ''
+}
+
 async function submit() {
   error.value = ''
+
+  // Text is cleaned before it is saved (trimmed, no control characters, length caps); every value
+  // reaches the database as a bound parameter through supabase-js.
+  const clientName = cleanText(form.client_name, 200)
+  const fieldError = validateSaleFields(clientName)
+  if (fieldError) {
+    error.value = fieldError
+    return
+  }
 
   const schemeError = validatePaymentScheme()
   if (schemeError) {
@@ -796,17 +829,20 @@ async function submit() {
   // Keys must match the DB column names exactly. Empty optional fields → null.
   const payload = {
     listing_ID: form.listing_ID,
-    client_name: form.client_name,
+    client_name: clientName,
     reservation_date: form.reservation_date,
     total_contract_price: form.total_contract_price,
     commissionable_amount: form.commissionable_amount,
     commission_rate: form.commission_rate,
     gross_commission: form.gross_commission,
     net_commission: form.net_commission,
-    voucher_series: form.voucher_series || null,
-    remarks: form.remarks || null,
+    voucher_series: cleanText(form.voucher_series, 100) || null,
+    remarks: cleanText(form.remarks, 500) || null,
     status: form.status,
-    unit_details: selectedListing.value?.is_bulk ? form.unit_details: null,
+    // Bulk sale: the specific unit. If the listing couldn't be loaded, an edit keeps what the sale had.
+    unit_details: selectedListing.value
+      ? (selectedListing.value.is_bulk ? form.unit_details : null)
+      : (props.editSale?.unit_details ?? null),
     financing: isDp ? (form.financing || null) : null,   // financing only exists for a Down Payment
     payment_scheme: form.payment_scheme || null,
     dp_rate: isDp ? form.dp_rate : null,
@@ -873,7 +909,8 @@ async function submit() {
       // Auto-mark single listing as sold directly in the database
       if (selectedListing.value && !selectedListing.value.is_bulk && form.listing_ID) {
         try {
-          await listingsService.updateListingStatus(form.listing_ID, 'sold')
+          const res = await listingsService.updateListingStatus(form.listing_ID, 'sold')
+          if (!res.success) console.error('The sale was saved, but the listing was not marked as sold (0 rows changed).')
         } catch (statusErr) {
           console.error('Failed to auto-update single listing status:', statusErr)
         }

@@ -9,7 +9,7 @@
         leave-from-class="transform opacity-100"
         leave-to-class="transform opacity-0"
     > 
-      <AddDeveloperTab  v-if="showAddDeveloper" @close-add-developer="showAddDeveloper = false; devToEdit = null" :dev = "devToEdit? devToEdit : undefined"/>
+      <AddDeveloperTab  v-if="showAddDeveloper" @close-add-developer="showAddDeveloper = false; devToEdit = null" @saved="onDeveloperSaved" :dev = "devToEdit? devToEdit : undefined"/>
   </transition>
   
   <div class="relative w-full bg-background-gray dark:bg-background-dark-gray flex flex-col flex-1 overflow-hidden">
@@ -20,10 +20,12 @@
         <h1 class="text-xl sm:text-3xl font-bold">DEVELOPERS</h1>
 
         <div class="flex gap-3 sm:gap-5 w-full sm:w-auto">
-          <button @click="showAddDeveloper = true" class="flex items-center gap-1 bg-maurealty-blue text-md text-white px-4 py-1.5 rounded-full cursor-pointer hover:opacity-70 transition-opacity whitespace-nowrap">
+          <!-- Adding, editing and deleting developers is admin-only -->
+          <button v-if="isAdmin" @click="showAddDeveloper = true" class="flex items-center gap-1 bg-maurealty-blue text-md text-white px-4 py-1.5 rounded-full cursor-pointer hover:opacity-70 transition-opacity whitespace-nowrap">
             <Plus class="size-4" /> Add Developer
           </button>
-          <input type="text" placeholder="Search Developer"
+          <!-- Filters the loaded developers in the browser (name, location, email, phone) -->
+          <input type="text" placeholder="Search Developer" v-model="searchQuery" maxlength="100"
             class="block min-w-0 flex-1 sm:flex-none py-1.5 pr-3 pl-2 text-base placeholder:text-gray-500 dark:placeholder:text-gray-400 dark:text-white border border-blue-950 dark:border-blue-50 rounded-sm focus:outline-none sm:text-sm/6" />
         </div>
       </div>
@@ -31,43 +33,41 @@
 
     <!-- Developer Cards -->
     <div class="flex-1 overflow-y-auto">
+      <p v-if="deleteError" class="w-full max-w-6xl mx-auto px-4 sm:px-8 pt-4 text-sm text-red-600 dark:text-red-400" role="alert">{{ deleteError }}</p>
       <div class="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 sm:p-8">
-        <DeveloperCard v-for="(developer, index) in developers" :key="index" :dev="developer" @edit-developer = "handleEditDeveloper" @delete-developer = "handleDeleteDeveloper" @open-listing="openListing" @open-promo="openPromo"/>
+        <DeveloperCard v-for="developer in filteredDevelopers" :key="developer.dev_ID" :dev="developer" :can-manage="isAdmin" @edit-developer = "handleEditDeveloper" @delete-developer = "handleDeleteDeveloper" @open-listing="openListing" @open-promo="openPromo"/>
       </div>
+      <p v-if="searchQuery && filteredDevelopers.length === 0" class="text-center text-sm text-gray-500 dark:text-gray-400 pb-8">No developers match your search.</p>
     </div>
   </div>
+  <!-- read-only: this page doesn't handle edit / delete / sold / approve (use Project Listings) -->
   <PropertyDetails
     v-if="selectedProject"
     :prop_id="selectedProject.listing_ID"
     :prop_type="selectedProject.property_type"
+    read-only
     @closeDetails="selectedProject = null"
   />
 
-  <!-- Promo poster lightbox -->
-  <div v-if="selectedPromo" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4" @click.self="selectedPromo = null">
-    <div class="relative max-w-3xl w-full max-h-full flex flex-col items-center">
-      <button class="absolute -top-3 -right-3 bg-white text-black p-2 rounded-full shadow hover:bg-gray-200 transition cursor-pointer" @click="selectedPromo = null">
-        <XIcon class="size-5" stroke-width="3" />
-      </button>
-      <img :src="selectedPromo.image_url" :alt="selectedPromo.title" class="max-h-[80vh] w-auto rounded-xl object-contain" />
-      <div v-if="selectedPromo.title || selectedPromo.valid_until" class="mt-3 text-center text-white">
-        <p v-if="selectedPromo.title" class="font-semibold text-lg">{{ selectedPromo.title }}</p>
-        <p v-if="selectedPromo.valid_until" class="text-sm text-gray-300">Valid until {{ selectedPromo.valid_until }}</p>
-      </div>
-    </div>
-  </div>
+  <!-- Promo poster lightbox: components/developer/PromoPosterModal.vue -->
+  <PromoPosterModal v-if="selectedPromo" :promo="selectedPromo" @close="selectedPromo = null" />
   </main>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { type Developer, type OfficeHourSlot, type DeveloperProject, type DeveloperPromo } from "@/assets/classes/developers.ts";
 import { developerService } from "@/services/developerService";
 import DeveloperCard from "@/components/developer/developerCard.vue";
 import AddDeveloperTab from "@/components/developer/addDeveloper.vue";
 import PropertyDetails from "@/components/listings/PropertyDetails.vue";
-import { Plus, XIcon } from "lucide-vue-next";
+import PromoPosterModal from "@/components/developer/PromoPosterModal.vue";
+import { authService } from "@/services/authService";
+import { Plus } from "lucide-vue-next";
 
+// Developer management (add / edit / delete, promos) is admin-only: the buttons are hidden for
+// agents and the database (RLS) refuses their changes anyway.
+const isAdmin = ref(false);
 
 const developers = ref<Developer[]>([])
 const devToEdit = ref<Developer | null>(null);
@@ -90,14 +90,43 @@ const loadDevelopers = async () => {
 
 };
 
+// Search box: filters the loaded developers in the browser (it was not connected before).
+const searchQuery = ref('');
+const filteredDevelopers = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return developers.value;
+  return developers.value.filter(d =>
+    [d.name, d.location, d.email, d.phone].some(v => (v || '').toLowerCase().includes(q))
+  );
+});
+
 const showAddDeveloper = ref(false);
 const handleEditDeveloper = (developer: Developer) => {
   devToEdit.value = developer;
   showAddDeveloper.value = true;
 };
-const handleDeleteDeveloper = (developer: Developer) => {
-  developerService.deleteDeveloper(developer);
-  loadDevelopers(); 
+
+// Saved in the form: close it and show the change (the form used to stay open).
+const onDeveloperSaved = () => {
+  showAddDeveloper.value = false;
+  devToEdit.value = null;
+  loadDevelopers();
+};
+
+// Asks first, waits for the delete, then reloads. (It deleted on the first click without asking
+// and reloaded before the delete had finished, so the developer often stayed on the page.)
+const deleteError = ref('');
+const handleDeleteDeveloper = async (developer: Developer) => {
+  if (!isAdmin.value) return;
+  deleteError.value = '';
+  if (!window.confirm(`Delete ${developer.name}? Their office hours and promo posters are deleted too. This cannot be undone.`)) return;
+  try {
+    await developerService.deleteDeveloper(developer);
+    await loadDevelopers();
+  } catch (e: any) {
+    console.error('Delete developer failed:', e);
+    deleteError.value = e?.message || 'The developer could not be deleted.';
+  }
 };
 watch(showAddDeveloper, (isOpen) => {
   if (isOpen) {
@@ -109,9 +138,9 @@ watch(showAddDeveloper, (isOpen) => {
   }
 }); 
 
-onMounted(() => {
+onMounted(async () => {
   loadDevelopers();
-
+  isAdmin.value = !!(await authService.getCurrentAgent())?.admin_access;
 });
 
 </script>

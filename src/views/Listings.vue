@@ -147,6 +147,7 @@
           :prop_id="prop_id"
           :prop_type="prop_type"
           :is-admin="isAdmin"
+          :current-agent-id="currentAgentId"
           @close-details="showDetails = false"
           @edit="handleEdit"
           @delete="triggerConfirm($event, 'delete')"
@@ -217,7 +218,7 @@
     />
     <Transition name="toast">
       <div v-if="toastConfirm.visible" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-red-500 shadow-2xl px-5 py-3">
-        <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-red text-white text-sm font-bold">!</span>
+        <span class="flex items-center justify-center size-6 rounded-full bg-red-600 text-white text-sm font-bold">!</span>
         <div class="flex flex-col">
           <p class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ toastConfirm.title }}</p>
           <p class="text-xs text-gray-600 dark:text-gray-400">{{ toastConfirm.message }}</p>
@@ -228,9 +229,13 @@
         </div>
       </div>
     </Transition> <!-- BROAST -->
+    <!-- Result toast: green for success, red when the action failed -->
     <Transition name="toast">
-      <div v-if="confirmedMessage.visible" class="fixed top-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-maurealty-green shadow-2xl px-5 py-3">
-        <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-green text-white text-sm font-bold">✓</span>
+      <div v-if="confirmedMessage.visible" :role="confirmedMessage.tone === 'error' ? 'alert' : 'status'"
+           class="fixed top-6 right-6 z-50 flex items-center gap-3 rounded-lg bg-white dark:bg-black border shadow-2xl px-5 py-3"
+           :class="confirmedMessage.tone === 'error' ? 'border-red-500' : 'border-maurealty-green'">
+        <span class="flex items-center justify-center size-6 rounded-full text-white text-sm font-bold"
+              :class="confirmedMessage.tone === 'error' ? 'bg-red-600' : 'bg-maurealty-green'">{{ confirmedMessage.tone === 'error' ? '!' : '✓' }}</span>
         <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ confirmedMessage.text }}</p>
 
       </div>
@@ -427,8 +432,19 @@ const toastConfirm = ref({
 })
 const confirmedMessage = ref({
   visible: false,
-  text: ''
+  text: '',
+  tone: 'success' as 'success' | 'error'
 })
+
+// Shows the result toast for 3 seconds.
+let confirmedTimer: ReturnType<typeof setTimeout> | undefined
+const showConfirmedMessage = (text: string, tone: 'success' | 'error' = 'success') => {
+  confirmedMessage.value = { visible: true, text, tone }
+  clearTimeout(confirmedTimer)
+  confirmedTimer = setTimeout(() => {
+    confirmedMessage.value = { visible: false, text: '', tone: 'success' }
+  }, 3000)
+}
 const triggerConfirm = (listingId: number, actionType: string) => {
    // grak
   toastConfirm.value = {
@@ -535,36 +551,27 @@ const processDelete = async (id: number) => {
 
   try {
     const result = await listingsService.deleteListing(id)
-    
+
     if (result.success) {
-      showDetails.value = false 
-      confirmedMessage.value = {
-        visible: true,
-        text: "Success! The listing has been deleted."
-      };
-      setTimeout(() => {
-      confirmedMessage.value = {
-        visible: false,
-        text: ''
-      };
-    }, 3000);
+      showDetails.value = false
+      showConfirmedMessage("Success! The listing has been deleted.")
       properties.value = properties.value.filter(p => p.listing_id !== id)
-      
+
       console.log("Deleted successfully from DB and UI")
-      
+
+    } else {
+      // 0 rows deleted: only the listing's owner or an admin can delete it.
+      showConfirmedMessage("The listing was not deleted. Only its agent or an admin can delete it.", 'error')
     }
-  } catch (err) {
-    confirmedMessage.value = {
-        visible: true,
-        text: "Success! The listing has been deleted."
-      };
-      setTimeout(() => {
-      confirmedMessage.value = {
-        visible: false,
-        text: ''
-      };
-    }, 3000);
+  } catch (err: any) {
+    // e.g. a listing that still has a sale on record can't be deleted
     console.error(err)
+    showConfirmedMessage(
+      err?.code === '23503'
+        ? "This listing can't be deleted because a sale or share link still uses it."
+        : "Failed to delete the listing. Please retry.",
+      'error'
+    )
   }
 }
 // Marking sold opens the sale form pre-filled with this listing. The agent
@@ -586,31 +593,18 @@ const onSaleSaved = async () => {
   soldListing.value = null
   if (!listingId) return
   try {
-    await listingsService.updateListingStatus(listingId, 'sold');
+    const result = await listingsService.updateListingStatus(listingId, 'sold');
+    // The sale is saved either way; say so if the listing itself didn't change.
+    if (!result.success) {
+      showConfirmedMessage("The sale was saved, but the listing could not be marked as sold.", 'error');
+      return;
+    }
     properties.value = properties.value.filter(p => p.listing_id !== listingId);
     showDetails.value = false;
-    confirmedMessage.value = {
-      visible: true,
-      text: "Success! The bulk property has been marked as sold."
-    };
-    setTimeout(() => {
-      confirmedMessage.value = {
-        visible: false,
-        text: ''
-      };
-    }, 3000);
+    showConfirmedMessage("Success! The bulk property has been marked as sold.");
   } catch (error) {
     console.error("Error marking property as sold:", error);
-     confirmedMessage.value = {
-      visible: true,
-      text: "Failed to update the listing status. Please retry."
-    };
-    setTimeout(() => {
-      confirmedMessage.value = {
-        visible: false,
-        text: ''
-      };
-    }, 3000);
+    showConfirmedMessage("Failed to update the listing status. Please retry.", 'error');
   }
 }
 
@@ -619,35 +613,22 @@ const onSaleSaved = async () => {
 // of a separate action (same destructive result, one confirm dialog).
 const handleApprove = async (listingId: number) => {
   try {
-    await listingsService.updateListingStatus(listingId, 'active');
+    const result = await listingsService.updateListingStatus(listingId, 'active');
+    // 0 rows changed: RLS refused (not an admin) or the listing is gone.
+    if (!result.success) {
+      showConfirmedMessage("The listing was not approved. Only admins can approve listings.", 'error');
+      return;
+    }
     // properties is a shallowRef, so mutating an item in place wouldn't
     // trigger reactivity — reassign the array instead (same as processDelete).
     properties.value = properties.value.map(p =>
       p.listing_id === listingId ? { ...p, status: 'active' } : p
     );
     showDetails.value = false;
-    confirmedMessage.value = {
-      visible: true,
-      text: "Listing approved and is now live."
-    };
-    setTimeout(() => {
-      confirmedMessage.value = {
-        visible: false,
-        text: ''
-      };
-    }, 3000);
+    showConfirmedMessage("Listing approved and is now live.");
   } catch (error) {
     console.error("Error approving listing:", error);
-    confirmedMessage.value = {
-      visible: true,
-      text: "Failed to approve the listing. Please retry."
-    };
-    setTimeout(() => {
-      confirmedMessage.value = {
-        visible: false,
-        text: ''
-      };
-    }, 3000);
+    showConfirmedMessage("Failed to approve the listing. Please retry.", 'error');
   }
 }
 </script>

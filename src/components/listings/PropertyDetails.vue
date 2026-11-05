@@ -165,8 +165,9 @@
                 <main class="text-sm px-2 flex flex-col">
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-0.5">
                     <span class="flex items-center-safe gap-1"><Hash /> Unit No. <b>{{ details.unit_number }}</b></span>
-                    <span class="flex items-center-safe gap-1"><Bed /> {{ details.bedroom_count }} bedroom{{ details.carpark_count != 1 ? 's' : '' }}</span>
-                    <span class="flex items-center-safe gap-1"><BookImage /> {{ details.balcony_count }} balcon{{ details.carpark_count != 1 ? 'ies' : 'y' }}</span>
+                    <!-- Plurals follow their own count (they used to follow carpark_count) -->
+                    <span class="flex items-center-safe gap-1"><Bed /> {{ details.bedroom_count }} bedroom{{ details.bedroom_count != 1 ? 's' : '' }}</span>
+                    <span class="flex items-center-safe gap-1"><BookImage /> {{ details.balcony_count }} balcon{{ details.balcony_count != 1 ? 'ies' : 'y' }}</span>
                     <span class="flex items-center-safe gap-1"><Car /> {{ details.carpark_count }} carpark{{ details.carpark_count != 1 ? 's' : '' }}</span>
                     <span class="flex items-center-safe gap-1 sm:col-span-2"><BedDouble /> <b> Master Bedroom Area: </b> {{ formatArea(details.master_bedroom_area) }}</span>
                   </div>
@@ -205,13 +206,16 @@
           <section class="markdownTypography text-black dark:text-white" v-html="compiledFAQMarkdown" />
         </section>
         
-        <!-- Action buttons wrap to the next line when the screen is narrow -->
+        <!-- Action buttons wrap to the next line when the screen is narrow.
+             Only the actions the viewer may take are shown (the database enforces the same):
+             edit = the listing's owner; delete = the owner or an admin; sold = active bulk listings;
+             approve = admins. readOnly (Developer List) hides the actions its page doesn't handle. -->
         <section class="w-full flex flex-wrap mt-4 px-3 gap-3">
-          <button @click="$emit('edit', details)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+          <button v-if="!readOnly && isOwner" @click="$emit('edit', details)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><SquarePen class="size-4" /> EDIT</span>
           </button>
 
-          <button @click="$emit('delete', details.listing_id)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-red-600 text-red-600 font-bold hover:bg-red-600 hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
+          <button v-if="!readOnly && (isOwner || props.isAdmin)" @click="$emit('delete', details.listing_id)" class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-red-600 text-red-600 font-bold hover:bg-red-600 hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
             <span class="flex items-center-safe gap-1"><Trash2 class="size-4" /> DELETE</span>
           </button>
 
@@ -233,7 +237,7 @@
           </button>
 
           <button
-            v-if="details.status !== 'sold' && details.is_bulk"
+            v-if="!readOnly && details.status === 'active' && details.is_bulk"
             @click="$emit('sold', details.listing_id)"
             class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-green text-maurealty-green font-bold hover:bg-maurealty-green hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
           >
@@ -241,7 +245,7 @@
           </button>
 
           <button
-            v-if="details.status === 'pending' && props.isAdmin"
+            v-if="!readOnly && details.status === 'pending' && props.isAdmin"
             @click="$emit('approve', details.listing_id)"
             class="flex flex-col items-center py-2 px-5 w-32 rounded-full border-2 border-maurealty-green text-maurealty-green font-bold hover:bg-maurealty-green hover:text-white hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer"
           >
@@ -283,6 +287,7 @@ import { ref, watch, computed } from 'vue'
 import { formattedPropertyType } from '@/assets/classes/listings'
 import { listingsService, compileMarkdown } from '@/services/listingsServices' 
 import { generateShareLink } from '@/services/shareService'
+import { poiService } from '@/services/poiService'
 import MapHolder from './MapHolder.vue'
 import CalculatorPanel from '@/components/calculator/CalculatorPanel.vue'
 
@@ -295,12 +300,18 @@ import { XIcon, Building2Icon, MapPinIcon, UserStarIcon, ChevronLeft, ChevronRig
 // Toggles the calculator popup for this listing.
 const showCalc = ref(false)
 
+// currentAgentId: the signed-in agent, to know whether they own this listing.
+// readOnly: hide edit / delete / sold / approve (pages that don't handle those events).
 const props = withDefaults(defineProps<{
   prop_id: number,
   prop_type: string,
-  isAdmin?: boolean
+  isAdmin?: boolean,
+  currentAgentId?: number | null,
+  readOnly?: boolean
  }>(), {
-  isAdmin: false
+  isAdmin: false,
+  currentAgentId: null,
+  readOnly: false
 })
 
 const emit = defineEmits(['close-details', 'edit', 'delete', 'share', 'sold', 'approve'])
@@ -330,6 +341,12 @@ const lotClassesMap: Record<number, string> = {
 };
 
 const details = ref<any>(null)
+
+// The signed-in agent listed this property (edit is owner-only, admins included).
+const isOwner = computed(() =>
+  props.currentAgentId != null && details.value?.agent_ID != null && Number(details.value.agent_ID) === props.currentAgentId
+)
+
 const thumbnails = ref<string[]>([]);
 const activeImage = ref<string>(''); 
 const currentImageIndex = ref(0);
@@ -416,6 +433,14 @@ const handleShare = async () => {
     const shareData = await generateShareLink(details.value.listing_id, details.value.agent_ID, 1);
     const shareUrl = `${window.location.origin}/shared/listing/${shareData.share_id}`;
     
+    // Fill the nearby places cache now (Mapbox is only called when it is missing or older than
+    // 30 days). The client's shared page reads this cache but can't write it, since signed-out
+    // visitors have no access to main_listings.
+    if (Number.isFinite(details.value.lng) && Number.isFinite(details.value.lat)) {
+      void poiService.getNearbyPois(details.value.listing_id, details.value.lng, details.value.lat)
+        .catch((e) => console.warn('Could not refresh the nearby places cache:', e));
+    }
+
     await navigator.clipboard.writeText(shareUrl);
     alert('Temporary link copied to clipboard!');
     emit('share');
@@ -463,9 +488,9 @@ const compiledDescriptionMarkdown = computed(() => {
   return compileMarkdown(details.value?.description)
 });
 
-// FAQ markdown conversion and input
+// FAQ markdown conversion and input (details is null while the listing loads)
 const compiledFAQMarkdown = computed(() => {
-  if (details.value.faq)
+  if (details.value?.faq)
     return compileMarkdown("# FREQUENTLY ASKED QUESTIONS\n\n" + details.value.faq);
   else
     return '';

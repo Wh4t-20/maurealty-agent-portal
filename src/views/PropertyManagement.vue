@@ -9,21 +9,13 @@
       leave-from-class="opacity-100 scale-100"
       leave-to-class="opacity-0 scale-95"
       >
-        <div v-if="displayMaps" class="absolute inset-0 z-50 bg-white dark:bg-black dark:bg-black overflow-hidden rounded-2xl">
-          
-          <button 
-            @click="toggleMaps" 
-            type="button" 
-            class="absolute top-4 right-4 z-60 bg-red-500 text-white p-3 rounded-full font-bold shadow-md hover:bg-red-600 transition-colors cursor-pointer"
-          >
-            <XIcon />
-          </button>
-
-          <MapInteractive 
-            :target-location="{ lng: form.lng ?? 123.89313980, lat: form.lat ?? 10.30995455, loc: form.location ?? '' }" 
-            @update:targetLocation="(loc) => { form.lng = loc.lng; form.lat = loc.lat, form.location = loc.name; }"
-          />
-        </div>
+        <!-- Location picker: components/listings/MapPickerModal.vue -->
+        <MapPickerModal
+          v-if="displayMaps"
+          :location="{ lng: form.lng ?? 123.89313980, lat: form.lat ?? 10.30995455, loc: form.location ?? '' }"
+          @close="toggleMaps"
+          @picked="(loc) => { form.lng = loc.lng; form.lat = loc.lat; form.location = loc.name; }"
+        />
       </transition>
       
       <header class="relative">
@@ -632,8 +624,8 @@ import { listingsService } from '@/services/listingsServices';
 import { authService } from '@/services/authService'; // just for getting agent_ID
 
 // maps stuff
-import { MapIcon, PlusIcon, UploadIcon, XIcon } from 'lucide-vue-next';
-import MapInteractive from '@/components/listings/MapInteractive.vue';
+import { MapIcon, PlusIcon, UploadIcon } from 'lucide-vue-next';
+import MapPickerModal from '@/components/listings/MapPickerModal.vue';
 const displayMaps = ref(false);
 
 
@@ -644,6 +636,7 @@ function toggleMaps() {
 
 // utilities
 import { currentCurrency, currentUnit, convertPrice, convertArea, convertPriceToPHP, convertAreaToSqm } from '@/utils/conversion.ts';
+import { cleanText, cleanMultilineText, cleanMarkdownText, finiteNumber } from '@/utils/sanitize';
 
 const unitPlaceholder = computed(() => currentUnit.value === 'English' ? 'sqft' : 'sqm');
 
@@ -692,8 +685,16 @@ const router = useRouter();
 const propertyId = Number(route.query.id) || -1;
 const propertyType = Number(route.query.type) || -1;
 
+// Edit mode needs ?edit=1 and a real listing id. Anything else creates a new listing: the Sidebar
+// link and the Dashboard's "+ Add Listing" open this page without ?edit=0, and used to land in an
+// edit mode for listing -1 that never saved anything.
+const isEditMode = route.query.edit === '1' && propertyId > 0;
+
+// Highest display_order among the listing's saved photos, so photos added while editing go after them.
+const lastImageOrder = ref(0);
+
 const loadProperties = async () => {
-  if(route.query.edit === '0') return;
+  if (!isEditMode) return;
 
   try {
     const data = await listingsService.getListingById(propertyId, propertyType) as any;
@@ -727,6 +728,7 @@ const loadProperties = async () => {
       existingImages.value = [...images]
         .sort((a, b) => a.display_order - b.display_order)
         .map((img) => ({ url: img.image_url }));
+      lastImageOrder.value = images.reduce((max: number, img: any) => Math.max(max, Number(img.display_order) || 0), 0);
 
       const subTableName: Record<number, string> = {
         1: 'house_and_lot', 2: 'lot_only', 3: 'condominium', 4: 'memorial'
@@ -952,8 +954,35 @@ watch(() => form.value.property_type, (newType) => {
   console.log(`Switching layout to: ${newType}`);
 });
 
+// Text fields are cleaned before they are saved (trimmed, no control characters, length caps);
+// values reach the database as bound parameters through supabase-js. Markdown keeps its indentation.
+const cleanedText = () => ({
+  listing_title: cleanText(form.value.listing_title, 200),
+  location: cleanText(form.value.location, 300),
+  description: cleanMarkdownText(form.value.description),
+  faq: cleanMarkdownText(form.value.faq),
+  agent_incentive: cleanMultilineText(form.value.agent_incentive, 1000) || null,
+  realty_incentive: cleanMultilineText(form.value.realty_incentive, 1000) || null,
+});
+
+// Prices typed in the display currency, back in PHP. Returns an error message, or '' when valid.
+const priceProblem = (price: number | null, maxPrice: number | null): string => {
+  if (price == null || price < 0) return 'Enter a price of 0 or more.';
+  if (form.value.is_bulk && maxPrice != null && maxPrice < price) return 'The max price must be at least the min price.';
+  return '';
+};
+
 const saveProperty = async () => {
-  if(route.query.edit === '0')  {
+  const text = cleanedText();
+  const price = finiteNumber(form.value.price);
+  const maxPrice = form.value.is_bulk ? finiteNumber(form.value.max_price) : null;
+  const problem = priceProblem(price, maxPrice);
+  if (problem) {
+    alert(problem);
+    return;
+  }
+
+  if (!isEditMode)  {
       try {
       // 1. Map Property Type String to DB ID
       const typeMap: Record<string, number> = {
@@ -963,22 +992,22 @@ const saveProperty = async () => {
       // 2. Prepare Main Listing Data (Maps to main_listings table)
       const mainData = {
         agent_ID: currentAgentId.value,
-        listing_title: form.value.listing_title,
+        listing_title: text.listing_title,
         property_type_ID: propertyTypeId,
         is_bulk: form.value.is_bulk,
-        price: convertPriceToPHP(Number(form.value.price)) || 0,
-        max_price: form.value.is_bulk && form.value.max_price ? convertPriceToPHP(Number(form.value.max_price)) : null,
-        location: form.value.location,
+        price: convertPriceToPHP(price ?? 0) || 0,
+        max_price: maxPrice ? convertPriceToPHP(maxPrice) : null,
+        location: text.location,
         longitude: form.value.lng,
         latitude: form.value.lat,
-        description: form.value.description || 'No description provided.',
+        description: text.description || 'No description provided.',
         // New listings from a non-admin queue for approval; admins skip the
         // queue since they'd just be approving their own submission.
         status: isAdmin.value ? form.value.status : 'pending',
         dev_ID: form.value.dev_ID,
-        faq: form.value.faq,
-        agent_incentive: form.value.agent_incentive || null,
-        realty_incentive: form.value.realty_incentive || null
+        faq: text.faq,
+        agent_incentive: text.agent_incentive,
+        realty_incentive: text.realty_incentive
       };
       // 3. Prepare Specific Sub-table Data (Translating frontend variables to exact Supabase column names)
       let specificData = {};
@@ -1045,10 +1074,12 @@ const saveProperty = async () => {
         if (factSheetFile.value) {
           console.log("[DEBUG] Uploading fact sheet for new listing...");
           try {
-            await listingsService.uploadFactSheet(propertyId, factSheetFile.value.file);
+            // The new listing's id (propertyId is -1 when creating, which saved the file nowhere).
+            await listingsService.uploadFactSheet(response.data.listing_ID, factSheetFile.value.file);
             console.log("[DEBUG] Fact sheet uploaded successfully.");
           } catch (err) {
             console.error("[DEBUG] Failed to upload fact sheet:", err);
+            alert('The listing was saved, but the fact sheet could not be uploaded. Edit the listing to try again.');
           }
         }
 
@@ -1063,37 +1094,41 @@ const saveProperty = async () => {
   }
   else{
     try {
+      // All six types, same as create mode (Clubshare and Golfshare used to fall back to House and Lot).
       const typeMap: Record<string, number> = {
-        'House And Lot': 1, 'Lot Only': 2, 'Condominium': 3, 'Memorial': 4
+        'House And Lot': 1, 'Lot Only': 2, 'Condominium': 3, 'Memorial': 4, 'Clubshare': 5, 'Golfshare': 6
       };
       const propertyTypeId = typeMap[form.value.property_type || 'House And Lot'] || 1;
+      // The form shows the price and areas in the display currency / unit (see loadProperties), so
+      // they are converted back to PHP and sqm here, the same as create mode.
+      // status is not sent: editing never changes it (sending the loaded value could undo an
+      // admin's approval made while the form was open; only admins change it, see RLS).
       const mainData = {
-        listing_title: form.value.listing_title,
+        listing_title: text.listing_title,
         property_type_ID: propertyTypeId,
         is_bulk: form.value.is_bulk,
-        price: form.value.price,
-        max_price: form.value.is_bulk && form.value.max_price ? convertPriceToPHP(Number(form.value.max_price)) : null,
-        location: form.value.location,
+        price: convertPriceToPHP(price ?? 0) || 0,
+        max_price: maxPrice ? convertPriceToPHP(maxPrice) : null,
+        location: text.location,
         longitude: form.value.lng,
         latitude: form.value.lat,
-        description: form.value.description || 'No description provided.',
-        status: form.value.status,
+        description: text.description || 'No description provided.',
         dev_ID: form.value.dev_ID,
-        faq: form.value.faq,
-        agent_incentive: form.value.agent_incentive || null,
-        realty_incentive: form.value.realty_incentive || null
+        faq: text.faq,
+        agent_incentive: text.agent_incentive,
+        realty_incentive: text.realty_incentive
       };
       let specificData = {};
 
-      if (propertyTypeId === 1) { 
+      if (propertyTypeId === 1) {
         specificData = {
-          "1_storey": form.value.one_storey, 
+          "1_storey": form.value.one_storey,
           with_loft: form.value.with_loft,
-          "2_storey": form.value.two_storey, 
+          "2_storey": form.value.two_storey,
           townhomes: form.value.townhome,
           rowhouse: form.value.rowhouse,
-          lot_area: form.value.lot_area,
-          floor_area: form.value.floor_area,
+          lot_area: convertAreaToSqm(Number(form.value.lot_area) || 0),
+          floor_area: convertAreaToSqm(Number(form.value.floor_area) || 0),
           rooms_count: form.value.room_count, 
           toilets_count: form.value.toilet_count, 
           helper_rooms_count: form.value.helper_rooms_count,
@@ -1104,13 +1139,13 @@ const saveProperty = async () => {
       } else if (propertyTypeId === 2) { 
         const lotClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Farm Lot': 4 };
         specificData = {
-          block_number: String(form.value.block_number), 
+          block_number: String(form.value.block_number),
           lot_number: String(form.value.lot_number),
           phase_number: String(form.value.phase_number),
-          lot_area: form.value.area, 
+          lot_area: convertAreaToSqm(Number(form.value.area) || 0),
           lot_class_ID: lotClassMap[form.value.class || 'Residential'] || 1
         };
-      } else if (propertyTypeId === 3) { 
+      } else if (propertyTypeId === 3) {
         const condoClassMap: Record<string, number> = { 'Residential': 1, 'Commercial': 2, 'Industrial': 3, 'Condotel': 4, 'Timeshare': 5 };
         specificData = {
           condo_class_ID: condoClassMap[form.value.class || 'Residential'] || 1,
@@ -1137,6 +1172,11 @@ const saveProperty = async () => {
       }
 
       const response = await listingsService.updateListing(propertyId, mainData, specificData, propertyTypeId);
+      if (!response.success) {
+        // 0 rows changed: the listing is gone, or this account may not edit it (RLS).
+        alert('The listing was not saved. Only the agent who listed it (or an admin) can edit it.');
+        return;
+      }
       if (response.success) {
         // --- Image Deletion Logic ---
         if (removedImageUrls.value.length > 0) {
@@ -1160,7 +1200,8 @@ const saveProperty = async () => {
 
         if (imageFiles.value.length > 0) {
           const filesToUpload = imageFiles.value.map(img => img.file);
-          await listingsService.uploadPropertyImages(propertyId, filesToUpload);
+          // New photos go after the saved ones (they used to restart at 1 and tie with them).
+          await listingsService.uploadPropertyImages(propertyId, filesToUpload, lastImageOrder.value + 1);
         }
 
         console.log(factSheetFile.value);
@@ -1171,6 +1212,7 @@ const saveProperty = async () => {
             console.log("[DEBUG] Fact sheet uploaded successfully.");
           } catch (err) {
             console.error("[DEBUG] Failed to upload fact sheet:", err);
+            alert('The listing was saved, but the fact sheet could not be uploaded. Please try again.');
           }
         }
 

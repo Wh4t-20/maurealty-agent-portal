@@ -5,7 +5,7 @@
     <Transition name="toast">
       <div v-if="toast" class="fixed top-6 right-6 z-[60] flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-maurealty-green/40 shadow-lg px-5 py-3">
         <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-green text-white text-sm font-bold">✓</span>
-        <p class="text-sm font-medium text-gray-700">{{ toast }}</p>
+        <p class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ toast }}</p>
       </div>
     </Transition>
 
@@ -151,7 +151,7 @@
                   <td class="px-4 py-3 dark:text-white">{{ sale.listing_title }}</td>
                   <td v-if="isAdmin" class="px-4 py-3 dark:text-white">{{ sale.agent_name || '—' }}</td>
                   <td class="px-4 py-3 whitespace-nowrap">
-                    <span :class="['px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider border', getStatusClass(sale.status)]">
+                    <span :class="['px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase tracking-wider border', saleStatusClass(sale.status)]">
                       {{ sale.status }}
                     </span>
                   </td>
@@ -213,149 +213,16 @@
       @saved="onSaleSaved"
     />
 
-   <!-- TODO: Move this whole Sale Detail Portion into a whole new component under sales -->
-    <!-- SALE DETAIL -->
-    <div v-if="selectedSale" class="fixed inset-0 z-40 flex items-center justify-center bg-[rgba(10,61,98,0.7)] backdrop-blur-sm p-4" @click.self="selectedSale = null">
-      <div class="w-full max-w-lg bg-white dark:bg-black rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-600 shrink-0">
-          <h2 class="text-xl font-bold text-maurealty-blue dark:text-white">Sale Details</h2>
-          <button class="text-gray-400 dark:text-gray-600 hover:text-gray-700 dark:hover:text-gray-300 text-xl leading-none cursor-pointer" @click="selectedSale = null">✕</button>
-        </div>
-
-        <div class="overflow-y-auto custom-scrollbar p-6">
-          <!-- ORIGINAL SALE DETAILS -->
-          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-            <div><dt class="text-gray-500 dark:text-gray-400">Client</dt><dd class="font-medium text-maurealty-blue dark:text-white">{{ selectedSale.client_name }}</dd></div>
-            <div><dt class="text-gray-500 dark:text-gray-400">Developer</dt><dd class="font-medium dark:text-white">{{ selectedSale.developer_name || '—' }}</dd></div>
-            <div><dt class="text-gray-500 dark:text-gray-400">Project</dt><dd class="font-medium dark:text-white">{{ selectedSale.listing_title }}</dd></div>
-            <div v-if="isAdmin"><dt class="text-gray-500 dark:text-gray-400">Agent</dt><dd class="dark:text-white">{{ selectedSale.agent_name || '—' }}</dd></div>
-            <div v-if="isAdmin" class="col-span-1 sm:col-span-2">
-              <dt class="text-gray-500 dark:text-gray-400">Upline</dt>
-              <dd>
-                <span v-if="uplineLoading" class="text-gray-400 dark:text-gray-600">Loading…</span>
-                <span v-else-if="upline.length === 0" class="dark:text-white">—</span>
-                <span v-else>
-                  <template v-for="(u, i) in upline" :key="u.agent_ID"
-                    ><span class="font-medium dark:text-white">{{ u.first_name }} {{ u.last_name }}</span
-                    ><span v-if="uplinePosition(u)" class="text-gray-500 dark:text-gray-400"> ({{ uplinePosition(u) }})</span
-                    ><span v-if="i < upline.length - 1" class="text-gray-400 dark:text-gray-600"> → </span
-                  ></template>
-                </span>
-              </dd>
-            </div>
-            <div><dt class="text-gray-500 dark:text-gray-400">Reservation Date</dt><dd class="dark:text-white">{{ formatDate(selectedSale.reservation_date) }}</dd></div>
-            <div><dt class="text-gray-500 dark:text-gray-400">Contract Price</dt><dd class="dark:text-white">{{ formatPeso(selectedSale.total_contract_price) }}</dd></div>
-            <div v-if="selectedSale.commissionable_amount != null"><dt class="text-gray-500 dark:text-gray-400">Commissionable Amount</dt><dd class="dark:text-white">{{ formatPeso(selectedSale.commissionable_amount) }}</dd></div>
-            <div><dt class="text-gray-500 dark:text-gray-400">Financing</dt><dd class="dark:text-white">{{ selectedSale.financing || '—' }}</dd></div>
-            <div><dt class="text-gray-500 dark:text-gray-400">Payment Scheme</dt><dd class="dark:text-white">{{ selectedSale.payment_scheme === 'Deferred-Cash' ? 'Deferred Cash (12 monthly installments)' : (selectedSale.payment_scheme || '—') }}</dd></div>
-            <div v-if="selectedSale.commission_rate != null"><dt class="text-gray-500 dark:text-gray-400">Commission Rate</dt><dd class="dark:text-white">{{ selectedSale.commission_rate }}%</dd></div>
-            <template v-if="selectedSale.payment_scheme === 'DP'">
-              <div><dt class="text-gray-500 dark:text-gray-400">DP ({{ selectedSale.dp_rate }}%)</dt><dd class="dark:text-white">{{ formatPeso(selectedSale.dp_amount ?? 0) }}</dd></div>
-              <div><dt class="text-gray-500 dark:text-gray-400">Remaining Balance</dt><dd class="dark:text-white">{{ formatPeso(selectedSale.remaining_balance ?? 0) }}</dd></div>
-              <div class="col-span-1 sm:col-span-2">
-                <dt class="text-gray-500 dark:text-gray-400">DP Divisions</dt>
-                <dd class="dark:text-white">
-                  <span v-if="saleDivisions.length === 0">—</span>
-                  <ul v-else class="mt-1 flex flex-col gap-1">
-                    <li v-for="(d, i) in saleDivisions" :key="i">
-                      Division {{ i + 1 }}: {{ d.divisionRate }}% over {{ d.count }} {{ d.count === 1 ? d.unit.slice(0, -1) : d.unit }}
-                      ({{ formatDate(d.startDate ?? '') }} – {{ formatDate(d.endDate ?? '') }})
-                    </li>
-                  </ul>
-                </dd>
-              </div>
-            </template>
-            <div><dt class="text-gray-500 dark:text-gray-400">Sale</dt><dd class="dark:text-white">{{ selectedSale.agent_sale_seq ?? '—' }}</dd></div>
-            <div>
-              <dt class="text-gray-500 dark:text-gray-400">Status</dt>
-              <dd>
-                <span :class="['px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider border', getStatusClass(selectedSale.status)]">
-                  {{ selectedSale.status }}
-                </span>
-              </dd>
-            </div>
-            <div><dt class="text-gray-500 dark:text-gray-400">Gross Commission</dt><dd class="dark:text-white">{{ selectedSale.gross_commission != null ? formatPeso(selectedSale.gross_commission) : '—' }}</dd></div>
-            <div><dt class="text-gray-500 dark:text-gray-400">Net Commission</dt><dd class="dark:text-white">{{ selectedSale.net_commission != null ? formatPeso(selectedSale.net_commission) : '—' }}</dd></div>
-            <!-- Voucher series (the voucher/receipt number of the sale) is hidden for now. Not removed:
-                 sales.voucher_series still exists and is still searched and exported.
-            <div><dt class="text-gray-500 dark:text-gray-400">Voucher</dt><dd class="dark:text-white">{{ selectedSale.voucher_series || '—' }}</dd></div>
-            -->
-            <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Remarks</dt><dd class="dark:text-white">{{ selectedSale.remarks || '—' }}</dd></div>
-            <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Agent Incentive</dt><dd class="dark:text-white whitespace-pre-line">{{ selectedSale.agent_incentive || '—' }}</dd></div>
-            <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Realty Incentive</dt><dd class="dark:text-white whitespace-pre-line">{{ selectedSale.realty_incentive || '—' }}</dd></div>
-          </dl>
-
-          <!-- PROPERTY DETAILS SECTION -->
-          <div class="mt-6 pt-5 border-t border-gray-100 dark:border-gray-800">
-            <div class="flex items-center gap-3 mb-3">
-              <h3 class="text-lg font-bold text-maurealty-blue dark:text-maurealty-light-blue leading-none">Property Details</h3>
-              <span 
-                v-if="selectedPropertyType" 
-                :class="[
-                  'text-[10px] sm:text-xs font-light text-white px-2 py-0.5 sm:px-3 sm:py-0.5 rounded-full tracking-wider shadow-md leading-none', 
-                  propertyTypeColor(selectedPropertyType)
-                ]"
-              >
-                {{ formattedPropertyType(selectedPropertyType) }}
-              </span>
-            </div>
-            
-            <div v-if="detailsLoading" class="text-gray-500 dark:text-gray-400 text-sm">Loading property details...</div>
-            <div v-else-if="!selectedListingDetails" class="text-gray-500 dark:text-gray-400 text-sm">No additional property details available.</div>
-            
-            <dl v-else class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-              <!-- HOUSE AND LOT -->
-              <template v-if="['House And Lot', 'House and Lot', 'house_and_lot'].includes(selectedPropertyType)">
-                <div><dt class="text-gray-500 dark:text-gray-400">Block No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.block_number ?? '—' }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Lot No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.lot_number ?? '—' }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Phase No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.phase_number ?? '—' }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Lot Area</dt><dd class="font-medium dark:text-white">{{ formatArea(selectedListingDetails.area || selectedListingDetails.lot_area) }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Floor Area</dt><dd class="font-medium dark:text-white">{{ formatArea(selectedListingDetails.floor_area) }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Rooms</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.room_count ?? '—' }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Toilets</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.toilet_count ?? '—' }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Master BR Area</dt><dd class="font-medium dark:text-white">{{ formatArea(selectedListingDetails.master_bedroom_area) }}</dd></div>
-                <div v-if="selectedListingDetails.helper_rooms_count >= 0"><dt class="text-gray-500 dark:text-gray-400">Helper Rooms</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.helper_rooms_count }}</dd></div>
-                <div v-if="selectedListingDetails.driver_rooms_count >= 0"><dt class="text-gray-500 dark:text-gray-400">Driver Rooms</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.driver_rooms_count }}</dd></div>
-                <div v-if="selectedListingDetails.carpark_count >= 0"><dt class="text-gray-500 dark:text-gray-400">Carpark</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.carpark_count }}</dd></div>
-                <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Features</dt><dd class="font-medium dark:text-white">{{ getHouseFeatures(selectedListingDetails) }}</dd></div>
-              </template>
-
-              <!-- LOT ONLY -->
-              <template v-else-if="['Lot Only', 'Lot only', 'lot_only'].includes(selectedPropertyType)">
-                <div><dt class="text-gray-500 dark:text-gray-400">Block No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.block_number ?? '—' }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Lot No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.lot_number ?? '—' }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Phase No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.phase_number ?? '—' }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Area</dt><dd class="font-medium dark:text-white">{{ formatArea(selectedListingDetails.area) }}</dd></div>
-                <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Class</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.class || '—' }}</dd></div>
-              </template>
-
-              <!-- CONDOMINIUM -->
-              <template v-else-if="['Condominium', 'condominium'].includes(selectedPropertyType)">
-                <div><dt class="text-gray-500 dark:text-gray-400">Unit No.</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.unit_number ?? '—' }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Floor</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.floor ?? '—' }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Bedrooms</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.bedroom_count ?? '—' }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Balconies</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.balcony_count ?? '—' }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Carpark</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.carpark_count ?? '—' }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Master BR Area</dt><dd class="font-medium dark:text-white">{{ formatArea(selectedListingDetails.master_bedroom_area) }}</dd></div>
-                <div><dt class="text-gray-500 dark:text-gray-400">Class</dt><dd class="font-medium dark:text-white">{{ selectedListingDetails.class || '—' }}</dd></div>
-                <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Type</dt><dd class="font-medium dark:text-white">{{ getCondoType(selectedListingDetails) }}</dd></div>
-              </template>
-
-              <!-- MEMORIAL -->
-              <template v-else-if="['Memorial', 'memorial'].includes(selectedPropertyType)">
-                <div class="col-span-1 sm:col-span-2"><dt class="text-gray-500 dark:text-gray-400">Type</dt><dd class="font-medium dark:text-white">{{ getMemorialType(selectedListingDetails) }}</dd></div>
-              </template>
-            </dl>
-          </div>
-        </div>
-
-        <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-600 shrink-0" v-if="canEditSale(selectedSale)">
-          <button @click="confirmDelete(selectedSale)" class="px-4 py-2 rounded-lg border border-red-300 dark:border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/80 cursor-pointer">Delete</button>
-          <button @click="openEdit(selectedSale)" class="px-4 py-2 rounded-lg bg-maurealty-blue text-white hover:opacity-80 transition cursor-pointer">Edit</button>
-        </div>
-      </div>
-    </div>
+    <!-- SALE DETAIL: components/sales/SaleDetailsModal.vue (who may edit or delete is decided here) -->
+    <SaleDetailsModal
+      v-if="selectedSale"
+      :sale="selectedSale"
+      :is-admin="isAdmin"
+      :can-edit="canEditSale(selectedSale)"
+      @close="selectedSale = null"
+      @edit="openEdit"
+      @delete="confirmDelete"
+    />
   </div>
 </template>
 
@@ -363,14 +230,11 @@
 import { ref, shallowRef, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ClipboardList, Plus, Download, Pencil, Trash2, AlertTriangle, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-vue-next'
 import { salesService, type Sale } from '@/services/salesService'
-import type { DpDivision } from '@/assets/classes/commission'
 import { authService } from '@/services/authService'
 import {listingsService} from '@/services/listingsServices'
-import { genealogyService, type GenealogyAgent } from '@/services/genealogyService'
-import { formatArea } from '@/utils/conversion.ts'
-import { positionMap } from '@/assets/classes/agent'
-import { formattedPropertyType } from '@/assets/classes/listings'
+import { saleStatusClass } from '@/utils/saleStatus'
 import SalesUploadModal from '@/components/sales/SalesUploadModal.vue'
+import SaleDetailsModal from '@/components/sales/SaleDetailsModal.vue'
 
 const sales = shallowRef<Sale[]>([])
 const loading = ref(true)
@@ -383,27 +247,9 @@ const agentFilter = ref<number | null>(null)   // admin: filter by agent
 const dateFrom = ref('')
 const dateTo = ref('')
 
-const detailsLoading = ref(false)
-const selectedListingDetails = ref<any>(null)
-const selectedPropertyType = ref<string>('')
+// (The Sale Details popup loads its own upline, DP divisions and property details:
+// components/sales/SaleDetailsModal.vue.)
 
-const lotClassesMap: Record<number, string> = {
-  1: 'Residential', 2: 'Commercial', 3: 'Industrial', 4: 'Farm Lot'
-}
-
-const condoClassesMap: Record<number, string> = {
-  1: 'Residential', 2: 'Commercial', 3: 'Industrial', 4: 'Condotel', 5: 'Timeshare'
-}
-
-function getCondoType(details: any) {
-  if (!details) return 'N/A'
-  if (details.is_studio_type) return 'Studio'
-  if (details.is_BR_unit) return 'BR Unit'
-  if (details.is_villa) return 'Villa'
-  if (details.is_garden_villa) return 'Garden Villa'
-  if (details.is_penthouse) return 'Penthouse'
-  return 'N/A'
-}
 // Admin sees all sales; an agent sees only their own. Decided by admin_access.
 async function loadSales() {
   loading.value = true
@@ -453,13 +299,8 @@ function openEdit(sale: Sale) {
 async function confirmDelete(sale: Sale) {
   if (!confirm(`Delete the sale for "${sale.client_name}"? This can't be undone.`)) return
   try {
-    try{
-      await listingsService.updateListingStatus(sale.listing_ID, 'active')
-    } catch (e) {
-      console.error('Failed to update listing status:', e)
-      showToast('Failed to update listing status — check permissions')
-      return
-    }
+    // The sale is deleted first, so a refused delete changes nothing. (The listing used to be set
+    // back to active first, which put a sold listing on sale again when the delete then failed.)
     const res = await salesService.deleteSale(sale.sale_ID)
     if (!res.success) {
       showToast('Delete failed — check permissions')
@@ -467,48 +308,19 @@ async function confirmDelete(sale: Sale) {
     }
     selectedSale.value = null
     loadSales()
-    showToast('Sale deleted')
+    // With the sale gone, its listing is for sale again.
+    try{
+      const listingRes = await listingsService.updateListingStatus(sale.listing_ID, 'active')
+      if (!listingRes.success) throw new Error('0 rows changed')
+      showToast('Sale deleted')
+    } catch (e) {
+      console.error('Failed to update listing status:', e)
+      showToast('Sale deleted, but its listing could not be set back to active')
+    }
   } catch (e) {
     console.error('Failed to delete sale:', e)
     showToast('Something went wrong deleting the sale')
   }
-}
-
-// Upline of the selected sale's agent (admin only — hierarchy is sensitive).
-// Two levels = supervisor + manager, per the Commission Releasing doc.
-const upline = ref<GenealogyAgent[]>([])
-const uplineLoading = ref(false)
-
-watch(selectedSale, async (sale) => {
-  upline.value = []
-  if (!sale || !isAdmin.value) return
-  uplineLoading.value = true
-  try {
-    upline.value = await genealogyService.getUplineChain(sale.agent_ID, 2)
-  } catch (e) {
-    console.error('Failed to load upline:', e)
-  } finally {
-    uplineLoading.value = false
-  }
-})
-
-// DP divisions of the selected sale (only DP sales have any).
-const saleDivisions = ref<DpDivision[]>([])
-
-watch(selectedSale, async (sale) => {
-  saleDivisions.value = []
-  if (sale?.payment_scheme !== 'DP') return
-  try {
-    saleDivisions.value = await salesService.getDpDivisions(sale.sale_ID)
-  } catch (e) {
-    console.error('Failed to load DP divisions:', e)
-  }
-})
-
-function uplinePosition(u: GenealogyAgent): string {
-  if (u.position) return u.position
-  if (u.position_ID != null) return positionMap[u.position_ID] ?? ''
-  return ''
 }
 
 // --- Esc-to-close + body scroll lock while a modal is open ---
@@ -620,73 +432,14 @@ const paginatedSales = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
   return sortedSales.value.slice(start, start + itemsPerPage)
 })
-watch(selectedSale, async (sale) => {
-  upline.value = [];
-  selectedListingDetails.value = null;
-  selectedPropertyType.value = '';
-
-  if (!sale) return;
-
-  // 1. Fetch Upline (Admin Only)
-  if (isAdmin.value) {
-    uplineLoading.value = true;
-    try {
-      upline.value = await genealogyService.getUplineChain(sale.agent_ID, 2);
-    } catch (e) {
-      console.error('Failed to load upline:', e);
-    } finally {
-      uplineLoading.value = false;
-    }
-  }
-
-  // 2. Fetch Property Details (Everyone)
-  detailsLoading.value = true;
-  try {
-    const typeInfo = await listingsService.getListingPropertyType(sale.listing_ID);
-    if (typeInfo) {
-      selectedPropertyType.value = typeInfo.typeName;
-
-      // If bulk sale, details are saved directly on the sale record
-      if (sale.unit_details && Object.keys(sale.unit_details).length > 0) {
-        selectedListingDetails.value = sale.unit_details;
-      } else {
-        // If single sale, fetch from main_listings
-        const fullData = await listingsService.getListingById(sale.listing_ID, typeInfo.typeId);
-        if (fullData) {
-          const subTableName = [null, 'house_and_lot', 'lot_only', 'condominium', 'memorial'][typeInfo.typeId];
-          const rawSubData = subTableName ? (fullData as any)[subTableName as string] : null;
-          const dbDetails = Array.isArray(rawSubData) ? rawSubData[0] : (rawSubData || {});
-          
-          // Normalize to match expected format
-          const normalized = { ...dbDetails };
-          normalized.room_count = dbDetails.rooms_count ?? null;
-          normalized.toilet_count = dbDetails.toilets_count ?? null;
-          normalized.one_storey = dbDetails['1_storey'] ?? false;
-          normalized.two_storey = dbDetails['2_storey'] ?? false;
-          normalized.townhome = dbDetails.townhomes ?? false;
-          normalized.area = dbDetails.lot_area ?? dbDetails.area ?? null;
-          
-          if (typeInfo.typeId === 2 && dbDetails.lot_class_ID) {
-            normalized.class = lotClassesMap[dbDetails.lot_class_ID] || 'N/A';
-          } else if (typeInfo.typeId === 3 && dbDetails.condo_class_ID) {
-            normalized.class = condoClassesMap[dbDetails.condo_class_ID] || 'N/A';
-          }
-          
-          selectedListingDetails.value = normalized;
-        }
-      }
-    }
-  } catch (e) {
-    console.error("Failed to load property details", e);
-  } finally {
-    detailsLoading.value = false;
-  }
-})
-
 // --- CSV export of the current filtered view ---
+// Text that starts with = + - @ (or a tab / carriage return) is read as a formula by Excel and
+// Google Sheets, so a client name such as "=HYPERLINK(...)" could run when the export is opened
+// (CSV injection). Such text cells get a leading apostrophe; numbers are left as they are.
 function csvCell(v: unknown): string {
-  const s = v == null ? '' : String(v)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+  let s = v == null ? '' : String(v)
+  if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 function exportCsv() {
   if (filteredSales.value.length === 0) return
@@ -718,67 +471,7 @@ function canEditSale(sale: Sale) {
   return isAdmin.value || sale.status === 'pending approval';
 }
 
-// Maps the status string to its corresponding Tailwind colored badge styling
-function getStatusClass(status: string) {
-  switch (status) {
-    case 'pending approval':
-      return 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800';
-    case 'awaiting payment':
-      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800';
-    case 'complete':
-      return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-800';
-    case 'cancelled':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-gray-200';
-  }
-}
-// -- This Block is purely for display purposes of Sales Report -- 
-function getMemorialType(details: any) {
-  if (!details) return 'N/A';
-  if (details.is_urn) return 'Urn'
-  if (details.is_vault) return 'Vault'
-  if (details.is_garden) return 'Garden'
-  if (details.is_estate) return 'Estate'
-  if (details.is_family_estate) return 'Family Estate'
-  if (details.is_pet_memorial) return 'Pet Memorial'
-  return 'N/A'
-}
-
-function getHouseFeatures(details: any) {
-  if (!details) return '—';
-  const features = [];
-  if (details.one_storey) features.push('One Storey');
-  if (details.two_storey) features.push('Two Storey');
-  if (details.with_loft) features.push('With Loft');
-  if (details.townhome) features.push('Townhome');
-  if (details.rowhouse) features.push('Rowhouse');
-  return features.length ? features.join(', ') : '—';
-}
-  // for property type badges
-function propertyTypeColor(type?: string) {
-  if (!type) return 'bg-gray-400'
-
-  switch (type.toLowerCase()) {
-    case 'house_and_lot':
-    case 'house and lot':
-      return 'bg-[#1b5c2d]'
-    case 'lot_only':
-    case 'lot only':
-      return 'bg-yellow-500'
-    case 'condominium':
-      return 'bg-[#336db0]'
-    case 'memorial':
-      return 'bg-gray-500'
-    case 'clubshare':
-      return 'bg-purple-600'
-    case 'golfshare':
-      return 'bg-emerald-700'
-    default:
-      return 'bg-gray-400'
-  }
-}
-// -- End of Block -- 
+// Status pill colours: saleStatusClass() in src/utils/saleStatus.ts (shared with the Sale Details popup).
 
 </script>
 

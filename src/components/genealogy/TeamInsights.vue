@@ -12,7 +12,9 @@
         <div v-for="r in promotable" :key="r.position_ID" class="p-3 rounded bg-[#C8DDF64A] dark:bg-[#5e77954a]">
           <div class="text-sm font-medium">{{ r.position }}</div>
           <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ r.rate }}% rate</div>
-          <div class="flex gap-2">
+          <!-- Admins edit the threshold (the database only lets admins save it); agents see it -->
+          <div v-if="!isAdmin" class="text-sm font-semibold">{{ r.threshold != null ? peso(r.threshold) : 'Not set' }}</div>
+          <div v-else class="flex gap-2">
             <input type="number" min="0" step="1000" v-model.number="edits[r.position_ID]"
                    placeholder="Not set"
                    class="w-full min-w-0 px-2 py-1 text-sm border border-gray-300 rounded dark:bg-black dark:border-gray-700" />
@@ -47,11 +49,16 @@
             <div class="flex items-center justify-between mt-1 text-xs text-gray-500 dark:text-gray-400">
               <span v-if="m.threshold">{{ m.progress }}% to {{ m.nextRankLabel }}</span>
               <span v-else>No threshold set for {{ m.nextRankLabel }}</span>
-              <button v-if="m.eligible"
+              <!-- Promotion is admin-only; agents see that the agent qualifies -->
+              <button v-if="m.eligible && isAdmin"
                       class="px-2 py-0.5 text-xs font-semibold rounded bg-green-600 text-white hover:opacity-80 cursor-pointer disabled:opacity-50"
                       :disabled="promotingId === m.agent_ID" @click="promote(m)">
                 {{ promotingId === m.agent_ID ? 'Promoting…' : `Promote to ${m.nextRankLabel}` }}
               </button>
+              <span v-else-if="m.eligible"
+                    class="px-2 py-0.5 text-xs font-semibold rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">
+                Eligible for {{ m.nextRankLabel }}
+              </span>
             </div>
           </template>
           <div v-else class="text-xs text-gray-500 dark:text-gray-400">Top rank</div>
@@ -76,9 +83,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { genealogyService, type TeamMember, type RankPosition } from '@/services/genealogyService'
+import { authService } from '@/services/authService'
 import { useLiveRefresh } from '@/utils/liveRefresh'
 
 const emit = defineEmits<{ (e: 'changed'): void }>()
+
+// Thresholds and promotions are admin-only (confirmed by the team; RLS on positions, agents and
+// genealogy only lets admins save them). Everyone else gets a read-only view.
+const isAdmin = ref(false)
 
 const members = ref<TeamMember[]>([])
 const ranks = ref<RankPosition[]>([])
@@ -113,6 +125,7 @@ async function load(silent = false) {
 }
 
 async function saveThreshold(positionId: number) {
+  if (!isAdmin.value) return
   savingId.value = positionId
   message.value = ''
   try {
@@ -130,6 +143,7 @@ async function saveThreshold(positionId: number) {
 }
 
 async function promote(m: TeamMember) {
+  if (!isAdmin.value) return
   if (!window.confirm(`Promote ${m.name} to ${m.nextRankLabel}?`)) return
   promotingId.value = m.agent_ID
   message.value = ''
@@ -147,6 +161,9 @@ async function promote(m: TeamMember) {
   }
 }
 
-onMounted(() => load())
+onMounted(async () => {
+  load()
+  isAdmin.value = !!(await authService.getCurrentAgent())?.admin_access
+})
 useLiveRefresh(() => load(true), ['sales', 'agents', 'genealogy', 'positions'])
 </script>

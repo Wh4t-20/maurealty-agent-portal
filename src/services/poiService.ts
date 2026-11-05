@@ -50,6 +50,16 @@ export function haversineKm(aLng: number, aLat: number, bLng: number, bLat: numb
   return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
+// A cache value is only used if it has the expected shape (it is stored as free-form jsonb).
+function isNearbyPois(value: unknown): value is NearbyPois {
+  const v = value as NearbyPois | null;
+  return !!v && typeof v === 'object' && typeof v.fetched_at === 'string'
+    && !!v.categories && typeof v.categories === 'object';
+}
+
+const isFresh = (cached: NearbyPois | null): cached is NearbyPois =>
+  !!cached && Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS;
+
 async function readCache(listingId: number): Promise<NearbyPois | null> {
   try {
     const { data, error } = await supabase
@@ -58,7 +68,7 @@ async function readCache(listingId: number): Promise<NearbyPois | null> {
       .eq('listing_ID', listingId)
       .single();
     if (error) return null; // column missing or row not found
-    return (data?.nearby_pois as NearbyPois) ?? null;
+    return isNearbyPois(data?.nearby_pois) ? data.nearby_pois : null;
   } catch {
     return null;
   }
@@ -101,15 +111,20 @@ async function fetchCategory(categoryId: string, lng: number, lat: number): Prom
 export const poiService = {
   // Return nearby POIs for a listing — from cache when fresh, otherwise fetched
   // from Mapbox and cached. Pass force to bypass the cache.
+  // The public shared listing page passes `cached` (the cache that came with the listing) and
+  // `persist: false`: signed-out visitors can't read or write main_listings. Agents fill the cache
+  // when they share a listing (PropertyDetails.handleShare), so the client's page rarely needs Mapbox.
   async getNearbyPois(
     listingId: number,
     lng: number,
     lat: number,
-    opts: { force?: boolean } = {},
+    opts: { force?: boolean; cached?: NearbyPois | null; persist?: boolean } = {},
   ): Promise<NearbyPois> {
     if (!opts.force) {
-      const cached = await readCache(listingId);
-      if (cached?.fetched_at && Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS) {
+      const cached = opts.cached !== undefined
+        ? (isNearbyPois(opts.cached) ? opts.cached : null)
+        : await readCache(listingId);
+      if (isFresh(cached)) {
         return cached;
       }
     }
@@ -121,7 +136,7 @@ export const poiService = {
     }
 
     const payload: NearbyPois = { fetched_at: new Date().toISOString(), categories };
-    await writeCache(listingId, payload);
+    if (opts.persist !== false) await writeCache(listingId, payload);
     return payload;
   },
 };
