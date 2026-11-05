@@ -463,14 +463,27 @@ function canAgentAct(tab: CommissionTab): boolean {
 }
 
 // Payments of a sale are received in order: a later payment can't be requested until the
-// earlier ones (same sale, same person) are received. Returns the first earlier payment still
-// open, or null when nothing blocks.
+// earlier ones (same sale, same person) are received.
+//
+// firstOpenPayment: for each sale + recipient, the lowest payment number not yet received. It is
+// worked out once whenever the list changes; blockedBy() used to scan every tab for every card,
+// up to three times per card on each render (n x n work for an admin with many tabs).
+const firstOpenPayment = computed(() => {
+  const first = new Map<string, number>();
+  for (const t of commissions_list.value) {
+    if (t.status === 'received') continue;
+    const key = `${t.sale_ID}:${t.recipient_agent_ID}`;
+    const current = first.get(key);
+    if (current === undefined || t.payment_no < current) first.set(key, t.payment_no);
+  }
+  return first;
+});
+
+// The first earlier payment still open, or null when nothing blocks. (If the lowest open payment
+// of the sale comes before this tab, it is also the lowest of the earlier ones.)
 function blockedBy(tab: CommissionTab): number | null {
-  const open = commissions_list.value
-    .filter(t => t.sale_ID === tab.sale_ID && t.recipient_agent_ID === tab.recipient_agent_ID
-      && t.payment_no < tab.payment_no && t.status !== 'received')
-    .map(t => t.payment_no);
-  return open.length ? Math.min(...open) : null;
+  const first = firstOpenPayment.value.get(`${tab.sale_ID}:${tab.recipient_agent_ID}`);
+  return first !== undefined && first < tab.payment_no ? first : null;
 }
 
 const canRequest = (tab: CommissionTab) => isDue(tab) && blockedBy(tab) === null;
@@ -608,11 +621,10 @@ const filteredCommissions = computed(() => {
         return aClaimed - bClaimed;
         }
 
-        // 2nd Priority: Due Date (Earliest first)
-        const dateA = new Date(a.due_date).getTime();
-        const dateB = new Date(b.due_date).getTime();
-        if (dateA !== dateB) {
-        return dateA - dateB;
+        // 2nd Priority: Due Date (Earliest first). YYYY-MM-DD strings sort like the dates
+        // themselves, so no Date objects are created per comparison.
+        if (a.due_date !== b.due_date) {
+        return a.due_date < b.due_date ? -1 : 1;
         }
 
         // 3rd Priority: Developer Name (Alphabetical A-Z)
