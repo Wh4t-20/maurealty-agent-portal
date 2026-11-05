@@ -1,5 +1,6 @@
 import { supabase } from '../supabaseClient';
 import { type Property } from '../assets/classes/listings';
+import { safeFileExtension, safeFileName } from '../utils/sanitize';
 
 //added a subtable
 const SUB_TABLE_MAP: Record<number, string> = {
@@ -251,8 +252,8 @@ export const listingsService = {
         const file = files[i];
         if (!file) continue;
         
-        // create a unique, safe file name
-        const fileExt = file.name.split('.').pop() || 'bin';
+        // create a unique, safe file name ("listings/<id>-..." is what the storage policy expects)
+        const fileExt = safeFileExtension(file.name);
         const fileName = `${listingId}-${Date.now()}-${i}.${fileExt}`;
         
         const filePath = `listings/${fileName}`;
@@ -338,7 +339,8 @@ async deleteListingImages(imageUrls: string[]) {
   // fact sheet upload
   async uploadFactSheet(listingId: number, file: File) {
     try {
-      const sanitizedName = file.name.replace(/\s+/g, '_');
+      // letters, digits, . - _ only (the name is kept for the download, minus the "<id>-<ts>-" prefix)
+      const sanitizedName = safeFileName(file.name);
       const filePath = `${listingId}-${Date.now()}-${sanitizedName}`;
 
       // upload the file to the fact_sheets bucket

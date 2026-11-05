@@ -1,5 +1,6 @@
 import { supabase } from '../supabaseClient';
 import { type Developer, type DeveloperPromo, type OfficeHourSlot, type DayOption, days } from '../assets/classes/developers';
+import { safeFileExtension } from '../utils/sanitize';
 
 const formatHours = (time: string) => {
     const [hoursPart = '0', minutesPart = '00'] = time.split(':');
@@ -229,7 +230,7 @@ export const developerService = {
         }
     },
     async uploadImage(devID: number, file: File): Promise<string | ''> {
-        const fileExt = file.name.split('.').pop() || 'bin';
+        const fileExt = safeFileExtension(file.name);
         const fileName = `${devID}-${Date.now()}.${fileExt}`;
         
         const filePath = `developers/${fileName}`;
@@ -272,7 +273,7 @@ export const developerService = {
     // --- Developer promos (posters) ---
     // Upload a poster image to the images bucket under developer_promos/.
     async uploadPromoImage(devID: number, file: File): Promise<string | ''> {
-        const fileExt = file.name.split('.').pop() || 'bin';
+        const fileExt = safeFileExtension(file.name);
         const fileName = `${devID}-${Date.now()}.${fileExt}`;
         const filePath = `developer_promos/${fileName}`;
 
