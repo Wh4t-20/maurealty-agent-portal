@@ -131,14 +131,17 @@
             </div>
         </div>
         
+        <!-- What is wrong with the form, or why the save failed -->
+        <p v-if="error" class="text-red-600 dark:text-red-400 text-sm text-right" role="alert">{{ error }}</p>
+
         <!-- Buttons stack on phones, sit side by side on bigger screens -->
         <div class="w-full flex flex-col sm:flex-row gap-4 justify-end">
             <button type="button" @click="$emit('cancel')" class="flex flex-col items-center py-2 px-5 w-full sm:w-50 rounded-2xl border-2 border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
                 <span class="flex items-center-safe gap-2"> CANCEL</span>
             </button>
 
-            <button type="submit" class="flex flex-col items-center py-2 px-5 w-full sm:w-50 rounded-2xl border-2 border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer">
-                <span class="flex items-center-safe gap-2"><span>★</span> SAVE ACCOUNT</span>
+            <button type="submit" :disabled="saving" class="flex flex-col items-center py-2 px-5 w-full sm:w-50 rounded-2xl border-2 border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold hover:bg-maurealty-blue dark:hover:bg-maurealty-light-blue hover:text-white dark:hover:text-maurealty-blue hover:shadow-md hover:-translate-y-0.75 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                <span class="flex items-center-safe gap-2"><span>★</span> {{ saving ? 'SAVING…' : 'SAVE ACCOUNT' }}</span>
             </button>
         </div>
     </form>
@@ -151,6 +154,7 @@ import { agentService } from '@/services/agentService';
 import { useRouter } from 'vue-router';
 import placeholder from '@/assets/images/default_placeholder.png';
 import { type AgentProfile, getAge } from '@/assets/classes/agent';
+import { cleanText, normalizeEmail, isValidEmail, isValidPhone, isIsoDate } from '@/utils/sanitize';
 import { Trash2, Undo2, Upload } from 'lucide-vue-next';
 
 const props = defineProps<{ agent: AgentProfile }>();
@@ -230,39 +234,77 @@ const revertImage = () => {
 }
 
 
+const error = ref('');
+const saving = ref(false);
+
+// Cleans every field (trim, no control characters, length caps, lower-case email) and returns the
+// first problem found, with the same rules as Add Agent. Values reach the database as bound
+// parameters through supabase-js.
+function cleanForm() {
+    const f = form.value;
+    const values = {
+        first_name: cleanText(f.first_name, 100),
+        middle_name: cleanText(f.middle_name, 100) || null,
+        last_name: cleanText(f.last_name, 100),
+        sex: sexes.includes(f.sex) ? f.sex : '',
+        birth_date: f.birth_date,
+        home_address: cleanText(f.home_address, 500),
+        contact_number: cleanText(f.contact_number, 30),
+        email_address: normalizeEmail(f.email_address),
+    };
+    const today = new Date().toISOString().slice(0, 10);
+
+    let problem = '';
+    if (!values.first_name || !values.last_name) problem = 'First name and last name are required.';
+    else if (!values.sex) problem = 'Choose the sex.';
+    else if (!isIsoDate(values.birth_date) || values.birth_date > today || getAge(values.birth_date) > 120) problem = 'Enter a valid date of birth.';
+    else if (!values.home_address) problem = 'The address is required.';
+    else if (!isValidPhone(values.contact_number)) problem = 'The contact number can only have digits, spaces and + ( ) - .';
+    else if (!isValidEmail(values.email_address)) problem = 'Enter a valid email address.';
+
+    return { values, problem };
+}
+
 const saveAgentDetails = async () => {
     console.log('Saving new account details...');
+    error.value = '';
 
-    const agentID = form.value.agent_ID
-    const agentData: Partial<AgentProfile> = {
-        first_name: form.value.first_name,
-        middle_name: form.value.middle_name,
-        last_name: form.value.last_name,
-        sex: form.value.sex,
-        birth_date: form.value.birth_date,
-        age: getAge(form.value.birth_date),
-        contact_number: form.value.contact_number,
-        email_address: form.value.email_address,
+    const { values, problem } = cleanForm();
+    if (problem) {
+        error.value = problem;
+        return;
     }
 
+    const agentID = form.value.agent_ID
+    // home_address is included: the Address field was editable but never saved before.
+    const agentData: Record<string, any> = {
+        ...values,
+        age: getAge(values.birth_date),
+    }
+
+    saving.value = true;
+    let uploadedUrl: string | null = null;     // new picture uploaded by this save
+    let oldImageToDelete: string | null = null; // removed only after the profile row is saved
     try {
         // SCENARIO 1: A new image file was uploaded
         if (currentImage.value?.file) {
             console.log('Uploading new image...');
             const newUrl = await agentService.uploadProfileImage(agentID, currentImage.value.file);
             agentData.profile_url = newUrl;
+            uploadedUrl = newUrl;
 
-            // Clean up the old image from the bucket if it existed
+            // Clean up the old image from the bucket if it existed (after the save, below)
             if (props.agent.profile_url) {
-                await agentService.deleteProfileImage(props.agent.profile_url);
+                oldImageToDelete = props.agent.profile_url;
             }
-        } 
+        }
         // SCENARIO 2: The image was explicitly removed by the user (no new file, but URL is empty)
         else if (!form.value.profile_url && props.agent.profile_url) {
             console.log('Removing old image...');
-            await agentService.deleteProfileImage(props.agent.profile_url);
-            agentData.profile_url = '';
-        } 
+            oldImageToDelete = props.agent.profile_url;
+            // NULL, not '': agents.profile_url is UNIQUE, so two agents without a picture would clash on ''.
+            agentData.profile_url = null;
+        }
         // SCENARIO 3: No changes made to the image
         else {
             agentData.profile_url = props.agent.profile_url;
@@ -270,13 +312,22 @@ const saveAgentDetails = async () => {
 
         // Save the final data to the database
         const response = await agentService.updateProfile(agentID, agentData);
-        
+
         if (response.success) {
             console.log('Profile updated successfully!');
+            // Only now is the old picture unused. (Deleting it first left a broken picture when the save failed.)
+            if (oldImageToDelete) await agentService.deleteProfileImage(oldImageToDelete);
             router.go(0); // refresh to see changes
+        } else {
+            error.value = 'Your profile was not saved. Please try again.';
+            if (uploadedUrl) await agentService.deleteProfileImage(uploadedUrl);
         }
-    } catch (error) {
-        console.error('Failed to update account details:', error);
+    } catch (e: any) {
+        console.error('Failed to update account details:', e);
+        error.value = e?.message || 'Your profile could not be saved. Please try again.';
+        if (uploadedUrl) await agentService.deleteProfileImage(uploadedUrl);
+    } finally {
+        saving.value = false;
     }
 }
 </script>
