@@ -77,6 +77,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { commissionService, type CommissionTab, type PaymentRequestDetails } from '@/services/commissionService'
+import { cleanText } from '@/utils/sanitize'
 
 const props = defineProps<{
   tab: CommissionTab
@@ -128,6 +129,17 @@ const peso = (n: number) => '₱' + (n || 0).toLocaleString('en-PH', { minimumFr
 
 async function submit() {
   error.value = ''
+  // The editable fields are cleaned before they are saved in commissions.request_details
+  // (trimmed, no control characters, length caps); the locked amounts come from the tab itself.
+  Object.assign(form, {
+    first_name: cleanText(form.first_name, 100),
+    middle_name: cleanText(form.middle_name, 100),
+    last_name: cleanText(form.last_name, 100),
+    client_name: cleanText(form.client_name, 200),
+    project: cleanText(form.project, 200),
+    developer: cleanText(form.developer, 150),
+    reservation_date: cleanText(form.reservation_date, 30),
+  })
   if (!form.first_name || !form.last_name) { error.value = 'First and last name are required.'; return }
   saving.value = true
   try {
