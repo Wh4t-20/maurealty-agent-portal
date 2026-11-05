@@ -32,12 +32,23 @@
     </header>
 
     <!-- Developer Cards -->
-    <div class="flex-1 overflow-y-auto">
+    <div class="flex-1 overflow-y-auto" :aria-busy="!hasLoaded">
       <p v-if="deleteError" class="w-full max-w-6xl mx-auto px-4 sm:px-8 pt-4 text-sm text-red-600 dark:text-red-400" role="alert">{{ deleteError }}</p>
+      <!-- LOADING: announced to screen readers while the skeleton cards below are shown -->
+      <p v-if="!hasLoaded" class="sr-only" role="status">Loading developers…</p>
       <div class="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 p-4 sm:p-8">
-        <DeveloperCard v-for="developer in filteredDevelopers" :key="developer.dev_ID" :dev="developer" :can-manage="isAdmin" @edit-developer = "handleEditDeveloper" @delete-developer = "handleDeleteDeveloper" @open-listing="openListing" @open-promo="openPromo"/>
+        <!-- SKELETON: placeholder cards until the first load finishes (reloads after a save or
+             delete keep the current cards on screen instead) -->
+        <template v-if="!hasLoaded">
+          <DeveloperCardSkeleton v-for="n in SKELETON_CARDS" :key="'skeleton-' + n" />
+        </template>
+        <template v-else>
+          <DeveloperCard v-for="developer in filteredDevelopers" :key="developer.dev_ID" :dev="developer" :can-manage="isAdmin" @edit-developer = "handleEditDeveloper" @delete-developer = "handleDeleteDeveloper" @open-listing="openListing" @open-promo="openPromo"/>
+        </template>
       </div>
-      <p v-if="searchQuery && filteredDevelopers.length === 0" class="text-center text-sm text-gray-500 dark:text-gray-400 pb-8">No developers match your search.</p>
+      <p v-if="hasLoaded && searchQuery && filteredDevelopers.length === 0" class="text-center text-sm text-gray-500 dark:text-gray-400 pb-8">No developers match your search.</p>
+      <!-- EMPTY: loaded, nothing to show and no search typed -->
+      <p v-else-if="hasLoaded && developers.length === 0" class="text-center text-sm text-gray-500 dark:text-gray-400 pb-8">No developers to show.</p>
     </div>
   </div>
   <!-- read-only: this page doesn't handle edit / delete / sold / approve (use Project Listings) -->
@@ -59,6 +70,7 @@ import { ref, computed, onMounted, watch } from "vue";
 import { type Developer, type OfficeHourSlot, type DeveloperProject, type DeveloperPromo } from "@/assets/classes/developers.ts";
 import { developerService } from "@/services/developerService";
 import DeveloperCard from "@/components/developer/developerCard.vue";
+import DeveloperCardSkeleton from "@/components/developer/DeveloperCardSkeleton.vue";
 import AddDeveloperTab from "@/components/developer/addDeveloper.vue";
 import PropertyDetails from "@/components/listings/PropertyDetails.vue";
 import PromoPosterModal from "@/components/developer/PromoPosterModal.vue";
@@ -80,14 +92,20 @@ const openListing = (project: DeveloperProject) => {
 
  }
 const openPromo = (promo: DeveloperPromo) => { selectedPromo.value = promo }
+
+// Skeleton cards are shown until the first load finishes (two rows on wide screens).
+const SKELETON_CARDS = 4;
+const hasLoaded = ref(false);
+
 const loadDevelopers = async () => {
   try {
     const data = await developerService.getDevelopers();
     developers.value = data;
   } catch (error) {
     console.error("Error fetching developers:", error);
+  } finally {
+    hasLoaded.value = true;
   }
-
 };
 
 // Search box: filters the loaded developers in the browser (it was not connected before).
