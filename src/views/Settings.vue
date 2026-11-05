@@ -60,12 +60,17 @@
                 </section>
             </div>
 
+            <!-- Result of SAVE SETTINGS (it used to give no feedback at all) -->
+            <p v-if="saveMessage" class="mt-6 text-sm text-right font-medium" :class="saveFailed ? 'text-red-600 dark:text-red-400' : 'text-maurealty-green'" :role="saveFailed ? 'alert' : 'status'">
+                {{ saveMessage }}
+            </p>
+
             <div class="flex col-span-2 justify-end gap-4 mt-8">
                 <button type="button" @click="goBack" class="px-4 py-1.5 border border-maurealty-blue dark:border-maurealty-light-blue text-maurealty-blue dark:text-maurealty-light-blue font-bold rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer">
                     CANCEL
                 </button>
-                <button type="button" @click="saveCurrentSettings" class="px-4 py-1.5 bg-maurealty-blue text-white font-bold rounded-xl shadow-md hover:bg-opacity-90 hover:bg-[#045fa3] active:bg-white active:text-maurealty-blue dark:text-maurealty-light-blue border border-maurealty-blue transition flex items-center gap-2 cursor-pointer">
-                    <span>★</span> SAVE SETTINGS
+                <button type="button" @click="saveCurrentSettings" :disabled="saving" class="px-4 py-1.5 bg-maurealty-blue text-white font-bold rounded-xl shadow-md hover:bg-opacity-90 hover:bg-[#045fa3] active:bg-white active:text-maurealty-blue dark:text-maurealty-light-blue border border-maurealty-blue transition flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span>★</span> {{ saving ? 'SAVING…' : 'SAVE SETTINGS' }}
                 </button>
             </div>
         </main>
@@ -73,7 +78,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { currencySymbols, areaUnits } from '@/utils/conversion';
 import ConfigDropdown from '@/components/settings/configDropdown.vue';
 import ConfigToggleSlider from '@/components/settings/configToggleSlider.vue';
@@ -86,25 +91,48 @@ onMounted(async () => {
     console.log(configs);
 });
 
+// Save feedback, shown for a few seconds under the settings.
+const saving = ref(false);
+const saveMessage = ref('');
+const saveFailed = ref(false);
+let messageTimer: ReturnType<typeof setTimeout> | undefined;
+const showSaveMessage = (text: string, failed: boolean) => {
+    saveMessage.value = text;
+    saveFailed.value = failed;
+    clearTimeout(messageTimer);
+    messageTimer = setTimeout(() => (saveMessage.value = ''), 4000);
+};
+onBeforeUnmount(() => clearTimeout(messageTimer));
+
 const saveCurrentSettings = async () => {
+    saving.value = true;
     try {
         const agentID = await agentService.getCurrentAgentID();
 
         if (!agentID) {
             console.error('Error fetching agent id');
+            // Stop here: it used to carry on and send an update for agent_ID = null.
+            showSaveMessage('Your settings could not be saved: your login is not linked to an agent record.', true);
+            return;
         }
 
         const response = await agentService.updateConfigs(agentID, configs);
         if (!response.success) {
             console.error('Could not update Configs');
+            showSaveMessage('Your settings were not saved. Please try again.', true);
+            return;
         }
 
         console.log('Settings updated successfully!');
+        showSaveMessage('Settings saved.', false);
     } catch (error) {
       console.error('Failed to save current settings:', error);
+      showSaveMessage('Your settings could not be saved. Check your connection and try again.', true);
       return null;
+    } finally {
+      saving.value = false;
     }
-    
+
 }
 
 // goes back to previous page
