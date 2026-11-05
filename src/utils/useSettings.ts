@@ -6,16 +6,23 @@ const state = reactive({ ...defaultSettings.configs });
 
 export function useSettings() {
     const loadSettings = () => {
+        // A damaged or non-JSON value (edited by hand, an old version, blocked storage) used to throw
+        // here while the app was starting, which left a blank page. Fall back to the defaults instead.
+        try {
         const stored = localStorage.getItem('app_user_settings');
         if (stored) {
         const parsed = JSON.parse(stored);
-        
-        // Safety check: If the local storage still has the old {"configs": {...}} wrapper, 
+        if (!parsed || typeof parsed !== 'object') return;
+
+        // Safety check: If the local storage still has the old {"configs": {...}} wrapper,
         // extract the inner object. Otherwise, use it as-is.
         const flatSettings = parsed.configs ? parsed.configs : parsed;
-        
+
         // Update all properties in the reactive state at once
         Object.assign(state, flatSettings);
+        }
+        } catch (e) {
+            console.warn('Saved settings could not be read; using the defaults.', e);
         }
     };
 
