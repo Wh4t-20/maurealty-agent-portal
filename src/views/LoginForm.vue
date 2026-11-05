@@ -175,7 +175,7 @@ const handleLogin = async () => {
   background-image: 
     linear-gradient(180deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.6) 30%, rgba(255, 255, 255, 0.1) 100%), 
     linear-gradient(0deg, rgba(0, 77, 122, 0.9) 0%, rgba(0, 77, 122, 0.6) 80%, rgba(0, 77, 122, 0.1) 100%), 
-    url('/src/assets/images/LoginFormBG.png');
+    url('/src/assets/images/LoginFormBg.png');
 }
 
 /* Dark Mode */
@@ -185,6 +185,6 @@ const handleLogin = async () => {
     linear-gradient(180deg, rgba(17, 24, 39, 0.95) 0%, rgba(17, 24, 39, 0.8) 30%, rgba(17, 24, 39, 0.2) 100%), 
     /* Darkened the blue tone */
     linear-gradient(0deg, rgba(0, 30, 55, 0.95) 0%, rgba(0, 30, 55, 0.8) 80%, rgba(0, 30, 55, 0.2) 100%), 
-    url('/src/assets/images/LoginFormBG.png');
+    url('/src/assets/images/LoginFormBg.png');
 }
 </style>
