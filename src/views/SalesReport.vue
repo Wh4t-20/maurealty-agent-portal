@@ -5,7 +5,7 @@
     <Transition name="toast">
       <div v-if="toast" class="fixed top-6 right-6 z-[60] flex items-center gap-3 rounded-lg bg-white dark:bg-black border border-maurealty-green/40 shadow-lg px-5 py-3">
         <span class="flex items-center justify-center size-6 rounded-full bg-maurealty-green text-white text-sm font-bold">✓</span>
-        <p class="text-sm font-medium text-gray-700">{{ toast }}</p>
+        <p class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ toast }}</p>
       </div>
     </Transition>
 
@@ -453,13 +453,8 @@ function openEdit(sale: Sale) {
 async function confirmDelete(sale: Sale) {
   if (!confirm(`Delete the sale for "${sale.client_name}"? This can't be undone.`)) return
   try {
-    try{
-      await listingsService.updateListingStatus(sale.listing_ID, 'active')
-    } catch (e) {
-      console.error('Failed to update listing status:', e)
-      showToast('Failed to update listing status — check permissions')
-      return
-    }
+    // The sale is deleted first, so a refused delete changes nothing. (The listing used to be set
+    // back to active first, which put a sold listing on sale again when the delete then failed.)
     const res = await salesService.deleteSale(sale.sale_ID)
     if (!res.success) {
       showToast('Delete failed — check permissions')
@@ -467,7 +462,15 @@ async function confirmDelete(sale: Sale) {
     }
     selectedSale.value = null
     loadSales()
-    showToast('Sale deleted')
+    // With the sale gone, its listing is for sale again.
+    try{
+      const listingRes = await listingsService.updateListingStatus(sale.listing_ID, 'active')
+      if (!listingRes.success) throw new Error('0 rows changed')
+      showToast('Sale deleted')
+    } catch (e) {
+      console.error('Failed to update listing status:', e)
+      showToast('Sale deleted, but its listing could not be set back to active')
+    }
   } catch (e) {
     console.error('Failed to delete sale:', e)
     showToast('Something went wrong deleting the sale')
@@ -478,19 +481,8 @@ async function confirmDelete(sale: Sale) {
 // Two levels = supervisor + manager, per the Commission Releasing doc.
 const upline = ref<GenealogyAgent[]>([])
 const uplineLoading = ref(false)
-
-watch(selectedSale, async (sale) => {
-  upline.value = []
-  if (!sale || !isAdmin.value) return
-  uplineLoading.value = true
-  try {
-    upline.value = await genealogyService.getUplineChain(sale.agent_ID, 2)
-  } catch (e) {
-    console.error('Failed to load upline:', e)
-  } finally {
-    uplineLoading.value = false
-  }
-})
+// (Loaded by the selectedSale watcher further down, together with the property details. A second
+// watcher here fetched the same upline again every time a sale was opened.)
 
 // DP divisions of the selected sale (only DP sales have any).
 const saleDivisions = ref<DpDivision[]>([])
@@ -684,9 +676,13 @@ watch(selectedSale, async (sale) => {
 })
 
 // --- CSV export of the current filtered view ---
+// Text that starts with = + - @ (or a tab / carriage return) is read as a formula by Excel and
+// Google Sheets, so a client name such as "=HYPERLINK(...)" could run when the export is opened
+// (CSV injection). Such text cells get a leading apostrophe; numbers are left as they are.
 function csvCell(v: unknown): string {
-  const s = v == null ? '' : String(v)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+  let s = v == null ? '' : String(v)
+  if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 function exportCsv() {
   if (filteredSales.value.length === 0) return
