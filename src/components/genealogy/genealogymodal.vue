@@ -1,6 +1,7 @@
 <template>
   <div class="p-5 w-full px-4 sm:px-10">
-    <h1 class="text-[clamp(1.2rem,2vw,2rem)] font-extrabold text-[#07407B] dark:text-white p-5">Developer Genealogy</h1>
+    <!-- The tree shows agents (upline -> downline), not developers -->
+    <h1 class="text-[clamp(1.2rem,2vw,2rem)] font-extrabold text-[#07407B] dark:text-white p-5">Agent Genealogy</h1>
 
     <!-- Capped to the screen height so the tree never spills past a phone screen -->
     <div class="w-full h-[600px] max-h-[70vh]">
