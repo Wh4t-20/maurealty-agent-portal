@@ -14,12 +14,8 @@ const SUB_TABLE_MAP: Record<number, string> = {
 
 };
 
-export const listingsService = {
-  // Fetch listings. Defaults to active-only (public/agent view); pass
-  // statuses to widen the set — e.g. ['active', 'pending'] for the admin
-  // view that also surfaces listings awaiting approval.
-  async getListings(limit: number = 20, statuses: string[] = ['active'], ownPendingAgentId?: number): Promise<Property[]> {
-    const selectFields = `
+// The columns a listing card needs (mapped by mapToProperty).
+const LISTING_CARD_FIELDS = `
         listing_ID,
         listing_title,
         price,
@@ -39,6 +35,13 @@ export const listingsService = {
         developers (name),
         listing_images (image_url, display_order)
       `;
+
+export const listingsService = {
+  // Fetch listings. Defaults to active-only (public/agent view); pass
+  // statuses to widen the set — e.g. ['active', 'pending'] for the admin
+  // view that also surfaces listings awaiting approval.
+  async getListings(limit: number = 20, statuses: string[] = ['active'], ownPendingAgentId?: number): Promise<Property[]> {
+    const selectFields = LISTING_CARD_FIELDS;
 
     let query = supabase
       .from('main_listings')
@@ -66,6 +69,22 @@ export const listingsService = {
     }
 
     return (data || []).map((item: any) => this.mapToProperty(item));
+  },
+
+  // One listing as a card (same fields as getListings), whatever its status. null if it can't be read.
+  // The sale form uses it when its project is fixed (Sold button, editing a sale).
+  async getListingSummary(listingId: number): Promise<Property | null> {
+    const { data, error } = await supabase
+      .from('main_listings')
+      .select(LISTING_CARD_FIELDS)
+      .eq('listing_ID', listingId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching listing summary:', error);
+      return null;
+    }
+    return data ? this.mapToProperty(data) : null;
   },
 
   // Map database payload to Property interface
