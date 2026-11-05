@@ -1,20 +1,22 @@
 import { supabase } from '../supabaseClient';
 import { safeFileExtension } from '../utils/sanitize';
+import { getSessionUser } from './authService';
 
 export const agentService = {
   // Fetch full agent profile along with position
+  // (the signed-in user comes from the stored session: see getSessionUser in authService.ts)
   async getCurrentAgentProfile() {
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const user = await getSessionUser();
 
-      if (authError || !authData?.user) {
+      if (!user) {
         return null;
       }
 
       const { data, error } = await supabase
         .from('agents')
         .select(`*`)
-        .eq('user_id', authData.user.id)
+        .eq('user_id', user.id)
         .single();
 
       if (error) {
@@ -32,16 +34,16 @@ export const agentService = {
   // just in case functions with ID alone are needed
   async getCurrentAgentID() {
     try {
-      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const user = await getSessionUser();
 
-      if (authError || !authData?.user) {
+      if (!user) {
         return null;
       }
 
       const { data, error } = await supabase
         .from('agents')
         .select(`agent_ID`)
-        .eq('user_id', authData.user.id)
+        .eq('user_id', user.id)
         .single();
 
       if (error) {

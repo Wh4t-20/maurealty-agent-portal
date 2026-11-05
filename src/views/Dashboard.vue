@@ -157,6 +157,7 @@ import MetricDetailsModal from '@/components/dashboard/MetricDetailsModal.vue';
 import AddAgentModal from '@/components/genealogy/AddAgentModal.vue';
 import ChangePasswordModal from '@/components/auth/ChangePasswordModal.vue';
 import { accountService } from '@/services/accountService';
+import { getSessionUser } from '@/services/authService';
 
 // The numbers on this page are built from the same tables the rest of the app writes to
 // (sales, commissions, listings, genealogy) in dashboardService, so they always match the
@@ -310,7 +311,8 @@ useLiveRefresh(async () => {
 
 onMounted(async () => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
+    // From the session the browser already holds (no auth-server round trip; see getSessionUser).
+    const user = await getSessionUser();
 
     if (user) {
       loginEmail.value = user.email ?? '';
