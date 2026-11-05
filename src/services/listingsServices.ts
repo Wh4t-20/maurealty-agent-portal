@@ -2,6 +2,9 @@ import { supabase } from '../supabaseClient';
 import { type Property } from '../assets/classes/listings';
 import { safeFileExtension, safeFileName } from '../utils/sanitize';
 
+// Every value of the listing_status enum (draft is the DB default; pending added by 20260906120000).
+const LISTING_STATUSES = ['draft', 'pending', 'active', 'sold'];
+
 //added a subtable
 const SUB_TABLE_MAP: Record<number, string> = {
   1: 'house_and_lot',
@@ -41,11 +44,16 @@ export const listingsService = {
       .from('main_listings')
       .select(selectFields);
 
-    if (ownPendingAgentId) {
+    // The or() filter below is a PostgREST filter string, so it may only ever hold known status
+    // words and a whole-number id: never text a user typed.
+    const safeStatuses = statuses.filter(s => LISTING_STATUSES.includes(s));
+    const ownId = Number(ownPendingAgentId);
+
+    if (ownPendingAgentId && Number.isInteger(ownId) && ownId > 0) {
       // Non-admin agents: show all active listings + their own pending ones
-      query = query.or(`status.in.(${statuses.join(',')}),and(status.eq.pending,agent_ID.eq.${ownPendingAgentId})`);
+      query = query.or(`status.in.(${safeStatuses.join(',')}),and(status.eq.pending,agent_ID.eq.${ownId})`);
     } else {
-      query = query.in('status', statuses);
+      query = query.in('status', safeStatuses);
     }
 
     const { data, error } = await query
