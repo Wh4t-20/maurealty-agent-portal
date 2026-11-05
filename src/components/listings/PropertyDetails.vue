@@ -283,6 +283,7 @@ import { ref, watch, computed } from 'vue'
 import { formattedPropertyType } from '@/assets/classes/listings'
 import { listingsService, compileMarkdown } from '@/services/listingsServices' 
 import { generateShareLink } from '@/services/shareService'
+import { poiService } from '@/services/poiService'
 import MapHolder from './MapHolder.vue'
 import CalculatorPanel from '@/components/calculator/CalculatorPanel.vue'
 
@@ -416,6 +417,14 @@ const handleShare = async () => {
     const shareData = await generateShareLink(details.value.listing_id, details.value.agent_ID, 1);
     const shareUrl = `${window.location.origin}/shared/listing/${shareData.share_id}`;
     
+    // Fill the nearby places cache now (Mapbox is only called when it is missing or older than
+    // 30 days). The client's shared page reads this cache but can't write it, since signed-out
+    // visitors have no access to main_listings.
+    if (Number.isFinite(details.value.lng) && Number.isFinite(details.value.lat)) {
+      void poiService.getNearbyPois(details.value.listing_id, details.value.lng, details.value.lat)
+        .catch((e) => console.warn('Could not refresh the nearby places cache:', e));
+    }
+
     await navigator.clipboard.writeText(shareUrl);
     alert('Temporary link copied to clipboard!');
     emit('share');

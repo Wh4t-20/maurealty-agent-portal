@@ -55,6 +55,10 @@ function toggleExpand() {
 const props = defineProps<{
   targetLocation?: { lng: number; lat: number } | null;
   listingId?: number | null;
+  // Public shared listing page: the cached places arrive with the listing (signed-out visitors
+  // can't read main_listings) and nothing is written back to the database.
+  cachedPois?: NearbyPois | null;
+  readOnlyCache?: boolean;
 }>();
 
 const categories = POI_CATEGORIES;
@@ -95,7 +99,10 @@ async function ensurePois(): Promise<NearbyPois | null> {
 
   poiLoading.value = true;
   try {
-    poiData.value = await poiService.getNearbyPois(props.listingId, lng, lat);
+    poiData.value = await poiService.getNearbyPois(
+      props.listingId, lng, lat,
+      props.readOnlyCache ? { cached: props.cachedPois ?? null, persist: false } : {},
+    );
     return poiData.value;
   } catch (e) {
     console.error('Failed to load nearby POIs:', e);

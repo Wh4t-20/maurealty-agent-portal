@@ -89,8 +89,14 @@
               {{ details.location }}
             </span>
 
+            <!-- Signed-out clients: the nearby places come with the listing and are never written back -->
             <section class="w-full h-64 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800">
-              <MapHolder :target-location="{ lng: details.longitude, lat: details.latitude }" :listing-id="details.listing_ID" />
+              <MapHolder
+                :target-location="{ lng: details.longitude, lat: details.latitude }"
+                :listing-id="details.listing_ID"
+                :cached-pois="details.nearby_pois ?? null"
+                read-only-cache
+              />
             </section>
 
             <span class="flex items-center gap-1.5">
@@ -278,6 +284,8 @@ const updateImage = (i: number) => {
   }
 }
 
+// Loaded through the get_shared_listing() SQL function (see shareService): it checks the link
+// and returns only the listing's public details, so this page works for signed-out clients.
 const loadListing = async () => {
   const token = route.params.token as string;
   try {
