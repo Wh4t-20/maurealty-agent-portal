@@ -515,8 +515,10 @@ export const genealogyService = {
   // Patch an existing agent's fields. Does NOT touch user_id / configs / upline;
   // upline changes go through setUpline so the genealogy edge stays consistent.
   async updateAgent(id: number, patch: Record<string, any>): Promise<void> {
-    const { error } = await supabase.from('agents').update(patch).eq('agent_ID', id);
+    // .select() so an update silently blocked by RLS (0 rows) is reported instead of looking saved.
+    const { data, error } = await supabase.from('agents').update(patch).eq('agent_ID', id).select('agent_ID');
     if (error) throw error;
+    if (!data || data.length === 0) throw new Error('The agent was not updated. You may not have permission.');
   },
 
   // Re-point an agent's upline edge. Passing null detaches it (agent becomes a
@@ -695,11 +697,17 @@ export const genealogyService = {
   },
 
   async setPromotionThreshold(positionId: number, threshold: number | null): Promise<void> {
-    const { error } = await supabase
+    if (threshold != null && (!Number.isFinite(threshold) || threshold < 0)) {
+      throw new Error('Enter a threshold of 0 or more, or leave it empty.');
+    }
+    // .select(): with RLS, a non-admin's update changes 0 rows without an error.
+    const { data, error } = await supabase
       .from('positions')
       .update({ promotion_sales_threshold: threshold })
-      .eq('position_ID', positionId);
+      .eq('position_ID', positionId)
+      .select('position_ID');
     if (error) throw error;
+    if (!data || data.length === 0) throw new Error('The threshold was not saved. Only admins can change it.');
   },
 
   // Count financial/listing rows that would block a hard delete.

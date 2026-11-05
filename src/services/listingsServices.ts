@@ -238,7 +238,7 @@ export const listingsService = {
 
           // Detects if RLS blocked the update
           if (!subData || subData.length === 0) {
-            console.error('Update failed silently. Zero rows modified in ${subTable}.');
+            console.error(`Update failed silently. Zero rows modified in ${subTable}.`);
             return { success: false };
           }
         }
@@ -364,13 +364,15 @@ async deleteListingImages(imageUrls: string[]) {
         .getPublicUrl(filePath);
 
       // update the main_listings table row with this file's public URL
-      const { error: dbError } = await supabase
+      const { data: updated, error: dbError } = await supabase
         .from('main_listings')
         .update({ fact_sheet: urlData.publicUrl })
         .eq('listing_ID', listingId)
-        .select();
+        .select('listing_ID');
 
       if (dbError) throw dbError;
+      // Zero rows = the listing wasn't found or RLS blocked the update: the file is not linked.
+      if (!updated || updated.length === 0) throw new Error('The fact sheet was uploaded but could not be linked to the listing.');
 
       return { success: true, url: urlData.publicUrl };
     } catch (error) {
