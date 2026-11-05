@@ -2,9 +2,9 @@
 
 > **What this file is:** the single reference for how the Maureal Realty and Brokerage (MRB) web portal works today: its features, the processes behind them, and where each piece of logic lives in the code. It is written for AI assistants and for the dev team.
 >
-> **Last verified against the code:** 2026-11-04 · branch `feature/ticketing-system` (IT support tickets, on top of `9e0d396`) · `npx vue-tsc --build --force` passes with **0 errors** · `npx vite build` passes · the Edge Function type-checks against a Deno shim · the support tickets migration was run (twice) and its RLS/trigger rules tested on a local PostgreSQL 18 with stubbed `auth`/`storage` schemas.
+> **Last verified against the code:** 2026-11-05 · branch `fix/bug-catches-and-rls-fixes` (RLS hardening, bug fixes, modal components, on top of `229aa94`) · `npx vue-tsc --build --force` passes with **0 errors** · `npm run build` passes · the RLS hardening migration was built on a local PostgreSQL 18 from every migration plus the exported live policies, run twice, and checked with 159 role-by-role tests (signed out, login without agent, agent, upline, admin, service role).
 >
-> **Supabase changes need manual steps.** Agent accounts (2026-11-04) need a migration, an Edge Function deploy and some dashboard settings. IT support tickets (2026-11-04) need one more migration, run after the agent accounts one. See [3.3 Supabase project setup](#33-supabase-project-setup-manual-steps).
+> **Supabase changes need manual steps.** Agent accounts (2026-11-04) need a migration, an Edge Function deploy and some dashboard settings. IT support tickets (2026-11-04) need one more migration, run after the agent accounts one. **RLS hardening (2026-11-05)** needs one more migration: deploy the frontend first, then run it (3.3 step 10). See [3.3 Supabase project setup](#33-supabase-project-setup-manual-steps).
 >
 > **Related docs:** `documentation.md` (running log of changes, newest first) · `changelog.md` (early frontend notes, Dec 2025 to Jan 2026, historical only) · `README.md` (setup and branch naming).
 
@@ -49,9 +49,10 @@ Read this section before writing any code for this project.
 | A pure frontend helper (formatting, math, dates) | `src/utils/` | No Supabase calls, except `liveRefresh.ts`, which subscribes to realtime. |
 | A full page | `src/views/<Name>.vue` + a route in `src/router/index.ts` (with `meta: { requiresAuth: true }`) + an entry in `topItems` in `src/components/Sidebar.vue` | Both the desktop sidebar and the phone bottom bar read `topItems`. |
 | A reusable or page-specific component | `src/components/<page-folder>/<Name>.vue` | One folder per page (`listings/`, `sales/`, `commissions/`, ...). |
+| A modal / popup / lightbox | `src/components/<page-folder>/<Name>Modal.vue` | **Never inline in a view** (team convention). The view keeps the open/close state (`v-if`), any `<transition>` around it, and the actions; the modal gets props and emits `close` (+ its actions). Examples: `sales/SaleDetailsModal.vue`, `dashboard/MetricDetailsModal.vue`, `developer/PromoPosterModal.vue`, `listings/MapPickerModal.vue`. |
 | A DB schema change | a new file in `supabase/migrations/` named `YYYYMMDDHHMMSS_description.sql` | See 1.5. |
 | Server-side code that needs the service-role key (creating/deleting Auth users, anything an admin-only check must guard) | a Supabase Edge Function: `supabase/functions/<name>/index.ts` (Deno, `npm:@supabase/supabase-js@2`) | Called from a service with `supabase.functions.invoke('<name>', { body })`. Check the caller inside the function. Document it in 9.8 and the deploy step in 3.3. Not part of `vue-tsc` (Deno code). |
-| Form input cleaning (trim, length caps, email/phone/date checks) | `src/utils/sanitize.ts` | Use it in every form that writes to the DB or Supabase Auth. Never trim or alter passwords. |
+| Form input cleaning (trim, length caps, email/phone/date checks) | `src/utils/sanitize.ts` | Use it in every form that writes to the DB or Supabase Auth. Never trim or alter passwords. Markdown fields use `cleanMarkdownText`; storage paths use `safeFileExtension` / `safeFileName`, never `file.name`. |
 
 ### 1.3 Coding conventions (match the existing code)
 
@@ -64,14 +65,17 @@ Read this section before writing any code for this project.
 - Comments are short and plain: they say *why*, not *what*. Match the density of the file you are in.
 - Money is stored in **PHP**; areas are stored in **square metres**. Convert only for display (see 5.5).
 - Dates are plain `YYYY-MM-DD` strings. Compare them as strings and do month math with `src/utils/paySchedule.ts`, so there are no timezone shifts. When you must build a `Date` from a date-only string, append `T00:00:00`.
-- **Input cleaning / SQL injection:** never build SQL or PostgREST filter strings from user text. supabase-js sends values as JSON and PostgREST binds them as parameters; SQL functions must not use `EXECUTE`/`format()` with user input. On top of that, clean form values with `src/utils/sanitize.ts` (`cleanText`, `cleanMultilineText` for long answers that keep line breaks, `normalizeEmail`, `isValidEmail`, `isValidPhone`, `isIsoDate`, `digitsOnly`) before sending them, and re-validate on the server when an Edge Function is involved. Search boxes filter loaded rows in the browser; they never become a query.
+- **Input cleaning / SQL injection:** never build SQL or PostgREST filter strings from user text. supabase-js sends values as JSON and PostgREST binds them as parameters; SQL functions must not use `EXECUTE`/`format()` with user input. On top of that, clean form values with `src/utils/sanitize.ts` (`cleanText`, `cleanMultilineText` for long answers that keep line breaks, `cleanMarkdownText` for Markdown (keeps indentation), `normalizeEmail`, `isValidEmail`, `isValidPhone`, `isIsoDate`, `digitsOnly`, `finiteNumber`) before sending them, and re-validate on the server when an Edge Function is involved. Search boxes filter loaded rows in the browser; they never become a query. The one `.or()` filter string left (`listingsService.getListings`) only takes known status words and a whole-number id.
+- **Storage paths** are built from ids plus `safeFileExtension(file.name)` / `safeFileName(file.name)`: the storage policies check the `<folder>/<id>-...` shape (5.4), and a raw name such as `photo./x` would add a folder.
+- **Untrusted text in HTML APIs:** anything from the database or an external API (e.g. Mapbox place names) goes into the DOM with `textContent` / `setDOMContent`, never `setHTML` / `innerHTML` (see `MapHolder.popupContent`).
+- **CSV exports** prefix text cells that start with `= + - @` with `'` (`SalesReport.csvCell`), so spreadsheets don't run them as formulas.
 - **User-written text is shown with `{{ }}`** (Vue escapes it), with `whitespace-pre-line` when line breaks matter. Only Markdown that went through `compileMarkdown()` (DOMPurify) may use `v-html`.
 
 ### 1.4 Guardrails
 
 - **Do not change commission formulas, rank rates, override percentages or hierarchy rules** (Section 8) without explicit confirmation from the team. They are business rules from the client, not implementation details.
 - Keep `commissions.claimed`, `claimed_at` and `admin_approved` in step with `commissions.status`. Older queries still read them.
-- **Role checks happen mostly in the app.** RLS is the open dev policy on every table except `agent_credentials` and `support_tickets`. Any new admin-only action must be gated in the UI *and*, where possible, guarded in the service (for example by checking the expected previous status, as `commissionService._advance` does). **Exceptions (checked on the server):** the `agent-account` Edge Function, the SQL functions `admin_get_agent_login` / `store_agent_initial_password` (see 9.7, 9.8), and **support tickets** (real RLS + the `support_tickets_guard` trigger + storage policies on the private `support_attachments` bucket, see 7.21 and 9.7). Don't replace the support ticket policies with the open dev policy.
+- **Role checks happen in the app *and* on the server.** Since 2026-11-05 (`20261105120000_harden_rls.sql`) every table has real RLS: signed-out visitors (`anon`) get **no** table access (the shared listing page uses `get_shared_listing()`), a login without an agents row sees nothing, and agents / admins get exactly what the app lets them do (Section 6, 9.7). Guard triggers enforce the column rules a policy can't (`agents_guard`, `main_listings_guard`, `commissions_guard`, `support_tickets_guard`). Any new action must be gated in the UI **and** allowed by a policy, and services keep checking the expected previous status (`commissionService._advance`) and 0 affected rows. **Never add an open policy** (`using (true)`) or a policy for `anon` / `public`: policies are OR-ed, so one open policy undoes the rest. Server-side code that must bypass RLS uses the service role in an Edge Function (`agent-account`, 9.8).
 - **Passwords:** never store, log or send a password anywhere except Supabase Auth. The only copy the app keeps is the **encrypted initial password** in `agent_credentials` (deleted as soon as the agent changes it). Don't add RLS policies to `agent_credentials`, don't select it from the browser, and don't print `agent_password_key` from Vault.
 - Some features are hidden by being **commented out on purpose**: Net Commission input, Voucher Series input, the Recent Activity panel. Do not delete them, and do not restore them unless asked.
 - Do not commit, push or create branches unless the user asks. The main branch is `mainer`. The branch naming rule is `<feat/fix>/<frontend/backend>/<featureName>`.
@@ -81,7 +85,7 @@ Read this section before writing any code for this project.
 
 1. Write an **idempotent** migration (`add column if not exists`, `create table if not exists`, `drop policy if exists`, and `do $$ ... $$` blocks for constraints). The team re-runs migrations by hand in the Supabase SQL editor.
 2. Quote mixed-case identifiers (`"agent_ID"`, `"listing_ID"`). Lower-case column names stay unquoted.
-3. New tables get RLS enabled plus the same open dev policy as the others (see `20261014140000_...sql`, section 4). **Exception:** a table holding secrets gets RLS with **no** policies plus `revoke all ... from anon, authenticated`, and is reached only through `SECURITY DEFINER` functions with `set search_path = ''` (see `20261104120000_agent_accounts.sql`). Revoke `execute` on such functions from `public, anon` and grant only the roles that need them. **Real per-user rules** (who may read/write which rows) use `public.current_agent_id()` and `public.current_agent_is_admin()` wrapped in `(select ...)`, as `20261104160000_support_tickets.sql` does.
+3. New tables get RLS enabled, `revoke all on table ... from anon`, and **real policies `to authenticated`** (who may read/write which rows), using `public.current_agent_id()` and `public.current_agent_is_admin()` wrapped in `(select ...)`; follow `20261105120000_harden_rls.sql` (reads: `current_agent_id() is not null`; admin-only writes: `current_agent_is_admin()`; owner rules: `"agent_ID" = current_agent_id()` or a helper such as `can_manage_listing(id)`). Rules about *columns* (who may change which field) go in a `before update` guard trigger. **Never** the old open dev policy (`using (true) with check (true)`). **Exception:** a table holding secrets gets RLS with **no** policies plus `revoke all ... from anon, authenticated`, and is reached only through `SECURITY DEFINER` functions with `set search_path = ''` (see `20261104120000_agent_accounts.sql`). Revoke `execute` on such functions from `public, anon` and grant only the roles that need them. Something signed-out visitors must see goes through a narrow `SECURITY DEFINER` function granted to `anon` (pattern: `get_shared_listing`), never through table access.
 4. If a page should refresh live from the new table, add it to the `supabase_realtime` publication (see section 5d of the same migration) and to that page's `useLiveRefresh([...])` list.
 5. End the migration with `notify pgrst, 'reload schema';`.
 6. Update Section 9 of this file, and 3.3 if the team has to do anything by hand in the Supabase dashboard.
@@ -89,9 +93,10 @@ Read this section before writing any code for this project.
 
 ### 1.6 Verifying your work
 
-- `npx vue-tsc --build` must stay at 0 errors (it was clean on 2026-10-28).
+- `npx vue-tsc --build` must stay at 0 errors (it was clean on 2026-11-05).
 - `npm run build` runs the type-check and `vite build`.
-- There are no automated tests. For logic-heavy code (commission math, hierarchy rules), past sessions checked behaviour with small stubbed Node scripts.
+- There are no automated tests. For logic-heavy code (commission math, hierarchy rules), past sessions checked behaviour with small stubbed Node scripts (Node 22 runs the `.ts` utils directly with `--experimental-strip-types`).
+- **RLS / SQL changes:** test them on a local PostgreSQL (18 is installed on the dev machine) with stub `auth` (`auth.users`, `auth.uid()` reading `request.jwt.claims`), `storage` (`buckets`, `objects`, `foldername`, `filename`), `vault` and the `anon` / `authenticated` / `service_role` (bypassrls) roles; build the schema from the migrations, recreate the live policies, run the migration twice, then act as each role with `set_config('role', ...)` + `set_config('request.jwt.claims', ...)` and check every allowed and refused action (how the 2026-11-04 and 2026-11-05 migrations were checked).
 
 ### 1.7 Keeping this file up to date (mandatory)
 
@@ -130,7 +135,7 @@ Use this template for a new feature in Section 7:
 - browse the **developers** the company works with, including their promo posters,
 - raise **IT support tickets** (problems, requests, feedback) with optional screenshots and follow them until they are resolved.
 
-**Admins** are agents with `agents.admin_access = true`. They approve listings, sales and commissions, release commission payments with proof, manage agents, ranks and promotion thresholds, and act as **IT support** (review and resolve everyone's tickets). **Adding an agent also creates their login** (Supabase Auth user + generated initial password); agents change that password themselves with a code sent by email.
+**Admins** are agents with `agents.admin_access = true`. They approve listings, sales and commissions, release commission payments with proof, manage agents, ranks and promotion thresholds, manage developers (office hours, promo posters), and act as **IT support** (review and resolve everyone's tickets). These rules are enforced by the database too (row level security since 2026-11-05), not only by the screens. **Adding an agent also creates their login** (Supabase Auth user + generated initial password); agents change that password themselves with a code sent by email.
 
 ### 2.1 Core lifecycle at a glance
 
@@ -210,10 +215,11 @@ Things that live in the Supabase project, not in the frontend build. Do them onc
 | 3 | Authentication → Emails → **Templates → Reset password** | Make the email contain the code `{{ .Token }}` (template below). Remove `{{ .ConfirmationURL }}` so nobody signs in through a link without changing their password. | The change-password modal asks for the **code**; the default template only has a link. |
 | 4 | Authentication → **Sign In / Providers → Email** | Optional: *Email OTP Expiration* (default 3600 s) and *Email OTP Length* (the modal accepts 6–10 digits). | Code lifetime and length. |
 | 5 | Authentication → Emails → **SMTP Settings**, then **Rate Limits** | Set up a custom SMTP sender (company mail, Resend, SendGrid, ...) and raise *emails per hour*. | Supabase's built-in sender only delivers to members of the Supabase team and allows only a few emails per hour, so agents would not receive their codes. |
-| 6 | Authentication → **Sign In / Providers** | Turn **off** *Allow new users to sign up*. | Logins are created only by admins (through the Edge Function, which isn't affected). With sign-ups on, anyone holding the anon key could make a login and, with the open dev RLS, read the data. |
+| 6 | Authentication → **Sign In / Providers** | Turn **off** *Allow new users to sign up*. | Logins are created only by admins (through the Edge Function, which isn't affected). Since step 10 a self-made login without an agents row reads nothing, but it still shouldn't exist. |
 | 7 | App: Genealogy → Edit Agent | For agents with **no login**, tick *Create a login with this email when I save*. Logins linked by hand earlier keep working (their password can't be shown). | Older agents have `user_id = null`. |
 | 8 | SQL Editor | **IT support tickets:** run `supabase/migrations/20261104160000_support_tickets.sql` (safe to re-run; needs step 1 first, it stops with a clear message otherwise). Check: `select id, public from storage.buckets where id = 'support_attachments';` returns one row with `public = false`. | Creates `support_tickets` (real RLS + `support_tickets_guard` trigger), `current_agent_id()`, the private `support_attachments` bucket with its storage policies, and adds the table to realtime (7.21, 9.7). Until it runs, the IT Support page says the table is missing. |
-| 9 | Storage → **Policies** (or SQL: `select policyname, cmd, qual from pg_policies where schemaname = 'storage' and tablename = 'objects';`) | Make sure every older policy on `storage.objects` is limited to its own bucket (`bucket_id = 'images'` / `'fact_sheets'`). | Policies are OR-ed: a policy with no `bucket_id` condition would also open the private ticket screenshots to other users. |
+| 9 | Storage → **Policies** (or SQL: `select policyname, cmd, qual from pg_policies where schemaname = 'storage' and tablename = 'objects';`) | Make sure every older policy on `storage.objects` is limited to its own bucket (`bucket_id = 'images'` / `'fact_sheets'`). (Step 10 replaces the `images` / `fact_sheets` ones; a policy with **no** bucket condition still has to be removed by hand.) | Policies are OR-ed: a policy with no `bucket_id` condition would also open the private ticket screenshots to other users. |
+| 10 | **First deploy the frontend of 2026-11-05**, then SQL Editor | **RLS hardening:** run `supabase/migrations/20261105120000_harden_rls.sql` (safe to re-run, one transaction; needs step 1). It must not print any `WARNING` (a table without RLS, or a policy still open to anon). Checks: `select tablename, policyname, roles, cmd from pg_policies where schemaname in ('public','storage') order by 1, 2;` shows only `{authenticated}` policies; `select relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity;` returns no rows. | Replaces every open dev policy (9.7). The old frontend read `shared_listings` directly as a signed-out visitor, so running this before the new frontend is live breaks shared links until it is; the new frontend falls back to the old read while `get_shared_listing()` doesn't exist yet, so deploying it first is seamless. |
 
 Reset password email template (step 3), subject e.g. *Your MauRealty password code*:
 
@@ -227,6 +233,8 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
 **Smoke test after setup:** as an admin, add a test agent → the success screen shows the email and password; Authentication → Users lists the email; `agents.user_id` is filled; `select "agent_ID", password_changed_at from agent_credentials;` shows a row with `password_changed_at` null. Sign in as that agent → red reminder on the Dashboard → change the password with the emailed code → the reminder disappears and Edit Agent shows "Changed by the agent on ...". Delete the test agent → their user disappears from Authentication → Users.
 
 **Smoke test for IT support tickets (step 8):** as an agent, open IT Support → Raise a Ticket → fill in a "Something isn't working" ticket with a screenshot → it appears as **Raised** in My Tickets, and Storage → `support_attachments` has a file under that user's uid folder. As another agent, the ticket is not listed. As an admin: All Tickets lists it → **Review** → **Resolve** (needs a note) → **Reopen**. Back as the agent: the ticket shows the admin's note, and a 4th open ticket is refused.
+
+**Smoke test for the RLS hardening (step 10):** in a private browser window (signed out), open a fresh shared listing link → the page shows the photos, price, map (places chips work) and FAQ; an expired link says it expired. As an **agent**: create a listing (it is Pending), edit it, share an active listing, record a sale (a single listing becomes Sold), edit then delete that pending sale (the listing is Active again), request payment on an approved, due tab, save Settings and Profile; Developer List shows no Add / Edit / Delete; Team Insights shows thresholds as text and no Promote; another agent's pending listing is not in the grid. As an **admin**: approve the pending listing, approve a sale (tabs are generated), approve / release a tab, add / edit / delete a developer with office hours and a poster, set a promotion threshold, edit and delete an agent. In the browser console nothing should fail with `42501` / "row-level security".
 
 ---
 
@@ -247,7 +255,8 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
 ├─ public/                    favicon.ico, profile.png (barely used)
 ├─ supabase/
 │  ├─ config.toml             Supabase CLI local config
-│  ├─ migrations/             Versioned schema changes (see 9.6), incl. 20261104160000_support_tickets.sql
+│  ├─ migrations/             Versioned schema changes (see 9.6), incl. 20261104160000_support_tickets.sql and
+│  │                          20261105120000_harden_rls.sql (real RLS on every table, guard triggers, shared listing function)
 │  └─ functions/              Edge Functions (Deno, deployed by hand, see 3.3 and 9.8)
 │     └─ agent-account/index.ts  Creates/removes agent logins with the service-role key (admins only)
 └─ src/
@@ -287,7 +296,9 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
    │  ├─ conversion.ts            Currency and area conversion/formatting (global refs)
    │  ├─ useSettings.ts           Reactive user settings backed by localStorage
    │  ├─ liveRefresh.ts           useLiveRefresh(): realtime + focus + polling reloads
-   │  ├─ sanitize.ts              Form input cleaning: cleanText, cleanMultilineText, normalizeEmail, isValidEmail/Phone, isIsoDate, digitsOnly
+   │  ├─ sanitize.ts              Form input cleaning: cleanText, cleanMultilineText, cleanMarkdownText, normalizeEmail, isValidEmail/Phone,
+   │  │                           isIsoDate, digitsOnly, finiteNumber, safeFileExtension / safeFileName (storage paths)
+   │  ├─ saleStatus.ts            saleStatusClass(): sale status pill colours (Sales Report table + Sale Details popup)
    │  ├─ password.ts              Initial password (<initials><random>, 14 chars) + password rules checklist
    │  └─ deviceInfo.ts            describeDevice(): browser, OS, window/screen size (attached to support tickets)
    ├─ views/                  Pages (one per route)
@@ -314,13 +325,16 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
       │             ConfirmActionModal.vue (Yes/No or typed-phrase confirm popup)
       ├─ dashboard/DashboardStatCard.vue, SalesPerfromance.vue (sic), CommissionHistory.vue,
       │           GenealogyCard.vue, Reminders.vue, RecentActivity.vue (hidden),
+      │           MetricDetailsModal.vue (a card's "Analysis" popup),
       │           AddListing.vue & Calculator.vue (unused placeholders)
-      ├─ developer/developerCard.vue, addDeveloper.vue
+      ├─ developer/developerCard.vue, addDeveloper.vue, PromoPosterModal.vue (poster lightbox)
       ├─ genealogy/genealogymodal.vue (tree), AddAgentModal.vue (add/edit agent + login), PasswordReveal.vue
       │           (dots + eye / copy / regenerate), TeamInsights.vue
-      ├─ listings/PropertyCard.vue, PropertyDetails.vue, ListingsFilter.vue, MapHolder.vue, MapInteractive.vue
+      ├─ listings/PropertyCard.vue, PropertyDetails.vue, ListingsFilter.vue, MapHolder.vue, MapInteractive.vue,
+      │          MapPickerModal.vue (Property Management's location picker overlay)
       ├─ profile/ProfileCard.vue, ProfileEdit.vue
       ├─ sales/SalesUploadModal.vue       Sale create / confirm (Sold) / edit form
+      │        SaleDetailsModal.vue       Sale Details popup of the Sales Report
       ├─ settings/configDropdown.vue, configToggleSlider.vue
       ├─ support/RaiseTicketModal.vue     Guided ticket form + live checklist + screenshots
       │          TicketDetailsModal.vue   Ticket, progress, screenshots, admin review / resolve / reopen
@@ -348,7 +362,11 @@ AddAgentModal (edit) ─► accountService.getAgentLogin ─► rpc admin_get_ag
 ChangePasswordModal ─► accountService ─► supabase.auth (resetPasswordForEmail → verifyOtp 'recovery' → updateUser) ─► trigger on auth.users updates agent_credentials
 RaiseTicketModal ─► ticketService.createTicket ─► storage support_attachments (<uid>/<uuid>.<ext>) ─► insert support_tickets ─► trigger support_tickets_guard + RLS
 TicketDetailsModal ─► ticketService.startReview/resolveTicket/reopenTicket ─► update support_tickets (RLS: admins only; trigger: flow + stamps)
+SharedListing (signed out) ─► shareService.getSharedListing ─► rpc get_shared_listing(token) ─► listing's public details (no table access for anon)
+TeamInsights / tree ─► genealogyService.getTeamInsights ─► rpc team_completed_sales() ─► completed-sales totals per agent
 ```
+
+**Every query runs under RLS** (since 2026-11-05, 9.7): a refused read returns fewer rows, a refused write returns 0 rows (or `42501`). The guard triggers raise readable errors for column rules (e.g. "Only an admin can approve a listing ...").
 
 There is **no global store** (no Pinia). Each page fetches what it needs on mount, including the current agent. To know who is signed in:
 
@@ -368,7 +386,7 @@ All of them resolve `supabase.auth.getUser()` → `agents.user_id`.
 | `/propertymanagement` | PropertyManagement | PropertyManagement | required | yes |
 | `/shared/listing/:token` | SharedListing | SharedListing | **public** | hidden |
 | `/sales` | SalesReport | SalesReport | required | yes |
-| `/commissions` | Commission | Commission (lazy import) | **no `meta` set** ⚠ | yes |
+| `/commissions` | Commission | Commission (lazy import) | required (since 2026-11-05) | yes |
 | `/support` | Support | Support (lazy import) | required | yes |
 | `/genealogy` | Genealogy | Genealogy-landingpage | required | yes |
 | `/developerlist` | DeveloperList | developerlist | required | yes |
@@ -385,7 +403,7 @@ All of them resolve `supabase.auth.getUser()` → `agents.user_id`.
 - **Ambiguous embed:** `commissions` has two foreign keys to `agents` (`recipient_agent_ID`, `released_by`), so it must be embedded as `agents!recipient_agent_ID (...)`. `support_tickets` has three (`agent_ID`, `reviewed_by`, `resolved_by`) and names their constraints: `raiser:agents!support_tickets_agent_ID_fkey (...)`, `reviewer:agents!support_tickets_reviewed_by_fkey (...)`, `resolver:agents!support_tickets_resolved_by_fkey (...)`. **A column hint only works if no other key uses that name on either side.** PostgREST matches the hint against the foreign key column *and* the column it points to, so `agents!agent_ID` matches all three keys (each points at `agents."agent_ID"`) and fails with PGRST201 "more than one relationship was found". When in doubt, use the constraint name; the PGRST201 error lists them.
 - **Numeric columns** are wrapped with `Number(...)` before doing math (existing pattern).
 - **Silent RLS blocks:** `.update(...).select()` / `.delete().select()` and check `data.length` (see 1.3).
-- **RPC functions** are called with `supabase.rpc('name', { p_arg: value })`; arguments are bound parameters. A missing function returns error code `PGRST202` (usually: the migration wasn't run).
+- **RPC functions** are called with `supabase.rpc('name', { p_arg: value })`; arguments are bound parameters. A missing function returns error code `PGRST202` (usually: the migration wasn't run). `get_shared_listing` and `team_completed_sales` callers fall back to the old table reads on `PGRST202`, so the frontend can ship before 3.3 step 10.
 - **Edge Functions** are called with `supabase.functions.invoke('name', { body })`; supabase-js adds the signed-in user's token. A non-2xx answer comes back as `FunctionsHttpError` whose `context` is the `Response`: read `await error.context.json()` for the function's `{ error }` message (see `functionErrorMessage` in `accountService.ts`).
 - **Supabase calls outside services** (legacy): `Dashboard.vue` (`onMounted` agent lookup, also reads the login email), `LoginForm.vue` (sign in + configs), `router/index.ts` (session check).
 
@@ -402,6 +420,8 @@ All of them resolve `supabase.auth.getUser()` → `agents.user_id`.
 | `support_attachments` (**private**) | `{auth uid}/{uuid}.{png\|jpg\|webp\|gif}` | `ticketService.createTicket` | `support_tickets.attachment_paths[]` (paths, not URLs) |
 
 The `images` and `fact_sheets` files are served through **public URLs** (`getPublicUrl`). Deletes recover the storage path by splitting the URL on `/object/public/images/` (or `/images/` for profile pictures).
+
+**Storage policies since 2026-11-05** (`20261105120000_harden_rls.sql`): both buckets stay **public**, so their files still open by URL for anyone (that is how the shared page shows photos), but uploads and deletes need a signed-in agent and the right path. `images`: `listings/<listing_ID>-...` by that listing's owner, `agents/<agent_ID>-...` by that agent, `developers/`, `developer_promos/`, `payment-proofs/` by admins; admins may manage any file (`can_manage_image`). `fact_sheets`: `<listing_ID>-...` by that listing's owner or an admin (`can_manage_fact_sheet`; insert + update + select, since uploads use upsert). Signed-out visitors can't upload, list or delete. Names are built with `safeFileExtension` / `safeFileName`, so they always match those shapes.
 
 **`support_attachments` is private** (created by `20261104160000_support_tickets.sql`, 5 MB limit, PNG/JPEG/WEBP/GIF only). Storage policies: upload only into your own `{auth uid}/` folder; read your own files, admins read all; delete only your own files that no ticket uses (cleanup after a failed save). The app shows them with `createSignedUrls` (valid 1 hour), never with public URLs.
 
@@ -434,7 +454,7 @@ The `images` and `fact_sheets` files are served through **public URLs** (`getPub
 | `TeamInsights.vue` | sales, agents, genealogy, positions |
 | `Support.vue` | support_tickets |
 
-The realtime publication (migration section 5d) covers `sales`, `commissions`, `main_listings`, `genealogy`, `agents`, plus `support_tickets` (support tickets migration, section 6; realtime applies its RLS, so a non-admin only hears about their own tickets). `positions` is not in it, so polling covers that one.
+The realtime publication (migration section 5d) covers `sales`, `commissions`, `main_listings`, `genealogy`, `agents`, plus `support_tickets` (support tickets migration, section 6; realtime applies its RLS, so a non-admin only hears about their own tickets). `positions` is not in it, so polling covers that one. Realtime applies **every** table's RLS: since 2026-11-05 an agent only hears about sales and commission tabs they can read, so Team Insights / the tree pick up another agent's completed sale on the next focus or 60 s poll instead of instantly.
 
 ### 5.7 Markdown
 
@@ -443,9 +463,9 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 ### 5.8 UI and theme conventions
 
 - Page header: a gradient bar `bg-linear-to-r from-[#A9D6FF70] dark:from-[#041d3070] to-[#FFFFFF] dark:to-black` with an uppercase title (Listings, Sales Report, Developers, Accounting, Profile).
-- Modals: a fixed overlay `bg-[rgba(10,61,98,0.7)] backdrop-blur-sm`. The commission and agent modals use `<Teleport to="body">`.
+- Modals: a fixed overlay `bg-[rgba(10,61,98,0.7)] backdrop-blur-sm`. The commission and agent modals use `<Teleport to="body">`. **Every modal is a component under `components/<page>/`** (1.2); since 2026-11-05 no view has an inline modal (`sales/SaleDetailsModal`, `dashboard/MetricDetailsModal`, `developer/PromoPosterModal`, `listings/MapPickerModal` were moved out unchanged).
 - Confirmations: for an action that can't be undone, use `components/commissions/ConfirmActionModal.vue` (same look as the other modals, `z-60` so it can open on top of one). It moves keyboard focus into itself, keeps Tab inside, closes on Escape or a click outside, and can require a typed phrase (`requiredPhrase`). New code should use it instead of `confirm()`.
-- Feedback: small toasts (`Transition name="toast"`), `alert()` and `confirm()` in older code. Success toasts are top-right on Listings and Sales Report; the Commissions page toast is **bottom-right** (`bottom-20 md:bottom-6`, so it clears the phone bottom nav).
+- Feedback: small toasts (`Transition name="toast"`), `alert()` and `confirm()` in older code. Success toasts are top-right on Listings and Sales Report; the Commissions page toast is **bottom-right** (`bottom-20 md:bottom-6`, so it clears the phone bottom nav). The Listings result toast turns **red with "!"** for a failed action (`showConfirmedMessage(text, 'error')`, same look as the IT Support toast). Forms show save errors inline in red under the form (`text-red-600 dark:text-red-400`, `role="alert"`): Profile edit, Add/Edit Developer, Settings (green "Settings saved." / red error).
 - Responsive: Sidebar is `hidden md:flex`; phones get a bottom nav (`App.vue` adds `pb-16`). Grids and tables are built mobile-first.
 - `Commission.vue` and its three original modals (`PaymentRequestModal`, `ReleasePaymentModal`, `ProofModal`) have **no dark-mode classes** yet. `ConfirmActionModal.vue`, the Commissions toast, `AddAgentModal.vue` (since 2026-11-04), `PasswordReveal.vue` and `ChangePasswordModal.vue` do. `SharedListing.vue` has had them since 2026-11-03 (copied from `PropertyDetails.vue`).
 - **Important fields** (a login email, a password): an amber box (`border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700`) titled with a `TriangleAlert` icon, a red `CircleAlert` icon before each label, and a 2px amber border on the input. See the "Login account · Important" section of `AddAgentModal.vue`.
@@ -460,43 +480,49 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 
 ## 6. Roles and permissions
 
-"Agent" means a signed-in user with `admin_access = false`. **Most rules below are enforced only in the frontend.** All tables use an open RLS policy (`using (true) with check (true)` for `anon` and `authenticated`), except `agent_credentials` (no policies at all) and `support_tickets` (real per-user policies). The rules marked **server** are also checked by the `agent-account` Edge Function, a SQL function, or RLS / a trigger.
+"Agent" means a signed-in user with `admin_access = false`. **Since 2026-11-05 every rule below is enforced in the UI and on the server** (RLS policies and guard triggers from `20261105120000_harden_rls.sql`, plus the earlier Edge Function, SQL functions and support ticket rules; 9.7). The **server** part of each row names what checks it. **Signed-out visitors** can only open a valid shared listing link (`get_shared_listing`) and see listing photos by URL; they can't read or change any table. A login that isn't linked to an agents row sees nothing.
 
 | Action | Agent | Admin | Enforced in |
 |---|---|---|---|
-| See listings | active + **own** pending | active + all pending (Pending Only toggle) | `Listings.loadProperties` → `listingsService.getListings` |
-| Create listing | saved as `pending` | saved as `active` | `PropertyManagement.saveProperty` |
-| Approve pending listing | ✗ | ✓ | `PropertyDetails` button (`isAdmin`) |
+| See listings | active + sold + **own** pending / draft | everything (Pending Only toggle) | `Listings.loadProperties` → `listingsService.getListings` + **server**: RLS select (other agents' pending / draft listings are hidden, also in Developer List "Recent Projects") |
+| Create listing | saved as `pending`, as themselves | saved as `active` | `PropertyManagement.saveProperty` + **server**: RLS insert (`agent_ID` = you; non-admins only `pending`) |
+| Approve pending listing | ✗ | ✓ | `PropertyDetails` button (`isAdmin`) + **server**: `main_listings_guard` (no self-approval) |
 | Reject pending listing | — | uses Delete | — |
-| Edit listing | own listings only | own listings only | `Listings.handleEdit` (owner check, applies to admins too) |
-| Delete listing | ⚠ anyone | anyone | no check |
-| Share listing | any non-pending | any non-pending | `PropertyDetails` (button hidden) + `shareService.getSharedListing` |
-| Create sale | ✓ (seller = self) | ✓ (seller = self) | `SalesUploadModal.submit` |
-| See sales | own only | all + Agent filter, Agent column, upline in details | `SalesReport.loadSales` |
-| Edit / delete sale | only while `pending approval` | always | `SalesReport.canEditSale` |
-| Change sale status | ✗ (field disabled, status stripped from payload) | ✓ | `SalesUploadModal` |
-| See commission tabs | own (as recipient) | all, with a "My Commissions" / "All Agents (Approval)" / "Other Agents" switch; own tabs carry a "You" badge in All Agents | `Commission.loadCommissions`, `scopedList`, `showOwnBadge` |
-| Approve commission | ✗ | ✓ (any tab, including their own), after Yes in a confirmation popup | `Commission.askApprove` → `handleApprove` + status guard in `approveTab` |
-| Request payment | own tab, approved, due, earlier payments received | **own tabs only**, same rules (since 2026-11-03) | `canAgentAct` (= `isOwnTab`) + `canRequest` + `commissionService.requestPayment` order check |
-| Release payment | ✗ | ✓ (any tab, including their own) | `Commission.vue` button |
-| Confirm received | own tab, `payment_released`, after typing "I have received payment" | **own tabs only**, same typed check (since 2026-11-03) | `canAgentAct` + `ProofModal.askReceived` |
+| Edit listing | own listings only | own listings only (UI) | EDIT shown to the owner only + `Listings.handleEdit` owner check + **server**: `main_listings_guard` (non-owners can't change details; admins could through the API) |
+| Delete listing | own listings | any listing | DELETE shown to the owner and admins + **server**: RLS delete (owner or admin) |
+| Mark a listing sold / active again (a sale is recorded or deleted) | any active / sold listing | any | `SalesUploadModal`, `Listings.onSaleSaved`, `SalesReport.confirmDelete` + **server**: `main_listings_guard` (non-owners: status `active` ↔ `sold` and the places cache only) |
+| Share listing | any active / sold listing | same | `PropertyDetails` (button hidden for pending) + **server**: RLS insert (live listing, link records the owner's id) |
+| Open a shared link | anyone with a valid link, signed in or not | same | **server**: `get_shared_listing` (exists, not expired, listing not pending / draft; public details only) |
+| Create sale | ✓ (seller = self) | ✓ (seller = self) | `SalesUploadModal.submit` + **server**: RLS insert (as yourself; `pending approval` unless admin) |
+| See sales | own + the sales they earn an override on (shown on their commission cards) | all + Agent filter, Agent column, upline in details | `SalesReport.loadSales` + **server**: RLS select |
+| Edit / delete sale | only while `pending approval` | always | `SalesReport.canEditSale` + **server**: RLS update / delete (and DP divisions: `can_edit_sale`) |
+| Change sale status | ✗ (field disabled, status stripped from payload) | ✓ | `SalesUploadModal` + **server**: RLS (an agent's update must stay `pending approval`) |
+| See commission tabs | own (as recipient) | all, with a "My Commissions" / "All Agents (Approval)" / "Other Agents" switch; own tabs carry a "You" badge in All Agents | `Commission.loadCommissions`, `scopedList`, `showOwnBadge` + **server**: RLS select |
+| Generate / remove tabs (sale approved / cancelled) | ✗ | ✓ | `SalesUploadModal` (admin status change) + **server**: RLS insert / delete (admins) |
+| Approve commission | ✗ | ✓ (any tab, including their own), after Yes in a confirmation popup | `Commission.askApprove` → `handleApprove` + status guard in `approveTab` + **server**: `commissions_guard` |
+| Request payment | own tab, approved, due, earlier payments received | **own tabs only**, same rules (since 2026-11-03) | `canAgentAct` (= `isOwnTab`) + `canRequest` + `commissionService.requestPayment` order check + **server**: `commissions_guard` (only `approved` → `payment_requested`, earlier payments received, server time) |
+| Release payment | ✗ | ✓ (any tab, including their own) | `Commission.vue` button + **server**: `commissions_guard` |
+| Confirm received | own tab, `payment_released`, after typing "I have received payment" | **own tabs only**, same typed check (since 2026-11-03) | `canAgentAct` + `ProofModal.askReceived` + **server**: `commissions_guard` (only `payment_released` → `received`) |
 | Dashboard scope | own data | "My Stats" / "All Agents" (default All) | `Dashboard.vue` |
 | Personal payout alerts and reminders | ✓ | ✗ (admins can act on their own tabs from the Commissions page, but the Dashboard gives them approval alerts only) | `dashboardService.buildDashboard` |
 | Add agent (creates the login + initial password) | ✗ (button hidden on Genealogy and Dashboard) | ✓ | `Genealogy-landingpage.vue` / `Dashboard.vue` (`isAdmin`) + **server**: `agent-account` Edge Function |
-| Edit / delete agents | ✗ (buttons hidden) | ✓; can't delete **their own** record | `Genealogy-landingpage.vue` (`isAdmin`, `currentAgentId`) |
+| Edit / delete agents | ✗ (buttons hidden) | ✓; can't delete **their own** record | `Genealogy-landingpage.vue` (`isAdmin`, `currentAgentId`) + **server**: RLS (update own row or admin; delete admin, not yourself) |
+| Change admin access, position or hire date | ✗ (not even their own) | ✓ | **server**: `agents_guard` |
+| Link a login to an agent (`agents.user_id`) | ✗ | ✗ from the browser | **server**: `agents_guard`; only the `agent-account` Edge Function (service role) |
 | Create a login for an agent without one | ✗ | ✓ (Edit Agent) | **server**: `agent-account` (`create-login`) |
 | Reveal an agent's initial password (eye icon) | ✗ | ✓ any agent, admins included, until that agent changes it | **server**: `admin_get_agent_login` (`current_agent_is_admin()`) |
 | Remove a deleted agent's login | ✗ | ✓ (automatic on delete); never their own, never a login an agent still uses | **server**: `agent-account` (`delete-login`) |
 | Change own password (email code) | ✓ | ✓ | Supabase Auth (the code proves the email) |
 | "Initial password" reminder | ✓ | ✓ | `dashboardService.buildDashboard` (`needsPasswordChange`) |
-| Promote, edit thresholds | ✗ intended, but ⚠ currently visible to everyone | ✓ | **no gating yet** (admin-only confirmed by the team, 2026-10-28) |
-| Add / edit / delete developers and promos | ✗ intended, but ⚠ currently visible to everyone | ✓ | **no gating yet** (admin-only confirmed by the team, 2026-10-28) |
+| Promote, edit thresholds | ✗ (thresholds read-only, "Eligible for ..." label) | ✓ | `TeamInsights` (`isAdmin`) + **server**: RLS (positions / agents / genealogy updates are admin-only) |
+| Add / edit / delete developers, office hours and promos | ✗ (buttons hidden) | ✓ | `developerlist.vue` / `developerCard` (`isAdmin`, `canManage`) + **server**: RLS (admins) + storage policies |
 | Raise an IT support ticket | ✓ as themselves, max **3 open** (Raised + In Review) | ✓ same limit for their own tickets | `Support.canRaise`, `RaiseTicketModal` + **server**: RLS insert policy, `support_tickets_guard` (raiser forced, limit, status) |
 | See tickets | own only | all (own ones carry a "You" pill) + "Your Tickets" list | `Support.load` → `ticketService.getTickets` + **server**: RLS select policy |
 | Start review / Resolve (note required) / Reopen | ✗ (no buttons) | ✓ any ticket, including their own | `Support.vue` / `TicketDetailsModal` (`isAdmin`) + **server**: RLS update policy (admins), trigger (flow, stamps, note) |
 | Edit or delete a ticket after raising it | ✗ | ✗ (only the status changes) | **server**: trigger locks the details; no delete grant or policy |
 | Open ticket screenshots | own tickets | all | **server**: storage policies on `support_attachments` + signed URLs |
-| Profile, Settings | own | own | — |
+| Upload / delete listing photos, profile pictures, fact sheets | own listings, own picture | any | **server**: storage policies (`can_manage_image`, `can_manage_fact_sheet`, 5.4) |
+| Profile, Settings | own | own | **server**: RLS (own row) + `agents_guard` |
 
 ---
 
@@ -529,7 +555,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   1. On mount: load the agent (`agents` by `user_id`), set the month filter to the current month, then run `loadDashboardStats()` and `loadTeam()`.
   2. `getDashboardData(agentId?)` loads sales, listings and commission tabs (for one agent, or everyone when an admin picks All Agents).
   3. `buildDashboard(data, { month, agentId, isAdmin })` returns alerts, metrics, commission metrics, history, performance, activities and reminders. Definitions are in 8.6.
-  4. Clicking a card with a `link` navigates (Total Sales → `/sales`); other cards open an "Analysis" popup listing the records behind the number (10 per page).
+  4. Clicking a card with a `link` navigates (Total Sales → `/sales`); other cards open an "Analysis" popup listing the records behind the number (10 per page; `components/dashboard/MetricDetailsModal.vue`).
   5. `useLiveRefresh` reloads everything when sales, commissions, listings, genealogy or agents change, and refreshes an open popup.
 - **Panels:**
   - **Alerts banner** (amber = action, blue = info), each with a link.
@@ -540,9 +566,9 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   - **Genealogy card:** the whole upline chain (direct upline first, top 3 shown) and the downline at any depth (top 4 shown). Click → `/genealogy`.
   - **Reminders:** clickable, collapsible after 3. **Initial password reminder** (since 2026-11-04): while the signed-in user (agent or admin) still uses the initial password an admin gave them (`accountService.needsPasswordChange()` → `current_agent_needs_password_change()`), a **solid red** reminder sits first ("Important · Account security", "Change password →") and the count badge turns red. Clicking it opens `ChangePasswordModal` locked to the user's login email (`lockEmail`); after the change the Dashboard reloads and the reminder is gone.
   - **Recent Activity:** hidden (commented out in the template and import). `activities` is still computed.
-- **Header buttons:** "+ Add Listing" → `/propertymanagement` (⚠ without `?edit=0`, see 11.1). **"+ Add Agent" is admins only** and opens the Genealogy page's `AddAgentModal` (same login creation, 7.19); saving refreshes the Genealogy card. (The old placeholder `components/dashboard/AddAgent.vue` was deleted on 2026-11-04.)
+- **Header buttons:** "+ Add Listing" → `/propertymanagement?edit=0` (create mode; since 2026-11-05 a missing flag is create mode too). **"+ Add Agent" is admins only** and opens the Genealogy page's `AddAgentModal` (same login creation, 7.19); saving refreshes the Genealogy card. (The old placeholder `components/dashboard/AddAgent.vue` was deleted on 2026-11-04.)
 - **Data:** R `sales`, `main_listings`, `commissions` (+ joins), `genealogy`, `agents`, `positions`; RPC `current_agent_needs_password_change`.
-- **Code:** `src/views/Dashboard.vue` (`openAddAgent`, `onAgentSaved`, `openReminder`, `onPasswordChanged`, `loginEmail`), `src/services/dashboardService.ts` (`getDashboardData`, `buildDashboard` with `needsPasswordChange`), `components/dashboard/*`, `components/genealogy/AddAgentModal.vue`, `components/auth/ChangePasswordModal.vue`, `genealogyService.getUplineChain(id, 20)`, `genealogyService.getDownline(id, 20)`.
+- **Code:** `src/views/Dashboard.vue` (`openAddAgent`, `onAgentSaved`, `openReminder`, `onPasswordChanged`, `loginEmail`), `components/dashboard/MetricDetailsModal.vue`, `src/services/dashboardService.ts` (`getDashboardData`, `buildDashboard` with `needsPasswordChange`), `components/dashboard/*`, `components/genealogy/AddAgentModal.vue`, `components/auth/ChangePasswordModal.vue`, `genealogyService.getUplineChain(id, 20)`, `genealogyService.getDownline(id, 20)`.
 
 ### 7.4 Project Listings (browse, filter, details)
 - **Route / entry point:** `/listings`.
@@ -556,15 +582,16 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 - **`PropertyDetails` overlay** (`components/listings/PropertyDetails.vue`):
   - Loads the full row with `getListingById(id, typeId)`, including the sub-table, images, agent and developer.
   - Shows an image carousel, the price (a min–max range for bulk listings), type, location, a `MapHolder` map with POI chips, agent, created date, developer, type-specific features (single listings only), the Markdown description and FAQ.
-  - Buttons:
-    - **EDIT**: emits `edit`. Listings checks that the current agent owns the listing, then goes to `/propertymanagement?edit=1&id=..&type=..`.
-    - **DELETE**: confirmation toast → `listingsService.deleteListing` (hard delete).
+  - Buttons (since 2026-11-05 only the ones the viewer may use are shown; props `isAdmin`, `currentAgentId`, `readOnly`):
+    - **EDIT** (the listing's owner only): emits `edit`. Listings checks again that the current agent owns the listing, then goes to `/propertymanagement?edit=1&id=..&type=..`.
+    - **DELETE** (owner or admin): confirmation toast → `listingsService.deleteListing` (hard delete). A refused delete or a listing still used by a sale / share link shows a red toast.
     - **SHARE**: hidden for pending listings; 5 s cooldown (7.7).
     - **CALCULATOR**: opens `CalculatorPanel` prefilled with the price.
-    - **SOLD**: bulk listings that are not sold yet. Confirmation toast → opens `SalesUploadModal` in Confirm Sale mode (7.10). After the sale is saved, the listing is set to `sold` and removed from the grid.
-    - **APPROVE**: admin, pending listing → `updateListingStatus(id, 'active')`.
+    - **SOLD**: **active** bulk listings only (not pending). Confirmation toast → opens `SalesUploadModal` in Confirm Sale mode (7.10). After the sale is saved, the listing is set to `sold` and removed from the grid.
+    - **APPROVE**: admin, pending listing → `updateListingStatus(id, 'active')`; a refused approval shows a red toast.
+    - **readOnly** (Developer List): EDIT, DELETE, SOLD and APPROVE are hidden (that page doesn't handle them).
     - **FACT SHEET**: downloads the file as a blob, stripping the `{id}-{ts}-` prefix from its name; falls back to opening it in a new tab.
-- **Also reused by:** `developerlist.vue`, which opens the same overlay from a developer's "Recent Projects".
+- **Also reused by:** `developerlist.vue`, which opens the same overlay read-only from a developer's "Recent Projects".
 - **Data:** R `main_listings` + `property_type`, `agents`, `developers`, `listing_images`, sub-tables. W `main_listings.status`, deletes.
 - **Code:** `src/views/Listings.vue`, `components/listings/{PropertyCard,PropertyDetails,ListingsFilter,MapHolder}.vue`, `listingsService.getListings/getListingById/getAgentFromListing/updateListingStatus/deleteListing`, `developerService.getDeveloperNames`.
 - **Rules and edge cases:** only the 20 most recent listings are fetched (11.1). The Rooms, Bedrooms, Bathrooms, Lot Area, Class and Memorial Type filters are UI only. The Currency and Units dropdowns change the session values of `currentCurrency` / `currentUnit`.
@@ -575,12 +602,13 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   1. A non-admin saves a new listing → `status = 'pending'` → redirected with `?saved=pending` ("submitted for admin approval").
   2. The agent sees their own pending listings in the grid (orange PENDING badge, sorted first). Other agents don't see them.
   3. An admin sees every pending listing, with a count badge and a "Pending Only" toggle, and presses **APPROVE** → `active`. To reject, the admin deletes the listing.
-  4. Pending listings can't be shared: the button is hidden, and `getSharedListing` throws "not yet available".
+  4. Pending listings can't be shared: the button is hidden, the database refuses the link, and `get_shared_listing` says "not yet available".
+  5. **Server rules (2026-11-05):** a non-admin's new listing must be `pending` (RLS insert), only an admin can move it to `active` (`main_listings_guard`), and other agents can't read it (RLS select).
 - **Data:** the `listing_status` enum gained `pending` (migration `20260906120000`).
 - **Code:** `PropertyManagement.saveProperty` (status choice), `listingsService.getListings` (`ownPendingAgentId` builds an `or(...)` filter), `Listings.handleApprove`, `PropertyCard` / `PropertyDetails` badges.
 
 ### 7.6 Property Management (create and edit a listing)
-- **Route / entry point:** `/propertymanagement?edit=0` (create, from Listings "Add Listing") or `/propertymanagement?edit=1&id={listing_ID}&type={property_type_ID}` (edit, from the details overlay).
+- **Route / entry point:** `/propertymanagement?edit=0` (create, from Listings "Add Listing" and the Dashboard) or `/propertymanagement?edit=1&id={listing_ID}&type={property_type_ID}` (edit, from the details overlay). Edit mode needs `edit=1` **and** an id; anything else (the Sidebar link has no query) is create mode (`isEditMode`).
 - **Who:** any agent. In edit mode, only the listing's owner gets here through the UI.
 - **When it is used:** adding a developer's project or unit to the portal, or correcting one.
 - **Form fields:**
@@ -589,7 +617,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   - Description (Markdown with Preview).
   - Agent Incentive and Realty Incentive (free text, shown later in the Sales Report).
   - Price, plus Max Price when Bulk, in the current currency.
-  - Location: text, or the map picker `MapInteractive` (geocoder search, or a pin-toggle and click with reverse geocoding). The picker writes `lng`, `lat` and `location`.
+  - Location: text, or the map picker overlay (`components/listings/MapPickerModal.vue` around `MapInteractive`: geocoder search, or a pin-toggle and click with reverse geocoding). The picker emits `picked` and the page writes `lng`, `lat` and `location`.
   - Developer (Listbox from `getDevelopers`).
   - Quantity Type: Single or Bulk.
   - Property Type: House And Lot, Lot Only, Condominium, Memorial, Clubshare, Golfshare.
@@ -600,40 +628,43 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
     - Memorial: an exclusive type (Urn, Vault, Garden, Estate, Family Estate, Pet Memorial).
   - FAQ (Markdown with Preview). "View Questions" inserts `### question\n- ` from `questions.json`.
   - Fact sheet upload (doc, docx, md, pdf).
+- **Before saving (both modes):** text is cleaned (`cleanText` for title and location, `cleanMarkdownText` for description and FAQ, `cleanMultilineText` for the incentives); the price must be a number of 0 or more, and a bulk max price can't be below the min price (`priceProblem`).
 - **Flow when creating:**
   1. Map the type label to an id (1–6) and build the `main_listings` payload. Price is converted to PHP. Status is `isAdmin ? 'active' : 'pending'`.
   2. Build the sub-table payload, translating UI names to DB names (11.5).
   3. `listingsService.createListing(main, sub, typeId)` inserts the main row, then the sub-table row; if the sub-table insert fails, the main row is deleted again.
-  4. `uploadPropertyImages(newId, files)`, then `uploadFactSheet(...)` (⚠ uses the wrong id, see 11.1).
+  4. `uploadPropertyImages(newId, files)`, then `uploadFactSheet(newId, file)` (an alert if the fact sheet fails; the listing is saved).
   5. Redirect to `/listings?saved=created|pending`.
 - **Flow when editing:**
-  1. `loadProperties()` prefills the form from `getListingById`. Price and areas are converted to the display currency and unit.
-  2. On Save: `updateListing(id, main, sub, typeId)`, then `deleteListingImages(removedUrls)` (storage and rows), then upload new images and the fact sheet.
+  1. `loadProperties()` prefills the form from `getListingById`. Price and areas are converted to the display currency and unit, and the highest saved photo order is remembered.
+  2. On Save: the type map has all 6 types; price and areas are converted back to PHP / sqm; **status is not sent** (editing never changes it). `updateListing(id, main, sub, typeId)` (0 rows = an alert, nothing else runs), then `deleteListingImages(removedUrls)` (storage and rows), then upload new images after the saved ones (`startOrder`) and the fact sheet.
   3. Redirect to `?saved=updated`.
 - **Data:** W `main_listings`, `house_and_lot` / `lot_only` / `condominium` / `memorial`, `listing_images`; storage `images/listings/`, `fact_sheets`.
-- **Code:** `src/views/PropertyManagement.vue`, `components/listings/MapInteractive.vue`, `listingsService.createListing/updateListing/uploadPropertyImages/deleteListingImages/uploadFactSheet/getListingById`, `developerService.getDevelopers`, `src/assets/questions.json`, `utils/conversion.ts`.
-- **Rules and edge cases:** the create and edit paths are not symmetric (11.1). Clubshare and Golfshare have no sub-table. Bulk listings still write a sub-table row filled with the form's default values.
+- **Code:** `src/views/PropertyManagement.vue` (`isEditMode`, `cleanedText`, `priceProblem`, `lastImageOrder`), `components/listings/{MapPickerModal,MapInteractive}.vue`, `listingsService.createListing/updateListing/uploadPropertyImages/deleteListingImages/uploadFactSheet/getListingById`, `developerService.getDevelopers`, `src/assets/questions.json`, `utils/conversion.ts`, `utils/sanitize.ts`.
+- **Rules and edge cases:** Clubshare and Golfshare have no sub-table. Bulk listings still write a sub-table row filled with the form's default values. `master_bedroom_area` is saved as typed (sqm) in both modes. On the server only the owner (or an admin) can change the listing, its sub-table row, photos and fact sheet (RLS + storage policies, 9.7).
 
 ### 7.7 Listing sharing (temporary public link)
 - **Route / entry point:** SHARE button in `PropertyDetails` → public page `/shared/listing/:token`.
 - **Who:** an agent creates the link; anyone with it can view it without logging in.
 - **When it is used:** sending a property to a client.
 - **Flow:**
-  1. `generateShareLink(listingId, agentId, 1)` first deletes every expired `shared_listings` row (fire-and-forget), then inserts a row with `expires_at = now + 1 day`.
-  2. The URL `${origin}/shared/listing/${share_id}` is copied to the clipboard and an `alert` confirms it.
-  3. `SharedListing.vue` calls `getSharedListing(token)`. This joins the listing, its sub-tables, images, agent and developer, and throws if the link expired or the listing is pending.
-  4. The page shows the gallery, price, type, location, a map with POIs, the agent, the developer, the features, the description and the FAQ. **The commission and incentives are never shown.**
-  5. It follows the `PropertyDetails` overlay: bulk listings show the **min – max price range** (`is_bulk && max_price`), type features are shown for **single listings only**, photos are ordered by `listing_images.display_order`, and the `dark:` classes are the overlay's.
-- **Data:** W/R `shared_listings` (uuid `share_id` is the token).
-- **Code:** `src/services/shareService.ts`, `PropertyDetails.handleShare`, `src/views/SharedListing.vue`.
-- **Rules and edge cases:** the `agent_ID` saved on the link is the **listing owner's** id (`details.agent_ID`), not the id of the agent who shared it. Dark mode follows the viewer's saved settings (`App.vue`), so a client normally sees the light page. If you change how the overlay shows a listing, change `SharedListing.vue` the same way.
+  1. `generateShareLink(listingId, agentId, 1)` first deletes every expired `shared_listings` row (fire-and-forget; RLS lets any agent delete expired links), then inserts a row with `expires_at = now + 1 day`.
+  2. `handleShare` also refreshes the listing's nearby places cache (`poiService.getNearbyPois`, Mapbox only if the cache is missing or older than 30 days), because the client's page can read the cache but not write it.
+  3. The URL `${origin}/shared/listing/${share_id}` is copied to the clipboard and an `alert` confirms it.
+  4. `SharedListing.vue` calls `getSharedListing(token)`: a token that isn't a uuid is refused at once ("This shared link is invalid."), otherwise it calls the SQL function **`get_shared_listing(token)`** (since 2026-11-05). The function checks the link exists, hasn't expired and the listing isn't pending / draft, and returns `{ share_id, expires_at, main_listings: { listing fields, house_and_lot, lot_only, condominium, memorial, listing_images, agents (first/last name), developers (name), nearby_pois } }`, the same shape as the old embed. Its error messages ("expired", "not yet available", "invalid or has been removed") are shown on the page.
+  5. The page shows the gallery, price, type, location, a map with POIs, the agent, the developer, the features, the description and the FAQ. **The commission, incentives, fact sheet and the agent's contact details are never returned** (not just hidden).
+  6. The map gets the places from the listing (`:cached-pois`, `read-only-cache`): it calls Mapbox only if that cache is stale and never writes to the database.
+  7. It follows the `PropertyDetails` overlay: bulk listings show the **min – max price range** (`is_bulk && max_price`), type features are shown for **single listings only**, photos are ordered by `listing_images.display_order`, and the `dark:` classes are the overlay's.
+- **Data:** W/R `shared_listings` (uuid `share_id` is the token; signed-out visitors can't read the table), RPC `get_shared_listing` (callable by `anon`).
+- **Code:** `src/services/shareService.ts` (`getSharedListing`, `TOKEN_PATTERN`, fallback `getSharedListingFromTables` while the function is missing), `PropertyDetails.handleShare`, `src/views/SharedListing.vue`, `poiService.getNearbyPois({ cached, persist })`.
+- **Rules and edge cases:** the `agent_ID` saved on the link is the **listing owner's** id (`details.agent_ID`), not the id of the agent who shared it (the insert policy checks this). Dark mode follows the viewer's saved settings (`App.vue`), so a client normally sees the light page. If you change how the overlay shows a listing, change `SharedListing.vue` **and `get_shared_listing`** the same way (a new field must be added to the function's JSON).
 
 ### 7.8 Maps and nearby points of interest
 - **Where:** `MapHolder.vue` (read-only map in the listing overlay and the public page) and `MapInteractive.vue` (location picker in Property Management).
 - **Flow (POIs):**
   1. The map shows chips for Hospitals, Schools, Police, Pharmacies, Fire Stations and Supermarkets.
-  2. The first time a chip is toggled on, `poiService.getNearbyPois(listingId, lng, lat)` runs. It returns the cached `main_listings.nearby_pois` if that is under 30 days old; otherwise it calls the Mapbox Search Box category API once per category (up to 5 results each, one call after another), saves the result to the cache, and returns it.
-  3. The markers' popups show the distance (`haversineKm`).
+  2. The first time a chip is toggled on, `poiService.getNearbyPois(listingId, lng, lat)` runs. It returns the cached `main_listings.nearby_pois` if that is under 30 days old (and has the right shape, `isNearbyPois`); otherwise it calls the Mapbox Search Box category API once per category (up to 5 results each, one call after another), saves the result to the cache, and returns it. The shared page passes `{ cached, persist: false }` instead (7.7).
+  3. The markers' popups show the name and the distance (`haversineKm`). They are built with DOM nodes and `textContent` (`popupContent`, `setDOMContent`), never an HTML string, so a place name can't run script; places without finite coordinates are skipped.
   4. "Expand Map" toggles a full-screen view.
 - **Defaults:** if a listing has no coordinates, the map falls back to Fuente Osmeña, Cebu (`123.8931, 10.3099`). The style is `streets-v12`.
 - **Data:** R/W `main_listings.nearby_pois` (jsonb `{ fetched_at, categories: { [id]: [{ name, lng, lat }] } }`).
@@ -649,13 +680,13 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   3. Client-side search (client, project, voucher), date range on the reservation date, and an Agent filter for admins.
   4. A summary strip shows the count, total contract price, gross and net commission of the filtered rows.
   5. Sortable table (reservation date, client, contract price, gross), 12 per page. ⚠ marks rows with no gross commission. Edit and delete icons appear on hover when `canEditSale` (admin, or status `pending approval`).
-  6. **Sale Details** popup:
+  6. **Sale Details** popup (`components/sales/SaleDetailsModal.vue`; props `sale`, `isAdmin`, `canEdit`; emits `close`, `edit`, `delete`; it loads its own data):
      - client, developer, project, agent and upline chain (admin, 2 levels), reservation date, contract price, commissionable amount, financing, payment scheme, commission rate, DP figures and divisions, sale number, status, gross/net commission, remarks, incentives;
      - **Property Details**: from `sales.unit_details` for bulk sales, otherwise from the listing's sub-table (normalized), with a property-type badge.
-  7. **Export**: CSV of the filtered, sorted rows (`sales-report-YYYY-MM-DD.csv`).
-  8. **Delete**: `confirm()` → set the listing back to `active` → `salesService.deleteSale` (this cascades, see 11.2).
+  7. **Export**: CSV of the filtered, sorted rows (`sales-report-YYYY-MM-DD.csv`); text cells starting with `= + - @` get a leading `'` so spreadsheets don't run them as formulas.
+  8. **Delete**: `confirm()` → `salesService.deleteSale` (this cascades, see 11.2) → then set the listing back to `active`. (Since 2026-11-05 the sale is deleted first, so a refused delete changes nothing; if the listing can't be reactivated the toast says so.)
 - **Data:** R `sales` + `agents`, `main_listings` (title, incentives, developer), `sale_dp_divisions`, `genealogy`, listing sub-tables. W `sales` (delete), `main_listings.status`.
-- **Code:** `src/views/SalesReport.vue`, `salesService.getSales/getDpDivisions/deleteSale`, `listingsService.getListingPropertyType/getListingById/updateListingStatus`, `genealogyService.getUplineChain`.
+- **Code:** `src/views/SalesReport.vue` (`canEditSale`, `confirmDelete`, `csvCell`), `components/sales/SaleDetailsModal.vue`, `utils/saleStatus.ts` (`saleStatusClass`), `salesService.getSales/getDpDivisions/deleteSale`, `listingsService.getListingPropertyType/getListingById/updateListingStatus`, `genealogyService.getUplineChain`.
 
 ### 7.10 Sale form: create, confirm (Sold) and edit
 - **Component:** `src/components/sales/SalesUploadModal.vue`, used in three modes:
@@ -674,15 +705,16 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
     - **Financing** (DP only, required): `Pag-ibig`, `Banking`, `In-House with Interest`.
     - **DP only:** DP Rate %; DP Amount and Remaining Balance are computed (`calculateDownpaymentMetrics`).
     - **DP Divisions** (DP only): tabs with "+ Add division". Each division has a Rate %, "Payable in" count + unit (months, quarters or years), Due Date Start, and Due Date End. The dates are filled automatically: Division 1 starts one month after the reservation date; each later division starts one step (month, quarter or year, following the **previous** division's unit) after the previous end date; the end date is `lastDueDate(start, unit, count)`. All of them can be edited, but the end date can't be before the last payment, and editing a division shifts the ones after it (`startFollowing`). A live status shows "x% of y% allocated".
-    - Spot-Cash and Deferred-Cash show an info box instead (no divisions, no financing).
+    - Spot-Cash and Deferred-Cash show an info box instead (no divisions, no financing). It says the payment is due "one month after an admin approves the sale" (the tabs' real first due date, 7.11); since 2026-11-05 it no longer previews a reservation-based date.
   - **Commissionable Amount:** starts equal to the contract price until the user types a value; it can differ because of taxes and policies.
   - **Commission Rate %:** prefilled from `main_listings.commission`; **5%** when the listing has none. Editable per sale.
   - **Gross Commission** (read-only) = Commissionable Amount × Commission Rate ÷ 100.
   - **Sale Status** (Edit mode only; editable by admins only): `pending approval`, `awaiting payment`, `complete`, `cancelled`.
   - Remarks (placeholder hint by type: "Floor 12, Unit 1205" for condos, "Block 5, Lot 12, Phase 2" for house/lot).
   - Listing Incentives (read-only, from the listing).
-  - **Specific Unit Details (bulk sale):** the per-type unit fields, including block/lot/phase for house and lot and **Floor** for condos. They are prefilled from the listing and saved to `sales.unit_details` (jsonb).
+  - **Specific Unit Details (bulk sale):** the per-type unit fields, including block/lot/phase for house and lot and **Floor** for condos. They are prefilled from the listing and saved to `sales.unit_details` (jsonb). In Confirm (Sold) and Edit mode the form loads its one listing (`listingsService.getListingSummary`) so this section, its prefill (Sold) and the incentives box work; an edit keeps the sale's saved `unit_details` (it used to save `null`).
   - Hidden (commented out): Net Commission, Voucher Series.
+- **Field checks (`validateSaleFields`, before the scheme check):** a project is chosen, the client name isn't empty after `cleanText`, a valid reservation date, a contract price above 0, no negative commissionable amount, a commission rate from 0 to 100%. Client name, remarks and voucher series are saved through `cleanText`.
 - **Validation (`validatePaymentScheme`):** for DP, financing is required; the DP rate must be above 0 and at most 100; there must be at least one division; each division needs a rate above 0, a count of at least 1, both dates, end ≥ start, and end ≥ the last payment date; and the division rates must add up **exactly** to the DP rate (compared in hundredths of a percent). `salesService.saveDpDivisions` checks the sum again.
 - **Submit, Create / Confirm:**
   1. `createSale({ agent_ID: currentAgent, ...payload })`. Status is `pending approval`.
@@ -694,7 +726,8 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   3. New status `cancelled` → `commissionService.removeUnclaimedForSale(saleId)`.
   4. New status `awaiting payment` or `complete` → `salesService.generateCommissionTabs(saleId)` (7.11). If this fails, the modal shows "Sale saved, but commission tabs were not created: ...".
 - **Data:** W `sales`, `sale_dp_divisions`, `main_listings.status`, `commissions`.
-- **Code:** `SalesUploadModal.vue`, `salesService.createSale/updateSale/saveDpDivisions/getDpDivisions/calculateDownpaymentMetrics/getListingDeveloperName/generateCommissionTabs`, `commissionService.removeUnclaimedForSale`, `utils/paySchedule.ts`.
+- **Code:** `SalesUploadModal.vue` (`validateSaleFields`, `validatePaymentScheme`, `submit`), `salesService.createSale/updateSale/saveDpDivisions/getDpDivisions/calculateDownpaymentMetrics/getListingDeveloperName/generateCommissionTabs`, `listingsService.getListingSummary`, `commissionService.removeUnclaimedForSale`, `utils/paySchedule.ts`, `utils/sanitize.ts`.
+- **Server rules (2026-11-05):** the seller can only create the sale as themselves with `pending approval`, and edit / delete it (and its DP divisions) while it is still pending; only admins change the status and generate or remove tabs (RLS, 9.7).
 
 ### 7.11 Commission engine (tab generation and allocation)
 - **When it runs:** when an admin saves a sale as `awaiting payment` or `complete` (Edit mode of the sale form).
@@ -741,11 +774,12 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   - `ConfirmActionModal`: the shared confirm popup (see 5.8). Used for Approve (`Commission.vue`) and Received payment (`ProofModal`). Save errors show inside it.
 - **Data:** R/W `commissions` (+ `agents!recipient_agent_ID`, `sales`, `main_listings`, `developers`); storage `images/payment-proofs/`.
 - **Code:** `src/views/Commission.vue` (`scope`, `scopedList`, `showOwnBadge`, `canAgentAct`, `askApprove`, `handleApprove`, `showToast`), `components/commissions/*`, `commissionService.getTabs/approveTab/requestPayment/releasePayment/confirmReceived/summarizeTabs/STATUS_LABEL`.
-- **Rules and edge cases:** admins can request and receive payment **on their own tabs only** (since 2026-11-03; before that these steps were agent-only and an admin's own tab stopped at Approved). The Dashboard still gives admins no personal payout alerts. Request and release toasts are not implemented; those steps still confirm with `alert()`.
+- **Rules and edge cases:** admins can request and receive payment **on their own tabs only** (since 2026-11-03; before that these steps were agent-only and an admin's own tab stopped at Approved). The Dashboard still gives admins no personal payout alerts. Request and release toasts are not implemented; those steps still confirm with `alert()`. The route requires sign-in (since 2026-11-05).
+- **Server rules (2026-11-05):** agents read only the tabs they receive (and the sales those tabs belong to); `commissions_guard` lets a non-admin recipient only move `approved → payment_requested` (earlier payments of the sale received; `requested_at` set by the server) and `payment_released → received` (`claimed`, `claimed_at` set by the server); amounts, recipients and every other column stay as generated. Admins approve, release, generate and remove tabs. The request details popup cleans its editable fields with `cleanText` before saving them in `request_details`.
 
 ### 7.13 Genealogy (team tree and agent management)
 - **Route / entry point:** `/genealogy`.
-- **Who:** everyone can view. **Add, Edit and Delete agent are admin-only** (since 2026-11-04: buttons hidden for agents, handlers check `isAdmin`; logins and passwords are also checked on the server). Promote and thresholds are meant to be admin-only too but are not gated yet (11.3).
+- **Who:** everyone can view. **Add, Edit and Delete agent, Promote and thresholds are admin-only** (Add / Edit / Delete since 2026-11-04, Promote and thresholds since 2026-11-05: buttons hidden for agents, handlers check `isAdmin`, and RLS / `agents_guard` refuse agents on the server).
 - **When it is used:** seeing who is in whose team, adding or onboarding an agent (which now also creates their login), changing someone's upline or position, removing an agent.
 - **Page sections:**
   1. Header: search (filters the Teams, Recently Added and Manage Agents lists) and **Add Agent** (admins). The static profile picture that sat beside it was removed on 2026-11-04.
@@ -758,7 +792,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   4. **Recently Added:** 5 agents, newest `hire_date` first.
   5. **Manage Agents** (Edit / Delete buttons for admins only): Edit opens `AddAgentModal` in edit mode. Delete (hidden on the admin's own row) calls `deleteAgent`, which is **blocked** if the agent has sales, listings or share links; otherwise their direct downlines move up to the deleted agent's upline (or become roots), the edges are removed, the agent row is deleted (`.select()` check), and **their login is removed** (`accountService.deleteLogin` → Edge Function).
   6. **Roles, Overrides and Promotion** (`TeamInsights`, 7.14).
-  7. **Tree** (`genealogymodal.vue`): Vue Flow with a top-to-bottom dagre layout. Each node shows the name, position, commission rate %, accumulated sales and "% to next" rank. It redraws on sales changes and is remounted (`reloadKey`) after edits.
+  7. **Tree** (`genealogymodal.vue`, titled "Agent Genealogy"): Vue Flow with a top-to-bottom dagre layout. Each node shows the name, position, commission rate %, accumulated sales and "% to next" rank. It redraws on sales changes and is remounted (`reloadKey`) after edits.
 - **`AddAgentModal`** (also opened from the Dashboard; has dark mode):
   - **Login account · Important** box at the top (amber, red `CircleAlert` icons): the **email** (the login) and, in add mode, the generated **initial password** (`PasswordReveal`: dots, eye, copy, regenerate). See 7.19.
   - Fields: first/middle/last name, sex (Male, Female, Non-Binary, Other, same as ProfileEdit), birth and hire dates, contact, position (from `positionMap`), home address, upline, and "Grant admin access".
@@ -772,30 +806,34 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 
 ### 7.14 Ranks, overrides and promotion (Team Insights)
 - **Where:** the `TeamInsights.vue` panel on the Genealogy page.
+- **Who:** everyone sees the panel; **admins** edit thresholds and promote (agents see the thresholds as text and an "Eligible for ..." label instead of Promote).
 - **Flow:**
-  1. **Thresholds:** for Supervisor, Investment Manager and Partner Broker, the accumulated sales needed to be promoted *into* that rank. Saved to `positions.promotion_sales_threshold` with `setPromotionThreshold`. Empty means "not set".
-  2. **Per agent** (`getTeamInsights`): rank, rate, direct and total downline counts, **accumulated sales** (the contract prices of their own `complete` sales plus those of everyone below them, at any depth), progress to the next rank's threshold, and `eligible` once accumulated ≥ threshold.
-  3. **Promote** (shown when eligible, with a `confirm()`): `promoteAgent` checks eligibility again, then `updateAgentAndUpline(id, { position_ID: next }, currentUpline)`. Promotion is never automatic. It may detach the agent from their upline.
+  1. **Thresholds:** for Supervisor, Investment Manager and Partner Broker, the accumulated sales needed to be promoted *into* that rank. Saved to `positions.promotion_sales_threshold` with `setPromotionThreshold` (0 or more, or empty = "not set"; a save that changes 0 rows is an error, so "Threshold saved." only shows when it really saved).
+  2. **Per agent** (`getTeamInsights`): rank, rate, direct and total downline counts, **accumulated sales** (the contract prices of their own `complete` sales plus those of everyone below them, at any depth), progress to the next rank's threshold, and `eligible` once accumulated ≥ threshold. The per-agent completed-sales totals come from the SQL function `team_completed_sales()` (agents can't read other agents' sales rows since 2026-11-05; it falls back to reading `sales` while the function is missing).
+  3. **Promote** (admins, shown when eligible, with a `confirm()`): `promoteAgent` checks eligibility again, then `updateAgentAndUpline(id, { position_ID: next }, currentUpline)`. Promotion is never automatic. It may detach the agent from their upline.
   4. Clicking a name expands the **override split**: the percentage of each payment's company commission that the agent keeps and that each upline earns (`allocatePayouts(100, ...)`).
-- **Code:** `components/genealogy/TeamInsights.vue`, `genealogyService.getTeamInsights/getRankPositions/setPromotionThreshold/promoteAgent`.
+- **Code:** `components/genealogy/TeamInsights.vue` (`isAdmin`), `genealogyService.getTeamInsights/getRankPositions/setPromotionThreshold/promoteAgent` (+ module-private `completedSalesByAgent`), RPC `team_completed_sales`.
 
 ### 7.15 Developer list (developers, office hours, promo posters)
 - **Route / entry point:** `/developerlist`.
-- **Who:** everyone can view. Adding, editing and deleting developers and promos is meant to be **admin-only**, but it is not gated yet (11.4).
+- **Who:** everyone can view. Adding, editing and deleting developers, office hours and promos is **admin-only** (since 2026-11-05: Add Developer and the cards' Edit / Delete are hidden for agents, and RLS / storage policies refuse them).
 - **When it is used:** looking up a developer's contact details, office hours, recent projects and current promos; maintaining that data.
 - **Flow:**
   1. `developerService.getDevelopers()` makes one query that embeds `opening_days`, `main_listings` and `developer_promos`.
      - Office hours: one `opening_days` row per day, grouped into slots of consecutive days with the same open and close times.
      - Projects: the 3 newest listings that are not drafts.
      - Promos: newest first.
-  2. **Card:** picture, name, a static "Active" badge, phone, email, location, office hours, Recent Projects chips (click → `PropertyDetails` overlay), Promotions thumbnails (click → lightbox; shows "Expired" or "Until" based on `valid_until`), and Delete, Edit, Contact buttons.
-  3. **Add / Edit modal (`addDeveloper.vue`):** name, location, phone, email, office-hour slots (a multi-select of Monday to Sunday plus Holiday, and open/close time or "Unavailable"), profile picture, and promo posters (new posters are staged with an optional title and valid-until date; saved posters can be removed).
-     - **Add:** `addDeveloper` (inserts the developer and its `opening_days` rows) → `uploadImage` → `updateDeveloper` with the image URL (rewrites `opening_days`) → `persistPromos` (upload and insert new posters, delete removed ones).
-     - **Edit:** `updateDeveloper` (update, then delete and reinsert `opening_days`) → `persistPromos`.
-  4. **Delete:** `deleteDeveloper` deletes `opening_days`, then the developer row. Promos cascade.
+  2. **Search** (header): filters the loaded developers in the browser by name, location, email or phone.
+  3. **Card:** picture, name, a static "Active" badge, phone, email, location, office hours, Recent Projects chips (click → `PropertyDetails` overlay, read-only), Promotions thumbnails (click → lightbox `components/developer/PromoPosterModal.vue`; shows "Expired" or "Until" based on `valid_until`), Delete and Edit (admins, `canManage`) and Contact.
+  4. **Add / Edit modal (`addDeveloper.vue`):** name, location, phone, email, office-hour slots (a multi-select of Monday to Sunday plus Holiday, and open/close time or "Unavailable"), profile picture, and promo posters (new posters are staged with an optional title and valid-until date; saved posters can be removed). The form edits **copies** of the developer (the card doesn't change until it is saved). Fields are cleaned and required (name, location, a valid phone and email; poster titles cleaned, dates checked); errors show above Save.
+     - **Add:** `addDeveloper` (inserts the developer and its `opening_days` rows; throws if either fails) → `uploadImage` → `updateDeveloper` with the image URL (rewrites `opening_days`) → `persistPromos` (upload and insert new posters, delete removed ones; throws if a poster fails).
+     - **Edit:** a newly chosen picture is uploaded first (a removed one is saved as removed) → `updateDeveloper` (update with a 0-rows check, then delete and reinsert `opening_days`) → `persistPromos`.
+     - Then the modal emits **`saved`**: the page closes it and reloads the list.
+     - **Office hours** (`officeHourRows`): one row per day; slots without days, marked Unavailable or missing a time are skipped (the columns are NOT NULL `time`), and a day picked twice keeps the first slot.
+  5. **Delete** (admins, after a `confirm()`): `deleteDeveloper` refuses a developer that listings still use, deletes `opening_days`, then the developer row (0 rows = error); promos cascade. The page waits for it, then reloads; failures show above the cards.
 - **Data:** R/W `developers`, `opening_days` (`id` = `dev_ID`), `developer_promos`; R `main_listings`; storage `images/developers/`, `images/developer_promos/`.
-- **Code:** `src/views/developerlist.vue`, `components/developer/{developerCard,addDeveloper}.vue`, `src/services/developerService.ts`, `src/assets/classes/developers.ts` (`days` list).
-- **Rules and edge cases:** several rough edges (11.4).
+- **Code:** `src/views/developerlist.vue` (`isAdmin`, `searchQuery`, `filteredDevelopers`, `onDeveloperSaved`, `handleDeleteDeveloper`), `components/developer/{developerCard,addDeveloper,PromoPosterModal}.vue`, `src/services/developerService.ts`, `src/assets/classes/developers.ts` (`days` list).
+- **Rules and edge cases:** a few rough edges remain (11.4).
 
 ### 7.16 Accounting (calculators)
 - **Route / entry point:** `/accounting`; the same panel opens from the listing overlay's CALCULATOR button with the price prefilled.
@@ -803,7 +841,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   - **Loan:** monthly payment `P × r(1+r)^n / ((1+r)^n − 1)` with `r = annual% / 12` and `n = years × 12` (term capped at 20 years; `P / n` when the rate is 0). "View Amortization Schedule" opens `amortSched.vue`.
   - **Sales:** Net Commission = Gross Profit × Net Commission Rate% − (that × Commission Tax%).
   - **Property Tax:** Property Value × Tax Rate%.
-- **Amortization schedule (`amortSched.vue`):** monthly rows starting one month from **today**. Interest uses actual days ÷ 365 (`balance × annualRate × days/365`) and the last row absorbs any rounding. Page size 12, 24, 36 or All. **Export PDF** uses jsPDF + autotable and saves `Amortization_Schedule.pdf`.
+- **Amortization schedule (`amortSched.vue`):** monthly rows starting one month from **today**, on the same day of the month and clamped to the last day of shorter months (Jan 31 → Feb 28/29 → Mar 31; since 2026-11-05, before that dates rolled over and skipped a month). Interest uses actual days ÷ 365 (`balance × annualRate × days/365`) and the last row absorbs any rounding. Page size 12, 24, 36 or All. **Export PDF** uses jsPDF + autotable and saves `Amortization_Schedule.pdf`.
 - **Data:** none (pure frontend).
 - **Code:** `src/views/Accounting.vue`, `components/calculator/CalculatorPanel.vue`, `components/accounting/amortSched.vue`.
 
@@ -812,16 +850,16 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 - **Flow:**
   1. `getCurrentAgentProfile()` → `ProfileCard` shows the name (+ admin badge), sex, age (computed from the birth date), birth date, address, contact, email, agent ID, position and hire date.
   2. **EDIT** → `ProfileEdit`: first/middle/last name, sex (Male, Female, Non-Binary, Other), birth date, address, contact number, email, and the profile picture (Upload/Change, Delete, Revert).
-  3. Save: if a new picture was chosen, `uploadProfileImage` (to `images/agents/`) and delete the old one; if the picture was removed, `deleteProfileImage`; then `updateProfile` (with `age` recomputed) → `router.go(0)` (full reload).
+  3. Save: every field is cleaned and checked like Add Agent (`cleanForm`: names, address, contact number, email, a real date of birth not in the future; errors show under the form). If a new picture was chosen, `uploadProfileImage` (to `images/agents/<own id>-...`); then `updateProfile` with all fields **including `home_address`** (it was never saved before 2026-11-05) and `age` recomputed; only after a successful save is the old picture deleted (a removed picture is saved as `null`); a failed save removes the newly uploaded picture again → `router.go(0)` (full reload).
 - **Rules:** position, hire date and admin access can't be edited here; they are edited from Genealogy → Manage Agents. Changing the email here doesn't change the Supabase Auth login email (11.3). Passwords are changed from the Login page or the Dashboard reminder (7.20), not here.
 - **Code:** `src/views/Profile.vue`, `components/profile/{ProfileCard,ProfileEdit}.vue`, `agentService.*`.
 
 ### 7.18 Settings
 - **Route / entry point:** `/settings` (Sidebar, bottom).
 - **Options:** Default Currency (PHP, USD, CAD, CNY, JPY), Default Unit (Metric = sqm, English = sqft), Disable Animations, Enable Dark Mode.
-- **Flow:** every change calls `updateSetting()` (localStorage) and takes effect immediately for the theme and animations. **SAVE SETTINGS** writes the configs to `agents.configs` (`agentService.updateConfigs`). CANCEL goes back in history but does not undo changes already applied.
-- **Code:** `src/views/Settings.vue`, `components/settings/{configDropdown,configToggleSlider}.vue`, `src/utils/useSettings.ts`, `App.vue`.
-- **Rules and edge cases:** see 11.6 (the default currency only applies after a reload; Save shows no feedback).
+- **Flow:** every change calls `updateSetting()` (localStorage) and takes effect immediately for the theme and animations. **SAVE SETTINGS** writes the configs to `agents.configs` (`agentService.updateConfigs`) and shows "Settings saved." or a red error (it stops if the login has no agent record). CANCEL goes back in history but does not undo changes already applied. Unreadable saved settings in localStorage fall back to the defaults instead of breaking the app.
+- **Code:** `src/views/Settings.vue` (`saveCurrentSettings`, `showSaveMessage`), `components/settings/{configDropdown,configToggleSlider}.vue`, `src/utils/useSettings.ts`, `App.vue`.
+- **Rules and edge cases:** see 11.6 (the default currency only applies after a reload).
 
 ### 7.19 Agent accounts (logins and initial passwords)
 - **Route / entry point:** Genealogy → **Add Agent** / **Edit** (Manage Agents); Dashboard → **+ Add Agent**. All open `AddAgentModal`.
@@ -893,6 +931,8 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
 
 Values used by the app: `draft`, `pending`, `active`, `sold`. The listing grids only fetch `active` (and `pending` for admins and owners).
 
+**On the server** (`main_listings_guard` + RLS, 2026-11-05): a non-admin creates listings as themselves with `pending`; only an admin moves `pending`/`draft` to another status; a non-admin (owner or not) only switches `active` ↔ `sold`; someone who doesn't own the listing may change nothing but the status and `nearby_pois`; nobody but an admin changes `agent_ID`. Pending and draft listings are only readable by their owner and admins.
+
 ### 8.2 Sale status (`sales.status`, enum `sales_status`)
 
 ```
@@ -901,7 +941,7 @@ Values used by the app: `draft`, `pending`, `active`, `sold`. The listing grids 
         └──────── admin ────────────┴──► 'cancelled'   (tabs not yet received are deleted)
 ```
 
-- Only `pending approval` lets non-admins edit or delete the sale.
+- Only `pending approval` lets non-admins edit or delete the sale (and its DP divisions). **Server:** RLS (`sales update / delete own pending or admin`, `can_edit_sale`); an agent's update must leave the status at `pending approval`, so only admins change it.
 - Entering `awaiting payment` or `complete` generates the commission tabs (once per sale).
 - "Approved" in the Dashboard means `awaiting payment` or `complete`.
 
@@ -921,7 +961,7 @@ The recipient is whoever the tab pays (`recipient_agent_ID`): a non-admin agent,
 | `releasePayment` | `released_at`, `released_by`, `proof_urls` | from `payment_requested`; at least one file |
 | `confirmReceived` | `claimed=true`, `claimed_at` | from `payment_released`; UI requires typing "I have received payment" first |
 
-Each step goes through `_advance(id, from, patch)`, which updates `.eq('status', from)` and returns `false` if 0 rows changed (the status had already moved, or RLS blocked it). **Only `received` counts as received money** in receivables and dashboard totals. Labels: `STATUS_LABEL` uses "Pending Approval" while the filter tab says "Awaiting Approval"; both mean `pending_approval`.
+Each step goes through `_advance(id, from, patch)`, which updates `.eq('status', from)` and returns `false` if 0 rows changed (the status had already moved, or RLS blocked it). **On the server** (`commissions_guard`, 2026-11-05) a recipient who isn't an admin can only make the two recipient steps (`requestPayment`, `confirmReceived`), in order and without touching any other column; the server stamps `requested_at` / `claimed_at`. Every other change needs an admin. **Only `received` counts as received money** in receivables and dashboard totals. Labels: `STATUS_LABEL` uses "Pending Approval" while the filter tab says "Awaiting Approval"; both mean `pending_approval`.
 
 ### 8.4 Commission math
 
@@ -1042,6 +1082,8 @@ Characters are counted like Postgres counts them (`charCount`: an emoji is one).
 ## 9. Database reference
 
 ### 9.1 Tables at a glance
+
+Every table has RLS on with real policies for `authenticated` only (9.7); `anon` has no table privileges (shared links go through `get_shared_listing`).
 
 | Table | Purpose | Written by | Read by |
 |---|---|---|---|
@@ -1229,7 +1271,7 @@ Property type strings come in three forms: DB `house_and_lot`, form label `House
 
 | File | Adds |
 |---|---|
-| `20260617120000_create_sales.sql` | `sales` table, indexes, open RLS policy |
+| `20260617120000_create_sales.sql` | `sales` table, indexes, open RLS policy (replaced by `20261105120000_harden_rls.sql`; the older files' open policies are all dropped there) |
 | `20260629120000_create_genealogy.sql` | `genealogy` table (backfill only; it already existed on the remote) |
 | `20260629130000_add_nearby_pois.sql` | `main_listings.nearby_pois` |
 | `20260720120000_add_listing_incentives.sql` | `main_listings.agent_incentive`, `realty_incentive` |
@@ -1238,25 +1280,55 @@ Property type strings come in three forms: DB `house_and_lot`, form label `House
 | `20261014140000_sales_payment_scheme_and_commissions.sql` | Combined and idempotent: sales financing, scheme and DP columns, `completed_at`, `sale_dp_divisions`, `commissions` (+ approval, balance, rank, role check), positions rates and thresholds, `Partner Broker` row, `sales.commission_rate`, Deferred-Cash, realtime publication, commission payment-flow columns, `sales.commissionable_amount`. **Re-run the whole file, then `notify pgrst, 'reload schema';`.** |
 | `20261104120000_agent_accounts.sql` | Idempotent: `pgcrypto` (schema `extensions`), Vault secret `agent_password_key` (created once, never replaced), table `agent_credentials` (locked), functions `current_agent_is_admin`, `store_agent_initial_password`, `admin_get_agent_login`, `current_agent_needs_password_change`, `handle_agent_password_change` + trigger `on_agent_password_changed` on `auth.users`. No changes to existing tables. Ends with `notify pgrst`. **Part of 3.3 step 1.** |
 | `20261104160000_support_tickets.sql` | Idempotent (check constraints dropped and re-added, `drop ... if exists` for policies and the trigger). Stops early if `current_agent_is_admin()` is missing. Function `current_agent_id()`; table `support_tickets` + check constraints + indexes; trigger `support_tickets_guard`; **real RLS** policies; `revoke all` from `anon`, `select/insert/update` for `authenticated`; private bucket `support_attachments` (5 MB, images only) + 3 storage policies; `support_tickets` added to `supabase_realtime`. No changes to existing tables. Ends with `notify pgrst`. **3.3 step 8.** |
+| `20261105120000_harden_rls.sql` | **RLS hardening.** One transaction, idempotent. Stops early if `current_agent_is_admin()` is missing. Helper functions `current_agent_id` (re-created), `can_manage_listing`, `can_edit_sale`, `can_manage_image`, `can_manage_fact_sheet`; guard triggers `agents_guard`, `main_listings_guard`, `commissions_guard`; drops **every** policy on the 19 app tables (whatever their names), enables RLS, `revoke all` from `anon`, grants `authenticated`, creates the real policies (9.7); drops the old open storage policies of `images` / `fact_sheets` (by name, plus any other policy mentioning those buckets) and creates new ones; functions `get_shared_listing(token)` (anon) and `team_completed_sales()`; ends with warnings for any public table without RLS or policy open to anon / public, and `notify pgrst`. No columns or tables change. Doesn't touch `support_tickets`, `support_attachments` or `agent_credentials`. **3.3 step 10** (deploy the frontend first). |
 
 Tables that existed before migrations were introduced (`agents`, `main_listings`, the sub-tables, `developers`, ...) have no migration file. Their shape is the PDF schema.
 
-### 9.7 SQL functions, triggers, Vault and policies (agent accounts, support tickets)
+### 9.7 SQL functions, triggers, Vault and policies (agent accounts, support tickets, RLS hardening)
 
-All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no dynamic SQL. The agent account ones are defined in `20261104120000_agent_accounts.sql`; `current_agent_id` and `support_tickets_guard` in `20261104160000_support_tickets.sql`.
+All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no dynamic SQL. The agent account ones are defined in `20261104120000_agent_accounts.sql`; `current_agent_id` and `support_tickets_guard` in `20261104160000_support_tickets.sql`; the helpers, guards, `get_shared_listing`, `team_completed_sales` and every table policy except the support ticket ones in `20261105120000_harden_rls.sql`. In all guards, `auth.uid() is null` means the SQL editor or the service role (the `agent-account` Edge Function), which may do anything.
 
 | Object | Callable by | Does | Called from |
 |---|---|---|---|
-| `current_agent_is_admin()` → boolean | authenticated, service_role | `agents.admin_access` of the row whose `user_id = auth.uid()` (false if none) | the functions below |
+| `current_agent_is_admin()` → boolean | authenticated, service_role | `agents.admin_access` of the row whose `user_id = auth.uid()` (false if none) | the functions and policies below |
 | `store_agent_initial_password(p_agent_id, p_user_id, p_password, p_created_by)` → void | **service_role only** | Checks 8–72 characters, encrypts with `pgp_sym_encrypt` and the Vault key, upserts `agent_credentials` (resets `password_changed_at`) | `agent-account` Edge Function |
 | `admin_get_agent_login(p_agent_id, p_reveal = false)` → one row (`has_login`, `login_email`, `has_initial_password`, `initial_password`, `password_changed_at`, `login_created_at`) | authenticated; **raises 42501 unless admin** | Login status; with `p_reveal` also decrypts the initial password if it is still stored | `accountService.getAgentLogin` |
 | `current_agent_needs_password_change()` → boolean | authenticated | True if the caller has an `agent_credentials` row with `password_changed_at is null` | `accountService.needsPasswordChange` |
 | `handle_agent_password_change()` + trigger `on_agent_password_changed` (`after update of encrypted_password on auth.users`, only when the hash changes) | trigger only | Sets `password_changed_at = now()` and `initial_password_enc = null` for that user | Supabase Auth password updates |
 | Vault secret `agent_password_key` | Postgres only (read through `vault.decrypted_secrets` inside the functions) | 32 random bytes (hex) that encrypt the initial passwords | — |
-| `current_agent_id()` → integer | authenticated, service_role | `agents."agent_ID"` of the row whose `user_id = auth.uid()` (NULL if none) | support ticket policies and trigger |
+| `current_agent_id()` → integer | authenticated, service_role | `agents."agent_ID"` of the row whose `user_id = auth.uid()` (NULL if none) | almost every policy, the guards |
 | `support_tickets_guard()` + trigger `support_tickets_guard` (`before insert or update on support_tickets`) | trigger only | Insert: raiser = signed-in agent, status `raised`, stamps cleared, 3-open-ticket limit (advisory lock), screenshot path check. Update: details locked, only the allowed status moves, stamps and note set here (8.8) | every write to `support_tickets` |
 | RLS on `support_tickets` | — | `read own or admin` (select: `"agent_ID" = current_agent_id()` or admin), `raise as yourself` (insert), `admins update` (update). No delete policy | ticketService |
 | Storage policies on `storage.objects` (bucket `support_attachments`) | authenticated | `read own or admin` (folder = `auth.uid()` or admin), `upload own` (into your folder), `delete own unused` (your file, used by no ticket) | ticketService |
+| `can_manage_listing(p_listing_id bigint)` → boolean | authenticated | Admin, or the listing's owner (`main_listings."agent_ID" = current_agent_id()`) | sub-table and `listing_images` write policies |
+| `can_edit_sale(p_sale_id bigint)` → boolean | authenticated | Admin, or the seller while the sale is `pending approval` | `sale_dp_divisions` write policies |
+| `can_manage_image(p_name text)` → boolean | authenticated | `images` bucket: admin (any file); else `listings/<id>-...` of a listing you own or `agents/<your agent_ID>-...`; nothing else (developers, promos, payment proofs are admin-only) | `images` storage policies |
+| `can_manage_fact_sheet(p_name text)` → boolean | authenticated | `fact_sheets` bucket: admin, or `<id>-...` of a listing you own | `fact_sheets` storage policies |
+| `agents_guard()` + trigger `agents_guard` (`before insert or update on agents`) | trigger only | Signed-in users never set or change `user_id` (logins are linked by the Edge Function) or `agent_ID`; non-admins can't change `admin_access`, `position_ID`, `hire_date` (not even on their own row) | every write to `agents` |
+| `main_listings_guard()` + trigger `main_listings_guard` (`before update on main_listings`) | trigger only | Non-admins: no `agent_ID` change; status only `active` ↔ `sold` (no self-approval); someone who doesn't own the listing may change only `status` and `nearby_pois` (compared as `to_jsonb(new) - ...`) | every update of `main_listings` |
+| `commissions_guard()` + trigger `commissions_guard` (`before update on commissions`) | trigger only | Non-admins (the recipient, per RLS) only `approved → payment_requested` (+ `request_details`; earlier payments of the sale for that person must be `received`; `requested_at = now()`) and `payment_released → received` (`claimed = true`, `claimed_at = now()`); nothing else | every update of `commissions` |
+| `get_shared_listing(p_token uuid)` → jsonb | **anon**, authenticated | The listing behind a valid, unexpired share link that isn't pending / draft: public listing fields, sub-table rows, photos (by `display_order`), agent first / last name, developer name, `nearby_pois`. Never commission, incentives, fact sheet, ids of the owner / developer or contact details. Raises "invalid or has been removed" / "expired" / "not yet available" | `shareService.getSharedListing` |
+| `team_completed_sales()` → table (`agent_ID`, `completed_sales`) | authenticated (agents) | Sum of `total_contract_price` of each agent's `complete` sales (totals only) | `genealogyService.getTeamInsights` |
+
+**Table policies** (all `to authenticated`; "agents" = a signed-in user with an agents row, `current_agent_id() is not null`; "admin" = `current_agent_is_admin()`; `anon` has no table privileges):
+
+| Table | Read | Insert | Update | Delete |
+|---|---|---|---|---|
+| `agents` | agents | — (Edge Function only) | own row or admin, + `agents_guard` | admin, not yourself |
+| `positions` | agents | — | admin | — |
+| `genealogy` | agents | admin | admin | admin |
+| `property_type`, `lot_class`, `condo_class` | agents | — | — | — |
+| `main_listings` | agents; pending / draft only owner or admin | as yourself; non-admins `pending` | any listing you can read, + `main_listings_guard` | owner or admin |
+| `house_and_lot`, `lot_only`, `condominium`, `memorial`, `listing_images` | with their listing (its read rule) | `can_manage_listing` | `can_manage_listing` | `can_manage_listing` |
+| `shared_listings` | agents | agents, for a live listing, with the listing owner's `agent_ID` | — | expired links (any agent), or admin |
+| `developers`, `opening_days`, `developer_promos` | agents | admin | admin | admin |
+| `sales` | own, sales you have a commission tab on, or admin | as yourself; non-admins `pending approval` | admin, or own while `pending approval` (must stay pending) | admin, or own while `pending approval` |
+| `sale_dp_divisions` | with their sale | `can_edit_sale` | `can_edit_sale` | `can_edit_sale` |
+| `commissions` | recipient or admin | admin | recipient or admin, + `commissions_guard` | admin |
+| `support_tickets` | own or admin | as yourself (+ guard) | admin (+ guard) | — |
+| `agent_credentials` | — (no policies, functions only) | — | — | — |
+
+**Storage policies:** `images` (public bucket): read = agents, upload / delete = `can_manage_image(name)`, no update. `fact_sheets` (public bucket): read = agents, upload and update (upsert) = `can_manage_fact_sheet(name)`. `support_attachments` (private): see above. Files in the two public buckets still open by URL for anyone.
 
 ⚠ **Do not delete or rotate `agent_password_key`.** Stored initial passwords would become unreadable (agents can still sign in; admins just can't reveal them).
 
@@ -1269,6 +1341,7 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 - **Errors** come back as `{ error: "<message for the admin>" }` with 400/401/403/404/409/500; `accountService` shows that message, and maps 404 (not deployed) and network failures to setup hints.
 - **Rollback:** `create` deletes the edge, agent and auth user if a later step fails; `create-login` unlinks `user_id` and deletes the auth user.
 - **Hierarchy rules are not re-checked** in the function (they live in `genealogyService.checkPlacement`, which runs first in the browser).
+- **RLS:** the service-role client bypasses RLS, and the guard triggers let it through (`auth.uid()` is null for it), so creating agents, linking `user_id` and the rollbacks keep working after the RLS hardening. It is the only place `agents.user_id` can be set.
 - **Deploying:** 3.3 step 2. The file is not covered by `vue-tsc` (Deno); check it by deploying or with `deno check`.
 
 ---
@@ -1315,16 +1388,17 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 
 | Function | Purpose | Used by |
 |---|---|---|
-| `getListings(limit=20, statuses=['active'], ownPendingAgentId?)` | Newest listings with agent, type, developer and thumbnail, mapped to `Property` | Listings, SalesUploadModal (`limit` 100) |
+| `getListings(limit=20, statuses=['active'], ownPendingAgentId?)` | Newest listings with agent, type, developer and thumbnail, mapped to `Property`. The `or()` filter only takes known statuses and a whole-number id | Listings, SalesUploadModal (`limit` 100) |
+| `getListingSummary(listingId)` | One listing as a card (`LISTING_CARD_FIELDS`, any status) or null | SalesUploadModal (Sold / Edit) |
 | `mapToProperty(row)` | DB row → `Property` (lowest `display_order` image = thumbnail) | internal |
 | `getListingPropertyType(listingId)` | `{ typeId, typeName }` | SalesReport, SalesUploadModal |
 | `getListingById(id, propertyTypeId)` | Full row + agent, developer, images, matching sub-table | PropertyDetails, PropertyManagement, SalesReport, SalesUploadModal |
 | `getAgentFromListing(listingId)` | Owner `agent_ID` (edit check) | Listings |
 | `createListing(main, sub, typeId)` | Insert main + sub-table row; deletes the main row if the sub-table insert fails | PropertyManagement |
 | `updateListing(id, main, sub, typeId)` | Update main + sub-table | PropertyManagement |
-| `uploadPropertyImages(listingId, files)` | Upload to `images/listings/` + insert `listing_images` | PropertyManagement |
+| `uploadPropertyImages(listingId, files, startOrder=1)` | Upload to `images/listings/<id>-...` (`safeFileExtension`) + insert `listing_images` with `display_order` from `startOrder` | PropertyManagement |
 | `deleteListingImages(urls)` | Remove from storage + delete `listing_images` rows | PropertyManagement |
-| `uploadFactSheet(listingId, file)` | Upload to the `fact_sheets` bucket + set `main_listings.fact_sheet` | PropertyManagement |
+| `uploadFactSheet(listingId, file)` | Upload to the `fact_sheets` bucket (`<id>-<ts>-<safeFileName>`) + set `main_listings.fact_sheet`; throws if 0 rows were updated | PropertyManagement |
 | `updateListingStatus(id, status)` | Set `main_listings.status` | Listings, SalesReport, SalesUploadModal |
 | `deleteListing(id)` | Hard delete | Listings |
 | `compileMarkdown(raw)` | Markdown → sanitized HTML | PropertyDetails, PropertyManagement, SharedListing |
@@ -1334,20 +1408,20 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | Function | Purpose | Used by |
 |---|---|---|
 | `generateShareLink(listingId, agentId, daysValid=1)` | Clean up expired links, insert a new `shared_listings` row, return it | PropertyDetails |
-| `getSharedListing(token)` | Load the listing for a token (images with `display_order`); throws if expired or pending | SharedListing |
+| `getSharedListing(token)` | Refuses a non-uuid token, then RPC `get_shared_listing(token)` (public details only); throws its message if invalid, expired or pending. Falls back to `getSharedListingFromTables` (module-private, old table read with only the shown columns) on `PGRST202` | SharedListing |
 
 **`src/services/poiService.ts`** (`poiService`, `POI_CATEGORIES`, `haversineKm`)
 
 | Function | Purpose | Used by |
 |---|---|---|
-| `getNearbyPois(listingId, lng, lat, { force? })` | Cached (30 days) or live Mapbox category search | MapHolder |
+| `getNearbyPois(listingId, lng, lat, { force?, cached?, persist? })` | Cached (30 days, shape-checked) or live Mapbox category search. `cached` = use this cache instead of reading `main_listings`; `persist: false` = don't write it back (shared page) | MapHolder, PropertyDetails (share) |
 | `haversineKm(aLng, aLat, bLng, bLat)` | Distance in km | MapHolder |
 
 **`src/services/salesService.ts`** (`salesService`; types `Sale`, `Financing`, `PaymentScheme`)
 
 | Function | Purpose | Used by |
 |---|---|---|
-| `getSales({ agentId?, search? })` | Sales (newest reservation first) with names filled in and sale numbers | SalesReport |
+| `getSales({ agentId? })` | Sales (newest reservation first) with names filled in and sale numbers. (The unused `search` option, which built an `or()` filter from text, was removed on 2026-11-05.) | SalesReport |
 | `getSaleById(id)` | One sale | unused |
 | `createSale(payload)` | Insert, return `{ success, data: { sale_ID } }` | SalesUploadModal |
 | `updateSale(id, payload)` | Update (0 rows → `{success:false}`) | SalesUploadModal |
@@ -1399,14 +1473,14 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | `getRecentAgents(limit=5)` | Newest by `hire_date` | Genealogy page |
 | `addAgent(data, uplineId, initialPassword)` | Check hierarchy rules, then `accountService.createAgentWithLogin` (login + agent + edge in the Edge Function) → `{ success, agent_ID, user_id, email }` | AddAgentModal |
 | `getAgentById(id)` | Full editable record | Genealogy page |
-| `updateAgent(id, patch)` | Patch fields only (no rule checks) | internal |
+| `updateAgent(id, patch)` | Patch fields only (no rule checks); throws if 0 rows changed (RLS) | internal |
 | `setUpline(downlineId, uplineId)` | Check rules and loops, replace edge | unused (prefer `updateAgentAndUpline`) |
 | `replaceUplineEdge(downlineId, uplineId)` | Delete and insert the edge, no checks | internal |
 | `updateAgentAndUpline(id, patch, uplineId)` | Save fields + upline with rules; returns `{ detached }` | AddAgentModal |
-| `getTeamInsights()` | Per agent: rank, accumulated sales, progress, override split | TeamInsights, tree |
+| `getTeamInsights()` | Per agent: rank, accumulated sales (completed-sales totals from RPC `team_completed_sales`, via module-private `completedSalesByAgent`, which falls back to reading `sales` on `PGRST202`), progress, override split | TeamInsights, tree |
 | `promoteAgent(agentId)` | Admin-confirmed promotion to the next rank | TeamInsights |
 | `getRankPositions()` | The 4 ranks with rate and threshold | TeamInsights |
-| `setPromotionThreshold(positionId, value)` | Save a threshold | TeamInsights |
+| `setPromotionThreshold(positionId, value)` | Save a threshold (0 or more, or null); throws if 0 rows changed (not an admin) | TeamInsights |
 | `getAgentReferences(id)` | Counts of sales, listings, share links | internal |
 | `deleteAgent(id)` | Blocked delete with downline re-parenting; `.select()` check on the agent delete; then removes the login (`accountService.deleteLogin`) | Genealogy page |
 | `fetchGraph()`, `checkPlacement()`, `toAgent()` | Module-private helpers | internal |
@@ -1417,10 +1491,11 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 |---|---|---|
 | `getDevelopers()` | Developers with office hours (grouped), 3 recent projects, promos | developerlist, PropertyManagement |
 | `getDeveloperNames()` | Sorted names | Listings, SalesUploadModal |
-| `addDeveloper(dev)` | Insert developer + `opening_days`; returns `dev_ID` | addDeveloper |
-| `updateDeveloper(dev, oldHours)` | Update + replace `opening_days` (`oldHours` is unused) | addDeveloper |
+| `addDeveloper(dev)` | Insert developer + `opening_days` (`officeHourRows`); returns `dev_ID`; throws a readable error if either fails | addDeveloper |
+| `updateDeveloper(dev, oldHours)` | Update (throws if 0 rows) + replace `opening_days` (throws on failure; `oldHours` is unused) | addDeveloper |
 | `uploadImage(devId, file)` | `images/developers/` → URL (`''` on error) | addDeveloper |
-| `deleteDeveloper(dev)` | Delete `opening_days`, then the developer | developerlist |
+| `deleteDeveloper(dev)` | Refuses (throws) if listings use the developer; deletes `opening_days`, then the developer (throws if 0 rows) | developerlist |
+| `officeHourRows(devId, slots)` | Module-private: one `opening_days` row per day; skips slots without days / times or marked Unavailable; first slot wins for a repeated day | internal |
 | `uploadPromoImage(devId, file)` | `images/developer_promos/` → URL | addDeveloper |
 | `addPromo(devId, promo)` | Insert a promo row → `promo_ID` | addDeveloper |
 | `deletePromo(promo)` | Delete the storage file + row | addDeveloper |
@@ -1453,7 +1528,8 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | `utils/conversion.ts` | `currentCurrency`, `currentUnit` (refs), `currencySymbols`, `areaUnits`, `SQM_TO_SQFT`, `convertPrice`, `formatPrice`, `convertArea`, `formatArea`, `convertPriceToPHP`, `convertAreaToSqm` | Listings, PropertyManagement, PropertyCard, PropertyDetails, SalesReport, SharedListing, Settings |
 | `utils/useSettings.ts` | `useSettings()` → `{ configs, updateSetting, loadSettings }` | App, Settings, conversion, ProfileCard, genealogy tree |
 | `utils/liveRefresh.ts` | `useLiveRefresh(reload, tables, opts)` | Dashboard, Commission, Genealogy page, tree, TeamInsights, Support |
-| `utils/sanitize.ts` | `cleanText(value, max)`, `cleanMultilineText(value, max=2000)` (keeps line breaks; drops control characters and invisible direction overrides, trims each line, max one blank line), `normalizeEmail`, `isValidEmail`, `isValidPhone`, `isIsoDate`, `digitsOnly`, `EMAIL_PATTERN`, `PHONE_PATTERN` | AddAgentModal, LoginForm, ChangePasswordModal (the Edge Function repeats the same rules); ticketService, TicketDetailsModal (`cleanMultilineText`) |
+| `utils/sanitize.ts` | `cleanText(value, max)`, `cleanMultilineText(value, max=2000)` (keeps line breaks; drops control characters and invisible direction overrides, trims each line, max one blank line), `cleanMarkdownText(value, max=20000)` (keeps every line as typed: indentation, two-space line breaks; drops control characters and direction overrides, trims the ends), `normalizeEmail`, `isValidEmail`, `isValidPhone`, `isIsoDate`, `digitsOnly`, `finiteNumber(value, fallback)`, `safeFileExtension(name, fallback='bin')`, `safeFileName(name, max=100)`, `EMAIL_PATTERN`, `PHONE_PATTERN` | AddAgentModal, LoginForm, ChangePasswordModal (the Edge Function repeats the same rules); ticketService, TicketDetailsModal (`cleanMultilineText`); PropertyManagement, SalesUploadModal, PaymentRequestModal, ProfileEdit, addDeveloper; the upload services (`safeFileExtension` / `safeFileName`) |
+| `utils/saleStatus.ts` | `saleStatusClass(status)`: sale status pill colours | SalesReport, SaleDetailsModal |
 | `utils/deviceInfo.ts` | `describeDevice()` → e.g. "Chrome 130 · Windows · window 1536×730 · screen 1920×1080 · dark mode" | RaiseTicketModal |
 | `utils/password.ts` | `INITIAL_PASSWORD_LENGTH` (14), `MIN_PASSWORD_LENGTH` (8), `MAX_PASSWORD_LENGTH` (72), `agentInitials`, `generatePasswordTail`, `buildInitialPassword`, `passwordRules`, `isStrongPassword`, type `PasswordRule` | AddAgentModal, PasswordReveal, ChangePasswordModal |
 
@@ -1473,16 +1549,19 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 |---|---|---|---|
 | `Sidebar` | — | — | App |
 | `listings/PropertyCard` | `details?: Property`, `isLoading?` | — | Listings |
-| `listings/PropertyDetails` | `prop_id`, `prop_type`, `isAdmin?` | `close-details`, `edit`, `delete`, `sold`, `approve`, `share` | Listings, developerlist |
+| `listings/PropertyDetails` | `prop_id`, `prop_type`, `isAdmin?`, `currentAgentId?` (owner check for EDIT / DELETE), `readOnly?` (hides edit / delete / sold / approve) | `close-details`, `edit`, `delete`, `sold`, `approve`, `share` | Listings, developerlist (read-only) |
 | `listings/ListingsFilter` | `choices`, `modelValue` | `update:modelValue` | Listings |
-| `listings/MapHolder` | `targetLocation?`, `listingId?` | — | PropertyDetails, SharedListing |
-| `listings/MapInteractive` | `targetLocation?` (`lng`, `lat`, `loc`) | `update:targetLocation` (`lng`, `lat`, `name`) | PropertyManagement |
+| `listings/MapHolder` | `targetLocation?`, `listingId?`, `cachedPois?`, `readOnlyCache?` (shared page: use `cachedPois`, never write the cache) | — | PropertyDetails, SharedListing |
+| `listings/MapInteractive` | `targetLocation?` (`lng`, `lat`, `loc`) | `update:targetLocation` (`lng`, `lat`, `name`) | MapPickerModal |
+| `listings/MapPickerModal` | `location` (`lng`, `lat`, `loc`) | `close`, `picked` (`lng`, `lat`, `name`) | PropertyManagement |
 | `sales/SalesUploadModal` | `lockedListing?`, `editSale?` | `close`, `saved` | SalesReport, Listings |
+| `sales/SaleDetailsModal` | `sale`, `isAdmin`, `canEdit` | `close`, `edit` (sale), `delete` (sale) | SalesReport |
 | `commissions/PaymentRequestModal` | `tab`, `agent` | `close`, `submitted` | Commission |
 | `commissions/ReleasePaymentModal` | `tab`, `adminAgentId` | `close`, `released` | Commission |
 | `commissions/ProofModal` | `tab`, `canConfirm` | `close`, `received` | Commission |
 | `commissions/ConfirmActionModal` | `title`, `message`, `confirmLabel?` ('Yes'), `cancelLabel?` ('No'), `busyLabel?`, `tone?` ('blue' \| 'green'), `busy?`, `error?`, `requiredPhrase?`; default slot = summary box | `confirm`, `cancel` | Commission (approve), ProofModal (received), RaiseTicketModal (discard), TicketDetailsModal (resolve, reopen) |
 | `dashboard/DashboardStatCard` | `stat: Metric` | `click` | Dashboard |
+| `dashboard/MetricDetailsModal` | `metric: Metric` | `close` | Dashboard |
 | `dashboard/SalesPerfromance` | `bars`, `sold`, `avgDeal` | `open-details` | Dashboard |
 | `dashboard/CommissionHistory` | `history: HistoryItem[]` | — | Dashboard |
 | `dashboard/GenealogyCard` | `upline`, `downline` (`{ name, meta }[]`) | `view-full` | Dashboard |
@@ -1493,8 +1572,9 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | `genealogy/PasswordReveal` | `value: string \| null` (null = not loaded), `loading?`, `regenerable?` | `reveal` (eye pressed while `value` is null), `regenerate` | AddAgentModal |
 | `auth/ChangePasswordModal` | `email?`, `lockEmail?`, `signOutWhenDone?` | `close`, `changed` (email) | LoginForm, Dashboard |
 | `genealogy/TeamInsights` | — | `changed` | Genealogy page |
-| `developer/developerCard` | `dev: Developer` | `delete-developer`, `edit-developer`, `contact-developer`, `open-listing`, `open-promo` | developerlist |
-| `developer/addDeveloper` | `dev?: Developer` | `close-add-developer` | developerlist |
+| `developer/developerCard` | `dev: Developer`, `canManage?` (shows Edit / Delete) | `delete-developer`, `edit-developer`, `contact-developer`, `open-listing`, `open-promo` | developerlist |
+| `developer/addDeveloper` | `dev?: Developer` | `close-add-developer`, `saved` | developerlist |
+| `developer/PromoPosterModal` | `promo: DeveloperPromo` | `close` | developerlist |
 | `calculator/CalculatorPanel` | `prefillPrice?` | — | Accounting, PropertyDetails |
 | `accounting/amortSched` | `principal`, `years`, `interest` | `close` | CalculatorPanel |
 | `profile/ProfileCard` | `agent` | — | Profile |
@@ -1509,61 +1589,55 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 
 ## 11. Known issues, gotchas and tech debt
 
-Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remove an item once it is fixed** (see 1.7).
+Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read for the RLS hardening and bug pass). Line numbers are approximate. **Remove an item once it is fixed** (see 1.7).
 
 ### 11.1 Listings and Property Management
-- **Only 20 listings load.** `Listings.vue` calls `getListings(20, ...)`, so the grid, search and filters only ever see the 20 newest listings.
-- **New-listing fact sheet uses the wrong id.** Create mode calls `uploadFactSheet(propertyId, ...)`, and `propertyId` is `-1` in create mode. It should use `response.data.listing_ID` (`PropertyManagement.vue` ~line 1048).
-- **Edit mode skips conversions.** `price` is saved without `convertPriceToPHP` (while `max_price` is converted), and lot area, floor area and area are saved without `convertAreaToSqm`. Values are wrong when the display currency or unit isn't PHP/Metric (~lines 1074–1110).
-- **Edit mode loses Clubshare and Golfshare.** The edit-mode `typeMap` only has 4 types and falls back to `1`, so saving those listings changes them to House and Lot.
-- **Property Management opened without `?edit=0`** (the Sidebar link, and Dashboard "+ Add Listing") runs in edit mode with id `-1`: loading fails quietly and Save calls `updateListing(-1)`, which saves nothing. Only Listings "Add Listing" passes `edit: 0`.
-- **No delete check.** Any user can delete any listing. Edit is owner-only, even for admins.
+- **Only 20 listings load.** `Listings.vue` calls `getListings(20, ...)`, so the grid, search and filters only ever see the 20 newest listings. (The limit came with the "ListingsLag" fix, so raising it needs paging or a server-side search, not just a bigger number.)
 - The Listings filters Rooms, Bedrooms, Bathrooms, Lot Area, Class and Memorial Type are not applied.
-- `Listings.processDelete` shows "Success! The listing has been deleted." in its `catch` block too.
 - `Listings.vue` binds `@edit` / `@delete` on `PropertyCard`, but the card never emits them.
 - Clubshare and Golfshare have no sub-table. Bulk listings still write a sub-table row with the form's default values.
+- Admins can only edit their own listings in the UI (owner check), although RLS would let them edit any listing.
+- Replaced or removed photos, profile and developer pictures are deleted from storage only by the listing / profile flows; a developer's old picture or a removed poster's file stays in the `images` bucket.
 
 ### 11.2 Sales and commissions
-- **Wrong due-date wording in the sale form.** Spot-Cash and Deferred-Cash first due dates count from the **approval date** (`new Date()` in `generateCommissionTabs`). The team confirmed (2026-10-28) that this is correct. The sale form's info boxes still say "one month after the reservation" and preview a date computed from `reservation_date` (`firstDueDate` in `SalesUploadModal.vue`); that wording is what needs fixing.
-- **Sold flow on bulk listings skips unit details.** In Confirm (Sold) mode the modal doesn't load `listings`, so `selectedListing` is undefined: the bulk "Specific Unit Details" section and the prefill never appear, and `unit_details` is saved as `null` (`SalesUploadModal.vue` `onMounted` returns early when `propertyLocked`).
-- **Deleting a sale deletes its commission history.** `commissions` and `sale_dp_divisions` cascade, so received commissions are deleted too. It also sets the listing back to `active`.
+- **Deleting a sale deletes its commission history.** `commissions` and `sale_dp_divisions` cascade, so received commissions are deleted too. It also sets the listing back to `active` (after the delete since 2026-11-05).
 - Tabs are not regenerated when a sale is edited after approval (by design; see 7.11).
-- `SalesReport.vue` has three `watch(selectedSale)` handlers, so the upline is fetched twice.
-- `/commissions` has no `meta.requiresAuth` (the data still needs a session).
-- Proof-of-payment images are public URLs.
+- Proof-of-payment images are public URLs (the `images` bucket is public; the storage policies only control who uploads and deletes).
+- An agent's Team Insights / tree hears about another agent's completed sale on the next focus or 60 s poll, not instantly (realtime applies RLS, 5.6).
 
 ### 11.3 Genealogy and agent accounts
-- **Missing admin gating (partly fixed 2026-11-04).** Add, Edit and Delete agent are now admin-only. **Promote and threshold editing** in `TeamInsights.vue` are still visible to **all** users; gate them with `authService.getCurrentAgent().admin_access`.
 - **The login email doesn't follow email edits.** Editing `agents.email_address` (Edit Agent or Profile) doesn't change the Supabase Auth email. Edit Agent shows a note when they differ. To change a login email today: Authentication → Users in Supabase. (A possible fix: an `update-email` action in the `agent-account` Edge Function.)
-- **Nothing works until the Supabase setup is done** (3.3): without the migration, Edit Agent says to run it; without the Edge Function, Add Agent says it is not deployed; without the `{{ .Token }}` email template and SMTP, password codes don't arrive.
+- **Nothing works until the Supabase setup is done** (3.3): without the migration, Edit Agent says to run it; without the Edge Function, Add Agent says it is not deployed; without the `{{ .Token }}` email template and SMTP, password codes don't arrive. Without step 10 the old open policies stay in place.
 - **The recovery code is also a sign-in.** After the code is verified, the user has a session. On the Login page the modal ends it when finished or closed, but reloading the page mid-flow leaves the user signed in without having changed the password (the Dashboard reminder still shows for an initial password).
 - The Edge Function doesn't re-check the hierarchy rules; it trusts `genealogyService.checkPlacement`, which runs first in the browser.
-- The tree's heading says "Developer Genealogy"; it shows agents.
 
 ### 11.4 Developers
-- **Missing admin gating.** Add Developer, Edit, Delete and promo management are visible to all users. The team confirmed they should be admin-only.
-- Edit mode never uploads a newly chosen profile picture; only add mode does.
-- After saving, the modal stays open and the list doesn't reload. `handleDeleteDeveloper` doesn't await the delete before reloading.
-- The search box isn't wired; the Contact button's event isn't handled.
+- The Contact button's event isn't handled (what it should do, email or call, isn't decided).
 - `developers.available_days`, `open_hours` and `close_hours` are unused (office hours live in `opening_days`). `reformatHours` is unused.
+- An office-hours slot marked "Unavailable" is not stored (the `opening_days` times are NOT NULL), so the day simply doesn't appear on the card. Showing "Unavailable" would need nullable times (a migration) and a mapping in `getDevelopers`.
 
 ### 11.5 Data-shape traps
 - UI and DB field names differ (9.5), and the lookup ids are hard-coded in many files (9.4).
 - Sub-table embeds may come back as an array or as an object; normalize them.
 - `sales.agent_sale_seq` is never written; the sale numbers are computed in `applySaleNumbers`.
 - Commission role labels (`Upline 1/2/3`) are not ranks. Read `recipient_rank` for the rank.
+- `get_shared_listing` returns a hand-picked set of listing fields: a new field the shared page needs must be added to the function too (7.7).
 
 ### 11.6 Settings and UI
 - `currentCurrency` and `currentUnit` are set once, at module load. Changing the default in Settings only applies after a reload; the Listings dropdowns change them for the session only.
-- Settings Save shows no success or error message to the user. Logout doesn't clear `localStorage['app_user_settings']`.
+- Logout doesn't clear `localStorage['app_user_settings']`.
 - The Commissions page and its request/release/proof modals have no dark-mode styling. (`ConfirmActionModal` and the Commissions toast have it, so they turn dark over a light page when dark mode is on. `AddAgentModal` got dark mode on 2026-11-04.)
 - The Commissions page still uses `alert()` after a payment request, a release and a receipt; only Approve uses the toast.
-- `bg-maurealty-red` (Listings confirmation toast) isn't a defined theme color.
 
 ### 11.7 Security (pre-launch)
-- RLS is wide open on every table (dev policy) except `agent_credentials` (locked) and `support_tickets` (real per-user rules, the pattern to copy when hardening the others). Most role rules are frontend-only; creating/removing logins, revealing passwords and every support ticket rule are checked on the server (9.7, 9.8). Hardening (admins see everything, agents see their own) is planned "before go-live" according to the migration comments. When it happens, the Edge Function keeps working (it uses the service role).
-- **Public sign-ups** must be turned off in Supabase (3.3 step 6). Otherwise anyone with the anon key can create a login and read the open tables.
+- **RLS is real on every table since 2026-11-05** (9.7) once 3.3 step 10 is run. What it doesn't cover:
+  - **Agents read every agent's row**, personal details included (address, birth date, phone, email). The app needs everyone's names for the tree, listings and sales; RLS works on rows, not columns. Hiding the personal columns would need a narrower view or function for "team" reads.
+  - Files in the public `images` and `fact_sheets` buckets (listing photos, profile and developer pictures, promo posters, payment proofs, fact sheets) open by URL for anyone who has the URL. Only uploads and deletes are restricted.
+  - The `images` and `fact_sheets` buckets have no file type or size limit set in Storage (unlike `support_attachments`). Consider allowed MIME types (no SVG) and a size limit in the dashboard.
+  - Realtime DELETE events aren't filtered by RLS (a subscriber can learn that a row id was deleted, not its contents).
+- **Public sign-ups** must be turned off in Supabase (3.3 step 6). With step 10 a login without an agents row reads nothing, but it shouldn't exist.
 - Admins can read an agent's **initial** password until it is changed (by design, 7.19). It is encrypted at rest with a Vault key and only decrypted by `admin_get_agent_login` for an admin.
+- Admins are trusted: RLS lets them change most columns of any row (the UI still follows the business rules).
 
 ### 11.8 Dead code and unused dependencies
 - Unrouted or unused files: `views/DashboardPrevious.vue`, `components/test.vue`, `components/modal.vue`, `components/dashboard/AddListing.vue`, `components/dashboard/Calculator.vue`, `services/lookupService.ts`, `babel.config.js`.
@@ -1575,7 +1649,7 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 - **No notifications.** Nobody is told when a ticket is raised or changes status: no email and no Dashboard alert or reminder. Admins have to open IT Support, and users have to check their tickets. (Possible next step: an admin reminder "n tickets waiting for review" and an agent alert "your ticket was resolved" in `dashboardService.buildDashboard`.)
 - **No conversation.** There is one resolution note per resolution; users can't reply on a ticket. A user whose problem came back asks IT to reopen it, or raises a new ticket that mentions the number (the 3-open limit still applies).
 - **Orphan uploads.** Screenshots are uploaded before the ticket row is inserted. If the browser closes between the two steps, the files stay in the user's folder of `support_attachments` without a ticket (only readable by that user and admins). Clean up by hand if needed.
-- **Storage policies are OR-ed.** An older `storage.objects` policy without a `bucket_id` condition would widen access to the private screenshots (3.3 step 9).
+- **Storage policies are OR-ed.** An older `storage.objects` policy without a `bucket_id` condition would widen access to the private screenshots (3.3 step 9; the RLS hardening only removes the `images` / `fact_sheets` ones).
 - `TICKET_AREAS` exists only in the app (the database only checks the length), so a new page needs a new entry there.
 - Signed screenshot links expire after an hour; an admin who keeps a ticket open longer gets broken images and has to open it again.
 
@@ -1620,6 +1694,9 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 | **Issue vs request (ticket)** | Issue categories (something isn't working, login, slow, wrong data) must give steps, expected result and frequency so IT can recreate them; requests (feature request, feedback, other) only need details. |
 | **Open ticket** | A ticket that is not resolved (Raised or In Review). Each person may have 3 when raising a new one. |
 | **Resolution note** | IT support's answer on a ticket, required to resolve it and shown to the person who raised it. |
+| **RLS (row level security)** | Postgres rules (policies) deciding which rows each signed-in user may read and write. Since 2026-11-05 every table has real policies; signed-out visitors (`anon`) get none. |
+| **Guard trigger** | A `before insert / update` trigger that enforces what a policy can't, such as which columns a non-admin may change (`agents_guard`, `main_listings_guard`, `commissions_guard`, `support_tickets_guard`). |
+| **Share token** | The random uuid (`shared_listings.share_id`) in a shared listing link; `get_shared_listing(token)` opens it for clients who aren't signed in. |
 
 ---
 
@@ -1629,6 +1706,7 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 
 | `documentation.md` entry | Summary | See |
 |---|---|---|
+| 2026-11-05: RLS hardening, bug fixes, modal components | Real RLS on every table + guard triggers + storage policies (`20261105120000_harden_rls.sql`), `get_shared_listing` for signed-out clients, `team_completed_sales`; POI popup XSS fix; admin-only developers / thresholds / promote in the UI; owner/admin listing actions; Property Management, sale form (bulk unit details), Sales Report, Profile (address), developer list, Settings, amortization fixes; input cleaning everywhere (`cleanMarkdownText`, file names); four inline modals moved into components | 1.2–1.6, 3.3, 4, 5.1–5.8, 6, 7.3–7.18, 8.1–8.3, 9.1, 9.6–9.8, 10, 11, 12 |
 | 2026-11-04: IT support tickets | New `/support` page; guided Raise a Ticket form with checklist, auto-numbered steps, screenshots (private bucket), device details; admin review / resolve (required note) / reopen; 3 open tickets per person; `support_tickets` with real RLS + guard trigger; `cleanMultilineText`, `describeDevice` | 3.3, 5.4, 5.6, 5.8, 6, 7.21, 8.8, 9, 10, 11.9 |
 | 2026-11-04: Agent accounts and password changes | Add Agent creates the Supabase login (Edge Function `agent-account`), encrypted initial password that admins can reveal until it is changed, create login for older agents, login removed on delete, admin-only agent management, Dashboard Add Agent = Genealogy modal, red initial-password reminder, change password with an email code on the Login page, input cleaning helpers | 3.3, 5.1, 5.8, 6, 7.1, 7.3, 7.13, 7.19, 7.20, 8.7, 9.7, 9.8, 10 |
 | 2026-11-03: Commission confirmations, admin filter, shared listing | Other Agents switch, "You" badge, Approve popup + toast, admins request/receive on own tabs, typed "I have received payment", `ConfirmActionModal`; shared page shows bulk price range, hides bulk features, orders photos, dark mode | 5.8, 6, 7.7, 7.12, 8.3, 10.4 |
@@ -1659,6 +1737,8 @@ Verified by reading the code on 2026-10-28. Line numbers are approximate. **Remo
 ## 14. Changelog of this file
 
 Add one line per update, newest first: `YYYY-MM-DD: what changed (sections)`.
+
+- **2026-11-05:** RLS hardening (migration `20261105120000_harden_rls.sql`: real policies on every table and the `images` / `fact_sheets` buckets, `agents_guard` / `main_listings_guard` / `commissions_guard`, helpers, `get_shared_listing`, `team_completed_sales`, setup step 10, verification and smoke test); shared page through the function with a read-only POI cache; POI popup XSS fix; admin-only developer management, thresholds and promotion in the UI; owner/admin listing buttons; bug fixes in Property Management, the sale form, Sales Report, Listings, Profile, developers, Settings, amortization, `/commissions` guard; input cleaning helpers and file-name cleaning; Sale Details, Dashboard metric, promo poster and map picker modals moved into components; known issues re-checked (header, 1.2, 1.3, 1.4, 1.5, 1.6, 3.3, 4, 5.1, 5.3, 5.4, 5.6, 5.8, 6, 7.3–7.8, 7.9, 7.10, 7.12–7.18, 8.1, 8.2, 8.3, 9.1, 9.6, 9.7, 9.8, 10.1, 10.2, 10.4, 11, 12, 13.1).
 
 - **2026-11-04:** IT support tickets: `/support` page, Raise a Ticket form, ticket popup with admin review / resolve / reopen, `ticketService`, `ticket.ts`, `cleanMultilineText`, `deviceInfo.ts`, migration `20261104160000_support_tickets.sql` (`support_tickets` with real RLS, `support_tickets_guard`, `current_agent_id`, private `support_attachments` bucket, realtime), new setup steps 8–9 (header, 1.3, 1.4, 1.5, 2, 3.3, 4, 5.1, 5.2, 5.3, 5.4, 5.6, 5.8, 6, 7.2, 7.21, 8.8, 9.1, 9.2, 9.3, 9.6, 9.7, 10.1, 10.2, 10.3, 10.4, 11.7, 11.9, 12, 13.1).
 
