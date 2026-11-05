@@ -84,7 +84,9 @@ const routes: Array<RouteRecordRaw> = [
   {
   path: '/commissions',
   name: 'Commission',
-  component: () => import('@/views/Commission.vue')
+  component: () => import('@/views/Commission.vue'),
+  // Signed-out visitors go to the login page, like every other page (this route had no meta).
+  meta: { requiresAuth: true }
   },
   {
     // IT support tickets: everyone raises tickets; admins (IT support) review and resolve them.
