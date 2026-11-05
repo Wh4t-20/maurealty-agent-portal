@@ -9,21 +9,13 @@
       leave-from-class="opacity-100 scale-100"
       leave-to-class="opacity-0 scale-95"
       >
-        <div v-if="displayMaps" class="absolute inset-0 z-50 bg-white dark:bg-black dark:bg-black overflow-hidden rounded-2xl">
-          
-          <button 
-            @click="toggleMaps" 
-            type="button" 
-            class="absolute top-4 right-4 z-60 bg-red-500 text-white p-3 rounded-full font-bold shadow-md hover:bg-red-600 transition-colors cursor-pointer"
-          >
-            <XIcon />
-          </button>
-
-          <MapInteractive 
-            :target-location="{ lng: form.lng ?? 123.89313980, lat: form.lat ?? 10.30995455, loc: form.location ?? '' }" 
-            @update:targetLocation="(loc) => { form.lng = loc.lng; form.lat = loc.lat, form.location = loc.name; }"
-          />
-        </div>
+        <!-- Location picker: components/listings/MapPickerModal.vue -->
+        <MapPickerModal
+          v-if="displayMaps"
+          :location="{ lng: form.lng ?? 123.89313980, lat: form.lat ?? 10.30995455, loc: form.location ?? '' }"
+          @close="toggleMaps"
+          @picked="(loc) => { form.lng = loc.lng; form.lat = loc.lat; form.location = loc.name; }"
+        />
       </transition>
       
       <header class="relative">
@@ -632,8 +624,8 @@ import { listingsService } from '@/services/listingsServices';
 import { authService } from '@/services/authService'; // just for getting agent_ID
 
 // maps stuff
-import { MapIcon, PlusIcon, UploadIcon, XIcon } from 'lucide-vue-next';
-import MapInteractive from '@/components/listings/MapInteractive.vue';
+import { MapIcon, PlusIcon, UploadIcon } from 'lucide-vue-next';
+import MapPickerModal from '@/components/listings/MapPickerModal.vue';
 const displayMaps = ref(false);
 
 
