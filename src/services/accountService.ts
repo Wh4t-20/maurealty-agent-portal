@@ -100,6 +100,21 @@ export const accountService = {
     await callAccountFunction<{ deleted: boolean }>({ action: 'delete-login', userId });
   },
 
+  // After an email edit (Edit Agent, Profile): make the agent's login email the email now saved
+  // on their row. Admins for any agent, an agent for themselves. `changed` is false when they
+  // already matched or the agent has no login.
+  async syncLoginEmail(agentId: number): Promise<{ changed: boolean; email: string | null }> {
+    try {
+      return await callAccountFunction<{ changed: boolean; email: string | null }>({ action: 'sync-login-email', agentId });
+    } catch (e: any) {
+      // The function deployed before this action existed answers "Unknown action."
+      if (e?.message === 'Unknown action.') {
+        throw new Error('The agent-account Edge Function needs to be redeployed before login emails can follow email edits (project-context.md 3.3 step 2).');
+      }
+      throw e;
+    }
+  },
+
   // ---------- Admin: login status / reveal (SQL function) ----------
 
   // `reveal` = true also returns the initial password, if the agent hasn't changed it yet.
