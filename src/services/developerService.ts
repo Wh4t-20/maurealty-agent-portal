@@ -7,15 +7,6 @@ import { supabase } from '../supabaseClient';
 import { type Developer, type DeveloperPromo, type OfficeHourSlot, type DayOption, days } from '../assets/classes/developers';
 import { safeFileExtension } from '../utils/sanitize';
 
-const formatHours = (time: string) => {
-    const [hoursPart = '0', minutesPart = '00'] = time.split(':');
-    const hoursInt = parseInt(hoursPart, 10);
-    const realHours = hoursInt % 12 || 12;
-    const period = hoursInt >= 12 ? 'PM' : 'AM';
-
-    return `${realHours}:${minutesPart} ${period}`;
-};
-
 const convertTo24Hour = (time12h: string): string => {
     const [time = '0:00', modifier = 'AM'] = time12h.trim().split(/\s+/);
     const [hoursPart = '0', minutesPart = '00'] = time.split(':');
