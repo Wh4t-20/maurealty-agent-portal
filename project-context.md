@@ -2,9 +2,9 @@
 
 > **What this file is:** the single reference for how the Maureal Realty and Brokerage (MRB) web portal works today: its features, the processes behind them, and where each piece of logic lives in the code. It is written for AI assistants and for the dev team.
 >
-> **Last verified against the code:** 2026-11-06 · branch `fix/storage-upload-limits` (upload limits on the `images` / `fact_sheets` buckets, setup step 11; on top of `c0c3cf4`). Earlier the same day: `fix/dependency-cleanup` (unused dependencies removed, `dompurify` 3.4.17, `npm audit fix`, `VITE_MAPBOX_TOKEN` in `.env.example`; on top of `41004ac`) · `npx vue-tsc --build --force` passes with **0 errors** · `npm run build` passes. On 2026-11-05 (`fix/code-cleanup-and-optimizations`) every page was opened in headless Chrome against a mock Supabase (light / dark, desktop / phone, admin / agent, skeleton and loaded states) with no Vue warnings, see 1.6. (Earlier, on `fix/bug-catches-and-rls-fixes`: the RLS hardening migration was checked on a local PostgreSQL 18 with 159 role-by-role tests.)
+> **Last verified against the code:** 2026-11-06 · branch `test/rls-handling-smoke-test` (RLS hardening smoke test run against the live project and passed; `Holiday` office hours: `day_enum` migration, setup step 12, and `updateDeveloper` keeps the old hours when a save is refused; on top of `600c308`) · `vue-tsc --build` passes with **0 errors** · `npm run build` passes. Earlier the same day: `fix/storage-upload-limits` (upload limits on the `images` / `fact_sheets` buckets, setup step 11; on top of `c0c3cf4`) and `fix/dependency-cleanup` (unused dependencies removed, `dompurify` 3.4.17, `npm audit fix`, `VITE_MAPBOX_TOKEN` in `.env.example`; on top of `41004ac`). On 2026-11-05 (`fix/code-cleanup-and-optimizations`) every page was opened in headless Chrome against a mock Supabase (light / dark, desktop / phone, admin / agent, skeleton and loaded states) with no Vue warnings, see 1.6. (Earlier, on `fix/bug-catches-and-rls-fixes`: the RLS hardening migration was checked on a local PostgreSQL 18 with 159 role-by-role tests.)
 >
-> **Supabase changes need manual steps.** Agent accounts (2026-11-04) need a migration, an Edge Function deploy and some dashboard settings. IT support tickets (2026-11-04) need one more migration, run after the agent accounts one. **RLS hardening (2026-11-05)** needs one more migration: deploy the frontend first, then run it (3.3 step 10). See [3.3 Supabase project setup](#33-supabase-project-setup-manual-steps). The team confirmed on 2026-11-05 that these migrations have been run (the `support_tickets` table exists). The skeleton / speed / cleanup branch changes **no** database objects.
+> **Supabase changes need manual steps.** Agent accounts (2026-11-04) need a migration, an Edge Function deploy and some dashboard settings. IT support tickets (2026-11-04) need one more migration, run after the agent accounts one. **RLS hardening (2026-11-05)** needs one more migration: deploy the frontend first, then run it (3.3 step 10). **Holiday office hours (2026-11-06)** need one small migration (3.3 step 12). See [3.3 Supabase project setup](#33-supabase-project-setup-manual-steps). The team confirmed on 2026-11-05 that the migrations up to step 10 have been run (the `support_tickets` table exists), and the RLS smoke test passed on the live project on 2026-11-06. The skeleton / speed / cleanup branch changes **no** database objects.
 >
 > **Related docs:** `documentation.md` (running log of changes, newest first) · `changelog.md` (early frontend notes, Dec 2025 to Jan 2026, historical only) · `README.md` (setup and branch naming).
 
@@ -225,6 +225,7 @@ Things that live in the Supabase project, not in the frontend build. Do them onc
 | 9 | Storage → **Policies** (or SQL: `select policyname, cmd, qual from pg_policies where schemaname = 'storage' and tablename = 'objects';`) | Make sure every older policy on `storage.objects` is limited to its own bucket (`bucket_id = 'images'` / `'fact_sheets'`). (Step 10 replaces the `images` / `fact_sheets` ones; a policy with **no** bucket condition still has to be removed by hand.) | Policies are OR-ed: a policy with no `bucket_id` condition would also open the private ticket screenshots to other users. |
 | 10 | **First deploy the frontend of 2026-11-05**, then SQL Editor | **RLS hardening:** run `supabase/migrations/20261105120000_harden_rls.sql` (safe to re-run, one transaction; needs step 1). It must not print any `WARNING` (a table without RLS, or a policy still open to anon). Checks: `select tablename, policyname, roles, cmd from pg_policies where schemaname in ('public','storage') order by 1, 2;` shows only `{authenticated}` policies; `select relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity;` returns no rows. | Replaces every open dev policy (9.7). The old frontend read `shared_listings` directly as a signed-out visitor, so running this before the new frontend is live breaks shared links until it is; the new frontend falls back to the old read while `get_shared_listing()` doesn't exist yet, so deploying it first is seamless. |
 | 11 | SQL Editor | **Upload limits:** run `supabase/migrations/20261106120000_storage_upload_limits.sql` (safe to re-run). Its last query must show `images` with `file_size_limit = 10485760` and the 8 image types, and `fact_sheets` with `20971520`. | Public buckets serve files by URL to anyone: no SVG (it can carry script) and no huge files. Only new uploads are checked. **Applied to the dev project on 2026-11-06.** |
+| 12 | SQL Editor | **Holiday office hours:** run `supabase/migrations/20261106130000_day_enum_holiday.sql` **on its own** (safe to re-run; any time, before or after the frontend). Check: `select enum_range(null::public.day_enum);` ends with `Holiday`. | The Add / Edit Developer office-hours picker offers Holiday, but `day_enum` had only Monday to Sunday. Until this runs, a slot with Holiday is refused ("invalid input value for enum day_enum") and the developer's other hours are kept. |
 
 Reset password email template (step 3), subject e.g. *Your MauRealty password code*:
 
@@ -240,6 +241,8 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
 **Smoke test for IT support tickets (step 8):** as an agent, open IT Support → Raise a Ticket → fill in a "Something isn't working" ticket with a screenshot → it appears as **Raised** in My Tickets, and Storage → `support_attachments` has a file under that user's uid folder. As another agent, the ticket is not listed. As an admin: All Tickets lists it → **Review** → **Resolve** (needs a note) → **Reopen**. Back as the agent: the ticket shows the admin's note, and a 4th open ticket is refused.
 
 **Smoke test for the RLS hardening (step 10):** in a private browser window (signed out), open a fresh shared listing link → the page shows the photos, price, map (places chips work) and FAQ; an expired link says it expired. As an **agent**: create a listing (it is Pending), edit it, share an active listing, record a sale (a single listing becomes Sold), edit then delete that pending sale (the listing is Active again), request payment on an approved, due tab, save Settings and Profile; Developer List shows no Add / Edit / Delete; Team Insights shows thresholds as text and no Promote; another agent's pending listing is not in the grid. As an **admin**: approve the pending listing, approve a sale (tabs are generated), approve / release a tab, add / edit / delete a developer with office hours and a poster, set a promotion threshold, edit and delete an agent. In the browser console nothing should fail with `42501` / "row-level security".
+
+**RLS smoke test result (2026-11-06): passed** on the live project, with the 2026-11-06 frontend run locally. Every step above was clicked through as a signed-out visitor, `test@agent.com` and `test@admin.com` (plus: the agent confirmed a released payment; the admin's Promote showed for eligible agents while agents saw "Eligible for ..."). The Supabase API logs had no 401 / 403 and no `42501` for the whole run. Every step was also replayed in SQL as the real users with RLS on, inside a transaction that was always rolled back (153 checks: signed out, login without an agents row, agent, another agent, admin). The test data was removed afterwards; deleting the test sale and developer left their payment-proof and developer-picture files in `images` (11.2, 11.4).
 
 ---
 
@@ -262,6 +265,7 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
 │  ├─ config.toml             Supabase CLI local config
 │  ├─ migrations/             Versioned schema changes (see 9.6), incl. 20261104160000_support_tickets.sql and
 │  │                          20261105120000_harden_rls.sql (real RLS on every table, guard triggers, shared listing function)
+│  │                          and 20261106130000_day_enum_holiday.sql (Holiday office hours)
 │  └─ functions/              Edge Functions (Deno, deployed by hand, see 3.3 and 9.8)
 │     └─ agent-account/index.ts  Creates/removes agent logins with the service-role key (admins only)
 └─ src/
@@ -851,9 +855,9 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   2. **Search** (header): filters the loaded developers in the browser by name, location, email or phone.
   - **Loading (since 2026-11-05):** 4 skeleton cards (`components/developer/DeveloperCardSkeleton.vue`, mirrors the card) until the first load finishes; reloads after a save or delete keep the current cards. Loaded with no developers and no search typed: "No developers to show." (it used to stay blank); "No developers match your search." waits for the first load.
   3. **Card:** picture, name, a static "Active" badge, phone, email, location, office hours, Recent Projects chips (click → `PropertyDetails` overlay, read-only, loaded on first open), Promotions thumbnails (click → lightbox `components/developer/PromoPosterModal.vue`; shows "Expired" or "Until" based on `valid_until`), Delete and Edit (admins, `canManage`) and Contact. The picture and the posters use `loading="lazy"` (cards below the screen don't download their images up front).
-  4. **Add / Edit modal (`addDeveloper.vue`):** name, location, phone, email, office-hour slots (a multi-select of Monday to Sunday plus Holiday, and open/close time or "Unavailable"), profile picture, and promo posters (new posters are staged with an optional title and valid-until date; saved posters can be removed). The form edits **copies** of the developer (the card doesn't change until it is saved). Fields are cleaned and required (name, location, a valid phone and email; poster titles cleaned, dates checked); errors show above Save.
+  4. **Add / Edit modal (`addDeveloper.vue`):** name, location, phone, email, office-hour slots (a multi-select of Monday to Sunday plus Holiday (Holiday needs 3.3 step 12), and open/close time or "Unavailable"), profile picture, and promo posters (new posters are staged with an optional title and valid-until date; saved posters can be removed). The form edits **copies** of the developer (the card doesn't change until it is saved). Fields are cleaned and required (name, location, a valid phone and email; poster titles cleaned, dates checked); errors show above Save.
      - **Add:** `addDeveloper` (inserts the developer and its `opening_days` rows; throws if either fails) → `uploadImage` → `updateDeveloper` with the image URL (rewrites `opening_days`) → `persistPromos` (upload and insert new posters, delete removed ones; throws if a poster fails).
-     - **Edit:** a newly chosen picture is uploaded first (a removed one is saved as removed) → `updateDeveloper` (update with a 0-rows check, then delete and reinsert `opening_days`) → `persistPromos`.
+     - **Edit:** a newly chosen picture is uploaded first (a removed one is saved as removed) → `updateDeveloper` (update with a 0-rows check, then upsert the new `opening_days` rows on `(id, day)` and delete the days no longer picked) → `persistPromos`. Since 2026-11-06 a refused office-hours save (e.g. Holiday before 3.3 step 12) keeps the developer's old hours and says so; before, the old hours were deleted first and lost.
      - Then the modal emits **`saved`**: the page closes it and reloads the list.
      - **Office hours** (`officeHourRows`): one row per day; slots without days, marked Unavailable or missing a time are skipped (the columns are NOT NULL `time`), and a day picked twice keeps the first slot.
   5. **Delete** (admins, after a `confirm()`): `deleteDeveloper` refuses a developer that listings still use, deletes `opening_days`, then the developer row (0 rows = error); promos cascade. The page waits for it, then reloads; failures show above the cards.
@@ -1168,7 +1172,8 @@ developers (dev_ID bigint PK identity, name varchar NN, contact_number varchar N
             profile_url text NN, available_days <enum>, open_hours time, close_hours time /* legacy, unused */,
             location text NN, website_url text)
 opening_days (id bigint NN → developers(dev_ID) /* the developer id; the PDF lists it as an identity column */,
-              day <day enum: Monday..Sunday, Holiday> NN, open_hours time NN, close_hours time NN,
+              day day_enum NN /* Monday..Sunday, Holiday (Holiday since 20261106130000) */,
+              open_hours time NN, close_hours time NN,
               PRIMARY KEY (id, day))
 developer_promos (promo_ID bigint PK, dev_ID bigint NN → developers ON DELETE CASCADE, image_url text, title text,
                   valid_until date /* NULL = no expiry */, created_at timestamptz default now())
@@ -1261,7 +1266,7 @@ support_tickets (ticket_ID bigint PK identity /* shown as #T-<id> */,
 | `sale_dp_divisions.payable_unit` | `months`, `quarters`, `years` |
 | `commissions.role` | `Agent`, `Upline 1`, `Upline 2`, `Upline 3` |
 | `commissions.status` | `pending_approval`, `approved`, `payment_requested`, `payment_released`, `received` (underscores) |
-| `opening_days.day` | `Monday` … `Sunday`, `Holiday` |
+| `opening_days.day` (`day_enum`) | `Monday` … `Sunday`, `Holiday` (`Holiday` added by `20261106130000_day_enum_holiday.sql`, 3.3 step 12; the live enum didn't have it before) |
 | `support_tickets.status` | `raised`, `in_review`, `resolved` (labels Raised / In Review / Resolved, `TICKET_STATUS_LABEL`) |
 | `support_tickets.category` | `bug`, `login_account`, `performance`, `data`, `feature_request`, `feedback`, `other` (labels in `TICKET_CATEGORIES`) |
 | `support_tickets.frequency` | `every_time`, `sometimes`, `once` |
@@ -1309,6 +1314,7 @@ Property type strings come in three forms: DB `house_and_lot`, form label `House
 | `20261104160000_support_tickets.sql` | Idempotent (check constraints dropped and re-added, `drop ... if exists` for policies and the trigger). Stops early if `current_agent_is_admin()` is missing. Function `current_agent_id()`; table `support_tickets` + check constraints + indexes; trigger `support_tickets_guard`; **real RLS** policies; `revoke all` from `anon`, `select/insert/update` for `authenticated`; private bucket `support_attachments` (5 MB, images only) + 3 storage policies; `support_tickets` added to `supabase_realtime`. No changes to existing tables. Ends with `notify pgrst`. **3.3 step 8.** |
 | `20261105120000_harden_rls.sql` | **RLS hardening.** One transaction, idempotent. Stops early if `current_agent_is_admin()` is missing. Helper functions `current_agent_id` (re-created), `can_manage_listing`, `can_edit_sale`, `can_manage_image`, `can_manage_fact_sheet`; guard triggers `agents_guard`, `main_listings_guard`, `commissions_guard`; drops **every** policy on the 19 app tables (whatever their names), enables RLS, `revoke all` from `anon`, grants `authenticated`, creates the real policies (9.7); drops the old open storage policies of `images` / `fact_sheets` (by name, plus any other policy mentioning those buckets) and creates new ones; functions `get_shared_listing(token)` (anon) and `team_completed_sales()`; ends with warnings for any public table without RLS or policy open to anon / public, and `notify pgrst`. No columns or tables change. Doesn't touch `support_tickets`, `support_attachments` or `agent_credentials`. **3.3 step 10** (deploy the frontend first). |
 | `20261106120000_storage_upload_limits.sql` | Idempotent. `images` bucket: allowed types PNG / JPEG / WEBP / GIF / HEIC / HEIF / AVIF (no SVG), 10 MB limit; `fact_sheets`: 20 MB limit. No tables, policies or existing files change. **3.3 step 11.** |
+| `20261106130000_day_enum_holiday.sql` | `Holiday` value on `day_enum` (after `Sunday`), for the developer office-hours picker. `ADD VALUE IF NOT EXISTS`, safe to re-run; run it on its own (a new enum value can't be used in the transaction that adds it). **3.3 step 12.** |
 
 Tables that existed before migrations were introduced (`agents`, `main_listings`, the sub-tables, `developers`, ...) have no migration file. Their shape is the PDF schema.
 
@@ -1521,7 +1527,7 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | `getDevelopers()` | Developers with office hours (grouped), 3 recent projects, promos | developerlist, PropertyManagement |
 | `getDeveloperNames()` | Sorted names | Listings, SalesUploadModal |
 | `addDeveloper(dev)` | Insert developer + `opening_days` (`officeHourRows`); returns `dev_ID`; throws a readable error if either fails | addDeveloper |
-| `updateDeveloper(dev, oldHours)` | Update (throws if 0 rows) + replace `opening_days` (throws on failure; `oldHours` is unused) | addDeveloper |
+| `updateDeveloper(dev, oldHours)` | Update (throws if 0 rows), then upsert the new `opening_days` rows on `(id, day)` and delete the days no longer picked (`not.in` over names from the fixed `days` list). A refused upsert changes nothing, so the old hours stay; throws a readable error either way. `oldHours` is unused | addDeveloper |
 | `uploadImage(devId, file)` | `images/developers/` → URL (`''` on error) | addDeveloper |
 | `deleteDeveloper(dev)` | Refuses (throws) if listings use the developer; deletes `opening_days`, then the developer (throws if 0 rows) | developerlist |
 | `officeHourRows(devId, slots)` | Module-private: one `opening_days` row per day; skips slots without days / times or marked Unavailable; first slot wins for a repeated day | internal |
@@ -1633,6 +1639,7 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 - **Deleting a sale deletes its commission history.** `commissions` and `sale_dp_divisions` cascade, so received commissions are deleted too. It also sets the listing back to `active` (after the delete since 2026-11-05).
 - Tabs are not regenerated when a sale is edited after approval (by design; see 7.11).
 - Proof-of-payment images are public URLs (the `images` bucket is public; the storage policies only control who uploads and deletes).
+- Deleting a sale (or cancelling it) leaves its proof-of-payment files in `images/payment-proofs/`; nothing in the app deletes them (found in the 2026-11-06 smoke test). Remove them in Storage by hand if needed.
 - An agent's Team Insights / tree hears about another agent's completed sale on the next focus or 60 s poll, not instantly (realtime applies RLS, 5.6).
 
 ### 11.3 Genealogy and agent accounts
@@ -1645,6 +1652,7 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 - The Contact button's event isn't handled (what it should do, email or call, isn't decided).
 - `developers.available_days`, `open_hours` and `close_hours` are unused (office hours live in `opening_days`). `reformatHours` is unused.
 - An office-hours slot marked "Unavailable" is not stored (the `opening_days` times are NOT NULL), so the day simply doesn't appear on the card. Showing "Unavailable" would need nullable times (a migration) and a mapping in `getDevelopers`.
+- Deleting a developer, or removing or replacing its picture, leaves the old picture file in `images/developers/` (only removed promo posters are deleted from storage, by `deletePromo`). Found in the 2026-11-06 smoke test.
 - Office hours are shown as stored, with seconds (`Mon, Tue • 08:00:00 - 17:00:00`). `developerService.ts` has an unused private `formatHours()` ("8:00 AM") that could format them; not changed on 2026-11-05 because it would change what users see.
 
 ### 11.5 Data-shape traps
@@ -1737,6 +1745,7 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 
 | `documentation.md` entry | Summary | See |
 |---|---|---|
+| 2026-11-06: RLS hardening smoke test, Holiday office hours | RLS smoke test (3.3 step 10) passed on the live project (browser + 153 rolled-back SQL checks); migration `20261106130000_day_enum_holiday.sql` (3.3 step 12); `updateDeveloper` saves office hours before removing dropped days, so a refused save keeps the old hours; leftover proof / developer picture files noted | Header, 3.3, 4, 7.15, 9.2, 9.3, 9.6, 10.1, 11.2, 11.4, 13.2 |
 | 2026-11-06: Upload limits for the public storage buckets | `images` accepts only raster images (no SVG) up to 10 MB; `fact_sheets` up to 20 MB; setup step 11; applied to the dev project | 3.3, 5.4, 9.6, 11.7 |
 | 2026-11-06: Dependency cleanup and security updates | Unused dependencies removed, `dompurify` 3.4.17, `npm audit fix` (13 → 2 build-time moderates), `VITE_MAPBOX_TOKEN` in `.env.example`. No code or database changes | 3, 3.1, 4, 11.8, 13.2 |
 | 2026-11-05: Skeleton loading, faster page loads, code cleanup | Skeletons on Sales Report, Developer List (`DeveloperCardSkeleton.vue`), Commissions, IT Support; every page lazy-loaded + background prefetch + stale-chunk reload; `PropertyDetails` loaded on first open; session read locally (`getSessionUser`); parallel sale numbering; `firstOpenPayment` map; lazy developer images; smaller login background and logos; font preconnect; login background path case fix; unique sidebar keys; debug logs, unused imports and duplicates removed; header comments everywhere. No database changes | 1.2, 1.3, 1.6, 4, 5.1, 5.2, 5.8, 7.1, 7.2, 7.4, 7.9, 7.12, 7.15, 7.21, 10, 11 |
@@ -1765,12 +1774,15 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 | `documentation.md` (2026-10-14): commission rate "admin-only edit" | Editable by anyone (the 2026-10-15 entry calls it "editable Commission Rate") |
 | PDF: commission status "Awaiting Approval" | DB value `pending_approval`; label "Pending Approval" on cards, "Awaiting Approval" on the filter tab |
 | `.env.example` lists 2 variables | 3 are required (`VITE_MAPBOX_TOKEN` too); `.env.example` lists all 3 since 2026-11-06 |
+| This file (9.2, 9.3, before 2026-11-06): `day_enum` includes `Holiday` | The live enum had only `Monday` … `Sunday`, so a Holiday slot failed to save (and wiped the developer's hours). `20261106130000_day_enum_holiday.sql` adds it (3.3 step 12) |
 
 ---
 
 ## 14. Changelog of this file
 
 Add one line per update, newest first: `YYYY-MM-DD: what changed (sections)`.
+
+- **2026-11-06:** RLS hardening smoke test passed on the live project (result under 3.3); `Holiday` office hours: migration `20261106130000_day_enum_holiday.sql` (new setup step 12) and `updateDeveloper` upserts the new hours before deleting dropped days (a refused save keeps the old hours); corrected the `day_enum` values; leftover payment-proof and developer-picture files listed as known issues (header, 3.3, 4, 7.15, 9.2, 9.3, 9.6, 10.1, 11.2, 11.4, 13.1, 13.2).
 
 - **2026-11-06:** Upload limits on the public buckets (migration `20261106120000_storage_upload_limits.sql`: `images` raster types only, no SVG, 10 MB; `fact_sheets` 20 MB), setup step 11, applied to the dev project (header, 3.3, 5.4, 9.6, 11.7, 13.1).
 
