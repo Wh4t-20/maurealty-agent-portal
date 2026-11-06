@@ -482,25 +482,15 @@ export const genealogyService = {
     return (data || []).map((row: any) => toAgent(row, new Map()));
   },
 
-  // Most-recently-hired agents, for the landing "Recently Added" list.
+  // Most-recently-hired agents, for the landing "Recently Added" list. Built from the shared graph
+  // (which already has every agent's hire_date) instead of a query of its own. Newest first,
+  // agents without a hire date last; hire_date is YYYY-MM-DD, so it sorts as text.
   async getRecentAgents(limit = 5): Promise<(GenealogyAgent & { hire_date: string | null })[]> {
-    const { data, error } = await supabase
-      .from('agents')
-      .select(`${AGENT_FIELDS}, hire_date`)
-      .order('hire_date', { ascending: false, nullsFirst: false })
-      .limit(limit);
-
-    if (error) {
-      console.error('Error fetching recent agents:', error);
-      throw error;
-    }
-
-    // positions are resolved lazily here; the table is usually empty so the UI
-    // falls back to positionMap anyway.
-    return (data || []).map((row: any) => ({
-      ...toAgent(row, new Map()),
-      hire_date: row.hire_date,
-    }));
+    const { agents, positions } = await fetchGraph();
+    return [...agents]
+      .sort((a, b) => (b.hire_date ?? '').localeCompare(a.hire_date ?? ''))
+      .slice(0, limit)
+      .map((row) => ({ ...toAgent(row, positions), hire_date: row.hire_date }));
   },
 
   // Create an agent WITH a login and (optionally) attach it under an upline. Admin-only.
