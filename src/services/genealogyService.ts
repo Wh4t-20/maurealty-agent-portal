@@ -264,7 +264,17 @@ function checkPlacement(
 // Each agent's own completed sales (sum of contract prices). Since the RLS migration an agent can
 // only read their own sales rows, so the totals come from the team_completed_sales() SQL function
 // (supabase/migrations/20261105120000_harden_rls.sql), which returns totals only.
-async function completedSalesByAgent(): Promise<Map<number, number>> {
+// Team Insights and the tree both ask for it as the page opens; like fetchGraph, a call that
+// starts while one is running shares it (the Map is only read).
+let completedSalesInFlight: Promise<Map<number, number>> | null = null;
+function completedSalesByAgent(): Promise<Map<number, number>> {
+  if (!completedSalesInFlight) {
+    completedSalesInFlight = loadCompletedSalesByAgent().finally(() => { completedSalesInFlight = null; });
+  }
+  return completedSalesInFlight;
+}
+
+async function loadCompletedSalesByAgent(): Promise<Map<number, number>> {
   const own = new Map<number, number>();
   const { data, error } = await supabase.rpc('team_completed_sales');
   if (!error) {
