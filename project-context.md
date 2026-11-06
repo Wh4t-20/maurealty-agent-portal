@@ -2,9 +2,9 @@
 
 > **What this file is:** the single reference for how the Maureal Realty and Brokerage (MRB) web portal works today: its features, the processes behind them, and where each piece of logic lives in the code. It is written for AI assistants and for the dev team.
 >
-> **Last verified against the code:** 2026-11-06 · branch `test/rls-handling-smoke-test` (RLS hardening smoke test run against the live project and passed; `Holiday` office hours: `day_enum` migration, setup step 12, and `updateDeveloper` keeps the old hours when a save is refused; on top of `600c308`) · `vue-tsc --build` passes with **0 errors** · `npm run build` passes. Earlier the same day: `fix/storage-upload-limits` (upload limits on the `images` / `fact_sheets` buckets, setup step 11; on top of `c0c3cf4`) and `fix/dependency-cleanup` (unused dependencies removed, `dompurify` 3.4.17, `npm audit fix`, `VITE_MAPBOX_TOKEN` in `.env.example`; on top of `41004ac`). On 2026-11-05 (`fix/code-cleanup-and-optimizations`) every page was opened in headless Chrome against a mock Supabase (light / dark, desktop / phone, admin / agent, skeleton and loaded states) with no Vue warnings, see 1.6. (Earlier, on `fix/bug-catches-and-rls-fixes`: the RLS hardening migration was checked on a local PostgreSQL 18 with 159 role-by-role tests.)
+> **Last verified against the code:** 2026-11-06 · branch `fix/smoke-test-follow-ups` (sales keep their upline and incentives as recorded (setup step 13), login email follows email edits (`sync-login-email`, step 2 redeploy), developer images removed with the developer / when replaced, Genealogy loads shared (24 → 7 requests), live refresh stops on sign-out, Esc closes the listing overlay, office hours without seconds; on top of `31dd0a2`; checked in the browser against the live project) · `vue-tsc --build` passes with **0 errors** · `npm run build` passes. Earlier the same day: `test/rls-handling-smoke-test` (RLS hardening smoke test run against the live project and passed; `Holiday` office hours: `day_enum` migration, setup step 12, and `updateDeveloper` keeps the old hours when a save is refused; on top of `600c308`) · `vue-tsc --build` passes with **0 errors** · `npm run build` passes. Earlier the same day: `fix/storage-upload-limits` (upload limits on the `images` / `fact_sheets` buckets, setup step 11; on top of `c0c3cf4`) and `fix/dependency-cleanup` (unused dependencies removed, `dompurify` 3.4.17, `npm audit fix`, `VITE_MAPBOX_TOKEN` in `.env.example`; on top of `41004ac`). On 2026-11-05 (`fix/code-cleanup-and-optimizations`) every page was opened in headless Chrome against a mock Supabase (light / dark, desktop / phone, admin / agent, skeleton and loaded states) with no Vue warnings, see 1.6. (Earlier, on `fix/bug-catches-and-rls-fixes`: the RLS hardening migration was checked on a local PostgreSQL 18 with 159 role-by-role tests.)
 >
-> **Supabase changes need manual steps.** Agent accounts (2026-11-04) need a migration, an Edge Function deploy and some dashboard settings. IT support tickets (2026-11-04) need one more migration, run after the agent accounts one. **RLS hardening (2026-11-05)** needs one more migration: deploy the frontend first, then run it (3.3 step 10). **Holiday office hours (2026-11-06)** need one small migration (3.3 step 12). See [3.3 Supabase project setup](#33-supabase-project-setup-manual-steps). The team confirmed on 2026-11-05 that the migrations up to step 10 have been run (the `support_tickets` table exists); on 2026-11-06 the RLS smoke test passed on the live project and step 12 was run there. The skeleton / speed / cleanup branch changes **no** database objects.
+> **Supabase changes need manual steps.** Agent accounts (2026-11-04) need a migration, an Edge Function deploy and some dashboard settings. IT support tickets (2026-11-04) need one more migration, run after the agent accounts one. **RLS hardening (2026-11-05)** needs one more migration: deploy the frontend first, then run it (3.3 step 10). **Holiday office hours (2026-11-06)** need one small migration (3.3 step 12). See [3.3 Supabase project setup](#33-supabase-project-setup-manual-steps). The team confirmed on 2026-11-05 that the migrations up to step 10 have been run (the `support_tickets` table exists); on 2026-11-06 the RLS smoke test passed on the live project and steps 11, 12 and 13 were run there, and the `agent-account` function was redeployed (step 2) with `sync-login-email`. The skeleton / speed / cleanup branch changes **no** database objects.
 >
 > **Related docs:** `documentation.md` (running log of changes, newest first) · `changelog.md` (early frontend notes, Dec 2025 to Jan 2026, historical only) · `README.md` (setup and branch naming).
 
@@ -215,7 +215,7 @@ Things that live in the Supabase project, not in the frontend build. Do them onc
 | # | Where (Supabase dashboard) | What | Why |
 |---|---|---|---|
 | 1 | SQL Editor | Run `supabase/migrations/20261104120000_agent_accounts.sql` (safe to re-run). If it fails with *schema "vault" does not exist*, enable **Integrations → Vault** and run it again. Check: `select name from vault.secrets where name = 'agent_password_key';` returns one row. | Creates `agent_credentials`, the Vault key, the SQL functions and the `auth.users` trigger (9.7). |
-| 2 | Edge Functions → **Deploy a new function → Via editor** | Name it exactly **`agent-account`**, paste `supabase/functions/agent-account/index.ts`, Deploy. (CLI alternative: `supabase functions deploy agent-account --project-ref <ref>`.) Leave **Verify JWT** on; if calls fail with 401 *Invalid JWT* (projects on the new JWT signing keys), turn it off for this function: the function still checks the caller itself. | Creates logins with the service-role key (9.8). Until it is deployed, Add Agent shows "The agent-account Edge Function is not deployed yet". |
+| 2 | Edge Functions → **Deploy a new function → Via editor** | Name it exactly **`agent-account`**, paste `supabase/functions/agent-account/index.ts`, Deploy. (CLI alternative: `supabase functions deploy agent-account --project-ref <ref>`.) Leave **Verify JWT** on; if calls fail with 401 *Invalid JWT* (projects on the new JWT signing keys), turn it off for this function: the function still checks the caller itself. | Creates logins with the service-role key (9.8). Until it is deployed, Add Agent shows "The agent-account Edge Function is not deployed yet". **Redeploy after 2026-11-06** (adds `sync-login-email`); until then an email edit saves but says the function needs to be redeployed. Redeployed on the dev project on 2026-11-06 (version 2). |
 | 3 | Authentication → Emails → **Templates → Reset password** | Make the email contain the code `{{ .Token }}` (template below). Remove `{{ .ConfirmationURL }}` so nobody signs in through a link without changing their password. | The change-password modal asks for the **code**; the default template only has a link. |
 | 4 | Authentication → **Sign In / Providers → Email** | Optional: *Email OTP Expiration* (default 3600 s) and *Email OTP Length* (the modal accepts 6–10 digits). | Code lifetime and length. |
 | 5 | Authentication → Emails → **SMTP Settings**, then **Rate Limits** | Set up a custom SMTP sender (company mail, Resend, SendGrid, ...) and raise *emails per hour*. | Supabase's built-in sender only delivers to members of the Supabase team and allows only a few emails per hour, so agents would not receive their codes. |
@@ -226,6 +226,7 @@ Things that live in the Supabase project, not in the frontend build. Do them onc
 | 10 | **First deploy the frontend of 2026-11-05**, then SQL Editor | **RLS hardening:** run `supabase/migrations/20261105120000_harden_rls.sql` (safe to re-run, one transaction; needs step 1). It must not print any `WARNING` (a table without RLS, or a policy still open to anon). Checks: `select tablename, policyname, roles, cmd from pg_policies where schemaname in ('public','storage') order by 1, 2;` shows only `{authenticated}` policies; `select relname from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity;` returns no rows. | Replaces every open dev policy (9.7). The old frontend read `shared_listings` directly as a signed-out visitor, so running this before the new frontend is live breaks shared links until it is; the new frontend falls back to the old read while `get_shared_listing()` doesn't exist yet, so deploying it first is seamless. |
 | 11 | SQL Editor | **Upload limits:** run `supabase/migrations/20261106120000_storage_upload_limits.sql` (safe to re-run). Its last query must show `images` with `file_size_limit = 10485760` and the 8 image types, and `fact_sheets` with `20971520`. | Public buckets serve files by URL to anyone: no SVG (it can carry script) and no huge files. Only new uploads are checked. **Applied to the dev project on 2026-11-06.** |
 | 12 | SQL Editor | **Holiday office hours:** run `supabase/migrations/20261106130000_day_enum_holiday.sql` **on its own** (safe to re-run; any time, before or after the frontend). Check: `select enum_range(null::public.day_enum);` ends with `Holiday`. | The Add / Edit Developer office-hours picker offers Holiday, but `day_enum` had only Monday to Sunday. Until this runs, a slot with Holiday is refused ("invalid input value for enum day_enum") and the developer's other hours are kept. |
+| 13 | SQL Editor | **Sales snapshot:** run `supabase/migrations/20261106150000_sales_snapshot.sql` (safe to re-run; any time). Its last query must show `sales_without_snapshot = 0` and `trigger_count = 1`. | Each sale keeps its listing incentives and the seller's upline as they were when it was recorded (`sales_snapshot` trigger); existing sales get today's values. Until it runs, the Sales Report falls back to reading both live, as before. **Applied to the dev project on 2026-11-06.** |
 
 Reset password email template (step 3), subject e.g. *Your MauRealty password code*:
 
@@ -463,7 +464,7 @@ The `images` and `fact_sheets` files are served through **public URLs** (`getPub
 
 1. Subscribes to Supabase realtime `postgres_changes` on each listed table and calls a debounced `reload`.
 2. Also reloads when the window regains focus or the tab becomes visible, and every 60 s while visible. This covers tables that are not in the realtime publication.
-3. Cleans up on unmount.
+3. Cleans up on unmount, and **stops on sign-out** (`SIGNED_OUT`, since 2026-11-06); a reload that is already queued checks for a session first. Logout signs out before it leaves the page, and a reload in that gap (the Logout click refocuses the window) used to run every query as a signed-out visitor: about 40 refused requests (401 / 42501) on the Genealogy page.
 
 | Used by | Tables |
 |---|---|
@@ -618,6 +619,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
     - **APPROVE**: admin, pending listing → `updateListingStatus(id, 'active')`; a refused approval shows a red toast.
     - **readOnly** (Developer List): EDIT, DELETE, SOLD and APPROVE are hidden (that page doesn't handle them).
     - **FACT SHEET**: downloads the file as a blob, stripping the `{id}-{ts}-` prefix from its name; falls back to opening it in a new tab.
+  - **Esc** (since 2026-11-06) closes the top layer: the fullscreen map first (`MapHolder`), then the calculator popup, then the overlay (`onKeydown`).
 - **Also reused by:** `developerlist.vue`, which opens the same overlay read-only from a developer's "Recent Projects".
 - **Data:** R `main_listings` + `property_type`, `agents`, `developers`, `listing_images`, sub-tables. W `main_listings.status`, deletes.
 - **Code:** `src/views/Listings.vue`, `components/listings/{PropertyCard,PropertyDetails,ListingsFilter,MapHolder}.vue`, `listingsService.getListings/getListingById/getAgentFromListing/updateListingStatus/deleteListing`, `developerService.getDeveloperNames`.
@@ -692,7 +694,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   1. The map shows chips for Hospitals, Schools, Police, Pharmacies, Fire Stations and Supermarkets.
   2. The first time a chip is toggled on, `poiService.getNearbyPois(listingId, lng, lat)` runs. It returns the cached `main_listings.nearby_pois` if that is under 30 days old (and has the right shape, `isNearbyPois`); otherwise it calls the Mapbox Search Box category API once per category (up to 5 results each, one call after another), saves the result to the cache, and returns it. The shared page passes `{ cached, persist: false }` instead (7.7).
   3. The markers' popups show the name and the distance (`haversineKm`). They are built with DOM nodes and `textContent` (`popupContent`, `setDOMContent`), never an HTML string, so a place name can't run script; places without finite coordinates are skipped.
-  4. "Expand Map" toggles a full-screen view.
+  4. "Expand Map" toggles a full-screen view; **Esc** leaves it (since 2026-11-06; handled in the capture phase and stopped, so the listing overlay underneath stays open).
 - **Defaults:** if a listing has no coordinates, the map falls back to Fuente Osmeña, Cebu (`123.8931, 10.3099`). The style is `streets-v12`.
 - **Data:** R/W `main_listings.nearby_pois` (jsonb `{ fetched_at, categories: { [id]: [{ name, lng, lat }] } }`).
 - **Code:** `src/services/poiService.ts` (`POI_CATEGORIES`, `haversineKm`, `getNearbyPois`), `components/listings/MapHolder.vue`, `components/listings/MapInteractive.vue`.
@@ -710,11 +712,12 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   5. Sortable table (reservation date, client, contract price, gross), 12 per page. ⚠ marks rows with no gross commission. Edit and delete icons appear on hover when `canEditSale` (admin, or status `pending approval`).
   6. **Sale Details** popup (`components/sales/SaleDetailsModal.vue`; props `sale`, `isAdmin`, `canEdit`; emits `close`, `edit`, `delete`; it loads its own data):
      - client, developer, project, agent and upline chain (admin, 2 levels), reservation date, contract price, commissionable amount, financing, payment scheme, commission rate, DP figures and divisions, sale number, status, gross/net commission, remarks, incentives;
+     - **since 2026-11-06** the upline ("· when the sale was recorded") and the incentives are the ones saved with the sale (`sales.upline_snapshot`, `agent_incentive`, `realty_incentive`, filled by the `sales_snapshot` trigger, 9.7), so later genealogy moves or listing edits no longer rewrite past sales or the CSV export. Before setup step 13 has run, both are read live as before (`getSales` falls back when the columns are missing);
      - **Property Details**: from `sales.unit_details` for bulk sales, otherwise from the listing's sub-table (normalized), with a property-type badge.
   7. **Export**: CSV of the filtered, sorted rows (`sales-report-YYYY-MM-DD.csv`); text cells starting with `= + - @` get a leading `'` so spreadsheets don't run them as formulas.
   8. **Delete**: `confirm()` → `salesService.deleteSale` (this cascades, see 11.2) → then set the listing back to `active`. (Since 2026-11-05 the sale is deleted first, so a refused delete changes nothing; if the listing can't be reactivated the toast says so.)
 - **Data:** R `sales` + `agents`, `main_listings` (title, incentives, developer), `sale_dp_divisions`, `genealogy`, listing sub-tables. W `sales` (delete), `main_listings.status`.
-- **Code:** `src/views/SalesReport.vue` (`canEditSale`, `confirmDelete`, `csvCell`), `components/sales/SaleDetailsModal.vue`, `utils/saleStatus.ts` (`saleStatusClass`), `salesService.getSales/getDpDivisions/deleteSale`, `listingsService.getListingPropertyType/getListingById/updateListingStatus`, `genealogyService.getUplineChain`.
+- **Code:** `src/views/SalesReport.vue` (`canEditSale`, `confirmDelete`, `csvCell`), `components/sales/SaleDetailsModal.vue` (`uplineFromSnapshot`), `utils/saleStatus.ts` (`saleStatusClass`), `salesService.getSales/getDpDivisions/deleteSale` (`SALE_SELECT`, fallback `SALE_SELECT_LIVE_INCENTIVES`), `listingsService.getListingPropertyType/getListingById/updateListingStatus`, `genealogyService.getUplineChain` (only without a snapshot).
 
 ### 7.10 Sale form: create, confirm (Sold) and edit
 - **Component:** `src/components/sales/SalesUploadModal.vue`, used in three modes:
@@ -739,7 +742,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   - **Gross Commission** (read-only) = Commissionable Amount × Commission Rate ÷ 100.
   - **Sale Status** (Edit mode only; editable by admins only): `pending approval`, `awaiting payment`, `complete`, `cancelled`.
   - Remarks (placeholder hint by type: "Floor 12, Unit 1205" for condos, "Block 5, Lot 12, Phase 2" for house/lot).
-  - Listing Incentives (read-only, from the listing).
+  - Listing Incentives (read-only): in Create / Confirm, the listing's current ones (the sale keeps them when it is recorded); in **Edit**, since 2026-11-06, the ones saved with the sale ("Incentives (when the sale was recorded)", `shownIncentives`), not whatever the listing says today.
   - **Specific Unit Details (bulk sale):** the per-type unit fields, including block/lot/phase for house and lot and **Floor** for condos. They are prefilled from the listing and saved to `sales.unit_details` (jsonb). In Confirm (Sold) and Edit mode the form loads its one listing (`listingsService.getListingSummary`) so this section, its prefill (Sold) and the incentives box work; an edit keeps the sale's saved `unit_details` (it used to save `null`).
   - Hidden (commented out): Net Commission, Voucher Series.
 - **Field checks (`validateSaleFields`, before the scheme check):** a project is chosen, the client name isn't empty after `cleanText`, a valid reservation date, a contract price above 0, no negative commissionable amount, a commission rate from 0 to 100%. Client name, remarks and voucher series are saved through `cleanText`.
@@ -818,7 +821,8 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
      - Active Teams: root agents, meaning agents with no upline.
      - New This Month: `hire_date` in the current month.
   3. **Teams:** one entry per root agent with its subtree size.
-  4. **Recently Added:** 5 agents, newest `hire_date` first.
+  4. **Recently Added:** 5 agents, newest `hire_date` first (since 2026-11-06 built from the shared graph, no query of its own).
+  - **Loading (since 2026-11-06):** the stats, Teams, Recently Added, the tree and Team Insights all start at once; calls that start while one is running share it (`fetchGraph`, `team_completed_sales`, `authService.getCurrentAgent`). The page went from about 24 requests to 7 (agents + genealogy + positions once, the totals RPC once, `getAgents`, the signed-in agent); requests that were queued behind the duplicates finish in about 0.2 s instead of 1.5–2.2 s. Nothing is cached after a load finishes, so live refreshes read fresh data. After an add, edit or delete the page also reloads Team Insights (`insights.reload()`), which used to keep the old roster until the next realtime event or 60 s poll.
   5. **Manage Agents** (Edit / Delete buttons for admins only): Edit opens `AddAgentModal` in edit mode. Delete (hidden on the admin's own row) calls `deleteAgent`, which is **blocked** if the agent has sales, listings or share links; otherwise their direct downlines move up to the deleted agent's upline (or become roots), the edges are removed, the agent row is deleted (`.select()` check), and **their login is removed** (`accountService.deleteLogin` → Edge Function).
   6. **Roles, Overrides and Promotion** (`TeamInsights`, 7.14).
   7. **Tree** (`genealogymodal.vue`, titled "Agent Genealogy"): Vue Flow with a top-to-bottom dagre layout. Each node shows the name, position, commission rate %, accumulated sales and "% to next" rank. It redraws on sales changes and is remounted (`reloadKey`) after edits.
@@ -857,10 +861,11 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   3. **Card:** picture, name, a static "Active" badge, phone, email, location, office hours, Recent Projects chips (click → `PropertyDetails` overlay, read-only, loaded on first open), Promotions thumbnails (click → lightbox `components/developer/PromoPosterModal.vue`; shows "Expired" or "Until" based on `valid_until`), Delete and Edit (admins, `canManage`) and Contact. The picture and the posters use `loading="lazy"` (cards below the screen don't download their images up front).
   4. **Add / Edit modal (`addDeveloper.vue`):** name, location, phone, email, office-hour slots (a multi-select of Monday to Sunday plus Holiday (Holiday needs 3.3 step 12), and open/close time or "Unavailable"), profile picture, and promo posters (new posters are staged with an optional title and valid-until date; saved posters can be removed). The form edits **copies** of the developer (the card doesn't change until it is saved). Fields are cleaned and required (name, location, a valid phone and email; poster titles cleaned, dates checked); errors show above Save.
      - **Add:** `addDeveloper` (inserts the developer and its `opening_days` rows; throws if either fails) → `uploadImage` → `updateDeveloper` with the image URL (rewrites `opening_days`) → `persistPromos` (upload and insert new posters, delete removed ones; throws if a poster fails).
-     - **Edit:** a newly chosen picture is uploaded first (a removed one is saved as removed) → `updateDeveloper` (update with a 0-rows check, then upsert the new `opening_days` rows on `(id, day)` and delete the days no longer picked) → `persistPromos`. Since 2026-11-06 a refused office-hours save (e.g. Holiday before 3.3 step 12) keeps the developer's old hours and says so; before, the old hours were deleted first and lost.
+     - **Edit:** a newly chosen picture is uploaded first (a removed one is saved as removed) → `updateDeveloper` (update with a 0-rows check, then upsert the new `opening_days` rows on `(id, day)` and delete the days no longer picked) → `persistPromos`. Since 2026-11-06 a refused office-hours save (e.g. Holiday before 3.3 step 12) keeps the developer's old hours and says so; before, the old hours were deleted first and lost. Also since 2026-11-06: once the edit is saved, the **previous picture's file is removed** when it was replaced or removed (`removeReplacedImage`); a picture uploaded for a save that then fails is removed again (`discardUploadedImage`); a removed poster's row is deleted first and its file only after that (`deletePromo`, 0 rows = kept).
      - Then the modal emits **`saved`**: the page closes it and reloads the list.
      - **Office hours** (`officeHourRows`): one row per day; slots without days, marked Unavailable or missing a time are skipped (the columns are NOT NULL `time`), and a day picked twice keeps the first slot.
-  5. **Delete** (admins, after a `confirm()`): `deleteDeveloper` refuses a developer that listings still use, deletes `opening_days`, then the developer row (0 rows = error); promos cascade. The page waits for it, then reloads; failures show above the cards.
+  5. **Delete** (admins, after a `confirm()`): `deleteDeveloper` refuses a developer that listings still use, deletes `opening_days`, then the developer row (0 rows = error); promos cascade. Since 2026-11-06 the developer's picture and poster **files** are then removed from the `images` bucket too (best effort, logged; they used to stay, reachable by URL). The page waits for it, then reloads; failures show above the cards.
+  - **Office hours display:** the card shows `8:00 AM - 5:00 PM` (`formatClockTime`, `src/utils/clockTime.ts`, since 2026-11-06); it used to print the raw `08:00:00`.
 - **Data:** R/W `developers`, `opening_days` (`id` = `dev_ID`), `developer_promos`; R `main_listings`; storage `images/developers/`, `images/developer_promos/`.
 - **Code:** `src/views/developerlist.vue` (`isAdmin`, `searchQuery`, `filteredDevelopers`, `onDeveloperSaved`, `handleDeleteDeveloper`), `components/developer/{developerCard,addDeveloper,PromoPosterModal}.vue`, `src/services/developerService.ts`, `src/assets/classes/developers.ts` (`days` list).
 - **Rules and edge cases:** a few rough edges remain (11.4).
@@ -881,7 +886,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   1. `getCurrentAgentProfile()` → `ProfileCard` shows the name (+ admin badge), sex, age (computed from the birth date), birth date, address, contact, email, agent ID, position and hire date.
   2. **EDIT** → `ProfileEdit`: first/middle/last name, sex (Male, Female, Non-Binary, Other), birth date, address, contact number, email, and the profile picture (Upload/Change, Delete, Revert).
   3. Save: every field is cleaned and checked like Add Agent (`cleanForm`: names, address, contact number, email, a real date of birth not in the future; errors show under the form). If a new picture was chosen, `uploadProfileImage` (to `images/agents/<own id>-...`); then `updateProfile` with all fields **including `home_address`** (it was never saved before 2026-11-05) and `age` recomputed; only after a successful save is the old picture deleted (a removed picture is saved as `null`); a failed save removes the newly uploaded picture again → `router.go(0)` (full reload).
-- **Rules:** position, hire date and admin access can't be edited here; they are edited from Genealogy → Manage Agents. Changing the email here doesn't change the Supabase Auth login email (11.3). Passwords are changed from the Login page or the Dashboard reminder (7.20), not here.
+- **Rules:** position, hire date and admin access can't be edited here; they are edited from Genealogy → Manage Agents. Since 2026-11-06 a new email is also the new **login email**: after the profile is saved, `accountService.syncLoginEmail(own id)` → `agent-account` `sync-login-email` (a note under the field says so; if that step fails the form says the profile was saved but the sign-in email was not, and doesn't reload). Passwords are changed from the Login page or the Dashboard reminder (7.20), not here.
 - **Code:** `src/views/Profile.vue`, `components/profile/{ProfileCard,ProfileEdit}.vue`, `agentService.*`.
 
 ### 7.18 Settings
@@ -905,7 +910,7 @@ Listing `description` and `faq` are written in Markdown. They are rendered with 
   - **Changed by the agent:** "Changed by the agent on <date>"; the stored copy was deleted, nothing to reveal.
   - **Login linked by hand** before this feature (no `agent_credentials` row): "can't be shown"; the agent can use "Forgot or change password?".
   - **No login:** "Create a login with this email when I save" → after the fields are saved, `accountService.createLoginForAgent(id, password)` → Edge Function `create-login` (uses the saved `agents.email_address`, links `user_id` only if still null). Then the Login Created screen.
-  - If the email field no longer matches the login email, a note says the login email does not change (11.3).
+  - If the email field no longer matches the login email, a note says saving also changes the login email. **Since 2026-11-06** the save does: after the fields are saved, `accountService.syncLoginEmail(id)` → Edge Function `sync-login-email` sets the login email to the saved `email_address` (`email_confirm`, no email sent; refused with 409 if another login uses it). A failure says the changes were saved but the login email was not.
 - **Flow (delete):** `genealogyService.deleteAgent` → after the agent row is gone, `accountService.deleteLogin(user_id)` → Edge Function `delete-login` (refuses the caller's own login and any login an agent still uses). `agent_credentials` goes with the agent (cascade).
 - **Data:** W `auth.users` (Edge Function), `agents`, `genealogy`, `agent_credentials`; R the same through `admin_get_agent_login`. Vault secret `agent_password_key`.
 - **Code:** `components/genealogy/AddAgentModal.vue` (`initialPassword`, `regeneratePassword`, `cleanForm`, `loadLogin`, `revealPassword`, `createLogin`, `created`), `components/genealogy/PasswordReveal.vue`, `accountService.*`, `genealogyService.addAgent/deleteAgent`, `src/utils/password.ts`, `src/utils/sanitize.ts`, `supabase/functions/agent-account/index.ts`, `supabase/migrations/20261104120000_agent_accounts.sql`.
@@ -1215,7 +1220,10 @@ sales (sale_ID bigint PK identity, agent_ID int NN → agents /* the seller */, 
        financing text CHECK IN ('Pag-ibig','Banking','In-House with Interest') /* DP only */,
        payment_scheme text CHECK IN ('DP','Spot-Cash','Deferred-Cash'),
        dp_rate numeric(5,2) CHECK (>0 AND <=100), dp_amount numeric(14,2), remaining_balance numeric(14,2),
-       completed_at timestamptz, created_at timestamptz default now())
+       completed_at timestamptz, created_at timestamptz default now(),
+       agent_incentive text, realty_incentive text /* the listing's, when the sale was recorded */,
+       upline_snapshot jsonb /* seller's upline chain then, nearest first, 2 levels; all three set by
+                                the sales_snapshot trigger on insert and kept on update (9.7) */)
 sale_dp_divisions (division_ID bigint PK identity, sale_ID bigint NN → sales ON DELETE CASCADE, division_no int NN,
                    rate numeric(5,2) NN CHECK (>0 AND <=100), payable_count int NN CHECK (>0),
                    payable_unit text NN default 'months' CHECK IN ('months','quarters','years'),
@@ -1315,6 +1323,7 @@ Property type strings come in three forms: DB `house_and_lot`, form label `House
 | `20261105120000_harden_rls.sql` | **RLS hardening.** One transaction, idempotent. Stops early if `current_agent_is_admin()` is missing. Helper functions `current_agent_id` (re-created), `can_manage_listing`, `can_edit_sale`, `can_manage_image`, `can_manage_fact_sheet`; guard triggers `agents_guard`, `main_listings_guard`, `commissions_guard`; drops **every** policy on the 19 app tables (whatever their names), enables RLS, `revoke all` from `anon`, grants `authenticated`, creates the real policies (9.7); drops the old open storage policies of `images` / `fact_sheets` (by name, plus any other policy mentioning those buckets) and creates new ones; functions `get_shared_listing(token)` (anon) and `team_completed_sales()`; ends with warnings for any public table without RLS or policy open to anon / public, and `notify pgrst`. No columns or tables change. Doesn't touch `support_tickets`, `support_attachments` or `agent_credentials`. **3.3 step 10** (deploy the frontend first). |
 | `20261106120000_storage_upload_limits.sql` | Idempotent. `images` bucket: allowed types PNG / JPEG / WEBP / GIF / HEIC / HEIF / AVIF (no SVG), 10 MB limit; `fact_sheets`: 20 MB limit. No tables, policies or existing files change. **3.3 step 11.** |
 | `20261106130000_day_enum_holiday.sql` | `Holiday` value on `day_enum` (after `Sunday`), for the developer office-hours picker. `ADD VALUE IF NOT EXISTS`, safe to re-run; run it on its own (a new enum value can't be used in the transaction that adds it). **3.3 step 12.** |
+| `20261106150000_sales_snapshot.sql` | Idempotent. `sales.agent_incentive`, `realty_incentive` (text) and `upline_snapshot` (jsonb); function `sale_upline_snapshot(agent_id)` (2-level chain, executable by no API role); backfill of existing sales with today's values (before the trigger exists); function + trigger `sales_snapshot` (9.7). Ends with `notify pgrst` and a check query. **3.3 step 13.** |
 
 Tables that existed before migrations were introduced (`agents`, `main_listings`, the sub-tables, `developers`, ...) have no migration file. Their shape is the PDF schema.
 
@@ -1343,6 +1352,8 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | `commissions_guard()` + trigger `commissions_guard` (`before update on commissions`) | trigger only | Non-admins (the recipient, per RLS) only `approved → payment_requested` (+ `request_details`; earlier payments of the sale for that person must be `received`; `requested_at = now()`) and `payment_released → received` (`claimed = true`, `claimed_at = now()`); nothing else | every update of `commissions` |
 | `get_shared_listing(p_token uuid)` → jsonb | **anon**, authenticated | The listing behind a valid, unexpired share link that isn't pending / draft: public listing fields, sub-table rows, photos (by `display_order`), agent first / last name, developer name, `nearby_pois`. Never commission, incentives, fact sheet, ids of the owner / developer or contact details. Raises "invalid or has been removed" / "expired" / "not yet available" | `shareService.getSharedListing` |
 | `team_completed_sales()` → table (`agent_ID`, `completed_sales`) | authenticated (agents) | Sum of `total_contract_price` of each agent's `complete` sales (totals only) | `genealogyService.getTeamInsights` |
+| `sale_upline_snapshot(p_agent_id integer)` → jsonb | **none** of the API roles (owner only) | The agent's upline chain, nearest first, 2 levels: `[{ agent_ID, first_name, middle_name, last_name, position_ID, position }]`, cycle-guarded | `sales_snapshot`, the migration's backfill (`20261106150000_sales_snapshot.sql`) |
+| `sales_snapshot()` + trigger `sales_snapshot` (`before insert or update on sales`) | trigger only | Insert: `agent_incentive` / `realty_incentive` from the listing and `upline_snapshot` from the genealogy, replacing whatever the browser sent. Update: keeps the three columns as they were (edits, admins included, can't change them). Commission tabs are unaffected (still from the chain at approval, 7.11) | every write to `sales` |
 
 **Table policies** (all `to authenticated`; "agents" = a signed-in user with an agents row, `current_agent_id() is not null`; "admin" = `current_agent_is_admin()`; `anon` has no table privileges):
 
@@ -1370,13 +1381,13 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 
 | Function | Auth | Actions (POST JSON `{ action, ... }`) | Writes | Called from |
 |---|---|---|---|---|
-| `agent-account` (`index.ts`, Deno, `npm:@supabase/supabase-js@2`, service-role client) | Bearer token of a signed-in agent with `admin_access = true` (checked with `auth.getUser(token)` + `agents`); otherwise 401/403. CORS allows any origin (the token is the protection). | `create` `{ agent, uplineId, password }` → `{ agent_ID, user_id, email }`; `create-login` `{ agentId, password }` → same; `delete-login` `{ userId }` → `{ deleted }` | `auth.users` (admin API), `agents` (whitelisted columns only: names, sex, dates, contact, email, address, position, admin flag, configs; `age` derived on the server), `genealogy`, `agent_credentials` (via RPC) | `accountService.createAgentWithLogin/createLoginForAgent/deleteLogin` |
+| `agent-account` (`index.ts`, Deno, `npm:@supabase/supabase-js@2`, service-role client) | Bearer token of a signed-in agent (checked with `auth.getUser(token)` + `agents`, `requireAgent`); `create`, `create-login` and `delete-login` also need `admin_access = true` (`requireAdmin`); otherwise 401/403. CORS allows any origin (the token is the protection). | `create` `{ agent, uplineId, password }` → `{ agent_ID, user_id, email }`; `create-login` `{ agentId, password }` → same; `delete-login` `{ userId }` → `{ deleted }`; **`sync-login-email` `{ agentId }` → `{ changed, email }`** (since 2026-11-06; admins for any agent, an agent only for themselves (403 otherwise); sets the login email to the agent's **saved** `email_address` with `email_confirm`, so no email is sent; 409 if another login uses it; `changed: false` when they match or the agent has no login) | `auth.users` (admin API), `agents` (whitelisted columns only: names, sex, dates, contact, email, address, position, admin flag, configs; `age` derived on the server), `genealogy`, `agent_credentials` (via RPC) | `accountService.createAgentWithLogin/createLoginForAgent/deleteLogin/syncLoginEmail` |
 
 - **Errors** come back as `{ error: "<message for the admin>" }` with 400/401/403/404/409/500; `accountService` shows that message, and maps 404 (not deployed) and network failures to setup hints.
 - **Rollback:** `create` deletes the edge, agent and auth user if a later step fails; `create-login` unlinks `user_id` and deletes the auth user.
 - **Hierarchy rules are not re-checked** in the function (they live in `genealogyService.checkPlacement`, which runs first in the browser).
 - **RLS:** the service-role client bypasses RLS, and the guard triggers let it through (`auth.uid()` is null for it), so creating agents, linking `user_id` and the rollbacks keep working after the RLS hardening. It is the only place `agents.user_id` can be set.
-- **Deploying:** 3.3 step 2. The file is not covered by `vue-tsc` (Deno); check it by deploying or with `deno check`.
+- **Deploying:** 3.3 step 2. The file is not covered by `vue-tsc` (Deno); check it by deploying or with `deno check` (without Deno: `tsc --noEmit` with a small `Deno` declaration and `npm:@supabase/supabase-js@2` mapped to `node_modules/@supabase/supabase-js` through `paths`, how the 2026-11-06 change was checked). Version 2 (with `sync-login-email`) was deployed to the dev project on 2026-11-06 with **Verify JWT** on; a changed email no longer trips `on_agent_password_changed` (it fires on the password hash only).
 
 ---
 
@@ -1391,7 +1402,7 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | Function | Purpose | Used by |
 |---|---|---|
 | `getSessionUser()` | Exported function (not on `authService`): the Supabase Auth user from the stored session (`auth.getSession()`; network only to refresh an expired token) or null | authService, agentService, Dashboard |
-| `getCurrentAgent()` | Signed-in agent: `agent_ID`, first/middle/last name, `admin_access` (or null). One `agents` query (the user comes from `getSessionUser`) | Listings, PropertyManagement, SalesReport, Commission, SalesUploadModal, Genealogy page, Support, developerlist |
+| `getCurrentAgent()` | Signed-in agent: `agent_ID`, first/middle/last name, `admin_access` (or null). One `agents` query (the user comes from `getSessionUser`); calls that start while one is running share it (module-private `loadCurrentAgent`, since 2026-11-06; callers only read the result) | Listings, PropertyManagement, SalesReport, Commission, SalesUploadModal, Genealogy page, Support, developerlist |
 | `logoutUser()` | `auth.signOut()` → `{ success, error? }` | Sidebar, ChangePasswordModal (login page) |
 
 **`src/services/accountService.ts`** (`accountService`; types `NewAgentAccount`, `AgentLogin`). Logins and passwords; see 7.19, 7.20, 9.7, 9.8.
@@ -1401,6 +1412,7 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | `createAgentWithLogin(agent, uplineId, password)` | Edge Function `create`: login + agent + edge + stored initial password → `{ agent_ID, user_id, email }` | genealogyService.addAgent |
 | `createLoginForAgent(agentId, password)` | Edge Function `create-login` for an agent without a login | AddAgentModal (edit) |
 | `deleteLogin(userId)` | Edge Function `delete-login` (only logins no agent uses) | genealogyService.deleteAgent |
+| `syncLoginEmail(agentId)` | Edge Function `sync-login-email`: login email = the agent's saved `email_address` → `{ changed, email }`; explains an old deployed function ("Unknown action.") | AddAgentModal (edit), ProfileEdit |
 | `getAgentLogin(agentId, reveal=false)` | RPC `admin_get_agent_login` → `AgentLogin` (status; password only when `reveal`) | AddAgentModal (edit) |
 | `needsPasswordChange()` | RPC `current_agent_needs_password_change` (never throws; false on error) | Dashboard |
 | `sendPasswordCode(email)` | `auth.resetPasswordForEmail` (emails the one-time code) | ChangePasswordModal |
@@ -1452,11 +1464,11 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | `getNearbyPois(listingId, lng, lat, { force?, cached?, persist? })` | Cached (30 days, shape-checked) or live Mapbox category search. `cached` = use this cache instead of reading `main_listings`; `persist: false` = don't write it back (shared page) | MapHolder, PropertyDetails (share) |
 | `haversineKm(aLng, aLat, bLng, bLat)` | Distance in km | MapHolder |
 
-**`src/services/salesService.ts`** (`salesService`; types `Sale`, `Financing`, `PaymentScheme`)
+**`src/services/salesService.ts`** (`salesService`; types `Sale`, `SaleUpline`, `Financing`, `PaymentScheme`)
 
 | Function | Purpose | Used by |
 |---|---|---|
-| `getSales({ agentId? })` | Sales (newest reservation first) with names filled in and sale numbers; the numbering order loads in parallel (`Promise.all`). (The unused `search` option, which built an `or()` filter from text, was removed on 2026-11-05.) | SalesReport |
+| `getSales({ agentId? })` | Sales (newest reservation first) with names filled in and sale numbers; the numbering order loads in parallel (`Promise.all`). Since 2026-11-06 the incentives and `upline_snapshot` come from the sale (`SALE_SELECT`); if those columns are missing (42703, setup step 13 not run) it reads the incentives live from the listing (`SALE_SELECT_LIVE_INCENTIVES`). (The unused `search` option, which built an `or()` filter from text, was removed on 2026-11-05.) | SalesReport |
 | `getSaleById(id)` | One sale | unused |
 | `createSale(payload)` | Insert, return `{ success, data: { sale_ID } }` | SalesUploadModal |
 | `updateSale(id, payload)` | Update (0 rows → `{success:false}`) | SalesUploadModal |
@@ -1505,7 +1517,7 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | `getDownline(agentId, levels=2)` | Breadth-first downline list | Dashboard (20) |
 | `getStats()` | Total agents, team leaders, active teams, new this month | Genealogy page |
 | `getAgents()` | Flat agent list (dropdowns) | Genealogy page, AddAgentModal |
-| `getRecentAgents(limit=5)` | Newest by `hire_date` | Genealogy page |
+| `getRecentAgents(limit=5)` | Newest by `hire_date` (no hire date last), from the shared graph (since 2026-11-06; it ran its own query) | Genealogy page |
 | `addAgent(data, uplineId, initialPassword)` | Check hierarchy rules, then `accountService.createAgentWithLogin` (login + agent + edge in the Edge Function) → `{ success, agent_ID, user_id, email }` | AddAgentModal |
 | `getAgentById(id)` | Full editable record | Genealogy page |
 | `updateAgent(id, patch)` | Patch fields only (no rule checks); throws if 0 rows changed (RLS) | internal |
@@ -1518,9 +1530,9 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | `setPromotionThreshold(positionId, value)` | Save a threshold (0 or more, or null); throws if 0 rows changed (not an admin) | TeamInsights |
 | `getAgentReferences(id)` | Counts of sales, listings, share links | internal |
 | `deleteAgent(id)` | Blocked delete with downline re-parenting; `.select()` check on the agent delete; then removes the login (`accountService.deleteLogin`) | Genealogy page |
-| `fetchGraph()`, `checkPlacement()`, `toAgent()` | Module-private helpers | internal |
+| `fetchGraph()`, `checkPlacement()`, `toAgent()` | Module-private helpers. `fetchGraph` (agents + genealogy + positions, via `loadGraph`) and `completedSalesByAgent` share a load that is already running (since 2026-11-06), so the Genealogy page fetches the three tables once instead of six times; nothing is kept after a load finishes, and callers only read the result | internal |
 
-**`src/services/developerService.ts`** (`developerService`, `reformatHours`)
+**`src/services/developerService.ts`** (`developerService`, `reformatHours`; module-private `imagesPathFromUrl`, `removeImageFiles` (best-effort removal from the `images` bucket, logged))
 
 | Function | Purpose | Used by |
 |---|---|---|
@@ -1529,11 +1541,13 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | `addDeveloper(dev)` | Insert developer + `opening_days` (`officeHourRows`); returns `dev_ID`; throws a readable error if either fails | addDeveloper |
 | `updateDeveloper(dev, oldHours)` | Update (throws if 0 rows), then upsert the new `opening_days` rows on `(id, day)` and delete the days no longer picked (`not.in` over names from the fixed `days` list). A refused upsert changes nothing, so the old hours stay; throws a readable error either way. `oldHours` is unused | addDeveloper |
 | `uploadImage(devId, file)` | `images/developers/` → URL (`''` on error) | addDeveloper |
-| `deleteDeveloper(dev)` | Refuses (throws) if listings use the developer; deletes `opening_days`, then the developer (throws if 0 rows) | developerlist |
+| `deleteDeveloper(dev)` | Refuses (throws) if listings use the developer; deletes `opening_days`, then the developer (throws if 0 rows); then removes its picture and poster files (since 2026-11-06) | developerlist |
+| `removeReplacedImage(oldUrl, newUrl)` | After an edit: removes the old picture's file when it was replaced or removed | addDeveloper |
+| `discardUploadedImage(url)` | Removes a picture uploaded for a save that failed | addDeveloper |
 | `officeHourRows(devId, slots)` | Module-private: one `opening_days` row per day; skips slots without days / times or marked Unavailable; first slot wins for a repeated day | internal |
 | `uploadPromoImage(devId, file)` | `images/developer_promos/` → URL | addDeveloper |
 | `addPromo(devId, promo)` | Insert a promo row → `promo_ID` | addDeveloper |
-| `deletePromo(promo)` | Delete the storage file + row | addDeveloper |
+| `deletePromo(promo)` | Delete the row (checked: 0 rows = stop), then its file (since 2026-11-06; it used to remove the file first) | addDeveloper |
 | `reformatHours("9:00 AM - 5:00 PM")` | → `['09:00','17:00']` | imported, never called |
 
 **`src/services/ticketService.ts`** (`ticketService`, `cleanTicket`, `ticketProblems`). IT support tickets; see 7.21, 8.8, 9.7.
@@ -1562,7 +1576,8 @@ All the functions are `SECURITY DEFINER` with `set search_path = ''` and use no 
 | `utils/paySchedule.ts` | `UNIT_MONTHS`, `addMonthsClamped`, `dueDateAt`, `lastDueDate` | commissionService, salesService, SalesUploadModal |
 | `utils/conversion.ts` | `currentCurrency`, `currentUnit` (refs), `currencySymbols`, `areaUnits`, `SQM_TO_SQFT`, `convertPrice`, `formatPrice`, `convertArea`, `formatArea`, `convertPriceToPHP`, `convertAreaToSqm` | Listings, PropertyManagement, PropertyCard, PropertyDetails, SalesReport, SharedListing, Settings |
 | `utils/useSettings.ts` | `useSettings()` → `{ configs, updateSetting, loadSettings }` | App, Settings, conversion, ProfileCard, genealogy tree |
-| `utils/liveRefresh.ts` | `useLiveRefresh(reload, tables, opts)` | Dashboard, Commission, Genealogy page, tree, TeamInsights, Support |
+| `utils/liveRefresh.ts` | `useLiveRefresh(reload, tables, opts)` (stops on `SIGNED_OUT`, skips a reload without a session; 5.6) | Dashboard, Commission, Genealogy page, tree, TeamInsights, Support |
+| `utils/clockTime.ts` | `formatClockTime(time)`: `"08:00:00"` → `"8:00 AM"` (seconds dropped; non-times returned as they are). Replaces the unused private `formatHours` of developerService | developerCard |
 | `utils/sanitize.ts` | `cleanText(value, max)`, `cleanMultilineText(value, max=2000)` (keeps line breaks; drops control characters and invisible direction overrides, trims each line, max one blank line), `cleanMarkdownText(value, max=20000)` (keeps every line as typed: indentation, two-space line breaks; drops control characters and direction overrides, trims the ends), `normalizeEmail`, `isValidEmail`, `isValidPhone`, `isIsoDate`, `digitsOnly`, `finiteNumber(value, fallback)`, `safeFileExtension(name, fallback='bin')`, `safeFileName(name, max=100)`, `EMAIL_PATTERN`, `PHONE_PATTERN` | AddAgentModal, LoginForm, ChangePasswordModal (the Edge Function repeats the same rules); ticketService, TicketDetailsModal (`cleanMultilineText`); PropertyManagement, SalesUploadModal, PaymentRequestModal, ProfileEdit, addDeveloper; the upload services (`safeFileExtension` / `safeFileName`) |
 | `utils/saleStatus.ts` | `saleStatusClass(status)`: sale status pill colours | SalesReport, SaleDetailsModal |
 | `utils/deviceInfo.ts` | `describeDevice()` → e.g. "Chrome 130 · Windows · window 1536×730 · screen 1920×1080 · dark mode" | RaiseTicketModal |
@@ -1633,7 +1648,7 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 - `Listings.vue` binds `@edit` / `@delete` on `PropertyCard`, but the card never emits them.
 - Clubshare and Golfshare have no sub-table. Bulk listings still write a sub-table row with the form's default values.
 - Admins can only edit their own listings in the UI (owner check), although RLS would let them edit any listing.
-- Replaced or removed photos, profile and developer pictures are deleted from storage only by the listing / profile flows; a developer's old picture or a removed poster's file stays in the `images` bucket.
+- Replaced or removed listing photos, profile pictures and (since 2026-11-06) developer pictures and posters are deleted from storage by their own flows; payment-proof files are not (11.2).
 
 ### 11.2 Sales and commissions
 - **Deleting a sale deletes its commission history.** `commissions` and `sale_dp_divisions` cascade, so received commissions are deleted too. It also sets the listing back to `active` (after the delete since 2026-11-05).
@@ -1643,7 +1658,7 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 - An agent's Team Insights / tree hears about another agent's completed sale on the next focus or 60 s poll, not instantly (realtime applies RLS, 5.6).
 
 ### 11.3 Genealogy and agent accounts
-- **The login email doesn't follow email edits.** Editing `agents.email_address` (Edit Agent or Profile) doesn't change the Supabase Auth email. Edit Agent shows a note when they differ. To change a login email today: Authentication → Users in Supabase. (A possible fix: an `update-email` action in the `agent-account` Edge Function.)
+- A login email that **already differed** from `agents.email_address` before 2026-11-06 is only brought in line by the next email edit of that agent (the sync runs when the email changes). Another login already using the new email is refused (409): the agent's row keeps the new email and the save says the login email was not changed.
 - **Nothing works until the Supabase setup is done** (3.3): without the migration, Edit Agent says to run it; without the Edge Function, Add Agent says it is not deployed; without the `{{ .Token }}` email template and SMTP, password codes don't arrive. Without step 10 the old open policies stay in place.
 - **The recovery code is also a sign-in.** After the code is verified, the user has a session. On the Login page the modal ends it when finished or closed, but reloading the page mid-flow leaves the user signed in without having changed the password (the Dashboard reminder still shows for an initial password).
 - The Edge Function doesn't re-check the hierarchy rules; it trusts `genealogyService.checkPlacement`, which runs first in the browser.
@@ -1652,8 +1667,6 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 - The Contact button's event isn't handled (what it should do, email or call, isn't decided).
 - `developers.available_days`, `open_hours` and `close_hours` are unused (office hours live in `opening_days`). `reformatHours` is unused.
 - An office-hours slot marked "Unavailable" is not stored (the `opening_days` times are NOT NULL), so the day simply doesn't appear on the card. Showing "Unavailable" would need nullable times (a migration) and a mapping in `getDevelopers`.
-- Deleting a developer, or removing or replacing its picture, leaves the old picture file in `images/developers/` (only removed promo posters are deleted from storage, by `deletePromo`). Found in the 2026-11-06 smoke test.
-- Office hours are shown as stored, with seconds (`Mon, Tue • 08:00:00 - 17:00:00`). `developerService.ts` has an unused private `formatHours()` ("8:00 AM") that could format them; not changed on 2026-11-05 because it would change what users see.
 
 ### 11.5 Data-shape traps
 - UI and DB field names differ (9.5), and the lookup ids are hard-coded in many files (9.4).
@@ -1680,7 +1693,7 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 
 ### 11.8 Dead code and unused dependencies
 - Unrouted or unused files: `views/DashboardPrevious.vue`, `components/test.vue`, `components/modal.vue`, `components/dashboard/AddListing.vue`, `components/dashboard/Calculator.vue` (both now say so in a comment), `services/lookupService.ts`, `babel.config.js`, and the images `src/assets/images/profile.png`, `sample-house.jpg`, `public/profile.png` (not imported, so not bundled).
-- Unused functions: `salesService.getSaleById`, `getTotalSales`, `generateSchedulePreview`, `calculateCommissionableAmount`; `genealogyService.setUpline`; `reformatHours` and the private `formatHours` in `developerService.ts`.
+- Unused functions: `salesService.getSaleById`, `getTotalSales`, `generateSchedulePreview`, `calculateCommissionableAmount`; `genealogyService.setUpline`; `reformatHours` in `developerService.ts` (its unused private `formatHours` became `utils/clockTime.ts` on 2026-11-06).
 - Intentionally kept "unused" imports: the Sidebar's `Ticket` / `Mail` / `Trophy` icons (commented-out links) and Support's `raiseBlockedReason` (commented-out header button); both are labelled in the code. Unused imports elsewhere were removed on 2026-11-05.
 - `npm audit` (2026-11-06): 2 moderate left, `postcss-selector-parser` through `@tailwindcss/typography` (build time only, nothing reaches the browser). npm's only offered fix downgrades `@tailwindcss/typography` to 0.5.4, so it was left alone.
 
@@ -1745,6 +1758,7 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 
 | `documentation.md` entry | Summary | See |
 |---|---|---|
+| 2026-11-06: Smoke-test follow-ups | Sales keep their upline and incentives as recorded (`sales_snapshot`, step 13); login email follows email edits (`sync-login-email`, step 2 redeploy); developer picture / poster files removed with the developer or when replaced; Genealogy loads shared (24 → 7 requests) and Team Insights reloads after agent changes; live refresh stops on sign-out; Esc closes the listing overlay and fullscreen map; office hours without seconds | Header, 3.3, 5.6, 7.4, 7.8, 7.9, 7.10, 7.13, 7.15, 7.17, 7.19, 9.2, 9.6, 9.7, 9.8, 10.1, 10.2, 11.1, 11.3, 11.4, 11.8 |
 | 2026-11-06: RLS hardening smoke test, Holiday office hours | RLS smoke test (3.3 step 10) passed on the live project (browser + 153 rolled-back SQL checks); migration `20261106130000_day_enum_holiday.sql` (3.3 step 12); `updateDeveloper` saves office hours before removing dropped days, so a refused save keeps the old hours; leftover proof / developer picture files noted | Header, 3.3, 4, 7.15, 9.2, 9.3, 9.6, 10.1, 11.2, 11.4, 13.2 |
 | 2026-11-06: Upload limits for the public storage buckets | `images` accepts only raster images (no SVG) up to 10 MB; `fact_sheets` up to 20 MB; setup step 11; applied to the dev project | 3.3, 5.4, 9.6, 11.7 |
 | 2026-11-06: Dependency cleanup and security updates | Unused dependencies removed, `dompurify` 3.4.17, `npm audit fix` (13 → 2 build-time moderates), `VITE_MAPBOX_TOKEN` in `.env.example`. No code or database changes | 3, 3.1, 4, 11.8, 13.2 |
@@ -1781,6 +1795,8 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 ## 14. Changelog of this file
 
 Add one line per update, newest first: `YYYY-MM-DD: what changed (sections)`.
+
+- **2026-11-06:** Smoke-test follow-ups: sales snapshot (`sales.agent_incentive` / `realty_incentive` / `upline_snapshot`, `sales_snapshot` trigger, `sale_upline_snapshot`, migration `20261106150000_sales_snapshot.sql`, setup step 13); `agent-account` `sync-login-email` (+ `requireAgent` / per-action admin check, `accountService.syncLoginEmail`, Edit Agent and Profile); developer image files removed on delete / replace / failed save, poster row deleted before its file; Genealogy shared loads and Team Insights reload; live refresh stops on sign-out; Esc on the listing overlay and fullscreen map; `utils/clockTime.ts` for office hours; known issues 11.1, 11.3, 11.4, 11.8 updated (header, 3.3, 5.6, 7.4, 7.8, 7.9, 7.10, 7.13, 7.15, 7.17, 7.19, 9.2, 9.6, 9.7, 9.8, 10.1, 10.2, 11, 13.1).
 
 - **2026-11-06:** RLS hardening smoke test passed on the live project (result under 3.3); `Holiday` office hours: migration `20261106130000_day_enum_holiday.sql` (new setup step 12, run on the live project the same day) and `updateDeveloper` upserts the new hours before deleting dropped days (a refused save keeps the old hours); corrected the `day_enum` values; leftover payment-proof and developer-picture files listed as known issues (header, 3.3, 4, 7.15, 9.2, 9.3, 9.6, 10.1, 11.2, 11.4, 13.1, 13.2).
 
