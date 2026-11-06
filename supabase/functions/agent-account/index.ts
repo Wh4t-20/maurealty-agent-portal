@@ -5,8 +5,9 @@
 // the browser. This function runs on Supabase's servers, where SUPABASE_URL and
 // SUPABASE_SERVICE_ROLE_KEY are provided automatically.
 //
-// Who can call it: a signed-in agent with agents.admin_access = true. The check happens here
-// on the server, so a non-admin can't create or remove logins even by calling it directly.
+// Who can call it: a signed-in agent with agents.admin_access = true, except sync-login-email,
+// which an agent may also call for their own login. The checks happen here on the server, so a
+// non-admin can't create or remove logins even by calling it directly.
 //
 // Actions (POST, JSON body). The browser calls them through src/services/accountService.ts:
 //   { action: 'create', agent: {...}, uplineId, password }
@@ -16,6 +17,9 @@
 //       Login for an existing agent that has none (agents added before automatic accounts).
 //   { action: 'delete-login', userId }
 //       Removes the login of an agent who was just deleted, so they can't sign in anymore.
+//   { action: 'sync-login-email', agentId }
+//       After an email edit (Edit Agent or Profile): the login email becomes the agent's saved
+//       email_address. Admins for any agent, an agent for themselves.
 //
 // Deploy: Dashboard > Edge Functions > Deploy a new function > Via editor, name it
 // `agent-account` and paste this file, or run `supabase functions deploy agent-account`.
@@ -296,6 +300,40 @@ async function deleteLogin(admin: SupabaseClient, callerUserId: string, body: Re
   return { deleted: true };
 }
 
+// Makes the login email follow agents.email_address. The browser sends only the agent id: the
+// email is the one already saved on the agent's row (by Edit Agent or Profile), so this can only
+// copy a value the caller was allowed to save. Admins may sync anyone; an agent only themselves.
+async function syncLoginEmail(admin: SupabaseClient, caller: { agentId: number; isAdmin: boolean }, body: Record<string, unknown>) {
+  const agentId = cleanId(body.agentId, 'Agent');
+  if (!caller.isAdmin && agentId !== caller.agentId) throw new HttpError(403, 'You can only change your own login email.');
+
+  const { data: row, error } = await admin
+    .from('agents')
+    .select('agent_ID, email_address, user_id')
+    .eq('agent_ID', agentId)
+    .maybeSingle();
+  if (error) throw new HttpError(500, 'Could not load the agent.');
+  if (!row) throw new HttpError(404, 'Agent not found.');
+  if (!row.user_id) return { changed: false, email: null }; // no login to update
+
+  const email = cleanEmail(row.email_address);
+  const { data: current, error: getError } = await admin.auth.admin.getUserById(row.user_id);
+  if (getError || !current?.user) throw new HttpError(404, 'The login of this agent was not found.');
+  if ((current.user.email ?? '').toLowerCase() === email) return { changed: false, email };
+
+  // email_confirm: the address was entered by the agent or an admin in the portal, so no
+  // confirmation email is sent (the same rule as a new login). Sessions stay signed in.
+  const { error: updateError } = await admin.auth.admin.updateUserById(row.user_id, { email, email_confirm: true });
+  if (updateError) {
+    const code = (updateError as { code?: string }).code;
+    if (code === 'email_exists' || /already (been )?registered|already exists/i.test(updateError.message)) {
+      throw new HttpError(409, 'Another login already uses this email, so the login email was not changed. Use a different email.');
+    }
+    throw new HttpError(400, updateError.message || 'Could not change the login email.');
+  }
+  return { changed: true, email };
+}
+
 // ---------- Entry point ----------
 
 Deno.serve(async (req: Request) => {
@@ -328,6 +366,8 @@ Deno.serve(async (req: Request) => {
       case 'delete-login':
         requireAdmin(caller);
         return json(200, await deleteLogin(admin, caller.userId, body));
+      case 'sync-login-email': // admins for anyone, an agent for themselves (checked inside)
+        return json(200, await syncLoginEmail(admin, caller, body));
       default:
         throw new HttpError(400, 'Unknown action.');
     }
