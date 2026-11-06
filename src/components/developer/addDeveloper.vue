@@ -454,6 +454,8 @@ async function saveDeveloper() {
                 payload.image_url = ''; // picture removed
             }
             await developerService.updateDeveloper(payload, oldOfficeHours.value);
+            // Saved: the previous picture's file is no longer used by anyone.
+            await developerService.removeReplacedImage(oldDev.value.image_url, payload.image_url);
             await persistPromos(payload.dev_ID);
         }
         else{

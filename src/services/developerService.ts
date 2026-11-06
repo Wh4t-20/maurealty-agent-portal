@@ -309,6 +309,11 @@ export const developerService = {
         await removeImageFiles([developer.image_url, ...(developer.promos ?? []).map(p => p.image_url)]);
     },
 
+    // After an edit saved a new picture (or removed it): delete the file of the one it had before.
+    async removeReplacedImage(oldUrl: string | null | undefined, newUrl: string | null | undefined): Promise<void> {
+        if (oldUrl && oldUrl !== newUrl) await removeImageFiles([oldUrl]);
+    },
+
     // --- Developer promos (posters) ---
     // Upload a poster image to the images bucket under developer_promos/.
     async uploadPromoImage(devID: number, file: File): Promise<string | ''> {
