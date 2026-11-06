@@ -16,7 +16,7 @@
           <div><dt class="text-gray-500 dark:text-gray-400">Project</dt><dd class="font-medium dark:text-white">{{ sale.listing_title }}</dd></div>
           <div v-if="isAdmin"><dt class="text-gray-500 dark:text-gray-400">Agent</dt><dd class="dark:text-white">{{ sale.agent_name || '—' }}</dd></div>
           <div v-if="isAdmin" class="col-span-1 sm:col-span-2">
-            <dt class="text-gray-500 dark:text-gray-400">Upline</dt>
+            <dt class="text-gray-500 dark:text-gray-400">Upline<span v-if="uplineFromSnapshot" class="text-xs"> · when the sale was recorded</span></dt>
             <dd>
               <span v-if="uplineLoading" class="text-gray-400 dark:text-gray-600">Loading…</span>
               <span v-else-if="upline.length === 0" class="dark:text-white">—</span>
@@ -148,10 +148,10 @@
 // behaviour). The page decides who may edit or delete (canEdit) and handles those actions; this
 // component loads what the popup shows: the upline (admins), the DP divisions and the unit details.
 import { ref, watch } from 'vue'
-import { salesService, type Sale } from '@/services/salesService'
+import { salesService, type Sale, type SaleUpline } from '@/services/salesService'
 import type { DpDivision } from '@/assets/classes/commission'
 import { listingsService } from '@/services/listingsServices'
-import { genealogyService, type GenealogyAgent } from '@/services/genealogyService'
+import { genealogyService } from '@/services/genealogyService'
 import { formatArea } from '@/utils/conversion.ts'
 import { saleStatusClass } from '@/utils/saleStatus'
 import { positionMap } from '@/assets/classes/agent'
@@ -192,9 +192,12 @@ function getCondoType(details: any) {
 }
 
 // Upline of the selected sale's agent (admin only — hierarchy is sensitive).
-// Two levels = supervisor + manager, per the Commission Releasing doc.
-const upline = ref<GenealogyAgent[]>([])
+// Two levels = supervisor + manager, per the Commission Releasing doc. It is the chain saved with
+// the sale when it was recorded (sales.upline_snapshot), so later genealogy changes don't rewrite
+// it; only before the snapshot migration has run is it looked up live.
+const upline = ref<SaleUpline[]>([])
 const uplineLoading = ref(false)
+const uplineFromSnapshot = ref(false)
 
 // DP divisions of the selected sale (only DP sales have any).
 const saleDivisions = ref<DpDivision[]>([])
@@ -209,7 +212,7 @@ watch(() => props.sale, async (sale) => {
   }
 }, { immediate: true })
 
-function uplinePosition(u: GenealogyAgent): string {
+function uplinePosition(u: SaleUpline): string {
   if (u.position) return u.position
   if (u.position_ID != null) return positionMap[u.position_ID] ?? ''
   return ''
@@ -217,13 +220,17 @@ function uplinePosition(u: GenealogyAgent): string {
 
 watch(() => props.sale, async (sale) => {
   upline.value = [];
+  uplineFromSnapshot.value = false;
   selectedListingDetails.value = null;
   selectedPropertyType.value = '';
 
   if (!sale) return;
 
-  // 1. Fetch Upline (Admin Only)
-  if (props.isAdmin) {
+  // 1. Upline (Admin Only): saved with the sale; looked up live only without a snapshot.
+  if (props.isAdmin && sale.upline_snapshot) {
+    upline.value = sale.upline_snapshot;
+    uplineFromSnapshot.value = true;
+  } else if (props.isAdmin) {
     uplineLoading.value = true;
     try {
       upline.value = await genealogyService.getUplineChain(sale.agent_ID, 2);
