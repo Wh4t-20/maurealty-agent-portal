@@ -82,7 +82,7 @@ const AGENT_FIELDS = 'agent_ID, first_name, middle_name, last_name, position_ID,
 
 // Fetch all agents + edges + the position lookup in parallel. Shared by the
 // tree and stats builders so we hit the DB once per call site.
-async function fetchGraph(): Promise<{
+async function loadGraph(): Promise<{
   agents: AgentRow[];
   edges: Edge[];
   positions: Map<number, PositionData>;
@@ -117,6 +117,19 @@ async function fetchGraph(): Promise<{
     edges: (edgesRes.data || []) as Edge[],
     positions,
   };
+}
+
+// The Genealogy page asks for the graph six times as it opens (stats, the Teams list, the tree,
+// Team Insights twice, the rank list), all in the same moment: 18 requests for the same three
+// tables. Calls that start while a load is running now share it. Nothing is kept once it
+// finishes, so the next call (a live refresh, a save) always reads fresh data.
+// The result is shared: callers only read it.
+let graphInFlight: ReturnType<typeof loadGraph> | null = null;
+function fetchGraph(): ReturnType<typeof loadGraph> {
+  if (!graphInFlight) {
+    graphInFlight = loadGraph().finally(() => { graphInFlight = null; });
+  }
+  return graphInFlight;
 }
 
 function toAgent(row: AgentRow, positions: Map<number, PositionData>): GenealogyAgent {
