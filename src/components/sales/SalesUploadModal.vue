@@ -239,17 +239,17 @@
           <input v-model.trim="form.remarks" type="text" :class="inputClass" :placeholder="remarksPlaceholder" />
         </div>
 
-        <!-- Incentives read from the selected listing (set in Property Management). Read-only here. -->
-        <div v-if="selectedListing?.agent_incentive || selectedListing?.realty_incentive"
+        <!-- Incentives (set in Property Management). Read-only here; see shownIncentives. -->
+        <div v-if="shownIncentives.agent || shownIncentives.realty"
              class="sm:col-span-2 flex flex-col gap-2 rounded-lg border border-maurealty-blue/20 bg-blue-50/40 dark:bg-maurealty-light-blue/10 p-3">
-          <span class="text-xs font-bold uppercase tracking-wider text-maurealty-blue dark:text-maurealty-light-blue">Listing Incentives</span>
-          <div v-if="selectedListing?.agent_incentive" class="text-sm">
+          <span class="text-xs font-bold uppercase tracking-wider text-maurealty-blue dark:text-maurealty-light-blue">{{ editSale ? 'Incentives (when the sale was recorded)' : 'Listing Incentives' }}</span>
+          <div v-if="shownIncentives.agent" class="text-sm">
             <span class="font-semibold text-gray-600 dark:text-gray-300">Agent: </span>
-            <span class="text-gray-700 dark:text-gray-200 whitespace-pre-line">{{ selectedListing.agent_incentive }}</span>
+            <span class="text-gray-700 dark:text-gray-200 whitespace-pre-line">{{ shownIncentives.agent }}</span>
           </div>
-          <div v-if="selectedListing?.realty_incentive" class="text-sm">
+          <div v-if="shownIncentives.realty" class="text-sm">
             <span class="font-semibold text-gray-600 dark:text-gray-300">Realty: </span>
-            <span class="text-gray-700 dark:text-gray-200 whitespace-pre-line">{{ selectedListing.realty_incentive }}</span>
+            <span class="text-gray-700 dark:text-gray-200 whitespace-pre-line">{{ shownIncentives.realty }}</span>
           </div>
         </div>
 
@@ -634,6 +634,12 @@ watch(() => form.listing_ID, async (id) => {
 const selectedListing = computed(() => {
   return listings.value.find(l => l.listing_id === form.listing_ID)
 })
+
+// Create / Sold: the listing's current incentives (the sale keeps these when it is recorded, see
+// the sales_snapshot trigger). Edit: the ones the sale kept, not whatever the listing says today.
+const shownIncentives = computed(() => props.editSale
+  ? { agent: props.editSale.agent_incentive, realty: props.editSale.realty_incentive }
+  : { agent: selectedListing.value?.agent_incentive ?? null, realty: selectedListing.value?.realty_incentive ?? null })
 
 // Keep the developer in step with the chosen project.
 watch(selectedListing, (l) => {
