@@ -361,23 +361,20 @@ export const developerService = {
         return data?.promo_ID ?? null;
     },
 
-    // Delete a promo row and its storage object (best-effort on the file).
+    // Delete a promo row, then its file (best effort). Row first: when the delete was refused
+    // (0 rows, not an admin) the file used to be gone already and the poster showed as broken.
     async deletePromo(promo: DeveloperPromo): Promise<void> {
-        if (promo.image_url) {
-            const marker = '/object/public/images/';
-            const idx = promo.image_url.indexOf(marker);
-            if (idx !== -1) {
-                const path = promo.image_url.slice(idx + marker.length);
-                const { error: storageError } = await supabase.storage.from('images').remove([path]);
-                if (storageError) console.error('Error removing promo image file:', storageError);
-            }
-        }
         if (promo.promo_ID != null) {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('developer_promos')
                 .delete()
-                .eq('promo_ID', promo.promo_ID);
-            if (error) console.error('Error deleting promo:', error);
+                .eq('promo_ID', promo.promo_ID)
+                .select('promo_ID');
+            if (error || !data || data.length === 0) {
+                console.error('Error deleting promo:', error ?? 'no row deleted');
+                return;
+            }
         }
+        await removeImageFiles([promo.image_url]);
     }
 };
