@@ -61,9 +61,22 @@ export interface Sale {
   agent_name: string;
   listing_title: string;
   developer_name: string | null;   // the listing's developer
-  // Incentives read through from the linked listing (see main_listings).
+  // The listing's incentives and the seller's upline as they were when the sale was recorded
+  // (sales_snapshot trigger, migration 20261106150000). Before that migration runs, the incentives
+  // are read live from the listing and upline_snapshot is null.
   agent_incentive: string | null;
   realty_incentive: string | null;
+  upline_snapshot: SaleUpline[] | null;
+}
+
+// One upline in Sale.upline_snapshot (nearest first, 2 levels).
+export interface SaleUpline {
+  agent_ID: number;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  position_ID: number | null;
+  position: string | null;
 }
 
 // Totals feed (e.g. teammate's Sales calculator). Both interpretations of
@@ -82,7 +95,7 @@ interface GetSalesOptions {
   agentId?: number;
 }
 
-const SALE_SELECT = `
+const SALE_COLUMNS = `
   sale_ID,
   agent_ID,
   listing_ID,
@@ -105,11 +118,30 @@ const SALE_SELECT = `
   remaining_balance,
   created_at,
   agents (first_name, last_name),
+`;
+
+// The incentives and the upline come from the sale itself (kept as they were when it was recorded).
+const SALE_SELECT = `${SALE_COLUMNS}
+  agent_incentive,
+  realty_incentive,
+  upline_snapshot,
+  main_listings (listing_title, developers (name))
+`;
+
+// Until the snapshot migration has run, those columns don't exist: read the incentives live from
+// the listing, as before (the Sales Report keeps working either way).
+const SALE_SELECT_LIVE_INCENTIVES = `${SALE_COLUMNS}
   main_listings (listing_title, agent_incentive, realty_incentive, developers (name))
 `;
 
+const isMissingSnapshotColumn = (error: any) =>
+  error?.code === '42703' && /agent_incentive|realty_incentive|upline_snapshot/.test(error?.message ?? '');
+
 // Flatten the embedded agent/listing objects into display strings.
 function mapToSale(item: any): Sale {
+  // Rows read with SALE_SELECT carry the snapshot columns (possibly null: a listing without
+  // incentives); rows read with the fallback select don't have them at all.
+  const hasSnapshot = 'upline_snapshot' in item;
   return {
     sale_ID: item.sale_ID,
     agent_ID: item.agent_ID,
@@ -135,8 +167,9 @@ function mapToSale(item: any): Sale {
     agent_name: `${item.agents?.first_name || ''} ${item.agents?.last_name || ''}`.trim(),
     listing_title: item.main_listings?.listing_title || 'Unknown',
     developer_name: item.main_listings?.developers?.name ?? null,
-    agent_incentive: item.main_listings?.agent_incentive ?? null,
-    realty_incentive: item.main_listings?.realty_incentive ?? null,
+    agent_incentive: (hasSnapshot ? item.agent_incentive : item.main_listings?.agent_incentive) ?? null,
+    realty_incentive: (hasSnapshot ? item.realty_incentive : item.main_listings?.realty_incentive) ?? null,
+    upline_snapshot: hasSnapshot && Array.isArray(item.upline_snapshot) ? item.upline_snapshot : null,
   };
 }
 
@@ -199,17 +232,22 @@ export const salesService = {
   // Fetch sales, newest first. Filters are applied conditionally to keep this
   // DRY (one function, optional params) instead of separate query functions.
   async getSales({ agentId }: GetSalesOptions = {}): Promise<Sale[]> {
-    let query = supabase
-      .from('sales')
-      .select(SALE_SELECT)
-      .order('reservation_date', { ascending: false });
-
-    if (agentId !== undefined) {
-      query = query.eq('agent_ID', agentId);
-    }
+    const salesQuery = (select: string) => {
+      let query = supabase
+        .from('sales')
+        .select(select)
+        .order('reservation_date', { ascending: false });
+      if (agentId !== undefined) {
+        query = query.eq('agent_ID', agentId);
+      }
+      return query;
+    };
 
     // The sales and the numbering order load together (see fetchSaleOrder).
-    const [{ data, error }, { data: order }] = await Promise.all([query, fetchSaleOrder()]);
+    let [{ data, error }, { data: order }] = await Promise.all([salesQuery(SALE_SELECT), fetchSaleOrder()]);
+    if (isMissingSnapshotColumn(error)) {
+      ({ data, error } = await salesQuery(SALE_SELECT_LIVE_INCENTIVES));
+    }
 
     if (error) {
       console.error('Error fetching sales:', error);
@@ -222,14 +260,11 @@ export const salesService = {
 
   // Single sale by ID.
   async getSaleById(id: number): Promise<Sale | null> {
-    const [{ data, error }, { data: order }] = await Promise.all([
-      supabase
-        .from('sales')
-        .select(SALE_SELECT)
-        .eq('sale_ID', id)
-        .single(),
-      fetchSaleOrder(),
-    ]);
+    const saleQuery = (select: string) => supabase.from('sales').select(select).eq('sale_ID', id).single();
+    let [{ data, error }, { data: order }] = await Promise.all([saleQuery(SALE_SELECT), fetchSaleOrder()]);
+    if (isMissingSnapshotColumn(error)) {
+      ({ data, error } = await saleQuery(SALE_SELECT_LIVE_INCENTIVES));
+    }
 
     if (error) {
       console.error('Error fetching sale by ID:', error);
