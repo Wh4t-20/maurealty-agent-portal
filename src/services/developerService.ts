@@ -31,6 +31,27 @@ export const reformatHours = (time: string): string[] => {
     return [openHours, closeHours];
 };
 
+// Storage path inside the `images` bucket for one of its public URLs
+// (https://<project>.supabase.co/storage/v1/object/public/images/developers/12-1700000000.png ->
+// developers/12-1700000000.png). Null for anything else (empty, or not a file in this bucket).
+const IMAGES_URL_MARKER = '/object/public/images/';
+const imagesPathFromUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    const index = url.indexOf(IMAGES_URL_MARKER);
+    if (index === -1) return null;
+    const path = decodeURIComponent(url.slice(index + IMAGES_URL_MARKER.length).split('?')[0] ?? '');
+    return path || null;
+};
+
+// Best effort: called after the database change has succeeded, so a file that can't be removed
+// only leaves a stray file behind (logged), never a broken developer or poster.
+async function removeImageFiles(urls: (string | null | undefined)[]): Promise<void> {
+    const paths = [...new Set(urls.map(imagesPathFromUrl).filter((p): p is string => p !== null))];
+    if (paths.length === 0) return;
+    const { error } = await supabase.storage.from('images').remove(paths);
+    if (error) console.error('Error removing developer image files:', error);
+}
+
 // helper function to navigate through dayOption
 const dayGetter = (dayName: string): DayOption | undefined => {
     return days.find(day => day.name === dayName);
@@ -282,6 +303,10 @@ export const developerService = {
         if (!deleted || deleted.length === 0) {
             throw new Error('The developer was not deleted. Only admins can delete developers.');
         }
+
+        // The poster rows went with the developer (cascade); their files and the picture stayed in
+        // the public images bucket, still reachable by URL. Remove them now that the rows are gone.
+        await removeImageFiles([developer.image_url, ...(developer.promos ?? []).map(p => p.image_url)]);
     },
 
     // --- Developer promos (posters) ---
