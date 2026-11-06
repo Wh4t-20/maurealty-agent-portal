@@ -287,7 +287,7 @@
 // List): photos, price, map and nearby places, features, description, FAQ, fact sheet, and the
 // EDIT / DELETE / SHARE / CALCULATOR / SOLD / APPROVE buttons the viewer may use.
 // The pages load it on first open (defineAsyncComponent), since it brings Mapbox and jsPDF.
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import { formattedPropertyType } from '@/assets/classes/listings'
 import { listingsService, compileMarkdown } from '@/services/listingsServices' 
 import { generateShareLink } from '@/services/shareService'
@@ -319,6 +319,16 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits(['close-details', 'edit', 'delete', 'share', 'sold', 'approve'])
+
+// Esc closes the top layer: the calculator popup if it is open, otherwise the overlay itself.
+// (The fullscreen map handles its own Esc first, in MapHolder.)
+function onKeydown(e: KeyboardEvent) {
+  if (e.key !== 'Escape') return
+  if (showCalc.value) showCalc.value = false
+  else emit('close-details')
+}
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 const propertyTypesMap: Record<string, number> = {
   'house_and_lot': 1,
