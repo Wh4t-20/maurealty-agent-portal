@@ -32,8 +32,8 @@
 						<CalendarCheck2Icon class="size-4.5 shrink-0" />
 						<span class="flex flex-wrap items-center gap-1">
 							<span>{{ formatDays(slot.selectedDays) }}</span>
-							<span v-if="slot.openTime && !slot.isOpenUnavailable">• {{ slot.openTime }}</span>
-							<span v-if="slot.closeTime && !slot.isCloseUnavailable">- {{ slot.closeTime }}</span>
+							<span v-if="slot.openTime && !slot.isOpenUnavailable">• {{ formatClockTime(slot.openTime) }}</span>
+							<span v-if="slot.closeTime && !slot.isCloseUnavailable">- {{ formatClockTime(slot.closeTime) }}</span>
 							<span v-else-if="slot.isOpenUnavailable || slot.isCloseUnavailable">• Unavailable</span>
 						</span>
 					</div>
@@ -110,6 +110,7 @@
 // DeveloperCardSkeleton.vue mirrors this layout for the loading state; change both together.
 import { type DayOption, type Developer, type DeveloperProject, type DeveloperPromo 	} from '@/assets/classes/developers';
 import placeholder from '@/assets/images/default_placeholder.png'
+import { formatClockTime } from '@/utils/clockTime';
 import { PhoneIcon, MailIcon, MapPinIcon, CalendarCheck2Icon, CalendarOffIcon, TagIcon } from 'lucide-vue-next';
 
 // canManage: show Edit / Delete (admins).
