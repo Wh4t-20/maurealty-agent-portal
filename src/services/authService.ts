@@ -20,32 +20,44 @@ export async function getSessionUser(): Promise<User | null> {
   return data.session?.user ?? null;
 }
 
-export const authService = {
-  // Retrieves the agent profile tied to the active session
-  async getCurrentAgent() {
-    try {
-      const user = await getSessionUser();
+// The agent profile tied to the active session.
+async function loadCurrentAgent() {
+  try {
+    const user = await getSessionUser();
 
-      if (!user) {
-        return null;
-      }
-
-      const { data: agentData, error: agentError } = await supabase
-        .from('agents')
-        .select('agent_ID, first_name, middle_name, last_name, admin_access')
-        .eq('user_id', user.id)
-        .single();
-
-      if (agentError) {
-        console.error('Error fetching agent profile:', agentError);
-        return null;
-      }
-
-      return agentData;
-    } catch (error) {
-      console.error('Unexpected error fetching current agent:', error);
+    if (!user) {
       return null;
     }
+
+    const { data: agentData, error: agentError } = await supabase
+      .from('agents')
+      .select('agent_ID, first_name, middle_name, last_name, admin_access')
+      .eq('user_id', user.id)
+      .single();
+
+    if (agentError) {
+      console.error('Error fetching agent profile:', agentError);
+      return null;
+    }
+
+    return agentData;
+  } catch (error) {
+    console.error('Unexpected error fetching current agent:', error);
+    return null;
+  }
+}
+
+// A page and its panels often ask at the same moment (the Genealogy page and Team Insights, for
+// example); calls that start while one is running share it. Nothing is cached afterwards, so a
+// sign-in or sign-out is seen on the next call. Callers only read the result.
+let currentAgentInFlight: ReturnType<typeof loadCurrentAgent> | null = null;
+
+export const authService = {
+  async getCurrentAgent() {
+    if (!currentAgentInFlight) {
+      currentAgentInFlight = loadCurrentAgent().finally(() => { currentAgentInFlight = null; });
+    }
+    return currentAgentInFlight;
   },
 
 async logoutUser() {
