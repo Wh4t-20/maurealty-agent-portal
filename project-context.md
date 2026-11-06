@@ -2,7 +2,7 @@
 
 > **What this file is:** the single reference for how the Maureal Realty and Brokerage (MRB) web portal works today: its features, the processes behind them, and where each piece of logic lives in the code. It is written for AI assistants and for the dev team.
 >
-> **Last verified against the code:** 2026-11-05 · branch `fix/code-cleanup-and-optimizations` (skeleton loading, faster loading, code cleanup; on top of `551d550`) · `npx vue-tsc --build --force` passes with **0 errors** · `npm run build` passes · every page was opened in headless Chrome against a mock Supabase (light / dark, desktop / phone, admin / agent, skeleton and loaded states) with no Vue warnings, see 1.6. (Earlier, on `fix/bug-catches-and-rls-fixes`: the RLS hardening migration was checked on a local PostgreSQL 18 with 159 role-by-role tests.)
+> **Last verified against the code:** 2026-11-06 · branch `fix/dependency-cleanup` (unused dependencies removed, `dompurify` 3.4.17, `npm audit fix`, `VITE_MAPBOX_TOKEN` in `.env.example`; on top of `41004ac`) · `npx vue-tsc --build --force` passes with **0 errors** · `npm run build` passes. On 2026-11-05 (`fix/code-cleanup-and-optimizations`) every page was opened in headless Chrome against a mock Supabase (light / dark, desktop / phone, admin / agent, skeleton and loaded states) with no Vue warnings, see 1.6. (Earlier, on `fix/bug-catches-and-rls-fixes`: the RLS hardening migration was checked on a local PostgreSQL 18 with 159 role-by-role tests.)
 >
 > **Supabase changes need manual steps.** Agent accounts (2026-11-04) need a migration, an Edge Function deploy and some dashboard settings. IT support tickets (2026-11-04) need one more migration, run after the agent accounts one. **RLS hardening (2026-11-05)** needs one more migration: deploy the frontend first, then run it (3.3 step 10). See [3.3 Supabase project setup](#33-supabase-project-setup-manual-steps). The team confirmed on 2026-11-05 that these migrations have been run (the `support_tickets` table exists). The skeleton / speed / cleanup branch changes **no** database objects.
 >
@@ -185,7 +185,6 @@ The rank titles are marked *provisional pending client confirmation* in `src/ass
 | UI helpers | `@headlessui/vue` (Listbox), `lucide-vue-next` (icons) | |
 | Markdown | `marked` + `dompurify` | Listing descriptions and FAQs: `compileMarkdown()` in `listingsServices.ts`. |
 | PDF | `jspdf` + `jspdf-autotable` | Amortization schedule export. |
-| Installed but unused | `chart.js`, `@types/chart.js`, `lucide`, `next`, `dagre`, `@types/dagre`, `@vue-flow/background` | Candidates for removal. |
 
 ### 3.1 Environment variables (`.env.local`, git-ignored)
 
@@ -193,7 +192,7 @@ The rank titles are marked *provisional pending client confirmation* in `src/ass
 |---|---|---|
 | `VITE_SUPABASE_URL` | `src/supabaseClient.ts` | Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | `src/supabaseClient.ts` | Supabase anon key |
-| `VITE_MAPBOX_TOKEN` | `MapHolder.vue`, `MapInteractive.vue`, `poiService.ts` | Mapbox access token. **Missing from `.env.example`.** |
+| `VITE_MAPBOX_TOKEN` | `MapHolder.vue`, `MapInteractive.vue`, `poiService.ts` | Mapbox access token. |
 
 The `agent-account` Edge Function reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`, which Supabase provides to every Edge Function automatically. **Never put the service-role key in `.env.local` or any `VITE_` variable**: anything starting with `VITE_` ends up in the browser bundle.
 
@@ -252,7 +251,7 @@ Reset password email template (step 3), subject e.g. *Your MauRealty password co
 ├─ package.json               Scripts and deps ("#style" import alias → src/style.css)
 ├─ tsconfig*.json, env.d.ts   TypeScript config
 ├─ babel.config.js            Leftover from Vue CLI, unused by Vite
-├─ .env.example               Env var names (missing VITE_MAPBOX_TOKEN)
+├─ .env.example               Env var names (all 3, no values)
 ├─ README.md                  Vue template readme + branch naming convention
 ├─ changelog.md               Early frontend notes (historical)
 ├─ documentation.md           Running change log (newest first). Read the latest entries.
@@ -1672,8 +1671,7 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 - Unrouted or unused files: `views/DashboardPrevious.vue`, `components/test.vue`, `components/modal.vue`, `components/dashboard/AddListing.vue`, `components/dashboard/Calculator.vue` (both now say so in a comment), `services/lookupService.ts`, `babel.config.js`, and the images `src/assets/images/profile.png`, `sample-house.jpg`, `public/profile.png` (not imported, so not bundled).
 - Unused functions: `salesService.getSaleById`, `getTotalSales`, `generateSchedulePreview`, `calculateCommissionableAmount`; `genealogyService.setUpline`; `reformatHours` and the private `formatHours` in `developerService.ts`.
 - Intentionally kept "unused" imports: the Sidebar's `Ticket` / `Mail` / `Trophy` icons (commented-out links) and Support's `raiseBlockedReason` (commented-out header button); both are labelled in the code. Unused imports elsewhere were removed on 2026-11-05.
-- Unused dependencies: `chart.js`, `@types/chart.js`, `lucide`, `next`, `dagre`, `@types/dagre`, `@vue-flow/background`.
-- `.env.example` is missing `VITE_MAPBOX_TOKEN`.
+- `npm audit` (2026-11-06): 2 moderate left, `postcss-selector-parser` through `@tailwindcss/typography` (build time only, nothing reaches the browser). npm's only offered fix downgrades `@tailwindcss/typography` to 0.5.4, so it was left alone.
 
 ### 11.9 IT support tickets
 - **No notifications.** Nobody is told when a ticket is raised or changes status: no email and no Dashboard alert or reminder. Admins have to open IT Support, and users have to check their tickets. (Possible next step: an admin reminder "n tickets waiting for review" and an agent alert "your ticket was resolved" in `dashboardService.buildDashboard`.)
@@ -1736,6 +1734,7 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 
 | `documentation.md` entry | Summary | See |
 |---|---|---|
+| 2026-11-06: Dependency cleanup and security updates | Unused dependencies removed, `dompurify` 3.4.17, `npm audit fix` (13 → 2 build-time moderates), `VITE_MAPBOX_TOKEN` in `.env.example`. No code or database changes | 3, 3.1, 4, 11.8, 13.2 |
 | 2026-11-05: Skeleton loading, faster page loads, code cleanup | Skeletons on Sales Report, Developer List (`DeveloperCardSkeleton.vue`), Commissions, IT Support; every page lazy-loaded + background prefetch + stale-chunk reload; `PropertyDetails` loaded on first open; session read locally (`getSessionUser`); parallel sale numbering; `firstOpenPayment` map; lazy developer images; smaller login background and logos; font preconnect; login background path case fix; unique sidebar keys; debug logs, unused imports and duplicates removed; header comments everywhere. No database changes | 1.2, 1.3, 1.6, 4, 5.1, 5.2, 5.8, 7.1, 7.2, 7.4, 7.9, 7.12, 7.15, 7.21, 10, 11 |
 | 2026-11-05: RLS hardening, bug fixes, modal components | Real RLS on every table + guard triggers + storage policies (`20261105120000_harden_rls.sql`), `get_shared_listing` for signed-out clients, `team_completed_sales`; POI popup XSS fix; admin-only developers / thresholds / promote in the UI; owner/admin listing actions; Property Management, sale form (bulk unit details), Sales Report, Profile (address), developer list, Settings, amortization fixes; input cleaning everywhere (`cleanMarkdownText`, file names); four inline modals moved into components | 1.2–1.6, 3.3, 4, 5.1–5.8, 6, 7.3–7.18, 8.1–8.3, 9.1, 9.6–9.8, 10, 11, 12 |
 | 2026-11-04: IT support tickets | New `/support` page; guided Raise a Ticket form with checklist, auto-numbered steps, screenshots (private bucket), device details; admin review / resolve (required note) / reopen; 3 open tickets per person; `support_tickets` with real RLS + guard trigger; `cleanMultilineText`, `describeDevice` | 3.3, 5.4, 5.6, 5.8, 6, 7.21, 8.8, 9, 10, 11.9 |
@@ -1761,13 +1760,15 @@ Verified by reading the code on 2026-10-28 and again on 2026-11-05 (full read fo
 | `documentation.md` (2026-10-14) and the sale form: Spot-Cash due "1 month after the reservation" | 1 month after the date the tabs are generated (approval). The team confirmed the approval date is correct. |
 | `documentation.md` (2026-10-14): commission rate "admin-only edit" | Editable by anyone (the 2026-10-15 entry calls it "editable Commission Rate") |
 | PDF: commission status "Awaiting Approval" | DB value `pending_approval`; label "Pending Approval" on cards, "Awaiting Approval" on the filter tab |
-| `.env.example` lists 2 variables | 3 are required (`VITE_MAPBOX_TOKEN` too) |
+| `.env.example` lists 2 variables | 3 are required (`VITE_MAPBOX_TOKEN` too); `.env.example` lists all 3 since 2026-11-06 |
 
 ---
 
 ## 14. Changelog of this file
 
 Add one line per update, newest first: `YYYY-MM-DD: what changed (sections)`.
+
+- **2026-11-06:** Removed unused dependencies (`chart.js`, `@types/chart.js`, `lucide`, `next`, `dagre`, `@types/dagre`, `@vue-flow/background`); `dompurify` raised to `^3.4.17` (security fixes); `npm audit fix` (13 advisories down to 2 build-time moderates); `VITE_MAPBOX_TOKEN` added to `.env.example` (header, 3, 3.1, 4, 11.8, 13.2).
 
 - **2026-11-05:** Skeleton loading on the Sales Report, Developer List, Commissions and IT Support pages (+ the skeleton convention); lazy-loaded pages with background prefetch, stale-chunk reload and the Sidebar's `routerReady`; `PropertyDetails` as an async component; `getSessionUser()` instead of `auth.getUser()`; parallel sale numbering; `firstOpenPayment`; lazy developer images; compressed login background and logos (and the `LoginFormBG.png` case fix); unique sidebar keys; debug logs and unused imports removed; header-comment and no-`console.log` conventions; UI testing with a mock Supabase; team confirmed the migrations (incl. `support_tickets`) are applied (header, 1.2, 1.3, 1.6, 4, 5.1, 5.2, 5.8, 7.1, 7.2, 7.4, 7.9, 7.12, 7.15, 7.21, 10.1, 10.3, 10.4, 11.4, 11.6, 11.8, 13.1).
 
