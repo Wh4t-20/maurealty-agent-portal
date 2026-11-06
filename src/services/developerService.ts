@@ -314,6 +314,11 @@ export const developerService = {
         if (oldUrl && oldUrl !== newUrl) await removeImageFiles([oldUrl]);
     },
 
+    // A picture uploaded for a save that then failed: nothing points to it.
+    async discardUploadedImage(url: string | null | undefined): Promise<void> {
+        await removeImageFiles([url]);
+    },
+
     // --- Developer promos (posters) ---
     // Upload a poster image to the images bucket under developer_promos/.
     async uploadPromoImage(devID: number, file: File): Promise<string | ''> {

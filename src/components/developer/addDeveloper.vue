@@ -443,6 +443,10 @@ async function saveDeveloper() {
     };
 
     saving.value = true;
+    // A picture uploaded during this save, and whether the developer row now points to it. If the
+    // save fails before that, the file is removed again (nothing would ever use it).
+    let uploadedPicture = '';
+    let pictureSaved = false;
     try {
         if (editMode.value) {
             // A picture chosen while editing is uploaded now (edit mode used to keep the old one).
@@ -450,10 +454,12 @@ async function saveDeveloper() {
                 const url = await developerService.uploadImage(payload.dev_ID, currentImage.value.file);
                 if (!url) throw new Error('The new picture could not be uploaded.');
                 payload.image_url = url;
+                uploadedPicture = url;
             } else if (!currentImage.value) {
                 payload.image_url = ''; // picture removed
             }
             await developerService.updateDeveloper(payload, oldOfficeHours.value);
+            pictureSaved = true;
             // Saved: the previous picture's file is no longer used by anyone.
             await developerService.removeReplacedImage(oldDev.value.image_url, payload.image_url);
             await persistPromos(payload.dev_ID);
@@ -464,7 +470,9 @@ async function saveDeveloper() {
             let imageUrl = '';
             if (currentImage.value && currentImage.value.file) {
                 imageUrl = await developerService.uploadImage(devID,currentImage.value.file);
+                uploadedPicture = imageUrl;
                 if (imageUrl) await developerService.updateDeveloper({ ...payload, dev_ID: devID, image_url: imageUrl }, oldOfficeHours.value); //second parameter is kinda irrelevant for adding new dev, but its genuinely needed to track if office hours has been changed from editing in edit mode
+                pictureSaved = true;
             }
             await persistPromos(devID);
         }
@@ -474,6 +482,7 @@ async function saveDeveloper() {
     } catch (e: any) {
         console.error('Failed to save developer:', e);
         error.value = e?.message || 'The developer could not be saved.';
+        if (uploadedPicture && !pictureSaved) await developerService.discardUploadedImage(uploadedPicture);
     } finally {
         saving.value = false;
     }
