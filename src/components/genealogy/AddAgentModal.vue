@@ -62,7 +62,7 @@
               <input type="email" v-model.trim="form.email_address" required maxlength="254" autocomplete="off" spellcheck="false"
                      class="form-input important-input" />
               <span v-if="loginEmailChanged" class="text-xs text-amber-800 dark:text-amber-200">
-                This agent signs in with <b>{{ login?.loginEmail }}</b>. Changing the email here doesn't change their login email.
+                This agent signs in with <b>{{ login?.loginEmail }}</b>. Saving also changes their login email to the new one.
               </span>
             </label>
 
@@ -413,6 +413,7 @@ async function save() {
 
   saving.value = true
   let fieldsSaved = false
+  let afterSaveStep = 'the login could not be created' // what failed, once the fields are saved
   try {
     if (isEdit.value) {
       const patch = {
@@ -423,6 +424,13 @@ async function save() {
       if (detached) alert('This agent was detached from their previous upline because of the new position.')
       fieldsSaved = true
       changesSaved.value = true
+
+      // A new email also becomes the agent's login email (it used to stay the old one).
+      if (login.value?.hasLogin && login.value.loginEmail && values.email_address !== login.value.loginEmail) {
+        afterSaveStep = 'the login email could not be changed'
+        await accountService.syncLoginEmail(props.agent!.agent_ID)
+        login.value = { ...login.value, loginEmail: values.email_address }
+      }
 
       // Agent without a login: create it now, with the email just saved.
       if (createLogin.value && login.value && !login.value.hasLogin) {
@@ -446,7 +454,7 @@ async function save() {
   } catch (e: any) {
     console.error(isEdit.value ? 'Edit agent failed:' : 'Add agent failed:', e)
     const message = e?.message || 'Failed to save agent. You may not have permission.'
-    error.value = fieldsSaved ? `Changes saved, but the login could not be created: ${message}` : message
+    error.value = fieldsSaved ? `Changes saved, but ${afterSaveStep}: ${message}` : message
   } finally {
     saving.value = false
   }
