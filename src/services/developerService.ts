@@ -7,15 +7,6 @@ import { supabase } from '../supabaseClient';
 import { type Developer, type DeveloperPromo, type OfficeHourSlot, type DayOption, days } from '../assets/classes/developers';
 import { safeFileExtension } from '../utils/sanitize';
 
-const formatHours = (time: string) => {
-    const [hoursPart = '0', minutesPart = '00'] = time.split(':');
-    const hoursInt = parseInt(hoursPart, 10);
-    const realHours = hoursInt % 12 || 12;
-    const period = hoursInt >= 12 ? 'PM' : 'AM';
-
-    return `${realHours}:${minutesPart} ${period}`;
-};
-
 const convertTo24Hour = (time12h: string): string => {
     const [time = '0:00', modifier = 'AM'] = time12h.trim().split(/\s+/);
     const [hoursPart = '0', minutesPart = '00'] = time.split(':');
@@ -39,6 +30,27 @@ export const reformatHours = (time: string): string[] => {
     const openHours = convertTo24Hour(openTime.trim());
     return [openHours, closeHours];
 };
+
+// Storage path inside the `images` bucket for one of its public URLs
+// (https://<project>.supabase.co/storage/v1/object/public/images/developers/12-1700000000.png ->
+// developers/12-1700000000.png). Null for anything else (empty, or not a file in this bucket).
+const IMAGES_URL_MARKER = '/object/public/images/';
+const imagesPathFromUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+    const index = url.indexOf(IMAGES_URL_MARKER);
+    if (index === -1) return null;
+    const path = decodeURIComponent(url.slice(index + IMAGES_URL_MARKER.length).split('?')[0] ?? '');
+    return path || null;
+};
+
+// Best effort: called after the database change has succeeded, so a file that can't be removed
+// only leaves a stray file behind (logged), never a broken developer or poster.
+async function removeImageFiles(urls: (string | null | undefined)[]): Promise<void> {
+    const paths = [...new Set(urls.map(imagesPathFromUrl).filter((p): p is string => p !== null))];
+    if (paths.length === 0) return;
+    const { error } = await supabase.storage.from('images').remove(paths);
+    if (error) console.error('Error removing developer image files:', error);
+}
 
 // helper function to navigate through dayOption
 const dayGetter = (dayName: string): DayOption | undefined => {
@@ -291,6 +303,20 @@ export const developerService = {
         if (!deleted || deleted.length === 0) {
             throw new Error('The developer was not deleted. Only admins can delete developers.');
         }
+
+        // The poster rows went with the developer (cascade); their files and the picture stayed in
+        // the public images bucket, still reachable by URL. Remove them now that the rows are gone.
+        await removeImageFiles([developer.image_url, ...(developer.promos ?? []).map(p => p.image_url)]);
+    },
+
+    // After an edit saved a new picture (or removed it): delete the file of the one it had before.
+    async removeReplacedImage(oldUrl: string | null | undefined, newUrl: string | null | undefined): Promise<void> {
+        if (oldUrl && oldUrl !== newUrl) await removeImageFiles([oldUrl]);
+    },
+
+    // A picture uploaded for a save that then failed: nothing points to it.
+    async discardUploadedImage(url: string | null | undefined): Promise<void> {
+        await removeImageFiles([url]);
     },
 
     // --- Developer promos (posters) ---
@@ -335,23 +361,20 @@ export const developerService = {
         return data?.promo_ID ?? null;
     },
 
-    // Delete a promo row and its storage object (best-effort on the file).
+    // Delete a promo row, then its file (best effort). Row first: when the delete was refused
+    // (0 rows, not an admin) the file used to be gone already and the poster showed as broken.
     async deletePromo(promo: DeveloperPromo): Promise<void> {
-        if (promo.image_url) {
-            const marker = '/object/public/images/';
-            const idx = promo.image_url.indexOf(marker);
-            if (idx !== -1) {
-                const path = promo.image_url.slice(idx + marker.length);
-                const { error: storageError } = await supabase.storage.from('images').remove([path]);
-                if (storageError) console.error('Error removing promo image file:', storageError);
-            }
-        }
         if (promo.promo_ID != null) {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('developer_promos')
                 .delete()
-                .eq('promo_ID', promo.promo_ID);
-            if (error) console.error('Error deleting promo:', error);
+                .eq('promo_ID', promo.promo_ID)
+                .select('promo_ID');
+            if (error || !data || data.length === 0) {
+                console.error('Error deleting promo:', error ?? 'no row deleted');
+                return;
+            }
         }
+        await removeImageFiles([promo.image_url]);
     }
 };

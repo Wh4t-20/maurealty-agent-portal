@@ -82,7 +82,7 @@ const AGENT_FIELDS = 'agent_ID, first_name, middle_name, last_name, position_ID,
 
 // Fetch all agents + edges + the position lookup in parallel. Shared by the
 // tree and stats builders so we hit the DB once per call site.
-async function fetchGraph(): Promise<{
+async function loadGraph(): Promise<{
   agents: AgentRow[];
   edges: Edge[];
   positions: Map<number, PositionData>;
@@ -117,6 +117,19 @@ async function fetchGraph(): Promise<{
     edges: (edgesRes.data || []) as Edge[],
     positions,
   };
+}
+
+// The Genealogy page asks for the graph six times as it opens (stats, the Teams list, the tree,
+// Team Insights twice, the rank list), all in the same moment: 18 requests for the same three
+// tables. Calls that start while a load is running now share it. Nothing is kept once it
+// finishes, so the next call (a live refresh, a save) always reads fresh data.
+// The result is shared: callers only read it.
+let graphInFlight: ReturnType<typeof loadGraph> | null = null;
+function fetchGraph(): ReturnType<typeof loadGraph> {
+  if (!graphInFlight) {
+    graphInFlight = loadGraph().finally(() => { graphInFlight = null; });
+  }
+  return graphInFlight;
 }
 
 function toAgent(row: AgentRow, positions: Map<number, PositionData>): GenealogyAgent {
@@ -251,7 +264,17 @@ function checkPlacement(
 // Each agent's own completed sales (sum of contract prices). Since the RLS migration an agent can
 // only read their own sales rows, so the totals come from the team_completed_sales() SQL function
 // (supabase/migrations/20261105120000_harden_rls.sql), which returns totals only.
-async function completedSalesByAgent(): Promise<Map<number, number>> {
+// Team Insights and the tree both ask for it as the page opens; like fetchGraph, a call that
+// starts while one is running shares it (the Map is only read).
+let completedSalesInFlight: Promise<Map<number, number>> | null = null;
+function completedSalesByAgent(): Promise<Map<number, number>> {
+  if (!completedSalesInFlight) {
+    completedSalesInFlight = loadCompletedSalesByAgent().finally(() => { completedSalesInFlight = null; });
+  }
+  return completedSalesInFlight;
+}
+
+async function loadCompletedSalesByAgent(): Promise<Map<number, number>> {
   const own = new Map<number, number>();
   const { data, error } = await supabase.rpc('team_completed_sales');
   if (!error) {
@@ -459,25 +482,15 @@ export const genealogyService = {
     return (data || []).map((row: any) => toAgent(row, new Map()));
   },
 
-  // Most-recently-hired agents, for the landing "Recently Added" list.
+  // Most-recently-hired agents, for the landing "Recently Added" list. Built from the shared graph
+  // (which already has every agent's hire_date) instead of a query of its own. Newest first,
+  // agents without a hire date last; hire_date is YYYY-MM-DD, so it sorts as text.
   async getRecentAgents(limit = 5): Promise<(GenealogyAgent & { hire_date: string | null })[]> {
-    const { data, error } = await supabase
-      .from('agents')
-      .select(`${AGENT_FIELDS}, hire_date`)
-      .order('hire_date', { ascending: false, nullsFirst: false })
-      .limit(limit);
-
-    if (error) {
-      console.error('Error fetching recent agents:', error);
-      throw error;
-    }
-
-    // positions are resolved lazily here; the table is usually empty so the UI
-    // falls back to positionMap anyway.
-    return (data || []).map((row: any) => ({
-      ...toAgent(row, new Map()),
-      hire_date: row.hire_date,
-    }));
+    const { agents, positions } = await fetchGraph();
+    return [...agents]
+      .sort((a, b) => (b.hire_date ?? '').localeCompare(a.hire_date ?? ''))
+      .slice(0, limit)
+      .map((row) => ({ ...toAgent(row, positions), hire_date: row.hire_date }));
   },
 
   // Create an agent WITH a login and (optionally) attach it under an upline. Admin-only.

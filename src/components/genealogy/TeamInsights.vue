@@ -169,4 +169,8 @@ onMounted(async () => {
   isAdmin.value = !!(await authService.getCurrentAgent())?.admin_access
 })
 useLiveRefresh(() => load(true), ['sales', 'agents', 'genealogy', 'positions'])
+
+// The Genealogy page calls this after it adds, edits or deletes an agent (a quiet reload, so an
+// open row, typed thresholds and the last message stay).
+defineExpose({ reload: () => load(true) })
 </script>

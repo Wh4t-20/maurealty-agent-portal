@@ -55,6 +55,16 @@ function toggleExpand() {
   });
 }
 
+// Esc leaves the fullscreen map. Listened to in the capture phase and stopped there, so the
+// listing details overlay (which closes on Esc) stays open: one Esc closes one layer.
+function onKeydown(e: KeyboardEvent) {
+  if (e.key !== 'Escape' || !isExpanded.value) return;
+  e.stopPropagation();
+  toggleExpand();
+}
+onMounted(() => window.addEventListener('keydown', onKeydown, true));
+onUnmounted(() => window.removeEventListener('keydown', onKeydown, true));
+
 const props = defineProps<{
   targetLocation?: { lng: number; lat: number } | null;
   listingId?: number | null;
