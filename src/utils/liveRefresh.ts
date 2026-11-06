@@ -19,10 +19,17 @@ export function useLiveRefresh(
   let authSubscription: { unsubscribe: () => void } | null = null;
   let stopped = false;
 
+  // getSession() reads the stored session (no network). Without one the reload would only be refused.
+  const run = async () => {
+    if (stopped) return;
+    const { data } = await supabase.auth.getSession();
+    if (stopped || !data.session) return;
+    await reload();
+  };
   const schedule = () => {
     if (stopped) return;
     if (timer) clearTimeout(timer);
-    timer = setTimeout(() => { void reload(); }, debounceMs);
+    timer = setTimeout(() => { void run(); }, debounceMs);
   };
   const onVisible = () => { if (document.visibilityState === 'visible') schedule(); };
 
