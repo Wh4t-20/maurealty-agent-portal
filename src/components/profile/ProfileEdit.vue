@@ -124,6 +124,7 @@
                             <div class="flex flex-col sm:col-span-2 gap-1">
                                 <label class="text-maurealty-blue dark:text-maurealty-light-blue font-medium text-sm block">Email Address</label>
                                 <input type="email" v-model="form.email_address" class="w-full bg-white dark:bg-black dark:text-white border border-gray-300 rounded-lg p-3 py-1.75 focus:ring-2 focus:ring-maurealty-blue outline-none">
+                                <span class="text-xs text-gray-500 dark:text-gray-400">You also sign in with this email, and password codes are sent to it.</span>
                             </div>
                         </div>
                     </div>
@@ -154,6 +155,7 @@
 import { ref } from 'vue';
 import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/vue';
 import { agentService } from '@/services/agentService';
+import { accountService } from '@/services/accountService';
 import { useRouter } from 'vue-router';
 import placeholder from '@/assets/images/default_placeholder.png';
 import { type AgentProfile, getAge } from '@/assets/classes/agent';
@@ -316,6 +318,16 @@ const saveAgentDetails = async () => {
         if (response.success) {
             // Only now is the old picture unused. (Deleting it first left a broken picture when the save failed.)
             if (oldImageToDelete) await agentService.deleteProfileImage(oldImageToDelete);
+            // A new email is also the new login email (it used to stay the old one).
+            if (values.email_address !== normalizeEmail(props.agent.email_address)) {
+                try {
+                    await accountService.syncLoginEmail(agentID);
+                } catch (syncError: any) {
+                    // The profile is saved; stay on the form so the message can be read.
+                    error.value = `Your profile was saved, but your sign-in email could not be changed: ${syncError?.message || 'please try again.'}`;
+                    return;
+                }
+            }
             router.go(0); // refresh to see changes
         } else {
             error.value = 'Your profile was not saved. Please try again.';
