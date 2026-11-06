@@ -207,23 +207,34 @@ export const developerService = {
             throw new Error('The developer was not saved. Only admins can change developers.');
         }
 
-        const { error: deleteError } = await supabase
-            .from('opening_days')
-            .delete()
-            .eq('id', developer.dev_ID);
-        if (deleteError) {
-            console.error('Error deleting old office hours:', deleteError);
-            throw new Error(`The office hours could not be updated: ${deleteError.message}`);
-        }
+        // Save the new hours first and only then remove the days that were dropped. The old order
+        // (delete everything, then insert) lost all of a developer's hours whenever the insert was
+        // refused, e.g. a Holiday slot before day_enum had 'Holiday'. The upsert is one statement,
+        // so a refused row leaves the current hours as they were.
         const officeHoursData = officeHourRows(developer.dev_ID, developer.OfficeHours);
         if (officeHoursData.length > 0) {
             const { error: officeHoursError } = await supabase
                 .from('opening_days')
-                .insert(officeHoursData);
+                .upsert(officeHoursData, { onConflict: 'id,day' });
             if (officeHoursError) {
-                console.error('Error adding office hours:', officeHoursError);
-                throw new Error(`The office hours could not be saved: ${officeHoursError.message}`);
+                console.error('Error saving office hours:', officeHoursError);
+                throw new Error(`The office hours could not be saved (the previous hours were kept): ${officeHoursError.message}`);
             }
+        }
+
+        // Days no longer in any slot. The names come from the fixed `days` list, never typed text,
+        // so they are safe inside this PostgREST filter.
+        let removeDropped = supabase
+            .from('opening_days')
+            .delete()
+            .eq('id', developer.dev_ID);
+        if (officeHoursData.length > 0) {
+            removeDropped = removeDropped.not('day', 'in', `(${officeHoursData.map(row => row.day).join(',')})`);
+        }
+        const { error: deleteError } = await removeDropped;
+        if (deleteError) {
+            console.error('Error removing old office hours:', deleteError);
+            throw new Error(`The new office hours were saved, but the removed days could not be cleared: ${deleteError.message}`);
         }
     },
     async uploadImage(devID: number, file: File): Promise<string | ''> {
