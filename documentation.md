@@ -5,6 +5,13 @@ Rules: log only what changed or was added; no repeats of earlier entries; no res
 
 ---
 
+## 2026-11-06 - Upload limits for the public storage buckets
+- **Added:** Migration `20261106120000_storage_upload_limits.sql` (idempotent). The public `images` bucket (listing photos, profile and developer pictures, promo posters, payment proofs) now accepts only PNG, JPEG, WEBP, GIF, HEIC, HEIF and AVIF, max 10 MB per file; SVG is refused because it can carry script and these files open by URL for anyone. `fact_sheets` keeps its document types and gets a 20 MB limit. Before this, both buckets took any size and `images` any type (project-context.md 11.7).
+- **Supabase setup (manual, project-context.md 3.3 step 11):** run the file in the SQL editor. **Already applied to the dev project on 2026-11-06.**
+- **Notes:** No code, table or policy changes; files already stored are untouched (the largest is a 9.2 MB PNG). Checked live: a signed-out SVG upload is refused with `415 invalid_mime_type`, while a PNG passes the type check and is then refused by RLS as before. Normal photo uploads from `accept="image/*"` inputs are unaffected.
+
+---
+
 ## 2026-11-06 - Dependency cleanup and security updates
 - **Removed:** Unused dependencies `chart.js`, `@types/chart.js`, `lucide` (the app uses `lucide-vue-next`), `next`, `dagre` (the tree uses `@dagrejs/dagre`), `@types/dagre` and `@vue-flow/background`. None was imported anywhere in `src/`, so nothing in the bundle changes; `npm install` pulls 24 fewer packages. `next` alone carried 2 critical and several high advisories.
 - **Changed (security):** `dompurify` raised to `^3.4.17` (fixes GHSA-cg2g-xh64-v4q7 and related advisories up to 3.4.16; `compileMarkdown()` uses the default `sanitize()` call, which those advisories don't target, but it is the one library that cleans user HTML before `v-html`). `npm audit fix` updated transitive packages within their ranges (`vue` / `@vue/server-renderer`, `vite`, `postcss`, `nanoid`, `esbuild`, `source-map-js`, ...): 13 advisories down to 2 moderates (`postcss-selector-parser` through `@tailwindcss/typography`, build time only; npm's fix would downgrade the plugin, so left alone).
