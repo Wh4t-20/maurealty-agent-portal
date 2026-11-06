@@ -141,8 +141,9 @@ function cleanAgent(raw: unknown) {
 
 // ---------- Helpers ----------
 
-// The caller must be a signed-in admin. Returns their auth id and agent id.
-async function requireAdmin(admin: SupabaseClient, req: Request) {
+// The caller must be a signed-in agent. Returns their auth id, agent id and whether they are an
+// admin; each action decides what it allows (most are admin-only).
+async function requireAgent(admin: SupabaseClient, req: Request) {
   const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
   if (!token) throw new HttpError(401, 'Sign in first.');
 
@@ -155,9 +156,13 @@ async function requireAdmin(admin: SupabaseClient, req: Request) {
     .eq('user_id', data.user.id)
     .maybeSingle();
   if (meError) throw new HttpError(500, 'Could not check your access.');
-  if (!me?.admin_access) throw new HttpError(403, 'Only admins can manage agent logins.');
+  if (!me) throw new HttpError(403, 'This login is not linked to an agent.');
 
-  return { userId: data.user.id, agentId: me.agent_ID as number };
+  return { userId: data.user.id, agentId: me.agent_ID as number, isAdmin: me.admin_access === true };
+}
+
+function requireAdmin(caller: { isAdmin: boolean }) {
+  if (!caller.isAdmin) throw new HttpError(403, 'Only admins can manage agent logins.');
 }
 
 async function createAuthUser(admin: SupabaseClient, email: string, password: string, firstName: string, lastName: string): Promise<string> {
@@ -304,7 +309,7 @@ Deno.serve(async (req: Request) => {
   const admin = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
 
   try {
-    const caller = await requireAdmin(admin, req);
+    const caller = await requireAgent(admin, req);
 
     let body: Record<string, unknown>;
     try {
@@ -315,10 +320,13 @@ Deno.serve(async (req: Request) => {
 
     switch (body?.action) {
       case 'create':
+        requireAdmin(caller);
         return json(200, await createAgent(admin, caller.agentId, body));
       case 'create-login':
+        requireAdmin(caller);
         return json(200, await createLoginForAgent(admin, caller.agentId, body));
       case 'delete-login':
+        requireAdmin(caller);
         return json(200, await deleteLogin(admin, caller.userId, body));
       default:
         throw new HttpError(400, 'Unknown action.');
