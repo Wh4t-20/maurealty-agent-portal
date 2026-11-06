@@ -124,7 +124,7 @@
           </div>
         </div>
 
-        <TeamInsights @changed="onSaved" />
+        <TeamInsights ref="insights" @changed="onSaved" />
 
       </section>
 
@@ -160,6 +160,9 @@ const editing = ref<AgentDetail | null>(null) // null = add mode, set = edit mod
 const deletingId = ref<number | null>(null)
 const deleteError = ref('')
 const reloadKey = ref(0) // bump to remount the tree after a change
+// Team Insights is told to reload after an add, edit or delete; it used to keep showing the old
+// roster until the next realtime event or 60 s poll.
+const insights = ref<InstanceType<typeof TeamInsights> | null>(null)
 
 // Signed-in agent. Add / Edit / Delete are admin-only (the agent-account Edge Function and the
 // admin_get_agent_login SQL function check this again on the server).
@@ -262,7 +265,7 @@ async function confirmDelete(a: GenealogyAgent) {
   try {
     await genealogyService.deleteAgent(a.agent_ID)
     reloadKey.value++ // remount the tree so it reflects the removal
-    await load()
+    await Promise.all([load(), insights.value?.reload()])
   } catch (e: any) {
     console.error('Delete agent failed:', e)
     deleteError.value = e?.message || 'Failed to delete agent.'
@@ -275,6 +278,7 @@ function onSaved() {
   closeModal()
   reloadKey.value++ // remount the tree so the change appears
   load()
+  void insights.value?.reload()
 }
 
 onMounted(() => {
